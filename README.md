@@ -1,6 +1,15 @@
 # Claude Foundations — Onboarding Engine
 
-A research-backed personalization layer for Claude Code. Replaces hand-tuned configs with a conversational onboarder, a runtime-parameterized hook set, and a Librarian skill that owns your `user-manifest.json` and enforces Output Contracts on every vault write.
+**An Obsidian + Claude Code knowledge system.** Claude Foundations turns an Obsidian vault into the operational database Claude Code works against: a conversational onboarder captures who you are and how you work, a manifest-driven hook set parameterizes every session from your vault, and a Librarian skill owns the manifest and enforces Output Contracts on every write.
+
+The system assumes Obsidian. Your vault is the source of truth for projects, people, notes, and logs; the manifest is the source of truth for identity, tools, and preferences. Claude Code operates on both.
+
+## Prerequisites
+
+- **[Obsidian](https://obsidian.md)** — required. Install Obsidian and create (or open) at least one vault before running `install.sh`. The installer preflight-checks for Obsidian and will refuse to proceed without it.
+- **[jq](https://stedolan.github.io/jq/)** — required for manifest validation. `brew install jq` on macOS.
+- **Bash 4+** — standard on macOS and Linux.
+- **Claude Code** — this repo is a skill pack for the Claude Code CLI.
 
 ## What this gives you
 

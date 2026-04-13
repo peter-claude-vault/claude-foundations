@@ -19,15 +19,10 @@
     "team_structure": null,
     "source": "onboarder"
   },
-  "tools": {
-    "calendar": null,
-    "messaging": null,
-    "email": null,
-    "transcription": null,
-    "project_management": null,
-    "development_environment": []
-  },
+  "tools": [],
   "vault": {
+    "path": "~/Documents/Vault",
+    "name": "Vault",
     "root": null,
     "organizational_method": null,
     "tier_definitions": [],

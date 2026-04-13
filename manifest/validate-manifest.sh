@@ -43,6 +43,12 @@ fail() {
 # Required top-level sections
 jq -e '.system' "$MANIFEST" >/dev/null || fail "missing .system"
 jq -e '.identity' "$MANIFEST" >/dev/null || fail "missing .identity"
+jq -e '.vault and (.vault | type == "object")' "$MANIFEST" >/dev/null \
+  || fail ".vault missing or not an object (Obsidian vault is a hard prerequisite)"
+jq -e '.vault.path and (.vault.path | length > 0)' "$MANIFEST" >/dev/null \
+  || fail ".vault.path missing or empty"
+jq -e '.vault.name and (.vault.name | length > 0)' "$MANIFEST" >/dev/null \
+  || fail ".vault.name missing or empty"
 
 # system required fields
 jq -e '.system.schema_version and (.system.schema_version | test("^[0-9]+\\.[0-9]+$"))' \
@@ -75,8 +81,8 @@ jq -e '
   (.integrations // null | type) as $integrations |
   (.behavioral   // null | type) as $behavioral   |
   (.domain       // null | type) as $domain       |
-  ($tools        == "object" or $tools        == "null") and
-  ($vault        == "object" or $vault        == "null") and
+  ($tools        == "array"  or $tools        == "null") and
+  ($vault        == "object") and
   ($projects     == "object" or $projects     == "null") and
   ($people       == "array"  or $people       == "null") and
   ($tags         == "object" or $tags         == "null") and

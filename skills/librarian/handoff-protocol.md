@@ -49,6 +49,16 @@ The Librarian's manifest writes are additive:
 
 This preserves the user's intent and the Onboarder's interview answers across long periods of Librarian activity.
 
+## Immutable fields (Librarian cannot touch)
+
+Regardless of `source`, the Librarian treats these as absolutely immutable:
+
+- **`tools[].constraint_type == "user-excluded"`** — a user-declared boundary. The Librarian cannot modify, remove, or downgrade these entries, and must not propagate information derived from them into other manifest fields. Only the user (via `user-edit`) or a fresh `/onboard-foundation` run may change them.
+- **`tools[].constraint_type == "org-restricted"`** — the Librarian may observe drift (e.g., new MCP connectivity) and surface it as a Judgment-tier finding, but never silently downgrades the constraint. Downgrades require explicit user confirmation.
+- **`vault.protected_paths[]`** — additive only. New protections may be proposed; existing ones may never be removed by the Librarian.
+
+These rules exist because Advisor/Builder depends on them: `user-excluded` is a hard filter on recommendations, and if the Librarian could silently mutate constraint state the hard filter would leak.
+
 ## Phase 2 / Phase 3 re-entry
 
 When a later Onboarder phase runs, it writes new fields with `source: "onboarder"` and updates `system.phases_completed`. On the next Librarian run, the Librarian:

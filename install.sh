@@ -25,6 +25,44 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 2
 fi
 
+# Obsidian is a hard prerequisite — the user-manifest contract requires a
+# vault.path + vault.name, and the Librarian operates against an Obsidian
+# vault. If Obsidian is not installed, stop before touching anything.
+obsidian_found=0
+case "$OSTYPE" in
+  darwin*)
+    [[ -d "/Applications/Obsidian.app" || -d "$HOME/Applications/Obsidian.app" ]] && obsidian_found=1
+    ;;
+  linux*)
+    if command -v obsidian >/dev/null 2>&1; then
+      obsidian_found=1
+    elif ls "$HOME/.local/share/applications" 2>/dev/null | grep -qi obsidian; then
+      obsidian_found=1
+    elif ls /usr/share/applications 2>/dev/null | grep -qi obsidian; then
+      obsidian_found=1
+    elif command -v flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -qi obsidian; then
+      obsidian_found=1
+    fi
+    ;;
+  msys*|cygwin*|win*)
+    command -v obsidian >/dev/null 2>&1 && obsidian_found=1
+    ;;
+esac
+
+if [[ $obsidian_found -eq 0 ]]; then
+  cat >&2 <<EOF
+error: Obsidian is required for Claude Foundations.
+
+  Claude Foundations is a manifest-driven knowledge system built around an
+  Obsidian vault. The manifest schema requires vault.path and vault.name, and
+  the Librarian operates against a real vault.
+
+  Download Obsidian: https://obsidian.md
+  After installing, create or open at least one vault, then re-run this script.
+EOF
+  exit 2
+fi
+
 echo "[foundations] target: $CLAUDE_DIR"
 mkdir -p "$CLAUDE_DIR/skills" "$CLAUDE_DIR/hooks" "$CLAUDE_DIR/manifest"
 

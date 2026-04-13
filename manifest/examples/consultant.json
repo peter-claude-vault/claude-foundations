@@ -19,15 +19,17 @@
     "team_structure": "Solo operator collaborating with 3 engagement teams",
     "source": "onboarder"
   },
-  "tools": {
-    "calendar": "Google Calendar",
-    "messaging": "Microsoft Teams",
-    "email": "Gmail",
-    "transcription": "Granola",
-    "project_management": "Asana",
-    "development_environment": ["homebrew", "node", "python"]
-  },
+  "tools": [
+    { "name": "Google Calendar", "category": "calendar", "integration_mode": "native", "constraint_type": "none", "source": "onboarder" },
+    { "name": "Microsoft Teams", "category": "messaging", "integration_mode": "web-mcp", "constraint_type": "org-restricted", "notes": "Client IT blocks native Teams API; web MCP workaround only.", "source": "onboarder" },
+    { "name": "Outlook (client account)", "category": "email", "integration_mode": "blocked", "constraint_type": "org-restricted", "notes": "Client mailbox is DLP-locked; no automation permitted.", "source": "onboarder" },
+    { "name": "Gmail", "category": "email", "integration_mode": "native", "constraint_type": "none", "source": "onboarder" },
+    { "name": "Granola", "category": "transcription", "integration_mode": "native", "constraint_type": "none", "source": "onboarder" },
+    { "name": "Asana", "category": "project_management", "integration_mode": "native", "constraint_type": "none", "source": "onboarder" }
+  ],
   "vault": {
+    "path": "~/Documents/Knowledge Vault",
+    "name": "Knowledge Vault",
     "root": "~/Documents/Knowledge Vault",
     "organizational_method": "custom",
     "tier_definitions": ["Engagements", "Clients", "Reference", "Logs"],

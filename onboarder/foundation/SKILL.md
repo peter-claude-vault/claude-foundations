@@ -17,7 +17,7 @@ Produce the user's first `user-manifest.json` through automated environment disc
 All paths resolve relative to `$HOME/.claude`, which is where Claude Code reads its configuration. The skill's supporting assets live at fixed locations:
 
 ```
-CLAUDE_DIR="$HOME/.claude"
+CLAUDE_DIR="${CLAUDE_HOME:-$HOME/.claude}"
 MANIFEST="$CLAUDE_DIR/user-manifest.json"
 SCHEMA="$CLAUDE_DIR/manifest/schema.json"
 VALIDATOR="$CLAUDE_DIR/manifest/validate-manifest.sh"
@@ -63,36 +63,48 @@ Present the discovery summary to the user in plain language before the interview
 
 **Under 20 questions. Motivational-Interviewing frame. Skip any question discovery already answered with high confidence.**
 
+**Opening response-shape guidance (print verbatim before Q1):**
+
+> "A few ground rules before we start. You can answer any of these questions by typing, or — if it's easier — record yourself talking for a minute or two and drop the transcript in. Raw context is more valuable to me than polished answers, so dump don't polish. If a question doesn't apply to you, say so and we'll move on. I'll reflect each answer back in one sentence so you can correct me before I lock it in."
+
 #### Block 1 — Identity (3–4 questions)
 
-1. "What do you do? Tell me about your role and the kind of work you focus on." → `identity.role`, `identity.industry`
+1. **Top-down framing.** "Start broad: what do you do, who do you do it for, and what does a typical week look like? A few examples of the shape I'm looking for:
+   - *Consultant:* 'I run client engagements in life sciences. Most weeks I'm juggling two or three active projects, each with a sponsor, a core team, and a board review cycle.'
+   - *Designer:* 'I lead product design at a Series B startup. My week is half IC work in Figma, half design reviews and cross-functional alignment.'
+   - *Engineer:* 'I'm a backend engineer on a payments team. Typical week is tickets, code review, an on-call rotation, and one or two design discussions.'
+   Yours doesn't have to sound like any of these — I'm trying to understand the shape of your work, not fit it into a template." → `identity.role`, `identity.industry`, `identity.organization`, `identity.team_structure`
 2. "What are you actively working on right now — projects, clients, initiatives, whatever takes your time?" → `projects.active[]`
-3. "Who do you work with most? Anyone I should know about — team members, clients, stakeholders?" → `people[]`
+3. **People scaffolding.** "Who do you work with most? There's no wrong format here — a few things that tend to work:
+   - Paste the 'to/cc' line from a few recent email threads.
+   - Paste a client list, org chart, or team directory.
+   - Just dump names as bullets with a line of context each.
+   Anyone recurring — team members, clients, stakeholders, a manager — is worth capturing." → `people[]`
 4. (Only if `identity.organization` is empty and not discovered) "Are you with an organization, or solo? If there's a team, how is it structured?" → `identity.organization`, `identity.team_structure`
 
-#### Block 2 — Tool Ecosystem (3–5 questions, discovery-compressed)
+#### Block 2 — Tool Ecosystem (3 questions using hybrid gating)
 
-5. "What's your calendar — Google, Outlook, Apple, or something else?" → `tools.calendar`
-6. "Where do your work messages live — Slack, Teams, Discord, other?" → `tools.messaging`
-7. "And email — Gmail, Outlook, something else?" → `tools.email`
-8. (Conditional) If discovery found a transcription tool: "I noticed [tool] on your system — is that what you use for meeting notes?" → `tools.transcription`. Otherwise: "Do you record or transcribe meetings? Which tool?"
+The goal here is *not* to list every app on your machine. It is to capture which tools matter to your work and — critically — what constraints apply to each. Constraints come in two flavors:
 
-Skip any of 5–7 whose answer is already obvious (e.g., MCP server for Google Calendar is connected).
+- **`org-restricted`** — your IT department blocks native integration, but Claude may still suggest web-based workarounds (web MCP, browser automation, manual export).
+- **`user-excluded`** — you do not want Claude to touch this tool under any circumstances. This is a hard filter. Advisor/Builder will never suggest it, even as a workaround.
 
-#### Block 3 — Knowledge Management (branching, 3–6 questions)
+Ask these three in order and build the `tools[]` array as you go.
 
-*If a vault was detected:*
+5. **Tool inventory.** "Walk me through the tools you use most for work — calendar, email, messaging, note-taking, project management, development environment, anything else. Just list them; we'll talk about access in the next two questions." → provisionally populate `tools[]` with `name`, `category`, `integration_mode: "native"`, `constraint_type: "none"`.
 
-9. "I found an Obsidian vault at [path] with [N] files. Is this your main knowledge base?" → confirm `vault.root`
-10. "How is it organized? It looks like [detected pattern]. Does that match how you think about it?" → `vault.organizational_method`
-11. "What works about it? What frustrates you?" → qualitative notes (stored in `vault.discovered_conventions.notes` for Phase 2/3 and Librarian)
-12. "Anything in there that should be off-limits to me — private folders, sensitive material?" → `vault.protected_paths[]`
+6. **Org-restricted gate.** "Are any of those tools locked down by your employer or a client — things where you have the account but IT doesn't allow API access, automation, or MCP connections? I can still suggest workarounds for these (web-based flows, manual export, browser automation), but I need to know which ones they are." → for each named tool, set `constraint_type: "org-restricted"` and update `integration_mode` to `"web-mcp"`, `"manual"`, or `"blocked"` based on what's actually feasible. Capture *why* in `notes`.
 
-*If no vault was detected:*
+7. **User-excluded boundary.** "Are there any tools you don't want me touching at all — not even as a workaround? Personal banking, health apps, a private journal, an employer's system you'd rather keep manual. Anything I should treat as off-limits forever." → for each named tool, set `constraint_type: "user-excluded"` and `integration_mode: "manual"` or `"blocked"`. Write a short `notes` line captioning the boundary ("User boundary — do not connect"). **These are immutable: the Librarian must never overwrite them, and Advisor/Builder must never propose workarounds.**
 
-9. "Do you keep notes or documents anywhere right now — Notion, Apple Notes, plain files, nothing yet?" → discovery follow-up
-10. (If "yes, somewhere else") "Would you like to keep using that, or would a structured local knowledge base be useful? I can scaffold one." → sets `vault.greenfield` or leaves `vault` null
-11. (If scaffolding wanted) "Where should it live? Default is `~/Documents/knowledge/`." → `vault.root`, `vault.greenfield = true`
+#### Block 3 — Knowledge Management (3–4 questions)
+
+Obsidian is an install prerequisite, so a vault always exists by the time this block runs. Either discovery found one, or the user needs to create one now. The skill does not branch on "no vault" — it branches on "which vault."
+
+8. "I found an Obsidian vault at [path] with [N] files. Is this your main knowledge base, or should I use a different one?" → `vault.path`, `vault.name` (use the parent directory name if the user doesn't give one explicitly). If the user points to a different vault, confirm the new path exists before proceeding.
+9. "How is it organized? It looks like [detected pattern]. Does that match how you think about it — or is it more of a work-in-progress?" → `vault.organizational_method`, and set `vault.greenfield = true` if the vault is essentially empty.
+10. "What works about it? What frustrates you?" → qualitative notes (stored in `vault.discovered_conventions.notes` for Phase 2/3 and Librarian).
+11. "Anything in there that should be off-limits to me — private folders, sensitive material, client work under NDA?" → `vault.protected_paths[]`.
 
 #### Block 4 — Integrations (conditional, 0–3 questions)
 
@@ -149,7 +161,7 @@ Failure mode: block and log.
 ## Edge cases
 
 - **No calendar / no messaging / no email:** Blocks 2 and 4 collapse — the skill accepts `null` for each unused tool, never forces a selection.
-- **No vault and no desire for one:** `vault = null`. Discovery, hooks, and Librarian all treat `null` vault as "operate against plain files in CWD."
+- **No vault detected but Obsidian installed:** Prompt the user to create or select a vault in Obsidian, then re-run `/onboard-foundation`. Do not proceed with a null vault — the schema now requires `vault.path` and `vault.name`.
 - **No tools at all:** The interview compresses to Blocks 1 + 5 (≈5 questions). Budget is preserved.
 - **Existing manifest at `$MANIFEST`:** Ask whether to replace, merge, or abort before running discovery. Never silently overwrite.
 - **`$HOME/.claude/` does not exist:** Create it. The installer normally creates it, but a bare `HOME` override may leave the directory absent.

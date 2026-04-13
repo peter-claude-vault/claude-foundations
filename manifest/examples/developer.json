@@ -19,15 +19,18 @@
     "team_structure": "Individual contributor on a distributed team",
     "source": "onboarder"
   },
-  "tools": {
-    "calendar": "Google Calendar",
-    "messaging": "Slack",
-    "email": "Gmail",
-    "transcription": null,
-    "project_management": "Linear",
-    "development_environment": ["homebrew", "node", "go", "docker"]
+  "tools": [
+    { "name": "Google Calendar", "category": "calendar", "integration_mode": "native", "constraint_type": "none", "source": "onboarder" },
+    { "name": "Slack", "category": "messaging", "integration_mode": "native", "constraint_type": "none", "source": "onboarder" },
+    { "name": "Gmail", "category": "email", "integration_mode": "native", "constraint_type": "none", "source": "onboarder" },
+    { "name": "Linear", "category": "project_management", "integration_mode": "native", "constraint_type": "none", "source": "onboarder" },
+    { "name": "Personal banking app", "category": "finance", "integration_mode": "manual", "constraint_type": "user-excluded", "notes": "User boundary — never connect or scrape. Hard filter.", "source": "onboarder" }
+  ],
+  "vault": {
+    "path": "~/notes",
+    "name": "notes",
+    "greenfield": true
   },
-  "vault": null,
   "projects": {
     "hierarchy_labels": ["Repo", "Feature", "Task"],
     "active": [

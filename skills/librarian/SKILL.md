@@ -30,7 +30,7 @@ describe the target state, not the current runtime surface.
 ### `scan` — what it does
 
 Sources `$CLAUDE_HOME/hooks/lib/manifest.sh` for helpers, reads the manifest,
-walks `vault.root` (or `$HOME` if no vault declared), and produces a summary
+walks `vault.path` (required — Obsidian is an install prerequisite), and produces a summary
 covering: top-level directory file counts, total markdown files, frontmatter
 coverage bucket (`full`/`partial`/`none`/`n/a`), dominant naming pattern
 (`kebab-case`/`snake_case`/`Title Case`/`mixed`), and the list of protected
@@ -118,6 +118,12 @@ Findings are written to the manifest as discovered data with attribution:
 ### Enrichment, not overwrite
 
 Every field the Librarian writes carries a `source` marker: `"onboarder"`, `"librarian-scan"`, or `"user-edit"`. The Librarian never overwrites a field with a different source. Conflicts surface as Judgment-tier findings.
+
+**Absolute immutability rules (cannot be overridden by any Librarian tier):**
+
+- `tools[].constraint_type == "user-excluded"` — the Librarian **never** changes, downgrades, or removes a user-excluded tool entry. The entry may only be altered by the user directly (source `user-edit`) or by the Onboarder re-running Phase 1. The Librarian must also never propagate information *derived* from a user-excluded tool into any other manifest field.
+- `tools[].constraint_type == "org-restricted"` — the Librarian may *observe* that the restriction has changed (e.g., a previously blocked tool now has MCP connectivity) and surface that as a Judgment-tier finding, but it never silently downgrades the constraint.
+- `vault.protected_paths[]` — additive only. The Librarian may propose new protected paths but never remove user-declared ones.
 
 | Scenario | Resolution |
 |----------|-----------|

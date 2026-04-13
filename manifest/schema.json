@@ -4,7 +4,7 @@
   "title": "user-manifest",
   "description": "Shared contract describing a Claude Code user's identity, tools, vault, projects, people, integrations, behavioral preferences, domain vocabulary, and system metadata. Consumed by hooks, skills, and the personalization engine.",
   "type": "object",
-  "required": ["system", "identity"],
+  "required": ["system", "identity", "vault"],
   "additionalProperties": false,
   "properties": {
     "system": {
@@ -45,24 +45,30 @@
       }
     },
     "tools": {
-      "type": ["object", "null"],
-      "additionalProperties": true,
-      "properties": {
-        "calendar": { "type": ["string", "null"] },
-        "messaging": { "type": ["string", "null"] },
-        "email": { "type": ["string", "null"] },
-        "transcription": { "type": ["string", "null"] },
-        "project_management": { "type": ["string", "null"] },
-        "development_environment": {
-          "type": "array",
-          "items": { "type": "string" }
+      "$comment": "Owned by Phase 1 Onboarder. Array of discrete tools, each with an integration mode and a constraint type. constraint_type 'user-excluded' is an absolute hard filter that Advisor/Builder must never override; 'org-restricted' is a soft filter where Advisor may propose web-MCP or manual workarounds.",
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["name", "category", "integration_mode", "constraint_type"],
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "category": { "type": "string", "minLength": 1 },
+          "integration_mode": { "enum": ["native", "web-mcp", "manual", "blocked"] },
+          "constraint_type": { "enum": ["none", "org-restricted", "user-excluded"] },
+          "notes": { "type": ["string", "null"] },
+          "source": { "enum": ["onboarder", "librarian-scan", "user-edit", null] }
         }
       }
     },
     "vault": {
-      "type": ["object", "null"],
+      "$comment": "Required. Obsidian is a hard install prerequisite — every manifest must declare a vault with at least path and name. Sparse vaults (greenfield) still provide these two fields.",
+      "type": "object",
+      "required": ["path", "name"],
       "additionalProperties": true,
       "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
         "root": { "type": ["string", "null"] },
         "organizational_method": {
           "enum": ["PARA", "Zettelkasten", "LYT", "flat", "custom", null]

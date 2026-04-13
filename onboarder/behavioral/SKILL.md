@@ -33,7 +33,11 @@ When invoked, **start the interview immediately**. Do not:
 - Redirect to another skill or ask "are you sure you want this?".
 - Pre-summarize what's about to happen before asking question 1.
 
-Run the prerequisite check silently, then, if it passes, go directly into Block 1. If it fails, print the Phase 1 message above and stop.
+Run the prerequisite check silently, then, if it passes, print the opening guidance below verbatim and go directly into Block 1. If it fails, print the Phase 1 message above and stop.
+
+**Opening response-shape guidance (print verbatim before Q1):**
+
+> "Same ground rules as Phase 1: you can type, or record yourself talking and paste the transcript — raw context beats polished answers. If a question doesn't apply, say so and we'll move on. I'll reflect each answer back in one sentence before moving on."
 
 ## Flow
 
