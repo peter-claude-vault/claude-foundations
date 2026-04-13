@@ -16,26 +16,57 @@ MANIFEST="${CLAUDE_MANIFEST:-$CLAUDE_DIR/user-manifest.json}"
 
 The Librarian never writes outside `$CLAUDE_DIR` or the vault root declared in `manifest.vault.root`.
 
-## Capabilities
+## Capabilities — current implementation status
 
-| Capability | Tier | Purpose |
-|------------|------|---------|
-| `scan` | Mechanical | Walk `vault.root`, catalog files, detect changes since last scan. |
-| `classify` | Mechanical | Route files by type, project, domain using `tags`, `projects`, `domain.routing_rules`. |
-| `maintain` | Mechanical | Fix frontmatter, update wikilinks, move misplaced files per `vault.folder_mapping`. |
-| `intake` | Mechanical | Validate new content against Output Contracts before it enters the vault. |
-| `manifest-update` | Mixed | Enrich the manifest from scan findings. Mechanical for discovered data, Judgment for structural changes. |
-| `session-close` | Mechanical | End-of-session reconciliation and log archival. |
-| `integrity-check` | Judgment | Verify vault matches manifest-declared state; surface drift as recommendations. |
+The `scan` capability is implemented in `scan.sh`. It is the only runnable
+capability in this iteration.
 
-### Two-tier operation
+All other capabilities (`classify`, `maintain`, `intake`, `manifest-update`,
+`session-close`, `integrity-check`) are **deferred** to a future iteration. If
+invoked today, they must print a clear "not yet implemented" message and exit 0.
+The handoff protocol and Output Contract design below remain aspirational — they
+describe the target state, not the current runtime surface.
+
+### `scan` — what it does
+
+Sources `$CLAUDE_HOME/hooks/lib/manifest.sh` for helpers, reads the manifest,
+walks `vault.root` (or `$HOME` if no vault declared), and produces a summary
+covering: top-level directory file counts, total markdown files, frontmatter
+coverage bucket (`full`/`partial`/`none`/`n/a`), dominant naming pattern
+(`kebab-case`/`snake_case`/`Title Case`/`mixed`), and the list of protected
+paths it skipped. The summary is appended to the manifest at
+`vault.discovered_conventions` with `source: "librarian-scan"` and a timestamp.
+Writes are atomic (temp file + validate + mv) and blocked on pre-write schema
+validation failure.
+
+### Two-tier operation (aspirational)
 
 - **Mechanical** operations run without confirmation and log every change.
 - **Judgment** operations present findings and a recommendation, then wait for user approval.
 
-The tier boundary is defined in `manifest.behavioral.autonomy`. Users may promote operations from Judgment to Mechanical.
+The tier boundary is defined in `manifest.behavioral.autonomy`. Users may promote operations from Judgment to Mechanical. Only `scan` (Mechanical) is live today.
 
-## Manifest Handoff Protocol
+## Output Contract — `scan` (live)
+
+```
+Files written:
+  - $MANIFEST (enrichment only; sets .vault.discovered_conventions and
+    .vault.discovered_file_count, updates .system.librarian_last_update)
+
+Schema type: user-manifest (manifest/schema.json)
+
+Pre-write validation:
+  1. Manifest must exist and be valid JSON (abort otherwise).
+  2. Build the enriched manifest in a temp file.
+  3. Run manifest/validate-manifest.sh against the temp file.
+  4. Only on pass does the temp file replace the original (atomic mv).
+
+Failure mode: block and log.
+  - Validation failure aborts the write; original manifest is untouched.
+  - Missing manifest aborts with a clear "run /onboard-foundation first" message.
+```
+
+## Manifest Handoff Protocol (aspirational design record)
 
 ### First contact
 
