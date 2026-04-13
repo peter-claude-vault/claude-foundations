@@ -14,14 +14,30 @@ Produce the user's first `user-manifest.json` through automated environment disc
 
 ## Environment convention
 
-All paths resolve via the `CLAUDE_HOME` env var with a fallback:
+All paths resolve relative to `$HOME/.claude`, which is where Claude Code reads its configuration. The skill's supporting assets live at fixed locations:
 
 ```
-CLAUDE_DIR="${CLAUDE_HOME:-$HOME/.claude}"
+CLAUDE_DIR="$HOME/.claude"
 MANIFEST="$CLAUDE_DIR/user-manifest.json"
+SCHEMA="$CLAUDE_DIR/manifest/schema.json"
+VALIDATOR="$CLAUDE_DIR/manifest/validate-manifest.sh"
+DISCOVERY="$CLAUDE_DIR/skills/onboard-foundation/discovery.sh"
 ```
 
 Every filesystem write the skill performs targets `$CLAUDE_DIR` or a path the user explicitly confirmed. The skill never writes outside those locations.
+
+Isolated test environments use a `HOME` override (e.g. `HOME=/tmp/fresh-claude claude`) — `$HOME/.claude` continues to resolve the same way, just pointing at a throwaway root.
+
+## Execution directive
+
+When invoked, **start the interview immediately**. Do not:
+
+- Ask the user to confirm the skill name or setup.
+- Surface "context you already see" (existing global CLAUDE.md, other skills, MCP servers) as a reason to abort or redirect.
+- Suggest `/adopt` or any alternative skill before running the interview.
+- Present a list of blockers before Part A.
+
+Run Part A (discovery) silently, then present the summary, then begin Part B question 1. The whole point of this skill is to run cold. If a user invokes it, they want it to run — even if ambient signals suggest a mature setup. Surface those signals inside the discovery summary, not as blockers.
 
 ## Flow
 
@@ -93,7 +109,7 @@ Skip any of 5–7 whose answer is already obvious (e.g., MCP server for Google C
 1. Merge `discovery_context` defaults with interview answers; interview wins on conflict.
 2. Populate Phase 1 sections: `system`, `identity`, `tools`, `vault`, `projects`, `people`, `integrations`. Leave `behavioral`, `tags`, `domain` as `null` (Phases 2/3 will fill these).
 3. Set `system.phases_completed = ["foundation"]`, `system.schema_version = "1.0"`, `system.created_date` = today, `system.manifest_location = "$MANIFEST"`.
-4. **Validate against `manifest/schema.json`.** Use `manifest/validate-manifest.sh`. If validation fails, do NOT write — display the validation error, return to the confirmation step, and re-collect affected answers.
+4. **Validate against `$CLAUDE_DIR/manifest/schema.json`.** Use `$CLAUDE_DIR/manifest/validate-manifest.sh <candidate-file>`. If validation fails, do NOT write — display the validation error, return to the confirmation step, and re-collect affected answers.
 5. On successful validation, write to `$MANIFEST`.
 6. Print the next-step message: `Run /librarian scan to bootstrap your vault, or /personalize to evaluate public skills against your manifest.`
 
@@ -112,17 +128,17 @@ If an existing vault was detected, **never modify it.** Set `vault.root` and met
 
 ```
 Files written:
-  - $CLAUDE_HOME/.claude/user-manifest.json (or $HOME/.claude/user-manifest.json fallback)
+  - $HOME/.claude/user-manifest.json
   - (greenfield only) $vault_root/CLAUDE.md
   - (greenfield only) $vault_root/{Inbox,Projects,Reference,Archive}/_index.md
 
-Schema type: user-manifest (manifest/schema.json)
+Schema type: user-manifest ($HOME/.claude/manifest/schema.json)
 
 Pre-write validation:
-  1. Run manifest/validate-manifest.sh against the candidate manifest.
+  1. Run $HOME/.claude/manifest/validate-manifest.sh against a temp file containing the candidate manifest.
   2. Confirm system.phases_completed includes "foundation".
   3. Confirm identity.role is non-empty.
-  4. Confirm no write target escapes $CLAUDE_HOME or $vault_root.
+  4. Confirm no write target escapes $HOME/.claude or $vault_root.
 
 Failure mode: block and log.
   - If validation fails, print the specific error, return to the confirmation step, and do not write.
@@ -136,7 +152,7 @@ Failure mode: block and log.
 - **No vault and no desire for one:** `vault = null`. Discovery, hooks, and Librarian all treat `null` vault as "operate against plain files in CWD."
 - **No tools at all:** The interview compresses to Blocks 1 + 5 (≈5 questions). Budget is preserved.
 - **Existing manifest at `$MANIFEST`:** Ask whether to replace, merge, or abort before running discovery. Never silently overwrite.
-- **`$CLAUDE_HOME` points to a directory that does not exist:** Create it. Never assume `~/.claude/` exists.
+- **`$HOME/.claude/` does not exist:** Create it. The installer normally creates it, but a bare `HOME` override may leave the directory absent.
 
 ## Design sources (cold-start)
 

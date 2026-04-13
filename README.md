@@ -15,16 +15,27 @@ A research-backed personalization layer for Claude Code. Replaces hand-tuned con
 ./install.sh
 ```
 
-Target directory defaults to `~/.claude`. Override with `CLAUDE_HOME=/some/other/path ./install.sh`. The installer is idempotent and merges with any existing `settings.json` instead of overwriting it.
-
-Requires `jq` and `bash`.
+Installs into `$HOME/.claude`. Idempotent — re-running picks up updates and merges `settings.json` instead of overwriting. Requires `jq` and `bash`.
 
 ## First run
 
-```bash
+Launch Claude Code, then inside the session:
+
+```
 /onboard-foundation     # produces ~/.claude/user-manifest.json
 /librarian scan         # bootstraps from the manifest
 ```
+
+## Isolated testing (no touch to your real ~/.claude)
+
+Override `HOME` to point Claude Code at a throwaway directory. Because Claude Code resolves its config from `$HOME/.claude`, a `HOME` override gives you a clean room with no symlinks or project-local hacks:
+
+```bash
+HOME=/tmp/fresh-claude ./install.sh
+HOME=/tmp/fresh-claude claude
+```
+
+Inside the isolated session, run `/onboard-foundation` as normal. When you're done, `rm -rf /tmp/fresh-claude` throws everything away. Your real `~/.claude` is never touched.
 
 ## Design philosophy
 
