@@ -1,0 +1,47 @@
+{
+  "system": {
+    "schema_version": "1.0",
+    "created_date": "2026-04-12",
+    "last_updated": null,
+    "librarian_last_update": null,
+    "phases_completed": ["foundation"],
+    "manifest_location": "~/.claude/user-manifest.json",
+    "existing_setup": false,
+    "existing_skills": [],
+    "claude_home": "~/.claude"
+  },
+  "identity": {
+    "name": null,
+    "email": null,
+    "role": "Generalist knowledge worker",
+    "industry": null,
+    "organization": null,
+    "team_structure": null,
+    "source": "onboarder"
+  },
+  "tools": {
+    "calendar": null,
+    "messaging": null,
+    "email": null,
+    "transcription": null,
+    "project_management": null,
+    "development_environment": []
+  },
+  "vault": {
+    "root": null,
+    "organizational_method": null,
+    "tier_definitions": [],
+    "folder_mapping": {},
+    "protected_paths": [],
+    "greenfield": true
+  },
+  "projects": null,
+  "people": null,
+  "tags": null,
+  "integrations": {
+    "active": [],
+    "wishlist": []
+  },
+  "behavioral": null,
+  "domain": null
+}

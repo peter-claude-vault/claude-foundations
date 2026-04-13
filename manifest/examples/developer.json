@@ -1,0 +1,51 @@
+{
+  "system": {
+    "schema_version": "1.0",
+    "created_date": "2026-04-12",
+    "last_updated": null,
+    "librarian_last_update": null,
+    "phases_completed": ["foundation"],
+    "manifest_location": "~/.claude/user-manifest.json",
+    "existing_setup": false,
+    "existing_skills": [],
+    "claude_home": "~/.claude"
+  },
+  "identity": {
+    "name": "Example Developer",
+    "email": "dev@example.com",
+    "role": "Backend engineer",
+    "industry": "SaaS",
+    "organization": null,
+    "team_structure": "Individual contributor on a distributed team",
+    "source": "onboarder"
+  },
+  "tools": {
+    "calendar": "Google Calendar",
+    "messaging": "Slack",
+    "email": "Gmail",
+    "transcription": null,
+    "project_management": "Linear",
+    "development_environment": ["homebrew", "node", "go", "docker"]
+  },
+  "vault": null,
+  "projects": {
+    "hierarchy_labels": ["Repo", "Feature", "Task"],
+    "active": [
+      { "name": "payments-service", "kind": "repo", "status": "active" },
+      { "name": "internal-tools",    "kind": "repo", "status": "active" }
+    ]
+  },
+  "people": [
+    { "name": "Tech Lead", "role": "Team lead", "relationship": "manager" }
+  ],
+  "tags": null,
+  "integrations": {
+    "active": [
+      { "channel": "google_calendar", "permissions": "read", "auth_status": "connected" },
+      { "channel": "slack",           "permissions": "read", "auth_status": "connected" }
+    ],
+    "wishlist": ["linear", "github"]
+  },
+  "behavioral": null,
+  "domain": null
+}

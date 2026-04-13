@@ -1,0 +1,66 @@
+{
+  "system": {
+    "schema_version": "1.0",
+    "created_date": "2026-04-12",
+    "last_updated": "2026-04-12T20:00:00-04:00",
+    "librarian_last_update": null,
+    "phases_completed": ["foundation"],
+    "manifest_location": "~/.claude/user-manifest.json",
+    "existing_setup": true,
+    "existing_skills": ["librarian", "meeting-processor", "digest-run"],
+    "claude_home": "~/.claude"
+  },
+  "identity": {
+    "name": "Example Consultant",
+    "email": "consultant@example.com",
+    "role": "Management consultant",
+    "industry": "Life sciences / pharma",
+    "organization": "Example Strategy Partners",
+    "team_structure": "Solo operator collaborating with 3 engagement teams",
+    "source": "onboarder"
+  },
+  "tools": {
+    "calendar": "Google Calendar",
+    "messaging": "Microsoft Teams",
+    "email": "Gmail",
+    "transcription": "Granola",
+    "project_management": "Asana",
+    "development_environment": ["homebrew", "node", "python"]
+  },
+  "vault": {
+    "root": "~/Documents/Knowledge Vault",
+    "organizational_method": "custom",
+    "tier_definitions": ["Engagements", "Clients", "Reference", "Logs"],
+    "folder_mapping": {
+      "engagements": "Engagements",
+      "reference": "Reference Library",
+      "logs": "Logs"
+    },
+    "protected_paths": ["Private", "Financials"],
+    "greenfield": false
+  },
+  "projects": {
+    "hierarchy_labels": ["Engagement", "Workstream", "Task"],
+    "active": [
+      { "name": "Client A — diligence", "kind": "engagement", "status": "active" },
+      { "name": "Client B — ops redesign", "kind": "engagement", "status": "active" },
+      { "name": "Internal — knowledge chatbot", "kind": "internal", "status": "active" }
+    ]
+  },
+  "people": [
+    { "name": "A. Partner", "role": "Client sponsor (Client A)", "relationship": "primary" },
+    { "name": "B. Lead", "role": "Client PM (Client B)", "relationship": "primary" }
+  ],
+  "tags": null,
+  "integrations": {
+    "active": [
+      { "channel": "google_calendar", "permissions": "read", "auth_status": "connected" },
+      { "channel": "teams",           "permissions": "read", "auth_status": "connected" },
+      { "channel": "gmail",           "permissions": "read", "auth_status": "connected" },
+      { "channel": "granola",         "permissions": "read", "auth_status": "connected" }
+    ],
+    "wishlist": ["asana_write"]
+  },
+  "behavioral": null,
+  "domain": null
+}

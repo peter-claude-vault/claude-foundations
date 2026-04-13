@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/foundations-onboarding-engine/manifest/schema.json",
+  "title": "user-manifest",
+  "description": "Shared contract describing a Claude Code user's identity, tools, vault, projects, people, integrations, behavioral preferences, domain vocabulary, and system metadata. Consumed by hooks, skills, and the personalization engine.",
+  "type": "object",
+  "required": ["system", "identity"],
+  "additionalProperties": false,
+  "properties": {
+    "system": {
+      "type": "object",
+      "required": ["schema_version", "created_date", "phases_completed", "manifest_location"],
+      "additionalProperties": true,
+      "properties": {
+        "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+$" },
+        "created_date": { "type": "string", "format": "date" },
+        "last_updated": { "type": ["string", "null"], "format": "date-time" },
+        "librarian_last_update": { "type": ["string", "null"], "format": "date-time" },
+        "phases_completed": {
+          "type": "array",
+          "items": { "enum": ["foundation", "behavioral", "domain"] },
+          "uniqueItems": true
+        },
+        "manifest_location": { "type": "string" },
+        "existing_setup": { "type": "boolean" },
+        "existing_skills": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "claude_home": { "type": ["string", "null"] }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "required": ["role"],
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "role": { "type": "string" },
+        "industry": { "type": ["string", "null"] },
+        "organization": { "type": ["string", "null"] },
+        "team_structure": { "type": ["string", "null"] },
+        "source": { "enum": ["onboarder", "librarian-scan", "user-edit", null] }
+      }
+    },
+    "tools": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "calendar": { "type": ["string", "null"] },
+        "messaging": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "transcription": { "type": ["string", "null"] },
+        "project_management": { "type": ["string", "null"] },
+        "development_environment": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "vault": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "root": { "type": ["string", "null"] },
+        "organizational_method": {
+          "enum": ["PARA", "Zettelkasten", "LYT", "flat", "custom", null]
+        },
+        "tier_definitions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "folder_mapping": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "protected_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "greenfield": { "type": "boolean" },
+        "discovered_file_count": { "type": ["integer", "null"], "minimum": 0 },
+        "discovered_conventions": {
+          "type": ["object", "null"],
+          "additionalProperties": true
+        }
+      }
+    },
+    "projects": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "hierarchy_labels": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "active": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": true,
+            "properties": {
+              "name": { "type": "string" },
+              "kind": { "type": ["string", "null"] },
+              "status": { "type": ["string", "null"] },
+              "notes": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "people": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": ["string", "null"] },
+          "relationship": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "tags": {
+      "type": ["object", "null"],
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "integrations": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "active": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["channel"],
+            "additionalProperties": true,
+            "properties": {
+              "channel": { "type": "string" },
+              "permissions": { "enum": ["read", "write", "read_write", "none"] },
+              "auth_status": { "enum": ["connected", "disconnected", "unknown"] }
+            }
+          }
+        },
+        "wishlist": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "behavioral": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "autonomy": { "enum": ["low", "medium", "high", null] },
+        "communication_style": { "type": ["string", "null"] },
+        "cadence": { "type": ["string", "null"] },
+        "notification_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "domain": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "vocabulary": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "routing_rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["match", "destination"],
+            "properties": {
+              "match": { "type": "string" },
+              "destination": { "type": "string" }
+            }
+          }
+        },
+        "wikilink_contracts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reference_architecture": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
