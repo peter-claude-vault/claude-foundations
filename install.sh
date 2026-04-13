@@ -29,9 +29,12 @@ echo "[foundations] target: $CLAUDE_DIR"
 mkdir -p "$CLAUDE_DIR/skills" "$CLAUDE_DIR/hooks" "$CLAUDE_DIR/manifest"
 
 # Skills — replace in place so re-runs pick up updated SKILL.md files
-rm -rf "$CLAUDE_DIR/skills/onboard-foundation" "$CLAUDE_DIR/skills/librarian"
-cp -R "$SRC_DIR/onboarder/foundation" "$CLAUDE_DIR/skills/onboard-foundation"
-cp -R "$SRC_DIR/skills/librarian"     "$CLAUDE_DIR/skills/librarian"
+rm -rf "$CLAUDE_DIR/skills/onboard-foundation" \
+       "$CLAUDE_DIR/skills/onboard-behavioral" \
+       "$CLAUDE_DIR/skills/librarian"
+cp -R "$SRC_DIR/onboarder/foundation"  "$CLAUDE_DIR/skills/onboard-foundation"
+cp -R "$SRC_DIR/onboarder/behavioral"  "$CLAUDE_DIR/skills/onboard-behavioral"
+cp -R "$SRC_DIR/skills/librarian"      "$CLAUDE_DIR/skills/librarian"
 chmod +x "$CLAUDE_DIR/skills/librarian/scan.sh" 2>/dev/null || true
 
 # Hooks
