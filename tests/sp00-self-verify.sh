@@ -164,30 +164,26 @@ fi
 # (we're on Linux; mock writes to /results/launchctl-trace.ndjson).
 # /results is image-owned by tester (see Dockerfile), so no bind-mount.
 #
-# Pipe the probe script through stdin (`nerdctl run -i … bash`) to
-# avoid the multi-level-quote hell of heredoc-through-ssh-through-
-# bash-c corrupting the plist XML or command substitution boundaries.
-mock_out=$(
-cat <<'PROBE' | limactl shell foundations -- bash -lc "
-  export XDG_RUNTIME_DIR=/run/user/\$(id -u)
-  nerdctl run -i --rm \
-    --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
-    --network=none \
-    $IMAGE_REF /bin/bash
-" 2>&1
-set -u
-cat > /tmp/sv.plist <<'PLIST'
+# Transport the plist via base64 to survive the quote layers
+# (host bash → limactl → bash -lc → nerdctl → container bash -c).
+# Direct heredoc transport corrupts the plist XML attributes mid-
+# pipeline. base64 is opaque to shell quoting and cheap to decode.
+plist_b64=$(base64 <<'PLIST' | tr -d '\n'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict><key>Label</key><string>com.foundations.sv</string></dict>
 </plist>
 PLIST
-launchctl bootstrap gui/1000 /tmp/sv.plist
-echo "rc=$?"
-[ -s /results/launchctl-trace.ndjson ] && echo TRACE_OK || echo TRACE_MISSING
-PROBE
 )
+
+mock_out=$(limactl shell foundations -- bash -lc "
+  export XDG_RUNTIME_DIR=/run/user/\$(id -u)
+  nerdctl run --rm \
+    --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
+    --network=none \
+    $IMAGE_REF /bin/bash -c 'echo $plist_b64 | base64 -d > /tmp/sv.plist; launchctl bootstrap gui/1000 /tmp/sv.plist; echo rc=\$?; [ -s /results/launchctl-trace.ndjson ] && echo TRACE_OK || echo TRACE_MISSING'
+" 2>&1)
 
 if printf '%s' "$mock_out" | grep -q '^rc=0' && printf '%s' "$mock_out" | grep -q '^TRACE_OK'; then
   emit "P5/I2.mock_launchctl" "true" "mock bootstrap emits trace; no host launchd called"
@@ -226,10 +222,10 @@ fi
 # the known-baseline.
 #
 # NOTE on target path: must be a RELATIVE target ('.' after cd into
-# $REPO). Absolute paths prepend `/Users/<host-user>/...` to every
-# grep output line, which layer-1's regex `/Users/peter[A-Za-z0-9_.-]*`
-# matches against the PATH PREFIX — a false positive against
-# host-user-specific paths, not content. Running with `cd $REPO &&
+# $REPO). Absolute paths prepend the host-user's home directory prefix
+# to every grep output line, which the layer-1 host-path regex in
+# regex.txt matches against — a false positive driven by the
+# enumeration target, not content. Running with `cd $REPO &&
 # grep-audit .` scopes the audit to first-party source.
 ga_out=$(cd "$REPO" && GREP_AUDIT_SKIP_LAYER4=1 bash tests/grep-audit.sh . 2>&1 \
   | tail -n 1)
