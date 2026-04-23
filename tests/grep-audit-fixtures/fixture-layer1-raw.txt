@@ -1,0 +1,5 @@
+This fixture seeds a deliberate raw-layer hit.
+
+The string petertiktinsky appears as plain ASCII text here.
+
+Scanning this file with grep-audit.sh must exit 1 with a Layer 1 diagnostic.

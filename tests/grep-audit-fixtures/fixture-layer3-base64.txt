@@ -1,0 +1,4 @@
+Layer 3 fixture: base64-encoded leak.
+
+Encoded blob (Layer 1/2 miss; Layer 3 decode catches):
+dGhlIGlkZW50aWZpZXIgcGV0ZXJ0aWt0aW5za3kgYXBwZWFycyBpbnNpZGUgdGhpcyBkZWNvZGVkIGJsb2I=

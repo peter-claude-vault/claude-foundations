@@ -1,0 +1,6 @@
+Layer 2 fixture: Unicode mathematical-bold obfuscation.
+
+Obfuscated identifier below; raw-layer scan misses it.
+NFKC-normalized scan matches the literal pattern list.
+
+𝐩𝐞𝐭𝐞𝐫𝐭𝐢𝐤𝐭𝐢𝐧𝐬𝐤𝐲
