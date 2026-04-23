@@ -1,0 +1,68 @@
+;; tests/dogfood.sb — SP00 Sandbox profile skeleton (Primitive P4)
+;;
+;; Language: Sandbox Profile Language (SBPL), TinyScheme dialect.
+;; Ref: `man sandbox-exec(1)` + /System/Library/Sandbox/Profiles/*.sb.
+;;
+;; Invocation contract (enforced by tests/macos-smoke-driver.sh):
+;;   sandbox-exec -f tests/dogfood.sb -D DOGFOOD_ROOT=<abs-path> <cmd>
+;;
+;; Shape: deny-default + explicit allow for (a) reads of system libs +
+;; DOGFOOD_ROOT subtree, (b) writes ONLY to DOGFOOD_ROOT subtree, (c)
+;; process fork/exec + sysctl + mach-lookup for any real program to boot.
+;;
+;; `(import "system.sb")` is required — it pulls in the baseline dyld /
+;; runtime-linker / shared-cache allowances without which even /usr/bin/true
+;; aborts with SIGABRT (exit 134) under a bare `(deny default)` body.
+;; Pattern lifted from /System/Library/Sandbox/Profiles/bsd.sb.
+;;
+;; First downstream consumer: SP03 T-14 (macOS real-launchd smoke).
+;; Full consumer API + 10-invariant list lives in docs/isolation-contract.md
+;; (T-12 deliverable). SP00's job is to land the skeleton and prove the
+;; 5 host-side ACs green.
+;;
+;; SP00 T-9 scope: skeleton only. Tightening (per-syscall mach-lookup
+;; allowlist, network-specific deny diagnostics, TCC interaction notes)
+;; is deferred to T-12 consumer-API work.
+
+(version 1)
+(import "system.sb")
+(deny default)
+
+;; --- Reads: system roots + DOGFOOD_ROOT -------------------------------
+(allow file-read*
+  (subpath "/usr")
+  (subpath "/System")
+  (subpath "/bin")
+  (subpath "/sbin")
+  (subpath "/private/var/db")
+  (subpath "/private/etc")
+  (subpath (param "DOGFOOD_ROOT"))
+  (literal "/dev/null")
+  (literal "/dev/random")
+  (literal "/dev/urandom")
+  (literal "/dev/tty")
+  (literal "/dev/stdin")
+  (literal "/dev/stdout")
+  (literal "/dev/stderr"))
+
+(allow file-read-metadata)
+
+;; --- Writes: DOGFOOD_ROOT subtree only --------------------------------
+(allow file-write*
+  (subpath (param "DOGFOOD_ROOT")))
+
+;; stdout/stderr/tty pass-through for diagnostics
+(allow file-write-data
+  (literal "/dev/null")
+  (literal "/dev/tty")
+  (literal "/dev/stdout")
+  (literal "/dev/stderr"))
+
+;; --- Process + runtime primitives -------------------------------------
+(allow process-fork)
+(allow process-exec)
+(allow sysctl-read)
+(allow mach-lookup)
+
+;; --- Network: explicit deny (belt + suspenders vs deny-default) -------
+(deny network*)
