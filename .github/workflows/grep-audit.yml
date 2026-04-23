@@ -50,6 +50,12 @@ jobs:
                    tests/grep-audit-fixtures/generate.sh
           ./tests/grep-audit-unit-test.sh
 
+      - name: Run bypass-audit (T-12 — flags direct container-runtime shells skipping runner-shell)
+        run: |
+          chmod +x tests/bypass-audit.sh tests/bypass-audit-unit-test.sh
+          ./tests/bypass-audit.sh .
+          ./tests/bypass-audit-unit-test.sh
+
   audit-lima-config-label:
     name: lima/foundations.yaml mutation requires isolation-config-review label
     runs-on: ubuntu-latest

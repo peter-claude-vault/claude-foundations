@@ -126,6 +126,27 @@ else
   log_bad "AC5 missing \$DOGFOOD_ROOT" "exit=$ac5_rc out=$ac5_out"
 fi
 
+# --- AC6: SANDBOX_EXEC_TIMEOUT trips with exit 69 + TCC-pointing diag -
+# Simulate the TCC-hang path by asking the driver to run a 10-second
+# sleep with a 1-second budget. Expect exit 69 and a diagnostic that
+# names Full Disk Access. (Note: this will still block on an actual
+# TCC prompt for the first SBS run on a fresh host — but in CI and
+# on any host where FDA has been granted once before, the sleep runs
+# under sandbox-exec and our timeout fires cleanly.)
+ac6() {
+  (
+    . "$HELPER" || exit 90
+    SANDBOX_EXEC_TIMEOUT=1 "$DRIVER" /bin/sleep 10 2>&1
+  )
+}
+ac6_out="$(ac6)"
+ac6_rc=$?
+if [ "$ac6_rc" = "69" ] && printf '%s' "$ac6_out" | grep -q 'Full Disk Access'; then
+  log_ok "AC6 SANDBOX_EXEC_TIMEOUT: trips exit=69 with TCC-pointing diagnostic"
+else
+  log_bad "AC6 SANDBOX_EXEC_TIMEOUT" "exit=$ac6_rc out=$(printf '%s' "$ac6_out" | head -c 200)"
+fi
+
 echo
 echo "== Summary =="
 echo "pass=$pass fail=$fail"
