@@ -36,7 +36,7 @@ fi
 
 # --- I_USERS ---
 if [ -e /Users ]; then
-  diag "I_USERS /Users exists on container rootfs — Lima mount leak or Docker Desktop substitution"
+  diag "I_USERS /Users exists on container rootfs — Lima mount leak or bind-mounted runtime (Docker Desktop / podman-machine with host /Users)"
   exit 2
 fi
 # Defensive: /Volumes is a macOS-only path and must also be absent.

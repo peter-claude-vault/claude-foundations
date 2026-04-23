@@ -32,7 +32,7 @@ mounts: []
 # Default user-mode NAT (SLIRP/QEMU). No `networks:` stanza → no bridged or
 # shared interfaces. Outbound through NAT only. Dimension 7 external-research
 # tests (SP05) opt into NAT egress explicitly per test; most invocations run
-# with Docker --network=none inside the VM.
+# with --network=none inside the VM (nerdctl flag, docker-CLI-identical).
 
 ssh:
   loadDotSSHPubKeys: false
@@ -41,8 +41,10 @@ ssh:
 portForwards: []
 
 # --- Provisioning ---
-# Minimal Linux prerequisites for downstream SP00 tasks (Docker rootless install
-# happens in SP00 T-2, not here). Scripts that depend on these: T-2 build.sh,
+# Minimal Linux prerequisites for downstream SP00 tasks. Lima's default Ubuntu
+# 24.04 template auto-provisions rootless containerd + nerdctl + buildkitd at
+# VM boot (via `containerd: user: true`, the Lima default); T-2 uses what's
+# already running. Scripts that depend on these: T-2 build.sh (nerdctl + git),
 # T-7 grep-audit.sh (python3 + jq), T-8 mock-launchctl.sh (python3 plistlib),
 # T-5 git-snapshot.sh (git).
 provision:

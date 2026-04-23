@@ -3,15 +3,25 @@
 # Claude Foundations Engine v2 — SP00 isolation image.
 #
 # Built INSIDE the Lima VM (docker/build.sh handles the source transfer).
-# The host never invokes `docker build` directly; Docker runs only within
-# the Lima kernel boundary where `mounts: []` already removes /Users.
+# The host never builds directly; the OCI image is produced only within the
+# Lima kernel boundary where `mounts: []` already removes /Users.
+#
+# Names are OCI-standard, runtime-agnostic:
+#   - `Dockerfile` is the de facto OCI image build file (BuildKit frontend
+#     `docker/dockerfile:1.7` on Docker Hub is the canonical parser).
+#   - `docker/` directory name is industry convention for OCI build artifacts.
+#   - Our runtime is rootless containerd + nerdctl inside Lima. nerdctl reads
+#     this Dockerfile and these flags identically to docker; the file is
+#     consumable by any OCI-compatible CLI (docker, nerdctl, buildah, podman).
+#   - See docker/build.sh header for the runtime-choice rationale.
 #
 # Key invariants established here:
 #   - tester user with uid 1000 is the ONLY unprivileged user; /etc/passwd
 #     remap makes os.path.expanduser("~/.claude") resolve to
 #     /home/tester/.claude regardless of any HOME= env trick.
-#   - /home/tester is tmpfs at runtime (passed via `docker run --tmpfs`
-#     in docker/build.sh and tests/runner-shell.sh).
+#   - /home/tester is tmpfs at runtime (passed via `--tmpfs` in
+#     docker/build.sh and tests/runner-shell.sh — nerdctl + docker use
+#     identical flag syntax; kernel passes uid/gid/mode through to mount(8)).
 #   - ENV MOCK_LAUNCHCTL=1 + TEST_MODE=1 baked in; SP03/SP07 consume these.
 #   - Entrypoint is docker/entrypoint-scrub-env.sh (T-3) — strips every
 #     env var not on the explicit allowlist before handing off to CMD.
