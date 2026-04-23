@@ -62,7 +62,13 @@ RUN pip3 install --no-cache-dir --break-system-packages \
 # uid 1000 is the ONLY numeric identity inside this image. /etc/passwd remap
 # establishes the HOME floor; $HOME env cannot override os.path.expanduser.
 # --shell /bin/bash because R-23 scripts depend on bash (not /bin/sh).
-RUN useradd --create-home --uid 1000 --shell /bin/bash tester \
+#
+# Ubuntu 24.04 cloud images ship a pre-existing `ubuntu` user at UID 1000;
+# we delete it first so our `tester` is the sole UID-1000 identity. The
+# readiness gate later asserts `grep ^tester:.*:1000:` in /etc/passwd, so
+# the `ubuntu` line would be an explicit fail.
+RUN if id ubuntu >/dev/null 2>&1; then userdel -r ubuntu 2>/dev/null || userdel -f ubuntu; fi \
+ && useradd --create-home --uid 1000 --shell /bin/bash tester \
  && chown -R tester:tester /home/tester
 
 # --- Claude Code install ---
@@ -103,15 +109,20 @@ RUN chmod 0755 /tests/*.sh /entrypoint.sh \
 # route through the mock to record traces in /results/launchctl-trace.ndjson.
 RUN ln -s /tests/mock-launchctl.sh /usr/local/bin/launchctl
 
+# /results is the exfil surface: JSON summaries, ndjson traces, audit logs.
+# Created as root (/ is root-owned) then chowned to tester so tests can
+# write without sudo; scp retrieves the tree to the host (not bind-mounted
+# — see lima/foundations.yaml). Must happen BEFORE USER tester because
+# tester cannot mkdir under /.
+RUN mkdir -p /results \
+             /home/tester/.claude \
+             /home/tester/.claude-plans \
+ && chown -R tester:tester /results \
+                           /home/tester/.claude \
+                           /home/tester/.claude-plans
+
 USER tester
 WORKDIR /home/tester
-
-# /results is the exfil surface: JSON summaries, ndjson traces, audit logs.
-# Created as tester-owned so tests can write without sudo; scp retrieves
-# the tree to the host (not bind-mounted — see lima/foundations.yaml).
-RUN mkdir -p /home/tester/.claude \
-             /home/tester/.claude-plans \
-             /results
 
 ENTRYPOINT ["/entrypoint.sh"]
 # Default CMD runs the readiness gate alone — any invocation without an

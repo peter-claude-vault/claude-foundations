@@ -3,3 +3,4 @@
 /dogfood-history/
 .image-digest
 *.log
+.image-digest
