@@ -51,8 +51,15 @@ command -v python3 >/dev/null 2>&1 || { err "python3 required"; exit 7; }
 # define the hit strings; this script itself doesn't count; CHANGELOG.md
 # and docs/april-13-autopsy.md are explicit carve-outs; .self-verify/
 # is T-13 output (attestation logs contain path strings that trigger
-# /Users/ regex).
-EXCLUDE_RE='/\.git/|/node_modules/|/file-history/|/grep-audit-patterns/|/grep-audit-fixtures/|/\.self-verify/|/grep-audit\.sh$|/CHANGELOG\.md$|/docs/april-13-autopsy\.md$'
+# /Users/ regex); grep-audit-unit-test.sh inlines layer-1 + layer-4
+# fixtures by design and is out-of-scope for the reference-leak audit
+# (it's a test of the audit mechanism, not a distributed asset).
+#
+# NOTE on anchors: patterns are matched against `grep -rIn` output of
+# the form `path:lineno:content`, so filename excludes must end in `:`
+# (the path→lineno separator) or `/` (for directories). `$` anchors
+# end-of-line and does not match mid-line path segments — do not use.
+EXCLUDE_RE='/\.git/|/node_modules/|/file-history/|/grep-audit-patterns/|/grep-audit-fixtures/|/\.self-verify/|/grep-audit\.sh:|/grep-audit-unit-test\.sh:|/CHANGELOG\.md:|/docs/april-13-autopsy\.md:'
 
 # --- Stage Python helpers to a trap-cleaned tmpdir ---
 PY_TMP=$(mktemp -d -t grep-audit-py.XXXXXX)

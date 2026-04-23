@@ -143,14 +143,18 @@ else
 fi
 
 # --- I1 /Users + /Volumes + ~/.claude unreachable from container -----
-# AC4 of T-13.
-unreach_out=$(run_in_container "" '
-  for p in /Users /Users/petertiktinsky /Volumes /home/tester/../../Users; do
-    if [ -e "$p" ]; then echo "LEAK:$p"; else echo "ENOENT:$p"; fi
-  done')
+# AC4 of T-13. Host-user's home path is derived from $USER so the probe
+# is adopter-agnostic and the self-verify script itself holds no
+# host-user literal.
+HOST_USER_DIR="/Users/${USER:-unknown}"
+unreach_out=$(run_in_container "" "
+  for p in /Users '$HOST_USER_DIR' /Volumes /home/tester/../../Users; do
+    if [ -e \"\$p\" ]; then echo \"LEAK:\$p\"; else echo \"ENOENT:\$p\"; fi
+  done
+")
 leaks=$(printf '%s' "$unreach_out" | grep '^LEAK:' || true)
 if [ -z "$leaks" ]; then
-  emit "I1.host_paths_enoent" "true" "all host paths ENOENT inside container"
+  emit "I1.host_paths_enoent" "true" "all host paths ENOENT inside container (probed /Users + $HOST_USER_DIR + /Volumes)"
 else
   emit "I1.host_paths_enoent" "false" "host paths reachable: $leaks"
 fi
@@ -159,18 +163,32 @@ fi
 # Run a bootstrap, verify it does NOT fire a real launchd syscall
 # (we're on Linux; mock writes to /results/launchctl-trace.ndjson).
 # /results is image-owned by tester (see Dockerfile), so no bind-mount.
-mock_out=$(run_in_container "" '
-  cat > /tmp/sv.plist <<PL
-<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
-<plist version=\"1.0\">
+#
+# Write the plist + probe script via base64 so the multi-level-quote
+# hell of heredoc-through-ssh-through-bash-c does not corrupt the XML.
+mock_probe_b64=$(base64 <<'INNER' | tr -d '\n'
+set -u
+cat > /tmp/sv.plist <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
 <dict><key>Label</key><string>com.foundations.sv</string></dict>
 </plist>
-PL
-  launchctl bootstrap gui/1000 /tmp/sv.plist
-  echo rc=$?
-  [ -s /results/launchctl-trace.ndjson ] && echo TRACE_OK || echo TRACE_MISSING
-')
+PLIST
+launchctl bootstrap gui/1000 /tmp/sv.plist
+echo "rc=$?"
+[ -s /results/launchctl-trace.ndjson ] && echo TRACE_OK || echo TRACE_MISSING
+INNER
+)
+
+mock_out=$(limactl shell foundations -- bash -lc "
+  export XDG_RUNTIME_DIR=/run/user/\$(id -u)
+  nerdctl run --rm \
+    --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
+    --network=none \
+    $IMAGE_REF /bin/bash -c \"echo $mock_probe_b64 | base64 -d | bash\"
+" 2>&1)
+
 if printf '%s' "$mock_out" | grep -q '^rc=0' && printf '%s' "$mock_out" | grep -q '^TRACE_OK'; then
   emit "P5/I2.mock_launchctl" "true" "mock bootstrap emits trace; no host launchd called"
 else
@@ -214,11 +232,14 @@ else
   emit "P6/I3.grep_audit_first_party" "false" "first-party hit: $ga_out"
 fi
 
-# Layer-4 baseline attestation: expected {l1:1, l4:1} from T-7 seeded
-# fixtures only. Anything more means new references landed in history.
+# Layer-4 baseline attestation: expected {l1:0, l2:0, l3:0, l4:1} —
+# the one layer-4 hit is from tests/grep-audit-unit-test.sh's
+# transient git-history fixture (which lives OUTSIDE the main repo
+# tree inside a mktemp dir during the unit test but appears here via
+# the unit-test script's heredoc source). Anything else is drift.
 ga_full=$(bash "$REPO/tests/grep-audit.sh" "$REPO" 2>&1 | tail -n 1)
-if printf '%s' "$ga_full" | grep -q '"layer1":1,"layer2":0,"layer3":0,"layer4":1'; then
-  emit "P6/I3.grep_audit_baseline" "true" "full-tree matches T-7 seeded baseline"
+if printf '%s' "$ga_full" | grep -q '"layer1":0,"layer2":0,"layer3":0,"layer4":1'; then
+  emit "P6/I3.grep_audit_baseline" "true" "full-tree matches T-7 seeded baseline (l4=1 unit-test history only)"
 else
   emit "P6/I3.grep_audit_baseline" "false" "baseline drift: $ga_full"
 fi

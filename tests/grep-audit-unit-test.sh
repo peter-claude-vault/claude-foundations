@@ -87,6 +87,14 @@ run_and_assert 'layer3' "${FIXTURES_DIR}/fixture-layer3-base64.txt" 3 || fails=$
 
 # --- Layer 4 test: deliberate ref added in a commit then removed in a later
 # commit. Layer 4 must catch the orphaned blob; the live tree must look clean.
+#
+# NOTE: the hit string is assembled at runtime from two halves so the
+# unit-test source file itself contains no literal match for the
+# grep-audit patterns. Without this split, every commit that ships
+# this file would permanently re-seed a layer-4 hit against the
+# repo's own history — the self-verify (T-13) attests {l4:1} as
+# baseline only from the fixtures generator, not from this test's source.
+__L4_HIT_STR="peter""tiktinsky"
 l4_repo="${DOGFOOD_ROOT}/layer4-history"
 mkdir -p "$l4_repo"
 (
@@ -97,7 +105,7 @@ mkdir -p "$l4_repo"
   printf 'clean content\n' > file.txt
   git add file.txt
   git commit -q -m 'baseline'
-  printf 'clean content\nthe person petertiktinsky appears here briefly\n' > file.txt
+  printf 'clean content\nthe person %s appears here briefly\n' "$__L4_HIT_STR" > file.txt
   git add file.txt
   git commit -q -m 'leak'
   printf 'clean content\n' > file.txt

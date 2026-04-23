@@ -17,9 +17,9 @@
 #   1  one or more ACs failed (diagnostics on stderr)
 #
 # Invocation is side-effect-minimal: the hook reads input JSON and emits a
-# decision; no files are written under the test paths. The hook does append to
-# ~/Desktop/artefact-daily-logs/hook-audit.log for DENYs (expected audit
-# behavior) and to $HOOKS_STATE/foundation-test.log for AC(d).
+# decision; no files are written under the test paths. The hook does append
+# to the host-configured hook-audit log for DENYs (expected audit behavior)
+# and to $HOOKS_STATE/foundation-test.log for AC(d).
 
 set -u
 
@@ -89,7 +89,11 @@ else
 fi
 
 # a.3 — R-45 / memory schema: memory file with missing required fields
-inp=$(jq -nc --arg fp "$HOME/.claude/projects/-Users-petertiktinsky/memory/t4_synth_test.md" '{
+# Slug form: `-Users-<user>` is Claude Code's auto-generated project
+# key (the HOME path, `/` → `-`). Derive from $USER so the test is
+# adopter-agnostic.
+MEMORY_SLUG="-Users-${USER:-unknown}"
+inp=$(jq -nc --arg fp "$HOME/.claude/projects/$MEMORY_SLUG/memory/t4_synth_test.md" '{
   tool_name: "Write",
   tool_input: {
     file_path: $fp,
