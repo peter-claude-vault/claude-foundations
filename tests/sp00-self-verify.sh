@@ -164,9 +164,17 @@ fi
 # (we're on Linux; mock writes to /results/launchctl-trace.ndjson).
 # /results is image-owned by tester (see Dockerfile), so no bind-mount.
 #
-# Write the plist + probe script via base64 so the multi-level-quote
-# hell of heredoc-through-ssh-through-bash-c does not corrupt the XML.
-mock_probe_b64=$(base64 <<'INNER' | tr -d '\n'
+# Pipe the probe script through stdin (`nerdctl run -i … bash`) to
+# avoid the multi-level-quote hell of heredoc-through-ssh-through-
+# bash-c corrupting the plist XML or command substitution boundaries.
+mock_out=$(
+cat <<'PROBE' | limactl shell foundations -- bash -lc "
+  export XDG_RUNTIME_DIR=/run/user/\$(id -u)
+  nerdctl run -i --rm \
+    --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
+    --network=none \
+    $IMAGE_REF /bin/bash
+" 2>&1
 set -u
 cat > /tmp/sv.plist <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -178,16 +186,8 @@ PLIST
 launchctl bootstrap gui/1000 /tmp/sv.plist
 echo "rc=$?"
 [ -s /results/launchctl-trace.ndjson ] && echo TRACE_OK || echo TRACE_MISSING
-INNER
+PROBE
 )
-
-mock_out=$(limactl shell foundations -- bash -lc "
-  export XDG_RUNTIME_DIR=/run/user/\$(id -u)
-  nerdctl run --rm \
-    --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
-    --network=none \
-    $IMAGE_REF /bin/bash -c \"echo $mock_probe_b64 | base64 -d | bash\"
-" 2>&1)
 
 if printf '%s' "$mock_out" | grep -q '^rc=0' && printf '%s' "$mock_out" | grep -q '^TRACE_OK'; then
   emit "P5/I2.mock_launchctl" "true" "mock bootstrap emits trace; no host launchd called"
@@ -219,27 +219,34 @@ else
 fi
 
 # --- P6 grep-audit / I3 — SP00 tree first-party clean ----------------
-# Stricter exclude: skip fixtures + patterns + .git + autopsy. Self-
-# verify attests first-party SP00 code; layer-4 (git history) captures
-# the seeded fixtures baseline, so we run with SKIP_LAYER4=1 here and
-# separately attest that layer-4 hits match the known-baseline.
-ga_out=$(GREP_AUDIT_SKIP_LAYER4=1 bash "$REPO/tests/grep-audit.sh" "$REPO" 2>&1 \
+# Stricter exclude: skip fixtures + patterns + .git + autopsy + self-
+# verify outputs. Self-verify attests first-party SP00 code; layer-4
+# (git history) captures the seeded fixtures baseline, so we run with
+# SKIP_LAYER4=1 here and separately attest that layer-4 hits match
+# the known-baseline.
+#
+# NOTE on target path: must be a RELATIVE target ('.' after cd into
+# $REPO). Absolute paths prepend `/Users/<host-user>/...` to every
+# grep output line, which layer-1's regex `/Users/peter[A-Za-z0-9_.-]*`
+# matches against the PATH PREFIX — a false positive against
+# host-user-specific paths, not content. Running with `cd $REPO &&
+# grep-audit .` scopes the audit to first-party source.
+ga_out=$(cd "$REPO" && GREP_AUDIT_SKIP_LAYER4=1 bash tests/grep-audit.sh . 2>&1 \
   | tail -n 1)
-# Expected: {"target":"...","layer1":0,"layer2":0,"layer3":0,"layer4":0,"hits_total":0}
 if printf '%s' "$ga_out" | grep -q '"hits_total":0'; then
-  emit "P6/I3.grep_audit_first_party" "true" "layer1=0 layer2=0 layer3=0 (layer4 baseline)"
+  emit "P6/I3.grep_audit_first_party" "true" "layer1=0 layer2=0 layer3=0 (first-party tree clean)"
 else
   emit "P6/I3.grep_audit_first_party" "false" "first-party hit: $ga_out"
 fi
 
 # Layer-4 baseline attestation: expected {l1:0, l2:0, l3:0, l4:1} —
 # the one layer-4 hit is from tests/grep-audit-unit-test.sh's
-# transient git-history fixture (which lives OUTSIDE the main repo
-# tree inside a mktemp dir during the unit test but appears here via
-# the unit-test script's heredoc source). Anything else is drift.
-ga_full=$(bash "$REPO/tests/grep-audit.sh" "$REPO" 2>&1 | tail -n 1)
+# transient git-history fixture (an old commit before T-13 refactor
+# assembled the hit string at runtime; present in git history but
+# not in HEAD). Anything else is drift.
+ga_full=$(cd "$REPO" && bash tests/grep-audit.sh . 2>&1 | tail -n 1)
 if printf '%s' "$ga_full" | grep -q '"layer1":0,"layer2":0,"layer3":0,"layer4":1'; then
-  emit "P6/I3.grep_audit_baseline" "true" "full-tree matches T-7 seeded baseline (l4=1 unit-test history only)"
+  emit "P6/I3.grep_audit_baseline" "true" "full-tree matches seeded baseline (l4=1 historical commit only)"
 else
   emit "P6/I3.grep_audit_baseline" "false" "baseline drift: $ga_full"
 fi
@@ -383,54 +390,46 @@ fi
 # --- Runner-shell end-to-end + /results exfil grep-audit / I5 -------
 # Exercise the full container run path via the synthetic 7-case suite,
 # then grep-audit the /results tree before it would be exfil'd. The
-# synthetic 7-case suite has 4 pass + 2 soft + 2 hard → aggregate=3.
-# We retain cid via --cidfile, run `nerdctl cp <cid>:/results` to a
-# Lima-side tmp, then `limactl copy` to the host. The container exits
-# with aggregate=3 (expected) which is fine — we only need the
-# summary.json + logs tree for attest.
+# synthetic 7-case suite has 3 pass + 2 soft + 2 hard → aggregate=3.
+#
+# Retrieval strategy: `nerdctl cp` is rejected on stopped rootless
+# containers (containerd limitation). Instead, run a composite inner
+# script that pipes runner-shell stderr to stderr, then `tar -cC
+# /results .` to stdout. Host-side, stderr captures runner logs +
+# agg_rc marker; stdout pipes through `tar -xC` to land /results on
+# host. Container uses --rm so teardown is automatic.
 rs_tmp="$REPO/.self-verify/results-sample"
-rm -rf "$rs_tmp"; mkdir -p "$rs_tmp"
+rs_stderr="$REPO/.self-verify/results-sample.err"
+rm -rf "$rs_tmp" "$rs_stderr"
+mkdir -p "$rs_tmp"
 
-rs_script='
-export XDG_RUNTIME_DIR=/run/user/$(id -u)
-cid_file=$(mktemp -t sv-cid.XXXXXX)
-# --rm conflicts with --cidfile on stopped containers; use --name instead.
-cname=sv-runner-$$
-nerdctl run --name $cname \
-  --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
-  --network=none \
-  '"$IMAGE_REF"' /tests/runner-shell.sh
-agg_rc=$?
-out_dir=$(mktemp -d -t sv-res.XXXXXX)
-nerdctl cp $cname:/results/. $out_dir/ 2>/dev/null
-nerdctl rm $cname >/dev/null 2>&1
-echo LIMARESDIR=$out_dir
-echo AGG_RC=$agg_rc
-'
-rs_out=$(limactl shell foundations -- bash -lc "$rs_script" 2>&1)
-lima_res=$(printf '%s' "$rs_out" | grep -E '^LIMARESDIR=' | sed 's/^LIMARESDIR=//')
-agg_rc=$(printf '%s' "$rs_out" | grep -E '^AGG_RC=' | sed 's/^AGG_RC=//')
+# --- run container; tar stream → host tar -x ---
+limactl shell foundations -- bash -lc "
+  export XDG_RUNTIME_DIR=/run/user/\$(id -u)
+  nerdctl run --rm \
+    --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
+    --network=none \
+    $IMAGE_REF /bin/bash -c '
+      /tests/runner-shell.sh 1>&2
+      echo AGG_RC=\$? 1>&2
+      cd /results && tar -c .
+    '
+" 2> "$rs_stderr" | tar -xC "$rs_tmp" 2>/dev/null || true
 
-if [ -n "$lima_res" ]; then
-  # tar the Lima-side dir over ssh → host; limactl copy works only on
-  # explicit files, not dir-to-dir. Use `limactl shell` + tar pipe.
-  limactl shell foundations -- tar -cC "$lima_res" . 2>/dev/null | tar -xC "$rs_tmp" 2>/dev/null || true
-fi
-
-# Expected aggregate=3 (max of per-case exits); presence of summary.json
-# + 7 case logs is the gate.
+agg_rc=$(grep -E '^AGG_RC=' "$rs_stderr" | tail -n 1 | sed 's/.*=//')
 case_log_count=$(find "$rs_tmp" -maxdepth 1 -type f -name '*.log' 2>/dev/null | wc -l | tr -d ' ')
 summary_present='n'
 [ -s "$rs_tmp/summary.json" ] && summary_present='y'
 
-if [ "$summary_present" = 'y' ] && [ "$case_log_count" -ge 1 ]; then
-  emit "P2.runner_shell_end_to_end" "true" "agg_rc=$agg_rc summary.json present; case logs=$case_log_count"
+if [ "$summary_present" = 'y' ] && [ "$case_log_count" -ge 7 ]; then
+  emit "P2.runner_shell_end_to_end" "true" "agg_rc=${agg_rc:-?} summary.json present; case logs=$case_log_count"
 else
-  emit "P2.runner_shell_end_to_end" "false" "agg_rc=$agg_rc summary_present=$summary_present case_logs=$case_log_count rs_out=$(printf '%s' "$rs_out" | tr '\n' '|' | head -c 200)"
+  emit "P2.runner_shell_end_to_end" "false" "agg_rc=${agg_rc:-?} summary_present=$summary_present case_logs=$case_log_count"
 fi
 
-# I5: grep-audit the copied /results tree.
-ga_res=$(GREP_AUDIT_SKIP_LAYER4=1 bash "$REPO/tests/grep-audit.sh" "$rs_tmp" 2>&1 | tail -n 1)
+# I5: grep-audit the copied /results tree. Use relative path to dodge
+# the `/Users/<user>` regex false-positive (same fix as P6/I3 above).
+ga_res=$(cd "$REPO/.self-verify" && GREP_AUDIT_SKIP_LAYER4=1 bash "$REPO/tests/grep-audit.sh" results-sample 2>&1 | tail -n 1)
 if printf '%s' "$ga_res" | grep -q '"hits_total":0'; then
   emit "I5.results_exfil_leak_free" "true" "grep-audit /results sample clean"
 else
