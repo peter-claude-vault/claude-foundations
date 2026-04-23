@@ -1,0 +1,69 @@
+# Claude Foundations Engine v2 — Sub-plan 00 Isolation Harness VM
+#
+# Wave α-0 kernel-boundary isolation. Every downstream sub-plan (SP01..SP08)
+# runs its test harness (tests/runner-shell.sh) inside this VM by direct
+# dependency. Test gates that need isolation have no code path outside this VM.
+#
+# CORE INVARIANT: `mounts: []` physically removes every host filesystem bind.
+# /Users, /Volumes, /private, /tmp/lima, ~ are unreachable inside the guest.
+# Any test that hardcodes a host path receives ENOENT at the VFS layer —
+# silent drift is impossible by construction. (April-13 autopsy anchor.)
+#
+# DO NOT ADD MOUNTS. Any PR that mutates this file must carry the
+# `isolation-config-review` label; grep-audit CI rejects otherwise (see
+# .github/workflows/grep-audit.yml, SP00 T-7).
+
+cpus: 2
+memory: "4GiB"
+disk: "20GiB"
+
+# Ubuntu 24.04 LTS, multi-arch so the harness works on ARM64 and x86_64 hosts.
+images:
+  - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
+    arch: "aarch64"
+  - location: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+    arch: "x86_64"
+
+# --- Kernel-boundary isolation ---
+# NON-NEGOTIABLE. See header.
+mounts: []
+
+# --- Networking ---
+# Default user-mode NAT (SLIRP/QEMU). No `networks:` stanza → no bridged or
+# shared interfaces. Outbound through NAT only. Dimension 7 external-research
+# tests (SP05) opt into NAT egress explicitly per test; most invocations run
+# with Docker --network=none inside the VM.
+
+ssh:
+  loadDotSSHPubKeys: false
+
+# No host port forwarding. Exfil from /results goes over scp (SP00 T-10).
+portForwards: []
+
+# --- Provisioning ---
+# Minimal Linux prerequisites for downstream SP00 tasks (Docker rootless install
+# happens in SP00 T-2, not here). Scripts that depend on these: T-2 build.sh,
+# T-7 grep-audit.sh (python3 + jq), T-8 mock-launchctl.sh (python3 plistlib),
+# T-5 git-snapshot.sh (git).
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -euxo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -qq
+      apt-get install -y -qq \
+          uidmap dbus-user-session fuse-overlayfs slirp4netns \
+          ca-certificates curl gnupg jq git \
+          python3 python3-pip \
+          rsync openssh-client
+
+probes:
+  - description: "cloud-init finished, prerequisites installed"
+    script: |
+      #!/bin/bash
+      set -eux
+      timeout 300 cloud-init status --wait
+      command -v jq
+      command -v git
+      command -v python3
