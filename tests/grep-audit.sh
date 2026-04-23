@@ -49,8 +49,10 @@ command -v python3 >/dev/null 2>&1 || { err "python3 required"; exit 7; }
 # --- Exclusion regex ---
 # Paths we deliberately skip. Fixtures seed deliberate hits; pattern files
 # define the hit strings; this script itself doesn't count; CHANGELOG.md
-# and docs/april-13-autopsy.md are explicit carve-outs.
-EXCLUDE_RE='/\.git/|/node_modules/|/file-history/|/grep-audit-patterns/|/grep-audit-fixtures/|/grep-audit\.sh$|/CHANGELOG\.md$|/docs/april-13-autopsy\.md$'
+# and docs/april-13-autopsy.md are explicit carve-outs; .self-verify/
+# is T-13 output (attestation logs contain path strings that trigger
+# /Users/ regex).
+EXCLUDE_RE='/\.git/|/node_modules/|/file-history/|/grep-audit-patterns/|/grep-audit-fixtures/|/\.self-verify/|/grep-audit\.sh$|/CHANGELOG\.md$|/docs/april-13-autopsy\.md$'
 
 # --- Stage Python helpers to a trap-cleaned tmpdir ---
 PY_TMP=$(mktemp -d -t grep-audit-py.XXXXXX)

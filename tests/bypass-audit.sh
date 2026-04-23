@@ -56,7 +56,7 @@ err() { printf 'bypass-audit: %s\n' "$1" >&2; }
 # `path:lineno:content`, so filename self-excludes end in `:` (the
 # path→lineno separator), not `$` (end-of-line would require content
 # to be empty and never matches).
-EXCLUDE_RE='/\.git/|/node_modules/|/grep-audit-fixtures/|/bypass-audit\.sh:|/bypass-audit-unit-test\.sh:|/bypass-audit-fixtures/'
+EXCLUDE_RE='/\.git/|/node_modules/|/\.self-verify/|/grep-audit-fixtures/|/bypass-audit\.sh:|/bypass-audit-unit-test\.sh:|/bypass-audit-fixtures/'
 
 # Phase 1: find raw `(runtime) run` lines in shell/yaml.
 candidates=$(
