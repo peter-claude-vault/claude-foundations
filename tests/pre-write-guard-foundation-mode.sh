@@ -25,7 +25,17 @@ set -u
 
 HOOK="$HOME/.claude/hooks/pre-write-guard.sh"
 LOG="$HOME/.claude/hooks/state/foundation-test.log"
-VAULT_ROOT="${VAULT_ROOT:-$HOME/Documents/Obsidian Vault}"
+
+# VAULT_ROOT + PLANS_DIR come from the host's ~/.claude/hooks/lib/paths.sh
+# if present (adopter-agnostic — each adopter's vault lives wherever their
+# paths.sh says). If paths.sh is not sourced-able, fall back to env vars;
+# failing both, synthesize a test-only fixture path under $HOME so SP00's
+# distributed source tree holds no adopter-specific literals.
+if [ -f "$HOME/.claude/hooks/lib/paths.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$HOME/.claude/hooks/lib/paths.sh" 2>/dev/null || true
+fi
+VAULT_ROOT="${VAULT_ROOT:-$HOME/_sp00_test_vault_fixture}"
 PLANS_DIR="${PLANS_DIR:-$HOME/.claude-plans}"
 
 FAIL=0
