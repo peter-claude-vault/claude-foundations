@@ -88,3 +88,18 @@ if [ -z "${BACKUPS_DIR:-}" ]; then
   unset _v
 fi
 export BACKUPS_DIR
+
+# resolve_memory_dir — absolute memory-dir path for the current session.
+# Claude Code keys per-project state by a slug of the launch cwd (each "/"
+# replaced with "-"). The shell that runs hooks inherits cwd from Claude Code,
+# so `pwd` at hook entry resolves the same slug. MEMORY_DIR env override wins
+# (test/CI). Returns the path on stdout; never errors.
+resolve_memory_dir() {
+  if [ -n "${MEMORY_DIR:-}" ]; then
+    echo "$MEMORY_DIR"
+    return
+  fi
+  local slug
+  slug=$(pwd | sed 's|/|-|g')
+  echo "${CLAUDE_HOME}/projects/${slug}/memory"
+}

@@ -5,7 +5,8 @@
 # Manual checks (overlap, status verification, conflicts) stay in /librarian invocation.
 set -euo pipefail
 
-MEMORY_DIR="$HOME/.claude/projects/-Users-petertiktinsky/memory"
+source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/paths.sh"
+MEMORY_DIR="$(resolve_memory_dir)"
 STATE_FILE="$MEMORY_DIR/.consolidation-state.json"
 LOCK_FILE="$MEMORY_DIR/.consolidation.lock"
 LOG_FILE="$MEMORY_DIR/.consolidation-log.md"

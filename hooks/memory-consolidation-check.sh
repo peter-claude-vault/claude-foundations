@@ -3,7 +3,8 @@
 # Must complete in <100ms. Actual consolidation runs detached.
 set -euo pipefail
 
-MEMORY_DIR="$HOME/.claude/projects/-Users-petertiktinsky/memory"
+source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/paths.sh"
+MEMORY_DIR="$(resolve_memory_dir)"
 STATE_FILE="$MEMORY_DIR/.consolidation-state.json"
 LOCK_FILE="$MEMORY_DIR/.consolidation.lock"
 RUNNER="$(cd "$(dirname "$0")" && pwd)/memory-consolidation-run.sh"
