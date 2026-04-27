@@ -1,0 +1,17 @@
+Foundation Hooks — Source Fork Record
+======================================
+
+This directory contains 18 hook scripts forked from a private upstream tree as
+the unmodified baseline for the SP02 generic-hook-set transformation work.
+
+Source repo:      private upstream (parent ~/.claude)
+Source SHA:       1bcf4ea87e723571bd5c262d24bd5857e31e1dd6
+Fork timestamp:   2026-04-27T22:59:58Z
+File count:       18
+
+Sub-plan:         71-claude-foundations-engine-v2 / 02-generic-hook-set
+Task:             T-1 (baseline fork, zero transform)
+Wave:             β
+
+The contents of this commit are byte-identical to the source at the recorded SHA.
+T-2 / T-3 / T-4 and downstream tasks transform from this baseline.
