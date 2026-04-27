@@ -54,10 +54,10 @@ if [ -z "${PLANS_DIR:-}" ]; then
 fi
 export PLANS_DIR
 
-# Tripwire path. Held as null-stub for MVP per Lead 2 §3 / Q10 (runtime-recreation
-# investigation pending). Consumers MUST NOT use the value; only `[ -e "$x" ]`
-# tripwire checks should reference it, gated on non-empty.
-export PLANS_DIR_DEAD=""
+# Tripwire path. Held as null-stub by default per Lead 2 §3 / Q10 (runtime-
+# recreation investigation pending). Honors env override for test/CI scenarios.
+# Consumers MUST gate on non-empty before using.
+export PLANS_DIR_DEAD="${PLANS_DIR_DEAD:-}"
 
 # --- vault (no install-convention default) ---
 if [ -z "${VAULT_ROOT:-}" ]; then
@@ -99,7 +99,10 @@ resolve_memory_dir() {
     echo "$MEMORY_DIR"
     return
   fi
+  # Use logical pwd (no symlink resolution) so slug matches Claude Code's
+  # internal projects/ keying, which uses the launch path verbatim. Critical
+  # on macOS where /tmp resolves to /private/tmp under physical pwd.
   local slug
-  slug=$(pwd | sed 's|/|-|g')
+  slug=$(pwd -L | sed 's|/|-|g')
   echo "${CLAUDE_HOME}/projects/${slug}/memory"
 }
