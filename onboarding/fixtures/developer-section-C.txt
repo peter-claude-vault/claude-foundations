@@ -1,0 +1,13 @@
+Knowledge system. I've had a vault running for about three years. Definitely retrofitting, not starting fresh. It started as a notes-graveyard and got organized when I joined Bramble.
+
+Organization style is project-based. Each repo I work in regularly gets its own top-level folder under Projects. Inside a project folder I keep design docs, incident write-ups, a running commit-log of what I've changed and why, and a runbook for the deploy and rollback procedures. So projects are first-class — every project has a README-style context page and tracks its branch protection rules, its CI configuration, its database migration log.
+
+Sensitive content. No, I don't really need a separate vault for sensitive material. Bramble's stuff is sensitive in the IP sense but I'm already on the corporate machine, the vault is encrypted at rest, and I don't keep customer data in here. So skip the sensitive-isolation opt-in.
+
+File types I want managed. Repo notes, that's the big one — one per repository I'm contributing to. Commit-log notes, the running journal of "what did I touch and why." Design docs, the architecture proposals before they go to Rohit. Incident write-ups when something breaks in production — those have a strict template, they're a separate type. Runbooks, the operational documentation for each service. And people pages for the small set of folks I work with, separate from the technical content. So roughly: repo, commit-log, design-doc, incident, runbook, people.
+
+Folder structure. Project at the top — usually one project equals one repo, though for monorepos I split by service. Within a project I have sub-folders for design, incidents, runbooks, and a top-level commit-log file. Branches don't get folders, the commit-log just notes which branch the work was on.
+
+Wikilink convention is title-as-link. Standard.
+
+Anything else worth flagging. I don't use Granola or any transcription tool — there's no transcript folder. Most of my non-code reading lives in a separate Books folder that's outside the project structure entirely; I don't want Claude managing that. The Projects folder is where I want help.

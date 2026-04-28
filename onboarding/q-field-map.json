@@ -1,0 +1,488 @@
+{
+  "schema_version": "1.0.0",
+  "_comment": "Q-ID → schema-field map. Canonical Q-ID lock per onboarder-design.md §10. Read by SP01 bootstrap-schemas.sh (T-10) and SP07 onboarder UX. SP07 cannot introduce new Q-IDs — this file is the contract. Path prefix convention: U.* = user-manifest-schema.json instance, O.* = orchestration-schema.json instance.",
+  "_references": {
+    "design_doc": "~/.claude/onboarding/onboarder-design.md",
+    "research_source": "/tmp/foundations-v2-wave2/research-c-verbal-onboarding.md (§1 triage, §2 sections, §3 extraction pipeline)",
+    "schemas": [
+      "~/.claude/schemas/user-manifest-schema.json",
+      "~/.claude/schemas/orchestration-schema.json"
+    ]
+  },
+  "_namespace_lock": {
+    "direct_q_count": 17,
+    "checkbox_q_count": 6,
+    "section_e_binary_count": 3,
+    "total_q_ids": 26,
+    "id_pattern": "^(A-[1-4]|A-CB[1-6]|B-[1-5]|C-[1-4]|D-[1-4]|E-[1-3])$",
+    "rationale": "SP07 onboarder UX MUST iterate this map's keys, not enumerate Q-IDs in code. Adding a Q-ID requires reopening T-8 + design-doc §10."
+  },
+  "_research_c_aliases": {
+    "_comment": "Three Research-C names that do not exist in the live schema. Aliased deterministically here; T-10 observation-gate input.",
+    "identity.archetype": {
+      "live_path": "U.architect.prior_seed",
+      "type": "string",
+      "notes": "Archetype label as a single token (e.g. 'developer'). D-3 architect-concerns text appends to the same field, comma-joined."
+    },
+    "identity.projects[]": {
+      "live_path": "U.projects.active[]",
+      "type": "array",
+      "notes": "Top-level projects.active[] per canonical 10-section shape."
+    },
+    "hooks.auto_commit.enabled": {
+      "live_path": "U.behavioral.hook_preferences.auto_commit_enabled",
+      "type": "boolean",
+      "notes": "hook_preferences is additionalProperties:true. De-facto contract until a hooks-schema.json peer lands."
+    },
+    "hooks.memory_consolidation.enabled": {
+      "live_path": "U.behavioral.hook_preferences.memory_consolidation_enabled",
+      "type": "boolean",
+      "notes": "Same hook_preferences alias."
+    },
+    "hooks.multi_session.enabled": {
+      "live_path": "U.behavioral.hook_preferences.multi_session_enabled",
+      "type": "boolean",
+      "notes": "Same hook_preferences alias."
+    }
+  },
+  "direct_qs": {
+    "A-1": {
+      "section": "A",
+      "prompt_summary": "Confirm full name",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.identity.name", "type": "string", "cardinality": "single"}
+      ],
+      "required": true,
+      "prefill_source": "discovery.name"
+    },
+    "A-2": {
+      "section": "A",
+      "prompt_summary": "Confirm email",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.identity.email", "type": "string", "cardinality": "single"}
+      ],
+      "required": true,
+      "prefill_source": "discovery.email"
+    },
+    "A-3": {
+      "section": "A",
+      "prompt_summary": "Confirm timezone",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.system.timezone", "type": "string", "cardinality": "single"}
+      ],
+      "required": true,
+      "prefill_source": "discovery.timezone"
+    },
+    "A-4": {
+      "section": "A",
+      "prompt_summary": "Confirm vault root (or declare 'no vault')",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.paths.vault_root", "type": "string", "cardinality": "single", "nullable": true},
+        {"path": "U.vault.root", "type": "string", "cardinality": "single", "nullable": true, "notes": "Mirror of U.paths.vault_root."}
+      ],
+      "required": true,
+      "prefill_source": "discovery.vault_root",
+      "fallback": "If null/'no vault', Section C runs in stub mode and downstream librarian runs in stub mode until a vault is created."
+    },
+    "B-1": {
+      "section": "B",
+      "prompt_summary": "Role / firm / industry",
+      "extraction_mode": "transcript",
+      "targets": [
+        {"path": "U.identity.role", "type": "string", "cardinality": "single"},
+        {"path": "U.identity.organization", "type": "string", "cardinality": "single", "nullable": true},
+        {"path": "U.identity.industry", "type": "string", "cardinality": "single", "nullable": true},
+        {"path": "U.identity.seniority", "type": "string", "cardinality": "single", "nullable": true}
+      ],
+      "required": true,
+      "min_viable": "role string non-empty",
+      "extraction_notes": "Spoken role usually names industry + seniority; merged at extraction time per Research C §1."
+    },
+    "B-2": {
+      "section": "B",
+      "prompt_summary": "Active projects + stages",
+      "extraction_mode": "transcript",
+      "targets": [
+        {
+          "path": "U.projects.active[]",
+          "type": "array",
+          "cardinality": "array",
+          "max_items": 5,
+          "item_shape": {"name": "string", "status": "string"},
+          "alias_of": "Research C identity.projects[]"
+        }
+      ],
+      "required": true,
+      "min_viable": "at least 1 project with name + status"
+    },
+    "B-3": {
+      "section": "B",
+      "prompt_summary": "Collaborators",
+      "extraction_mode": "transcript",
+      "targets": [
+        {
+          "path": "U.people[]",
+          "type": "array",
+          "cardinality": "array",
+          "max_items": 5,
+          "item_shape": {"name": "string", "role": "string", "relationship": "string"}
+        }
+      ],
+      "required": true,
+      "min_viable": "at least 1 person with name + role"
+    },
+    "B-4": {
+      "section": "B",
+      "prompt_summary": "Cadence",
+      "extraction_mode": "transcript",
+      "targets": [
+        {"path": "U.behavioral.cadence_default", "type": "string", "cardinality": "single", "nullable": true}
+      ],
+      "required": false,
+      "extraction_notes": "Free-form short string (e.g. 'daily standup', 'weekly sprint', 'ad hoc')."
+    },
+    "B-5": {
+      "section": "B",
+      "prompt_summary": "Audience mix",
+      "extraction_mode": "transcript",
+      "targets": [
+        {
+          "path": "U.vault.default_audience",
+          "type": "string",
+          "cardinality": "single",
+          "enum": ["claude", "joint", "human"],
+          "nullable": true,
+          "mapping_notes": "internal/clients/execs → 'joint'; public → 'human'; self/notes → 'claude'."
+        }
+      ],
+      "required": false
+    },
+    "C-1": {
+      "section": "C",
+      "prompt_summary": "Existing vault + organization style",
+      "extraction_mode": "transcript",
+      "targets": [
+        {"path": "U.vault.organizational_method", "type": "string", "cardinality": "single", "nullable": true},
+        {"path": "U.vault.has_structured_projects", "type": "boolean", "cardinality": "single", "nullable": true, "notes": "Inferred from organizational_method text."}
+      ],
+      "required": false,
+      "fallback": "If null or low-confidence, archetype inference (§9) seeds organizational_method via seeds.vault_organizational_method_hint."
+    },
+    "C-2": {
+      "section": "C",
+      "prompt_summary": "Fresh vs retrofit",
+      "extraction_mode": "transcript",
+      "targets": [
+        {"path": "U.vault.is_fresh", "type": "boolean", "cardinality": "single"}
+      ],
+      "required": true,
+      "min_viable": "boolean decision present"
+    },
+    "C-3": {
+      "section": "C",
+      "prompt_summary": "Sensitive content separate vault (yes/no)",
+      "extraction_mode": "transcript",
+      "targets": [
+        {
+          "path": "U.system.opt_outs[]",
+          "type": "array",
+          "cardinality": "conditional_append",
+          "append_value": "sensitive_isolation",
+          "append_when": "user answers yes",
+          "notes": "Idempotent append; no-op if user answers no or omits."
+        }
+      ],
+      "required": false
+    },
+    "C-4": {
+      "section": "C",
+      "prompt_summary": "File types Claude should help manage",
+      "extraction_mode": "transcript",
+      "targets": [
+        {
+          "path": "U.vault.canonical_file_types[]",
+          "type": "array",
+          "cardinality": "array",
+          "item_type": "string",
+          "post_processing": "Archetype inference appends seeds.vault_canonical_file_types_add (deduplicated)."
+        }
+      ],
+      "required": true,
+      "min_viable": "at least 1 file type named"
+    },
+    "D-1": {
+      "section": "D",
+      "prompt_summary": "Autonomy level",
+      "extraction_mode": "transcript",
+      "targets": [
+        {
+          "path": "U.behavioral.autonomy",
+          "type": "string",
+          "cardinality": "single",
+          "enum": ["strict", "balanced", "permissive"],
+          "mapping_notes": "Free-text mapped to enum at extraction time. Ambiguous → surgical follow-up with three radio buttons."
+        }
+      ],
+      "required": true,
+      "min_viable": "enum value resolved"
+    },
+    "D-2": {
+      "section": "D",
+      "prompt_summary": "First scheduled job choice",
+      "extraction_mode": "transcript",
+      "targets": [
+        {
+          "path": "O.jobs[0].id",
+          "type": "string",
+          "cardinality": "single",
+          "enum": ["librarian", "architect"],
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "fallback_value": "[]",
+          "fallback_notes": "If user opts out, write O.jobs: [] (empty array) — D-3 is then skipped."
+        }
+      ],
+      "required": true,
+      "defaults_applied": {
+        "O.jobs[0].enabled": true,
+        "O.jobs[0].schedule": {"librarian": {"hour": 6, "minute": 0}, "architect": {"hour": 6, "minute": 0, "dow": [1]}},
+        "O.jobs[0].log_path": "default-per-job-id",
+        "O.jobs[0].idle_watchdog_sec": 180
+      }
+    },
+    "D-3": {
+      "section": "D",
+      "prompt_summary": "Architect concerns (conditional on D-2 = architect)",
+      "extraction_mode": "transcript",
+      "conditional_on": "D-2 == 'architect'",
+      "targets": [
+        {
+          "path": "U.architect.prior_seed",
+          "type": "string",
+          "cardinality": "append",
+          "append_strategy": "comma_join",
+          "notes": "Appends to whatever the archetype-inference pass wrote (single archetype label). Final shape: 'developer, slow CI, doc rot, test flakiness' for example."
+        }
+      ],
+      "required": false
+    },
+    "D-4": {
+      "section": "D",
+      "prompt_summary": "Notification style",
+      "extraction_mode": "transcript",
+      "targets": [
+        {
+          "path": "U.behavioral.hook_preferences.notification_style",
+          "type": "string",
+          "cardinality": "single",
+          "enum": ["quiet", "digest", "notification"],
+          "default_value": "digest"
+        }
+      ],
+      "required": false
+    }
+  },
+  "checkbox_qs": {
+    "A-CB1": {
+      "section": "A",
+      "label": "Calendar",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.tools.calendar", "type": "string", "cardinality": "single", "nullable": true}
+      ],
+      "required": false,
+      "prefill_source": "discovery.tools.calendar"
+    },
+    "A-CB2": {
+      "section": "A",
+      "label": "Messaging",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.tools.messaging[]", "type": "array", "cardinality": "array", "item_type": "string"}
+      ],
+      "required": false,
+      "prefill_source": "discovery.tools.messaging",
+      "ui_notes": "Multi-select."
+    },
+    "A-CB3": {
+      "section": "A",
+      "label": "Email client",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.tools.email", "type": "string", "cardinality": "single", "nullable": true}
+      ],
+      "required": false,
+      "prefill_source": "discovery.tools.email"
+    },
+    "A-CB4": {
+      "section": "A",
+      "label": "Transcription",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.tools.transcription", "type": "string", "cardinality": "single", "nullable": true}
+      ],
+      "required": false,
+      "prefill_source": "discovery.tools.transcription"
+    },
+    "A-CB5": {
+      "section": "A",
+      "label": "Tasks",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.tools.tasks", "type": "string", "cardinality": "single", "nullable": true}
+      ],
+      "required": false,
+      "prefill_source": "discovery.tools.tasks"
+    },
+    "A-CB6": {
+      "section": "A",
+      "label": "Dev environment",
+      "extraction_mode": "confirmation",
+      "targets": [
+        {"path": "U.tools.dev_env", "type": "string", "cardinality": "single", "nullable": true}
+      ],
+      "required": false,
+      "prefill_source": "discovery.tools.dev_env"
+    }
+  },
+  "section_e_binaries": {
+    "_comment": "Three deterministic privacy/automation gates. All default OFF. No extraction; pure UI checkboxes. Tracked separately from checkbox_qs because their semantics are policy toggles, not tool-detection confirmations.",
+    "E-1": {
+      "section": "E",
+      "label": "Auto-commit and push ~/.claude/ at session end",
+      "category": "privacy",
+      "targets": [
+        {
+          "path": "U.behavioral.hook_preferences.auto_commit_enabled",
+          "type": "boolean",
+          "cardinality": "single",
+          "default_value": false,
+          "alias_of": "Research C hooks.auto_commit.enabled"
+        }
+      ],
+      "required": false,
+      "prerequisite_check": "Requires a configured git remote on ~/.claude/."
+    },
+    "E-2": {
+      "section": "E",
+      "label": "Cross-session memory consolidation via claude-mem",
+      "category": "memory",
+      "targets": [
+        {
+          "path": "U.behavioral.hook_preferences.memory_consolidation_enabled",
+          "type": "boolean",
+          "cardinality": "single",
+          "default_value": false,
+          "alias_of": "Research C hooks.memory_consolidation.enabled"
+        }
+      ],
+      "required": false
+    },
+    "E-3": {
+      "section": "E",
+      "label": "Multi-session coordination",
+      "category": "automation",
+      "targets": [
+        {
+          "path": "U.behavioral.hook_preferences.multi_session_enabled",
+          "type": "boolean",
+          "cardinality": "single",
+          "default_value": false,
+          "alias_of": "Research C hooks.multi_session.enabled"
+        }
+      ],
+      "required": false
+    }
+  },
+  "discovery_prefills": {
+    "_comment": "Filesystem / config probes that pre-fill Section A confirmations. Per Research C §1, 12 INFER items collapse here. Sources are deterministic; if a probe returns null the user types it inline.",
+    "name": {
+      "source": "gitconfig",
+      "command": "git config --global user.name",
+      "feeds_q_id": "A-1",
+      "schema_path": "U.identity.name"
+    },
+    "email": {
+      "source": "gitconfig",
+      "command": "git config --global user.email",
+      "feeds_q_id": "A-2",
+      "schema_path": "U.identity.email"
+    },
+    "timezone": {
+      "source": "systemsetup",
+      "command": "systemsetup -gettimezone",
+      "command_fallback": "date +%Z",
+      "feeds_q_id": "A-3",
+      "schema_path": "U.system.timezone"
+    },
+    "vault_root": {
+      "source": "filesystem_scan",
+      "scan_paths": ["~/Documents/*Vault*", "~/Vault", "~/Obsidian"],
+      "feeds_q_id": "A-4",
+      "schema_path": "U.paths.vault_root",
+      "schema_path_mirror": "U.vault.root",
+      "fallback": "If no match, A-4 prompt offers 'no vault yet' option."
+    },
+    "tools.calendar": {
+      "source": "settings_json",
+      "probe": "enumerate connected MCP servers in ~/.claude/settings.json matching calendar providers",
+      "feeds_q_id": "A-CB1",
+      "schema_path": "U.tools.calendar"
+    },
+    "tools.messaging": {
+      "source": "settings_json",
+      "probe": "enumerate connected MCP servers matching messaging providers (Slack, Teams, GChat, etc.)",
+      "feeds_q_id": "A-CB2",
+      "schema_path": "U.tools.messaging[]",
+      "cardinality": "array"
+    },
+    "tools.email": {
+      "source": "settings_json",
+      "probe": "enumerate connected MCP servers matching email providers",
+      "feeds_q_id": "A-CB3",
+      "schema_path": "U.tools.email"
+    },
+    "tools.transcription": {
+      "source": "settings_json",
+      "probe": "enumerate connected MCP servers matching transcription providers (Granola, Whisper, etc.)",
+      "feeds_q_id": "A-CB4",
+      "schema_path": "U.tools.transcription"
+    },
+    "tools.tasks": {
+      "source": "settings_json",
+      "probe": "enumerate connected MCP servers matching task providers (Asana, Linear, etc.)",
+      "feeds_q_id": "A-CB5",
+      "schema_path": "U.tools.tasks"
+    },
+    "tools.dev_env": {
+      "source": "filesystem_path_probe",
+      "command": "which code cursor zed nvim",
+      "fallback": "shell PATH probe for editor binaries",
+      "feeds_q_id": "A-CB6",
+      "schema_path": "U.tools.dev_env"
+    },
+    "platform": {
+      "source": "uname",
+      "command": "uname -s",
+      "feeds_q_id": null,
+      "schema_path": "O.platform",
+      "expected_value": "darwin-launchd",
+      "notes": "Not user-asked. Orchestration platform constant."
+    }
+  },
+  "_acceptance_self_check": {
+    "_comment": "Self-attestation against T-8 acceptance criteria. Verified at write time; consumers may re-verify with jq probes.",
+    "direct_qs_count": 17,
+    "checkbox_qs_count": 6,
+    "section_e_binaries_count": 3,
+    "discovery_prefills_count": 11,
+    "all_direct_qs_have_targets": true,
+    "all_checkbox_qs_have_targets": true,
+    "all_e_binaries_have_targets": true,
+    "all_prefills_declare_source": true,
+    "research_c_aliases_resolved": 5
+  }
+}

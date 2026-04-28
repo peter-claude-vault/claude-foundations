@@ -1,0 +1,92 @@
+{
+  "identity": {
+    "name": "Sam Reyes",
+    "email": "sam@example.dev",
+    "role": "Senior Software Engineer",
+    "industry": "Software-as-a-Service",
+    "seniority": "Senior",
+    "organization": "Bramble Labs",
+    "working_hours": "10am-7pm Pacific"
+  },
+  "paths": {
+    "vault_root": "/Users/example/Documents/dev-vault",
+    "plans_root": "/Users/example/.claude-plans",
+    "hooks_state": "/Users/example/.claude/hooks/state",
+    "cron_log_dir": "/Users/example/.claude/logs"
+  },
+  "tools": {
+    "calendar": "google-calendar",
+    "messaging": ["slack"],
+    "email": "gmail",
+    "transcription": null,
+    "tasks": "linear",
+    "dev_env": "vscode"
+  },
+  "vault": {
+    "root": "/Users/example/Documents/dev-vault",
+    "is_fresh": false,
+    "organizational_method": "project-based",
+    "top_level_folder": "Projects",
+    "has_structured_projects": true,
+    "canonical_file_types": ["repo", "commit-log", "design-doc", "incident", "runbook", "people"],
+    "tag_prefixes": ["repo/", "service/", "design/", "incident/", "runbook/"],
+    "logs_whitelist_subdirs": ["build/", "deploys/", "incidents/"],
+    "transcript_dir": null,
+    "context_section_types": ["context", "design", "incident"],
+    "engagement_aliases": {},
+    "default_audience": "claude",
+    "wikilink_contract": "title-as-link"
+  },
+  "projects": {
+    "active": [
+      { "name": "auth-service v2 rebuild", "status": "in-progress", "tag_prefix": "auth/" },
+      { "name": "checkout-frontend redesign", "status": "review", "tag_prefix": "checkout/" },
+      { "name": "ci-pipeline migration to ephemeral runners", "status": "active", "tag_prefix": "ci/" },
+      { "name": "edge-cache library extraction", "status": "exploration", "tag_prefix": "edge-cache/" }
+    ]
+  },
+  "people": [
+    { "name": "Tessa Park", "role": "Tech Lead", "relationship": "code reviewer" },
+    { "name": "Devon Marcellus", "role": "Product Manager", "relationship": "spec partner" },
+    { "name": "Rohit Anandh", "role": "Staff Engineer", "relationship": "design-doc reviewer" }
+  ],
+  "behavioral": {
+    "autonomy": "permissive",
+    "cadence_default": "daily standup",
+    "hook_preferences": {
+      "auto_commit_enabled": true,
+      "memory_consolidation_enabled": true,
+      "multi_session_enabled": true,
+      "notification_style": "quiet"
+    },
+    "communication_style": "terse technical"
+  },
+  "backlog": {
+    "index_path": "System Backlog.md",
+    "archive_path": "System Backlog - Archive.md",
+    "progress_dir": "Logs/backlog-progress",
+    "clusters": ["infra", "frontend", "backend", "tooling"]
+  },
+  "architect": {
+    "output_dir": "Logs/architect",
+    "cadence": "weekly",
+    "benchmarks": {},
+    "dimensions_enabled": ["intake-effectiveness", "rule-coverage", "skill-gaps"],
+    "default_mode": "report",
+    "auto_compare": true,
+    "external_research_enabled": true,
+    "prior_seed": "developer, slow CI, doc rot",
+    "archetype_research": { "cached_at": null }
+  },
+  "system": {
+    "timezone": "America/Los_Angeles",
+    "schema_version": "1.1.0",
+    "standards_version": "1.0.0",
+    "created_date": "2026-04-27",
+    "phases_completed": ["A", "B", "C", "D", "E"],
+    "opt_outs": [],
+    "ingestion_state": "complete",
+    "onboarding_state": "complete",
+    "is_fresh": false
+  }
+}

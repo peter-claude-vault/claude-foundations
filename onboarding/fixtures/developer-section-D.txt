@@ -1,0 +1,9 @@
+Trust and automation — let it rip. Permissive. I'm comfortable with Claude making changes, running scripts, committing work. I keep everything in git, I have CI that catches the bad stuff, and rolling back a bad commit is a one-liner. So default permissive.
+
+Scheduled jobs — yes, definitely turn on librarian. Daily, six AM Pacific. The thing I want it doing is keeping the project folders clean, archiving stale incident write-ups into the incidents/archive subfolder once they're more than thirty days old, regenerating the index pages, that kind of housekeeping. Repo-level hygiene basically. So librarian, daily 06:00.
+
+Skip D-3 since I'm picking librarian, not architect.
+
+Notification style — quiet. I do not want to be bothered. Don't surface a digest, don't ping me, don't raise system notifications. If librarian fails I'll see it in the logs the next time I open the vault, that's good enough. If something is genuinely on fire I have separate paging for that already. So quiet, minimum-noise mode.
+
+That's it. Permissive autonomy, librarian on a daily 6am cron, quiet notifications. Auto-commit on, memory consolidation on, multi-session coordination on. I'm here for the full automation surface, just don't talk to me while I'm working.

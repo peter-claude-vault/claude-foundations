@@ -1,0 +1,72 @@
+SP09 T-8 Foundation-repo Onboarding Re-fork Manifest
+======================================================
+
+Re-fork date:           2026-04-28
+Source repo:            ~/.claude/ (live)
+Source HEAD at fork:    b04e6f8e716e20ebf5a518f348e14e3b4f3c2327
+Source path:            ~/.claude/onboarding/
+Destination repo:       ~/Code/claude-foundations-v2/ (foundation-repo)
+Destination path:       ~/Code/claude-foundations-v2/onboarding/
+Files re-forked:        33 (README.md from SP09 T-7.7 preserved; not part of re-fork)
+Subtree size:           ~252KB
+
+SP01 Authoring Commits (live ~/.claude/) — provenance chain
+-----------------------------------------------------------
+acc4bfa  SP01 T-7:   author onboarder design doc + archetype-keywords seed
+c1c9aa6  SP01 T-7a:  ship archetype-inference.sh + unit tests
+abe216b  SP01 T-8:   ship onboarding/q-field-map.json (Q→schema-field map)
+68c6649  SP01 T-9:   ship 5 per-section extraction prompts
+f273e3b  SP01 T-10:  ship bootstrap-schemas.sh + SKILL.md Output Contract
+5711a54  SP01 T-11:  add --dry-run flag to bootstrap-schemas.sh + SKILL.md preview-mode contract
+b027368  SP01 T-12:  3 archetype fixtures + transcripts + per-archetype schemas
+8ea4ef7  SP01 T-13:  fixture round-trip validation test
+ef1f7cc  SP01 T-14:  4-layer grep-audit acceptance gate
+650eda2  SP01 T-15:  rollback + audit-log failure-path test for bootstrap-schemas.sh
+
+Per-file sha256sums (33 files; identical between source and destination)
+------------------------------------------------------------------------
+3cd1c9abfd2224913f159ed3ddde6ffa41f629e7a21cede08ed54f8f201b0611  ./archetype-inference.sh
+0e1cee7d3ac8af07d683f2f2f1016ffcfef07f62fd1705d5e20c70a7bd2d0b35  ./archetype-keywords.json
+4ca1807208d0d6dc5c51ebe8535ddb167c25be1806a3ba07625c04c6f10111a0  ./bootstrap-schemas.sh
+fb45591bf9ab74b6e654d259fb042bcf785c4c20c02089cbdd364c4aa6097caa  ./extraction-prompts/section-A.md
+0c41b5e1cf8466ae0ad42757df3fccf6ecb42560fd39a8206a93c4c2c7558966  ./extraction-prompts/section-B.md
+0b2f5b359949235a12fc278a895582306890b1ce9784ec812fc1650d240f3f0c  ./extraction-prompts/section-C.md
+4606f199ff042c98d6670c520ee78d44ac873d87474007a1965460ba6828180b  ./extraction-prompts/section-D.md
+05337d7f249e7f3cde8a121542e3049d993069ae9f450e6e266c605ac427c5f6  ./extraction-prompts/section-E.md
+5bb76040839a18319fab4ba197ae772b2536b47f71adf494dde97d619238576c  ./fixtures/consultant-orchestration.json
+1cf5a653980e8c86b30e4ffc6c412ac8e57fe7b3b85f74dabc2cdd9d681a0892  ./fixtures/consultant-section-B.txt
+1f4fbae806265340dade01940d5eab772d30e6a030109b30cd336367cf053a89  ./fixtures/consultant-section-C.txt
+ff03ed414cfe90b39bdbaee04e9c00995283e37b9bcd426fef2bae4e3016f873  ./fixtures/consultant-section-D.txt
+941881bde518d576118da94d98e846dc1d5297e4181868583da05018b7a83f14  ./fixtures/consultant-vault-schema.json
+518fab02a0abc5ef80933e341ddd2e6af24dd2a122ba9b61720cccf9a0880d51  ./fixtures/consultant.json
+5593eb27e83179b1ca2afaf3fa6b3ca8e186e9f5daf95c23cb9ae4b5df7b40d3  ./fixtures/developer-orchestration.json
+3331fafc2403e30aa1c748690d58e917a5eea2fed8c84f3115cb381c7e9d98e0  ./fixtures/developer-section-B.txt
+723b8fef5377ef6c3fd80814dbfeea67b2378f042b3da748159a8f98b89d8025  ./fixtures/developer-section-C.txt
+9abb3acf56b2d93616fb928761b009c42f0db80ba33bd353cc7dbd3e8102c6af  ./fixtures/developer-section-D.txt
+0cbda06e22187755f28356253d5c2cdcf44151fd9c907c783fa7c3b1b580e71a  ./fixtures/developer-vault-schema.json
+b8568079cb0bcb7f2c3f2c4319fe54b783926f556a5d5e0fffb7a7c7f78cd7a0  ./fixtures/developer.json
+bf8b4d92ff635628aecf392d00bf11e0e6f348015444c9c198390011a79c740c  ./fixtures/writer-orchestration.json
+8a5b68f5abbc8f38acd429d29733d1db17610ec964e597f294f0d2f89c52dfd6  ./fixtures/writer-section-B.txt
+51389242201d8a137e4289b4c0d88bce3473d008bb9b5fbd921bbbdc1caa05b2  ./fixtures/writer-section-C.txt
+81f623d7e7503ed7438749001c9c1644a12ab829221d15fec7b833c96166b732  ./fixtures/writer-section-D.txt
+5e91804f1dd29ccb32d358174b53ba254ddbb96315dddeacfe7f7b1de2423a18  ./fixtures/writer-vault-schema.json
+df0f9a847e3a09a712d0c318a9a3ebd855a3783c682cfcf75ed81181b42c494d  ./fixtures/writer.json
+f51a658c9dddb12275dfd26bb2a6c27034ae8e5a68d6ad4cfe84d7b4931ba538  ./onboarder-design.md
+b498c6ed2a5c580e61d21174923134607e26ce824117ace1bf2b517eccda6a00  ./q-field-map.json
+c771d51308f57b159015b527fc6d67dcf569971f4e36a45de4ac85ab219d5f9e  ./SKILL.md
+45f95ced75fe1c38b017f0e5f418d3040670f200b9dfcf4c5e6cd87738707292  ./tests/archetype-inference-test.sh
+6b1831e747744df9fe761322328f218d10a03cb33772c6376f595e8521bcbfc4  ./tests/grep-audit.sh
+5afaaa66026842fa235679fc7720596c14b5777fbbc27ed9feeee782389c0fa2  ./tests/rollback-test.sh
+68dec8be1715dfec365d91419b5b43cd787fbbabb67328b27d1526d5b4d6a7d3  ./tests/round-trip-test.sh
+
+Verification (post-fork)
+------------------------
+diff -r src dest:           ONLY 'README.md' delta (T-7.7 scaffolding, expected)
+Per-file sha256sum compare: 33/33 match
+bash -n bootstrap-schemas:  PASS
+bash -n archetype-inference:PASS
+jq -e q-field-map:          PASS
+jq -e archetype-keywords:   PASS
+jq -e fixtures (9 files):   PASS (3 archetypes × {.json, vault-schema.json, orchestration.json})
+extraction-prompts:         PRESENT (section-A..E.md, 5/5)
+tests/*.sh bash -n:         PASS (4/4)

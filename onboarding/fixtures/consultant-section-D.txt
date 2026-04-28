@@ -1,0 +1,9 @@
+Trust and automation — yeah, balanced, that's where I land. I want Claude to use judgment on the routine stuff. Renaming files, moving meeting notes into the right engagement folder, reconciling the project tracker — fine, just do it. But anything that touches a deliverable that's actually going to a client, or anything that looks like it might be billable hours misclassification — ask me first. So balanced. Default sensible.
+
+Scheduled jobs — honestly, I'd rather not have anything autonomous running right now. I know librarian and architect are options. I'm going to skip both for now. Maybe in a month I'll turn on librarian for the engagement-level housekeeping but not yet. So opt me out of the first scheduled job. No automation. Empty list.
+
+Skip D-3 then since I'm not picking architect.
+
+Notification style — digest. I want a daily morning summary. Don't ping me through the day, don't surface system notifications mid-meeting, just bundle whatever happened into one digest I can read with coffee. Quiet would be too quiet — I do want to see the digest. But notification mode, where Claude is interrupting me, no thanks. Digest is the right answer.
+
+That's it for me on trust and automation. Balanced autonomy, no scheduled jobs yet, digest notifications, the privacy stuff I already covered in C with the sensitive-vault opt-in.

@@ -1,0 +1,9 @@
+Trust and automation. Strict, please. I want Claude to ask before it does anything to my drafts. I've had bad experiences with sync tools auto-merging revisions and stomping on a sentence I cared about, so the bar for autonomous edits inside the manuscript and the newsletter draft folders is — don't, ask first. Strict guardrails. Default to nothing-by-default.
+
+Scheduled jobs. I'd actually like to turn on architect, weekly. Mondays at 6am Central. The reason is — once a week I want a structural pulse on whether my topic coverage is drifting, whether outlines are aging out without becoming drafts, whether I'm spending too many essays on one topic at the expense of another. That's a publication-cadence concern and architect feels like the right shape for it. So architect, Mondays only, weekly cadence.
+
+D-3 — concerns I want architect to surface. Draft freshness, mainly. If a draft has been sitting open more than three weeks without revision, that's a stale signal. Publication cadence — am I hitting weekly newsletter, or slipping. Outline rot, when an outline goes more than a month without becoming a draft. So those three: draft freshness, publication cadence, outline rot.
+
+Notification style. Notifications — actual system notifications, push them through. I work in long heads-down draft sessions and I'd rather break out of one when something genuinely needs my attention than discover a problem at the end of the day. So notification mode, the loud one. Not quiet. Not just digest. Real notifications.
+
+That's the trust posture. Strict autonomy, architect on a weekly Monday morning cron, real-time notifications. Privacy posture I covered in C: no sensitive isolation, the published-text-is-the-text frame.

@@ -1,0 +1,91 @@
+{
+  "identity": {
+    "name": "Maya Chen",
+    "email": "maya.chen@example.org",
+    "role": "Senior Engagement Manager",
+    "industry": "Strategy Consulting",
+    "seniority": "Senior",
+    "organization": "Aria Strategy Group",
+    "working_hours": "9am-6pm Eastern"
+  },
+  "paths": {
+    "vault_root": "/Users/example/Documents/strategy-vault",
+    "plans_root": "/Users/example/.claude-plans",
+    "hooks_state": "/Users/example/.claude/hooks/state",
+    "cron_log_dir": "/Users/example/.claude/logs"
+  },
+  "tools": {
+    "calendar": "google-calendar",
+    "messaging": ["slack", "teams"],
+    "email": "outlook",
+    "transcription": "granola",
+    "tasks": "asana",
+    "dev_env": "vscode"
+  },
+  "vault": {
+    "root": "/Users/example/Documents/strategy-vault",
+    "is_fresh": false,
+    "organizational_method": "engagement-based",
+    "top_level_folder": "Engagements",
+    "has_structured_projects": true,
+    "canonical_file_types": ["meeting-note", "deliverable", "engagement", "stakeholder", "proposal", "people"],
+    "tag_prefixes": ["engagement/", "client/", "deliverable/", "stakeholder/", "meeting/"],
+    "logs_whitelist_subdirs": ["build/", "ideation-brief/", "backlog-progress/"],
+    "transcript_dir": "Transcripts",
+    "context_section_types": ["context", "stakeholder", "scope"],
+    "engagement_aliases": {},
+    "default_audience": "joint",
+    "wikilink_contract": "title-as-link"
+  },
+  "projects": {
+    "active": [
+      { "name": "Northwind Supply Strategy Refresh", "status": "active", "tag_prefix": "northwind/" },
+      { "name": "Glassbridge Market-Entry Plan", "status": "active", "tag_prefix": "glassbridge/" },
+      { "name": "Foundry Partners Operating-Model Review", "status": "kickoff", "tag_prefix": "foundry/" }
+    ]
+  },
+  "people": [
+    { "name": "Priya Vasquez", "role": "Partner", "relationship": "executive sponsor" },
+    { "name": "Jordan Liu", "role": "Senior Associate", "relationship": "workstream lead" },
+    { "name": "Tomás Kuria", "role": "Client COO", "relationship": "primary stakeholder" }
+  ],
+  "behavioral": {
+    "autonomy": "balanced",
+    "cadence_default": "weekly steering committee",
+    "hook_preferences": {
+      "auto_commit_enabled": false,
+      "memory_consolidation_enabled": true,
+      "multi_session_enabled": false,
+      "notification_style": "digest"
+    },
+    "communication_style": "structured executive summary"
+  },
+  "backlog": {
+    "index_path": "System Backlog.md",
+    "archive_path": "System Backlog - Archive.md",
+    "progress_dir": "Logs/backlog-progress",
+    "clusters": ["client-delivery", "internal-ops", "thought-leadership"]
+  },
+  "architect": {
+    "output_dir": "Logs/architect",
+    "cadence": "monthly",
+    "benchmarks": {},
+    "dimensions_enabled": ["intake-effectiveness", "rule-coverage"],
+    "default_mode": "report",
+    "auto_compare": false,
+    "external_research_enabled": false,
+    "prior_seed": "consultant",
+    "archetype_research": { "cached_at": null }
+  },
+  "system": {
+    "timezone": "America/New_York",
+    "schema_version": "1.1.0",
+    "standards_version": "1.0.0",
+    "created_date": "2026-04-27",
+    "phases_completed": ["A", "B", "C", "D", "E"],
+    "opt_outs": ["automation"],
+    "ingestion_state": "complete",
+    "onboarding_state": "complete",
+    "is_fresh": false
+  }
+}

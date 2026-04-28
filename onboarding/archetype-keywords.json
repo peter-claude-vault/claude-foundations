@@ -1,0 +1,153 @@
+{
+  "schema_version": "1.0.0",
+  "_comment": "Archetype inference keyword tables. Consumed by archetype-inference.sh (SP01 T-7a). Tokens are case-insensitive substrings matched against Section B + C extracted transcripts. Scoring per design doc onboarder-design.md §Archetype Inference.",
+  "scoring": {
+    "negative_weight": 0.5,
+    "min_score": 2,
+    "min_margin": 1,
+    "fallback_archetype": "generalist",
+    "confidence_formula": "min(1.0, top_score / 6.0)",
+    "match_mode": "case_insensitive_word_or_phrase",
+    "tokenizer_notes": "Compare lowercased transcript against each token; multi-word tokens require exact phrase order."
+  },
+  "archetypes": {
+    "consultant": {
+      "positive": [
+        "engagement",
+        "client",
+        "deliverable",
+        "proposal",
+        "pitch",
+        "partner",
+        "stakeholder",
+        "scope",
+        "workstream",
+        "advisory",
+        "consulting",
+        "billable",
+        "project lead",
+        "executive sponsor",
+        "steering committee",
+        "kickoff",
+        "rollout"
+      ],
+      "negative": [
+        "repository",
+        "pull request",
+        "merge",
+        "deploy",
+        "preprint",
+        "citation",
+        "newsletter"
+      ],
+      "seeds": {
+        "vault_canonical_file_types_add": ["engagement", "deliverable", "stakeholder"],
+        "vault_organizational_method_hint": "engagement-based"
+      }
+    },
+    "developer": {
+      "positive": [
+        "repository",
+        "repo",
+        "pull request",
+        "merge",
+        "deploy",
+        "build",
+        "branch",
+        "commit",
+        "stack",
+        "frontend",
+        "backend",
+        "ci",
+        "release",
+        "endpoint",
+        "database",
+        "infrastructure",
+        "library",
+        "framework",
+        "open source"
+      ],
+      "negative": [
+        "engagement",
+        "deliverable",
+        "client pitch",
+        "newsletter",
+        "preprint",
+        "citation"
+      ],
+      "seeds": {
+        "vault_canonical_file_types_add": ["repo", "commit-log", "design-doc"],
+        "vault_organizational_method_hint": "project-based"
+      }
+    },
+    "writer": {
+      "positive": [
+        "essay",
+        "draft",
+        "publish",
+        "newsletter",
+        "subscribers",
+        "audience",
+        "post",
+        "byline",
+        "manuscript",
+        "chapter",
+        "podcast",
+        "editor",
+        "outline",
+        "voice",
+        "narrative"
+      ],
+      "negative": [
+        "repository",
+        "pull request",
+        "engagement",
+        "deliverable",
+        "grant"
+      ],
+      "seeds": {
+        "vault_canonical_file_types_add": ["essay", "draft", "outline"],
+        "vault_organizational_method_hint": "topic-based"
+      }
+    },
+    "academic": {
+      "positive": [
+        "paper",
+        "citation",
+        "literature review",
+        "grant",
+        "coauthor",
+        "conference",
+        "abstract",
+        "preprint",
+        "experiment",
+        "study",
+        "thesis",
+        "dissertation",
+        "lab",
+        "principal investigator",
+        "peer review",
+        "manuscript"
+      ],
+      "negative": [
+        "client",
+        "deliverable",
+        "pull request",
+        "deploy",
+        "newsletter"
+      ],
+      "seeds": {
+        "vault_canonical_file_types_add": ["paper", "citation", "lit-review"],
+        "vault_organizational_method_hint": "topic-based"
+      }
+    },
+    "generalist": {
+      "positive": [],
+      "negative": [],
+      "seeds": {
+        "vault_canonical_file_types_add": [],
+        "vault_organizational_method_hint": null
+      }
+    }
+  }
+}

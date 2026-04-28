@@ -1,0 +1,15 @@
+Knowledge system. Yeah, fresh. I'm starting this vault from scratch — I had a folder of loose drafts on disk before, nothing organized, and I'm rebuilding from zero. Fresh vault, that's the call.
+
+Organization is going to be topic-based. Not project-based, not engagement-based, topic-based. The reason is — every essay I write either revisits an old topic or starts a new one, and I keep wishing my notes were grouped by the idea, not by the publication date or which newsletter it ended up in. So I want a Topics top-level folder, and each topic folder holds essays in progress, outlines, drafts, and any research interview notes connected to that topic.
+
+So topics are the structural unit. I'm not going to call them projects in the manuscript sense — even the manuscript will live as a set of topic folders, one per chapter's central concern, with chapter drafts organized as outline → draft → revision history. Has-structured-projects is probably false — what I'm building isn't a project tracker, it's a topic tracker.
+
+Sensitive content. Honestly no, I don't have a sensitive-content concern. The content I publish is the content I write, and the in-progress drafts aren't secret. Skip the sensitive-isolation opt-in.
+
+File types I want managed. Essays — every published or to-be-published piece. Drafts — the in-progress versions, separately, because a draft in revision is different from an essay that's gone out. Outlines — these are first-class for me, I outline before I draft and I keep them around to reuse. Interview notes — when the podcast starts those will need their own file type, separate from essays. And people pages for the small group I work with regularly. So roughly: essay, draft, outline, interview-note, people.
+
+Folder structure. Topic at the top. Within a topic folder, sub-folders for outlines, drafts, and a publishing-log file that tracks which essays from that topic have actually shipped. The manuscript chapters get their own topic folders too.
+
+Wikilink convention is title-as-link, normal Obsidian default.
+
+One more thing. I do want a Transcripts folder for the podcast interview transcripts when those start coming in. Whisper-local is what I use for transcription and the raw transcripts will be heavy text files, I want them grouped centrally and then linked into the relevant topic folder per guest.

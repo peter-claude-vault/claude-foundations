@@ -1,0 +1,15 @@
+Alright, who am I. Sam Reyes, senior software engineer at Bramble Labs. Bramble's a SaaS company, mid-stage, we sell developer infrastructure tooling — the meta joke is, I'm a developer building tools for other developers. Senior level, about seven years on the backend side, I do some frontend when the team needs it but my main stack is Go services and a Python data layer.
+
+What am I working on right now. Four active projects, more or less. The big one is the auth-service v2 rebuild — we're peeling auth out of the monolith into its own service, new repo, fresh database schema, gRPC endpoints. I have a feature branch open, two pull requests landed last week, third one in review. The auth-service repo is the one I'm in every day. Tessa, my tech lead, reviews everything before we merge.
+
+Second project is the checkout-frontend redesign — that one's a TypeScript React thing, I'm not the lead, I'm just contributing components when Devon's spec PRs land. Frontend stack, you know, the usual. We deploy that one through our CI pipeline straight to a staging environment on every merge to main. The release cadence on checkout is weekly; we cut a release branch on Wednesdays.
+
+Third — and this one I actually own — is the ci-pipeline migration. Our build infrastructure is moving from long-lived runners to ephemeral ones, which means I'm rewriting our build configs, the deploy scripts, all the post-deploy smoke tests. Big infrastructure project. Not glamorous but it's blocking the rest of the org from shipping faster.
+
+Fourth, more exploratory, is the edge-cache library extraction. We have a piece of caching code that's used in three different services and I'm trying to lift it out into a library, possibly open source it eventually. That one's just in the design-doc phase right now, no code yet.
+
+Who I work with most. Tessa Park, our tech lead, she reviews every pull request I open on auth. Devon Marcellus is the product manager on checkout, she writes the spec PRs and I implement them. And Rohit Anandh is the staff engineer who reviews my design docs — for the ci-pipeline migration he basically owns the architectural sign-off, I can't merge the framework change without his stamp.
+
+Cadence is daily standup. We do a fifteen-minute standup at 10:30 every morning. PR reviews happen async throughout the day. Friday afternoon is unstructured — usually backend reading group or open-source contribution time.
+
+Audience for the stuff I write — almost everything I write is for me or for Claude to chew on. Personal commit-log notes, design-doc drafts before they go to Rohit, my own runbook scratch pad. Not joint, not for execs. So claude is the right answer.

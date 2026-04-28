@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0.0",
+  "platform": "darwin-launchd",
+  "jobs": [
+    {
+      "id": "architect",
+      "enabled": true,
+      "schedule": {
+        "hour": 6,
+        "minute": 0,
+        "dow": [1]
+      },
+      "command": "/Users/example/.claude/skills/architect/run.sh",
+      "log_path": "/Users/example/.claude/logs/architect-cron.log",
+      "idle_watchdog_sec": 180,
+      "single_instance": true,
+      "cold_wake_probe": true
+    }
+  ],
+  "tripwires": [
+    {
+      "id": "architect-stale",
+      "semantics": "contents",
+      "contract": "architect weekly report absent or fails to surface topic-coverage signal",
+      "path": "/Users/example/.claude/logs/architect-cron.log",
+      "expected_contents_regex": "ARCHITECT_REPORT_WRITTEN"
+    }
+  ],
+  "observability": {
+    "morning_brief_staleness_h": 48,
+    "librarian_staleness_h": 24,
+    "sessionstart_banner_staleness_h": 24,
+    "filename_epoch_parsing": true
+  }
+}

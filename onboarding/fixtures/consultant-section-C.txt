@@ -1,0 +1,13 @@
+Knowledge system — yeah, so I've been keeping a vault for, I don't know, two years now. Definitely retrofitting. Not starting fresh. The structure I have today is engagement-based — every engagement gets its own folder under Engagements, and within that folder I keep meeting notes, deliverable drafts, the engagement-level context page that has scope and stakeholders, and a separate stakeholder map.
+
+So organizational method, I'd call it engagement-based. It's structured — projects are real first-class things in there. Each engagement has a status, a partner, an executive sponsor, deliverables tracked separately. When a steering committee happens I drop the meeting note straight into the engagement folder.
+
+Sensitive content — yeah, I do want a separate vault for sensitive client material. Some of the diagnostic interviews carry things I really don't want sitting in the same graph as my advisory office hours notes. So yes, opt me into the sensitive isolation thing. That's a yes for me.
+
+File types I want managed. Meeting notes, definitely — every steering committee, every kickoff, every workstream check-in. Deliverable drafts, the proposal documents, the rollout plans. The engagement-level context page itself. Stakeholder pages — one per client exec I'm pitching to, with their priorities and what they care about. Proposals as their own type because those have different lifecycles, they go through pitch and then either land or don't. People pages for my partner and associates internally, separate from client stakeholders. So roughly: meeting-note, deliverable, engagement, stakeholder, proposal, people.
+
+Folder structure — engagement is the top level, that's the unit of work for me. Within an engagement, I sub-folder by workstream when an engagement gets big enough to need it. Northwind has four workstreams so it has sub-folders. Glassbridge is small, no sub-folders.
+
+Wikilink convention — I use title-as-link, the heading of the file becomes the link target. Aliases handled in frontmatter. I rename aggressively when scope shifts so the alias trail matters.
+
+Anything else. I don't want a separate transcript folder — Granola transcripts go straight into the engagement folder where they belong, attached to the meeting note. And I don't really do much in the way of personal notes in this vault, this is all client-delivery work.
