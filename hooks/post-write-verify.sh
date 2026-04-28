@@ -68,7 +68,8 @@ if [[ "$REL_PATH" == Engagements/*/CLAUDE.md ]]; then
 
   if [[ -n "$WARNINGS" ]]; then
     SAFE_WARN=$(echo "$WARNINGS" | tr '"' "'")
-    echo "$(date -Iseconds) | post-write-verify | INCOMPLETE | ${FILE_PATH} | ${SAFE_WARN}" >> "$HOME/Desktop/artefact-daily-logs/hook-audit.log" 2>/dev/null || true
+    mkdir -p "$HOOKS_STATE" 2>/dev/null || true
+    echo "$(date -Iseconds) | post-write-verify | INCOMPLETE | ${FILE_PATH} | ${SAFE_WARN}" >> "$HOOKS_STATE/hook-audit.log" 2>/dev/null || true
     printf '{"additionalContext":"Engagement CLAUDE.md completeness check: %s Fix before moving on."}\n' "$SAFE_WARN"
     exit 0
   fi
@@ -228,7 +229,8 @@ case "$RESULT" in
   YAML_ERROR\|*)
     ERR_MSG="${RESULT#YAML_ERROR|}"
     SAFE_MSG=$(echo "$ERR_MSG" | tr '"' "'" | tr '\n' ' ' | sed 's/  */ /g')
-    echo "$(date -Iseconds) | post-write-verify | FAIL | ${FILE_PATH} | YAML error: ${SAFE_MSG}" >> "$HOME/Desktop/artefact-daily-logs/hook-audit.log" 2>/dev/null || true
+    mkdir -p "$HOOKS_STATE" 2>/dev/null || true
+    echo "$(date -Iseconds) | post-write-verify | FAIL | ${FILE_PATH} | YAML error: ${SAFE_MSG}" >> "$HOOKS_STATE/hook-audit.log" 2>/dev/null || true
     EMIT_MSG="Post-write validation failed: ${SAFE_MSG}. Fix immediately."
     ;;
   MISSING\|*)
@@ -236,7 +238,8 @@ case "$RESULT" in
     FIELDS="${BODY%|*}"
     SKEY="${BODY##*|}"
     SAFE_REL=$(echo "$REL_PATH" | tr '"' "'")
-    echo "$(date -Iseconds) | post-write-verify | FAIL | ${FILE_PATH} | Missing fields: ${FIELDS} (${SKEY})" >> "$HOME/Desktop/artefact-daily-logs/hook-audit.log" 2>/dev/null || true
+    mkdir -p "$HOOKS_STATE" 2>/dev/null || true
+    echo "$(date -Iseconds) | post-write-verify | FAIL | ${FILE_PATH} | Missing fields: ${FIELDS} (${SKEY})" >> "$HOOKS_STATE/hook-audit.log" 2>/dev/null || true
     EMIT_MSG="Post-write validation failed: missing required fields [${FIELDS}] for schema type ${SKEY} in ${SAFE_REL}. Fix immediately."
     ;;
   OK|"")
@@ -245,7 +248,8 @@ esac
 
 if [[ -n "$ADV_MSGS" ]]; then
   SAFE_ADV=$(echo "$ADV_MSGS" | tr '"' "'" | tr '\n' ' ' | sed 's/  */ /g')
-  echo "$(date -Iseconds) | post-write-verify | tier1_emit | ${FILE_PATH} | ${SAFE_ADV}" >> "$HOME/Desktop/artefact-daily-logs/hook-audit.log" 2>/dev/null || true
+  mkdir -p "$HOOKS_STATE" 2>/dev/null || true
+  echo "$(date -Iseconds) | post-write-verify | tier1_emit | ${FILE_PATH} | ${SAFE_ADV}" >> "$HOOKS_STATE/hook-audit.log" 2>/dev/null || true
   if [[ -n "$EMIT_MSG" ]]; then
     EMIT_MSG="${EMIT_MSG} | [CONTENT ADVISORIES] ${SAFE_ADV}"
   else

@@ -70,16 +70,15 @@ provided so adopters can locate the canonical enforcement.
 
 ## Audit-log path migration
 
-The live hook wrote audit lines to `$HOME/Desktop/artefact-daily-logs/hook-audit.log`
-(Peter-installation-specific). The foundation hook writes to
-`$HOOKS_STATE/hook-audit.log` (manifest-overridable via
-`manifest.hooks.audit_log_path`). Four write sites consolidated through a single
-`audit_log()` helper function.
+The live hook wrote audit lines to an installation-specific filesystem path
+under `$HOME/Desktop/`. The foundation hook writes to `$HOOKS_STATE/hook-audit.log`
+(manifest-overridable via `manifest.hooks.audit_log_path`). Four write sites
+consolidated through a single `audit_log()` helper function.
 
 ## Helper-function consolidation
 
 Three helpers were factored from the live hook to reduce line count:
-- `audit_log()` — replaces 4 inline `echo … >> $HOME/Desktop/…` blocks.
+- `audit_log()` — replaces 4 inline `echo … >> <hardcoded-audit-path>` blocks.
 - `literal_replace()` — replaces 5 inline python-heredoc Edit-content reconstruction blocks.
 - `emit_deny()` / `emit_allow_ctx()` — replace 12+ inline `jq -n` deny/allow blocks.
 
