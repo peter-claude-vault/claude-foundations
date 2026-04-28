@@ -1,4 +1,4 @@
 [A-Za-z0-9._+-]+@artefact\.com
 [A-Za-z0-9._+-]+@tiktinsky\.com
 /Users/peter[A-Za-z0-9_.-]*
-\.claude-plans/[0-9]+-[a-z-]+
+\.claude-plans/[0-9]+-[a-z]+-[a-z][a-z-]*
