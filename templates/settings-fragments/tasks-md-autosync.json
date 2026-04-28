@@ -1,0 +1,11 @@
+{
+  "_comment": "Conditional fragment merged when manifest.hooks.tasks_autosync.enabled is true. Adds plan tasks.md task-status auto-sync via <!-- task-done: NN/T-M --> markers. Installer deep-merges into the PostToolUse[Edit|Write] hooks array.",
+  "_merge_target": "hooks.PostToolUse[matcher=Edit|Write].hooks",
+  "_manifest_flag": "hooks.tasks_autosync.enabled",
+  "entries": [
+    {
+      "type": "command",
+      "command": "~/.claude/hooks/tasks-md-autosync.sh"
+    }
+  ]
+}

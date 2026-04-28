@@ -1,0 +1,11 @@
+{
+  "_comment": "Conditional fragment merged when manifest.hooks.auto_commit.enabled is true. Adds git auto-commit pass on SessionEnd for $CLAUDE_HOME and/or vault repos. Installer deep-merges this fragment into the SessionEnd hooks array of the user's settings.json.",
+  "_merge_target": "hooks.SessionEnd[0].hooks",
+  "_manifest_flag": "hooks.auto_commit.enabled",
+  "entries": [
+    {
+      "type": "command",
+      "command": "~/.claude/hooks/auto-commit-surfaces.sh"
+    }
+  ]
+}

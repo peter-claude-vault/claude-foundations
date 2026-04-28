@@ -1,0 +1,11 @@
+{
+  "_comment": "Conditional fragment merged when manifest.hooks.multi_session.enabled is true. Adds reconcile-sessions.sh on SessionEnd to clean up stale registry entries when concurrent Claude Code sessions are expected on the same vault. session-register.sh + session-deregister.sh in default settings.json are always-on; this fragment adds the periodic reconciliation pass.",
+  "_merge_target": "hooks.SessionEnd[0].hooks",
+  "_manifest_flag": "hooks.multi_session.enabled",
+  "entries": [
+    {
+      "type": "command",
+      "command": "~/.claude/hooks/reconcile-sessions.sh"
+    }
+  ]
+}
