@@ -1,0 +1,266 @@
+{
+  "schema_version": "1.0.0",
+  "meeting-note": {
+    "required": [
+      "type",
+      "date",
+      "meeting_title",
+      "attendees",
+      "tags",
+      "processed",
+      "updated"
+    ],
+    "optional": [
+      "engagement",
+      "project",
+      "previous_instance",
+      "granola_id",
+      "granola_ids",
+      "granola_url"
+    ]
+  },
+  "daily-note": {
+    "required": [
+      "date",
+      "day",
+      "processed",
+      "tags"
+    ],
+    "optional": []
+  },
+  "inbox-archive": {
+    "required": [
+      "date",
+      "day",
+      "type",
+      "sources",
+      "created",
+      "tags"
+    ],
+    "optional": []
+  },
+  "log": {
+    "required": [
+      "type",
+      "log-type",
+      "date",
+      "timestamp"
+    ],
+    "optional": []
+  },
+  "people": {
+    "required": [
+      "name",
+      "org",
+      "role",
+      "engagement",
+      "updated",
+      "tags"
+    ],
+    "optional": [
+      "email",
+      "projects",
+      "max_lines"
+    ]
+  },
+  "project": {
+    "required": [
+      "engagement",
+      "project",
+      "owner",
+      "status",
+      "updated",
+      "tags"
+    ],
+    "optional": []
+  },
+  "prd": {
+    "required": [
+      "title",
+      "engagement",
+      "project",
+      "type",
+      "status",
+      "owner",
+      "updated",
+      "tags"
+    ],
+    "optional": [
+      "workstream",
+      "provides",
+      "max_lines"
+    ]
+  },
+  "context": {
+    "required": [
+      "title",
+      "engagement",
+      "project",
+      "type",
+      "status",
+      "owner",
+      "updated",
+      "tags"
+    ],
+    "optional": [
+      "workstream",
+      "provides",
+      "max_lines"
+    ]
+  },
+  "engagement": {
+    "required": [
+      "engagement",
+      "owner",
+      "status",
+      "updated",
+      "tags"
+    ],
+    "optional": []
+  },
+  "reference": {
+    "required": [
+      "type",
+      "updated",
+      "tags"
+    ],
+    "optional": [
+      "provides",
+      "max_lines"
+    ]
+  },
+  "index": {
+    "required": [
+      "type",
+      "updated"
+    ],
+    "optional": [
+      "provides"
+    ]
+  },
+  "weekly-summary": {
+    "required": [
+      "type",
+      "week",
+      "date-range",
+      "tags"
+    ],
+    "optional": []
+  },
+  "daily-archive": {
+    "required": [
+      "type",
+      "month",
+      "date-range",
+      "tags"
+    ],
+    "optional": []
+  },
+  "navigation": {
+    "required": [
+      "type",
+      "engagement",
+      "updated"
+    ],
+    "optional": [
+      "max_lines"
+    ]
+  },
+  "personal-initiative": {
+    "required": [
+      "type",
+      "name",
+      "status",
+      "owner",
+      "updated",
+      "tags"
+    ],
+    "optional": [
+      "github_repo",
+      "audience",
+      "lines",
+      "max_lines",
+      "provides",
+      "started",
+      "completed"
+    ]
+  },
+  "briefing": {
+    "required": [
+      "type",
+      "date",
+      "generated",
+      "tags"
+    ],
+    "optional": [
+      "max_lines"
+    ]
+  },
+  "strategic": {
+    "required": [
+      "type",
+      "engagement",
+      "status",
+      "updated",
+      "tags"
+    ],
+    "optional": [
+      "project",
+      "provides",
+      "max_lines"
+    ]
+  },
+  "planning": {
+    "required": [
+      "type",
+      "engagement",
+      "updated",
+      "tags"
+    ],
+    "optional": [
+      "project",
+      "provides",
+      "max_lines"
+    ]
+  },
+  "archive": {
+    "required": [
+      "type",
+      "source-path",
+      "archived-date",
+      "tags"
+    ],
+    "optional": [
+      "engagement",
+      "project"
+    ]
+  },
+  "historical-brief": {
+    "required": [
+      "type",
+      "updated",
+      "marked-historical-by"
+    ],
+    "optional": [
+      "kept-as",
+      "merged-into",
+      "copied-to",
+      "tags"
+    ]
+  },
+  "ideation-brief": {
+    "required": [
+      "type",
+      "title",
+      "created",
+      "updated"
+    ],
+    "optional": [
+      "status",
+      "tags",
+      "parent_plan",
+      "backlog_item"
+    ]
+  },
+  "_tag_prefixes": []
+}

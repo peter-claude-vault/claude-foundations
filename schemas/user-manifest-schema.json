@@ -1,0 +1,314 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "User Manifest",
+  "description": "Identity and config manifest for a Claude Foundations install. Instance file: user-manifest.json. 10 required top-level sections (identity/paths/tools/vault/projects/people/behavioral/backlog/architect/system) per SP01 v1.0.0 reviewer-coherence; 1.1.0 adds 3 optional sections (hooks/schema/plans) + vault.root_directories[] for SP02 hook-config externalization (Lead 2 §2); 1.2.0 adds 3 optional sections (dashboard/brief_repos/crons) + vault.context_documents[] for SP06 generic-processing-skills consumption (per SP09 T-9 fold-in, AR-3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "identity",
+    "paths",
+    "tools",
+    "vault",
+    "projects",
+    "people",
+    "behavioral",
+    "backlog",
+    "architect",
+    "system"
+  ],
+  "properties": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "email": { "type": ["string", "null"] },
+        "role": { "type": ["string", "null"] },
+        "industry": { "type": ["string", "null"] },
+        "seniority": { "type": ["string", "null"] },
+        "organization": { "type": ["string", "null"] },
+        "working_hours": { "type": ["string", "null"] }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Filesystem pointers. paths.vault_root is the canonical field; vault.root is a mirror.",
+      "properties": {
+        "vault_root": { "type": ["string", "null"] },
+        "plans_root": { "type": ["string", "null"] },
+        "hooks_state": { "type": ["string", "null"] },
+        "cron_log_dir": { "type": ["string", "null"] }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "calendar": { "type": ["string", "null"] },
+        "messaging": { "type": "array", "items": { "type": "string" } },
+        "email": { "type": ["string", "null"] },
+        "transcription": { "type": ["string", "null"] },
+        "tasks": { "type": ["string", "null"] },
+        "dev_env": { "type": ["string", "null"] }
+      }
+    },
+    "vault": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "root": { "type": ["string", "null"] },
+        "is_fresh": { "type": ["boolean", "null"] },
+        "organizational_method": { "type": ["string", "null"] },
+        "top_level_folder": { "type": ["string", "null"] },
+        "has_structured_projects": { "type": ["boolean", "null"] },
+        "canonical_file_types": { "type": "array", "items": { "type": "string" } },
+        "tag_prefixes": { "type": "array", "items": { "type": "string" } },
+        "logs_whitelist_subdirs": { "type": "array", "items": { "type": "string" } },
+        "transcript_dir": { "type": ["string", "null"] },
+        "context_section_types": { "type": "array", "items": { "type": "string" } },
+        "engagement_aliases": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "default_audience": {
+          "anyOf": [
+            { "$ref": "#/definitions/audience" },
+            { "type": "null" }
+          ]
+        },
+        "wikilink_contract": { "type": ["string", "null"] },
+        "root_directories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Allowlist of top-level directory names within vault.root. Empty array means no allowlist (any folder permitted). Read by pre-write-guard.sh R-04 enforcement (1.1.0+)."
+        },
+        "context_documents": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Vault-relative paths read as context by backlog-research and similar skills (1.2.0+, optional). Default ['CLAUDE.md'] for new users; per SP06 audit F-08 remediation."
+        }
+      }
+    },
+    "projects": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "active": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "name": { "type": "string" },
+              "status": { "type": "string" },
+              "tag_prefix": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "people": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string" },
+          "relationship": { "type": "string" }
+        }
+      }
+    },
+    "behavioral": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "autonomy": { "type": ["string", "null"] },
+        "cadence_default": { "type": ["string", "null"] },
+        "hook_preferences": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "communication_style": { "type": ["string", "null"] }
+      }
+    },
+    "backlog": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "index_path": { "type": ["string", "null"] },
+        "archive_path": { "type": ["string", "null"] },
+        "progress_dir": { "type": ["string", "null"] },
+        "clusters": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "architect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "output_dir": { "type": ["string", "null"] },
+        "cadence": { "type": ["string", "null"] },
+        "benchmarks": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "dimensions_enabled": { "type": "array", "items": { "type": "string" } },
+        "default_mode": { "type": ["string", "null"] },
+        "auto_compare": { "type": ["boolean", "null"] },
+        "external_research_enabled": { "type": ["boolean", "null"] },
+        "prior_seed": { "type": ["string", "null"] },
+        "archetype_research": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cached_at": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+    "system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version"],
+      "properties": {
+        "timezone": { "type": ["string", "null"] },
+        "schema_version": { "const": "1.2.0" },
+        "standards_version": { "type": ["string", "null"] },
+        "created_date": { "type": ["string", "null"] },
+        "phases_completed": { "type": "array", "items": { "type": "string" } },
+        "opt_outs": { "type": "array", "items": { "type": "string" } },
+        "ingestion_state": { "type": ["string", "null"] },
+        "onboarding_state": { "type": ["string", "null"] },
+        "is_fresh": { "type": ["boolean", "null"] }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Hook runtime config consumed by foundation-repo/hooks/ (1.1.0+, optional). Absent fields fall back to Lead 2 §2 hardcoded defaults.",
+      "properties": {
+        "protected_session_end_hooks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Hook names that pre-write-guard refuses to disable in settings.json. Honors HOOK_GUARD_DISABLE_OK=<name> env override (and CLAUDE_MEM_DISABLE_OK=1 for back-compat)."
+        },
+        "audit_log_path": {
+          "type": ["string", "null"],
+          "description": "Override destination for hook-audit.log. Defaults to $HOOKS_STATE/hook-audit.log."
+        },
+        "multi_session": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "stale_threshold_secs": { "type": "integer", "minimum": 60 },
+            "touched_files_cap": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "context_pressure": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "warn_pct": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "mandate_pct": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "hard_pct": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "hard_secs": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "auto_commit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean" } }
+        },
+        "memory_consolidation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean" } }
+        },
+        "tasks_autosync": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "enabled": { "type": "boolean" } }
+        }
+      }
+    },
+    "schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Schema-related runtime config (1.1.0+, optional). Distinct from the JSON-schema files at $CLAUDE_HOME/schemas/.",
+      "properties": {
+        "size_guards": {
+          "type": "array",
+          "description": "Per-file size enforcement entries consumed by pre-write-guard size-guard rule.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path"],
+            "properties": {
+              "path": { "type": "string", "description": "Vault-relative path of the file to monitor." },
+              "soft_limit_bytes": { "type": "integer", "minimum": 0 },
+              "hard_limit_bytes": { "type": ["integer", "null"], "minimum": 0 },
+              "message_template": { "type": ["string", "null"], "description": "Operator-facing message; supports {path}, {size}, {limit} interpolation." }
+            }
+          }
+        }
+      }
+    },
+    "plans": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Plan-system runtime config (1.1.0+, optional).",
+      "properties": {
+        "backlog_enforcement": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Read by pre-write-guard R-15 to enforce backlog-row presence on new plan creation.",
+          "properties": {
+            "row_format": { "type": ["string", "null"], "description": "Operator-facing row template; supports {plan_slug} interpolation." },
+            "error_template": { "type": ["string", "null"], "description": "DENY-message template; supports {plan_slug} interpolation." }
+          }
+        }
+      }
+    },
+    "dashboard": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Dashboard-integration runtime config (1.2.0+, optional). Consumed by morning-brief skill. Per SP06 manifest key_design_decisions.dashboard_gating: enabled defaults false; path required when enabled=true (enforced at SP06 runtime, not schema).",
+      "properties": {
+        "enabled": { "type": ["boolean", "null"] },
+        "path": { "type": ["string", "null"] }
+      }
+    },
+    "brief_repos": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Brief-Repo paths consumed by morning-brief skill loop (1.2.0+, optional). SP06 spec generalizes the brief-repo loop from a hardcoded list to this array."
+    },
+    "crons": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Cron-group runtime config (1.2.0+, optional). SP06 spec: cron groups move from a hardcoded list to crons.groups[]. Consumed by morning-brief.",
+      "properties": {
+        "groups": {
+          "type": "array",
+          "description": "Named cron groups; each entry pairs a label with one or more job ids from orchestration.json.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label"],
+            "properties": {
+              "label": { "type": "string" },
+              "job_ids": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "audience": {
+      "enum": ["claude", "joint", "human"]
+    }
+  }
+}

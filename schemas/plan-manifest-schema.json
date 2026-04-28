@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Orchestrator Task Manifest",
+  "description": "Defines a set of tasks for the orchestrator to execute, with dependencies and parallel grouping.",
+  "type": "object",
+  "required": ["schema_version", "project", "spec_path", "tasks"],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "project": {
+      "type": "string",
+      "description": "Initiative name (matches plan title)"
+    },
+    "spec_path": {
+      "type": "string",
+      "description": "Absolute path to the spec.md file for this project"
+    },
+    "architecture_path": {
+      "type": ["string", "null"],
+      "description": "Absolute path to architecture.md, if one exists"
+    },
+    "status": {
+      "type": "string",
+      "description": "Top-level plan status (R-27 / plan-index classifier). Optional for manifests that inherit status from spec.md, required for manifests acting as the plan's status anchor."
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "description", "acceptance_criteria"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^T-[0-9]+$",
+            "description": "Task identifier (T-1, T-2, etc.)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short task name"
+          },
+          "description": {
+            "type": "string",
+            "description": "2-4 sentence description of what the task accomplishes"
+          },
+          "acceptance_criteria": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Verb-first bullets defining done"
+          },
+          "file_references": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": [],
+            "description": "Absolute paths the worker should read before starting"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": [],
+            "description": "Task IDs that must complete before this task starts"
+          },
+          "parallel_group": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Tasks sharing a parallel_group run simultaneously. Must not share file_references."
+          },
+          "allowed_tools": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": [],
+            "description": "Tool names passed to --allowedTools. Empty means all tools allowed."
+          },
+          "max_budget_usd": {
+            "type": "number",
+            "minimum": 0,
+            "default": 5,
+            "description": "Per-task budget cap in USD"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

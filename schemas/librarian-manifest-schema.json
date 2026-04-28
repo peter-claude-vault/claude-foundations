@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Librarian Manifest",
+  "description": "Librarian runtime state: inventory, cross-reference graph, tag inventory, scan state, drift findings, architect recommendations, rename history. Schema peer shipped by SP01 T-5; runtime writes owned by SP04 (Generic Librarian).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "inventory",
+    "xref_graph",
+    "tags",
+    "scan_state",
+    "drift_findings",
+    "architect_recommendations",
+    "rename_history"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "inventory": {
+      "type": "object",
+      "required": ["by_type", "by_path"],
+      "properties": {
+        "by_type": {
+          "type": "object",
+          "description": "Map: canonical file type -> inventory records or counts",
+          "additionalProperties": true
+        },
+        "by_path": {
+          "type": "object",
+          "description": "Map: absolute path -> inventory record",
+          "additionalProperties": true
+        }
+      }
+    },
+    "xref_graph": {
+      "type": "object",
+      "description": "Cross-reference graph (wikilinks, canonical-file links, explicit references). Inner shape owned by SP04 runtime writer.",
+      "additionalProperties": true
+    },
+    "tags": {
+      "type": "object",
+      "description": "Tag inventory (tag -> occurrences). Inner shape owned by SP04 runtime writer.",
+      "additionalProperties": true
+    },
+    "scan_state": {
+      "type": "object",
+      "required": ["last_scanned_at", "findings_by_capability"],
+      "properties": {
+        "last_scanned_at": {
+          "type": ["string", "null"],
+          "description": "ISO-8601 timestamp of the most recent full-scan cycle"
+        },
+        "findings_by_capability": {
+          "type": "object",
+          "description": "Map: capability id -> scan findings record",
+          "additionalProperties": true
+        }
+      }
+    },
+    "drift_findings": {
+      "type": "object",
+      "required": [
+        "provides_canonicality",
+        "size_monitoring",
+        "schema_type_coverage",
+        "skill_parity",
+        "entity_parity"
+      ],
+      "properties": {
+        "provides_canonicality": { "type": "object", "additionalProperties": true },
+        "size_monitoring":       { "type": "object", "additionalProperties": true },
+        "schema_type_coverage":  { "type": "object", "additionalProperties": true },
+        "skill_parity":          { "type": "object", "additionalProperties": true },
+        "entity_parity":         { "type": "object", "additionalProperties": true }
+      }
+    },
+    "architect_recommendations": {
+      "type": "object",
+      "required": ["last_scanned_log", "items"],
+      "properties": {
+        "last_scanned_log": {
+          "type": ["string", "null"],
+          "description": "Path to the most recent architect log file consumed"
+        },
+        "items": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        }
+      }
+    },
+    "rename_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  }
+}
