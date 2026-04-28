@@ -13,7 +13,7 @@
 # documents where the dropped semantics live.
 #
 # References:
-#   - hooks/DROPPED-RULES.md §"adopter-workflow-specific" (R-47..R-49)
+#   - hooks/DROPPED-RULES.md §"Peter-workflow-specific" (R-47..R-49)
 #   - hooks/pre-write-guard.sh L24 (R-rule enumeration; no R-47 line)
 #   - tests/pre-write-guard-r-rules.sh test 10 (R-32 type-allowlist DENY,
 #     which IS in scope)
@@ -32,7 +32,7 @@ specific tag taxonomy that foundation does not generalize.
 Foundation retains R-32 type-allowlist DENY; that path is covered by
 tests/pre-write-guard-r-rules.sh test 10.
 
-See hooks/DROPPED-RULES.md §"adopter-workflow-specific" for the full rationale.
+See hooks/DROPPED-RULES.md §"Peter-workflow-specific" for the full rationale.
 EOF
 
 exit 0
