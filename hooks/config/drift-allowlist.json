@@ -1,0 +1,4 @@
+{
+  "_comment": "Source-of-truth for librarian provides: overlap exemptions. Edit this file directly; mirrored into librarian-manifest.json by /librarian. Never hand-edit the manifest.",
+  "provides_overlap": []
+}

@@ -1,0 +1,5 @@
+{
+  "_comment": "Allowlist of cron plist labels exempt from the R-22 wrapper-owned-logging default. Consumed by librarian capabilities/cron-log-architecture.sh. Each entry: {label, reason}.",
+  "_schema_version": 1,
+  "exceptions": []
+}

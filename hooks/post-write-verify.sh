@@ -83,12 +83,13 @@ if [[ -z "$FRONTMATTER" ]]; then
   exit 0
 fi
 
-# Validate YAML and check required fields in one python3 call
+# Validate YAML and check required fields in one python3 call.
+# Schema path passed via argv (not hardcoded) so $SCHEMAS_DIR overrides honor.
 RESULT=$(python3 -c "
-import yaml, json, sys, os
+import yaml, json, sys
 
 raw = sys.stdin.read()
-schema_file = os.path.expanduser('~/.claude/schemas/vault-schema.json')
+schema_file = sys.argv[2] if len(sys.argv) > 2 else ''
 
 # Parse YAML
 try:
@@ -162,7 +163,7 @@ if missing:
     print(f'MISSING|{fields}|{schema_key}')
 else:
     print('OK')
-" "$REL_PATH" <<< "$FRONTMATTER" 2>&1)
+" "$REL_PATH" "$SCHEMA_FILE" <<< "$FRONTMATTER" 2>&1)
 
 # --- R-38 + R-39 content advisories (Tier 1, combined emission) ---
 # R-38: blockquote summary on >200-line non-allowlisted files
