@@ -1517,6 +1517,14 @@ When a new memory is being created (by any skill or by the auto-memory system), 
 - Gate B (proposal acceptance delta): pending user judge-pack pass at `baselines/judge-pack/memory-hygiene.md`.
 
 
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON candidate entries via `lib/findings.sh::emit_finding`; on synthesis-time confirmation, MEMORY_DIR/*.md mutations applied by Claude.
+- **Schema type:** NDJSON candidate (validated against `tests/prefilter-contract.md §1`); deterministic-class entries are `librarian-finding`-shaped (validated against `librarian-manifest-schema.json#/$defs/finding`); memory file body is unstructured.
+- **Pre-write validation:** every emitted candidate passes `findings.sh` schema check before output; memory mutations gated on `requires_confirmation: true` per spec §5 capability-registry contract.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-memory-hygiene.md`.
+- **Tier:** judgment. **requires_confirmation:** true. **cron_block:** skip-non-interactive — capability exits 0 with `memory-hygiene: skipped (non-interactive)` log line when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
+
 ---
 
 ## Capability: transcript-mine
@@ -1640,6 +1648,15 @@ In `--apply` mode: write high-confidence proposals directly (with memory pre-wri
 - Tests: `tests/transcript-mine.sh` — 17 assertions across 6 scenarios (NDJSON schema, no-match, malformed skip, Gate A adversarial, --dry-run, frontmatter strip).
 - Gate A (adversarial prefilter recall): **0 candidates from 20L DQ Sheet placeholder** (verified 2026-04-20 T-3). PASS — near-zero condition satisfied.
 - Gate B (proposal acceptance delta): pending user judge-pack pass at `baselines/judge-pack/transcript-mine.md`.
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON candidate entries via `lib/findings.sh::emit_finding`; on synthesis-time confirmation, MEMORY_DIR/*.md mutations applied by Claude.
+- **Schema type:** NDJSON candidate (validated against `tests/prefilter-contract.md §1`); memory file body is unstructured.
+- **Pre-write validation:** every emitted candidate passes `findings.sh` schema check before output; memory mutations gated on `requires_confirmation: true` per spec §5 capability-registry contract.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-transcript-mine.md`.
+- **Tier:** judgment. **requires_confirmation:** true. **cron_block:** skip-non-interactive — capability exits 0 with `transcript-mine: skipped (non-interactive)` log line when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
 
 ---
 
@@ -1889,6 +1906,15 @@ Create an audit trail from curated memory back to the raw observation that gener
 - Tests: `tests/mem-promote.sh` — 19 assertions across 7 scenarios (novel candidate emission, duplicate/variant detection, nonexistent-session handling, Gate A adversarial pair, --dry-run summary, within-session cluster consolidation, unknown-flag exit 2).
 - Gate A (adversarial pair-overlap): **4 pair-aware findings emit** (shared-token jaccard 0.30-0.40 across the 8b4eccad + 83468272 pair — cascade-waiver ×2, partial-status, Plan 64 SP02). Gate A PASS per prefilter-contract.md (disjunctive "collapse OR pair-aware finding").
 - Gate B (proposal acceptance delta): pending user judge-pack pass at `baselines/judge-pack/mem-promote.md`.
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON candidate entries via `lib/findings.sh::emit_finding`; on synthesis-time confirmation, MEMORY_DIR/*.md mutations applied by Claude.
+- **Schema type:** NDJSON candidate (validated against `tests/prefilter-contract.md §1`); memory file body is unstructured.
+- **Pre-write validation:** every emitted candidate passes `findings.sh` schema check before output; memory mutations gated on `requires_confirmation: true` per spec §5 capability-registry contract.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-mem-promote.md`.
+- **Tier:** judgment. **requires_confirmation:** true. **cron_block:** skip-non-interactive — capability exits 0 with `mem-promote: skipped (non-interactive)` log line when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
 
 ---
 
