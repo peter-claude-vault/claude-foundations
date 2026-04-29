@@ -112,6 +112,14 @@ Matched rows retain `first_seen`. New rows append with next sequence number. Res
 
 **Tests:** synthetic test harness at `tests/frontmatter-enforce.sh` (16-assertion acceptance suite). Pre-extraction `drift_findings` baseline at `tests/baselines/frontmatter-enforce-pre-manifest.json`.
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; manifest subtree `drift_findings` (sub-keys `provides_canonicality`, `size_monitoring`, `schema_type_coverage`) via `manifest_set`. In `--fix` mode also rewrites in-vault `.md` files (atomic temp+rename, survivorship-preserved).
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/drift_findings`.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a); in `--fix` mode, frontmatter rewrites preserve all existing key order and never modify non-empty values.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-frontmatter-enforce.md`.
+
 ---
 
 ## Capability: xref-check
@@ -230,6 +238,14 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 **Finding class:** `people_non_conforming` with `file` + `issues` (pipe-joined `missing_required:<fields>` and/or `missing_context_section`).
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; lifecycle/exemption `librarian-event` lines via `emit_event`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); event lines carry `librarian-event` shape.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; required-field list sourced from `vault-schema.json.people.required` (capability gracefully exits with `people_audit_skipped` if schema list is empty/missing).
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-people-audit.md`.
+
 ---
 
 ## Capability: waiver-audit
@@ -317,6 +333,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <
 **Env overrides (testing):** `VAULT_ROOT`, `PLANS_DIR`, `FINDINGS_OUTPUT`.
 
 **Cron wiring:** Monday-only block in `librarian-cron.sh`, alongside `drift-sweep`, `people-audit`, `waiver-audit`, `trinity-drift-detect`. Read-only; no write-time integration.
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; lifecycle/progress `librarian-event` lines via `emit_event`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); event lines carry `librarian-event` shape.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; allowlist sourced from `vault-schema.json._tag_prefixes` (empty → prefix validation skipped, only missing/empty findings fire); exempt patterns sourced from `manifest.vault.tag_audit_exemptions[]`.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-tag-coverage-audit.md`.
 
 ---
 
@@ -648,6 +672,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 | {plan-slug} | completion marker (frontmatter `status: complete\|completed\|implemented\|done` or `**Status:**` header bullet) without `last_verified` frontmatter, `**Last Verified:**` header bullet, or linked `handoff.md` | stale-status |
 ```
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`. Read-only; never modifies vault files or manifest.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; structural exempt-dir defaults (`/Archive/`, `/.git/`, `/.claude/projects/`, `/_test`) are non-overridable; user-extension Logs/ subdirs sourced from `manifest.vault.logs_whitelist_subdirs[]`.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-stale-detect.md`.
+
 ---
 
 ## Capability: placement-validate
@@ -693,6 +725,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 | {path} | Non-project file in project folder | {suggested} | manual |
 ```
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`. Read-only; never modifies vault files or manifest.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; structural placement rules are non-overridable; Logs/ user-extension whitelist sourced from `manifest.vault.logs_whitelist_subdirs[]`.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-placement-validate.md`.
+
 ---
 
 ## Capability: sync-check
@@ -734,7 +774,15 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/sync-check.sh [--scope <group|ch
 
 **Env overrides (testing):** `SC_BACKEND_ROOT`, `SC_MEMORY_ROOT`, `SC_ROOT_CLAUDE_MD`, `SC_VAULT_CLAUDE_MD`, `SC_VAULT_ARCH_MD`, `SC_SKILLS_INDEX`, `MANIFEST_PATH`, `FINDINGS_OUTPUT`.
 
-**Tests:** `tests/sync-check.sh` — 12/12 pass 2026-04-21 (--scope backend/vault/cross + persistent S-NNN IDs across runs).
+**Tests:** `tests/sync-check.sh` — 12/12 pass 2026-04-21 (--scope backend/vault/cross + persistent S-NNN IDs across runs). Foundation also ships `tests/synthetic-sync-check-gate.sh` (2/2 pass) covering the `manifest.vault.has_structured_projects` gate — checks 5-7 emit `skipped (ungated)` events when false.
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding` for findings, plus `librarian-event` lines for gate-skip notifications; manifest subtree `drift_findings.sync_check[]` via `manifest_set` (persistent `S-NNN` IDs reconciled across runs). In `--fix` mode also rewrites engagement CLAUDE.md status frontmatter and copies SKILL.md into the vault skill-spec mirror.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/drift_findings`.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a); checks 5-7 (vault-claude-md, vault-architecture, engagement-status) gated on `manifest.vault.has_structured_projects` and skip with explicit event when gate is false.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-sync-check.md`.
 
 ---
 
@@ -775,6 +823,13 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/backup.sh [--dry-run] [--scope <
 
 **Tests:** `tests/backup.sh` — 13/13 pass (clean tree, dirty tree dry-run, dirty tree live commit, push failure graceful, unknown-flag exit 2, `--message` override, `--scope` precedence, non-git skip).
 
+
+**Output Contract:**
+
+- **Files written:** stdout — markdown summary with one bullet per target (`- {dir}: {N} files committed, pushed`, `not a git repo, skipped`, `clean tree`, `push failed`, etc.). Side effects: `git add`/`git commit`/`git push` against each target directory's configured remote. Per-target VAULT_ROOT special case excludes `.obsidian/workspace.json` from staging.
+- **Schema type:** N/A — free-form operational markdown (not a `librarian-finding` emitter).
+- **Pre-write validation:** target must be a directory AND a git repository (skipped silently if either fails); `git diff --cached --quiet` check skips empty stages; never force-pushes; never runs destructive git ops; user-extension target list sourced from `manifest.system.backup_targets[]`.
+- **Failure mode:** best-effort with per-target reporting — push failures logged + reported but capability exits 0; commit failures logged + reported; non-git/non-existent targets skipped silently. Diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-backup.md` only on schema-invalid configuration (e.g. malformed BACKUP_TARGETS env).
 
 ---
 
