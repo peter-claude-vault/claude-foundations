@@ -1918,6 +1918,179 @@ Create an audit trail from curated memory back to the raw observation that gener
 
 ---
 
+## Capability: classify
+
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/classify.sh` (spec-only stub — Plan 71 SP04 T-6, 2026-04-29; implementation deferred to v2.1). Stub exits 2 with `v2.1 deferred per Plan 71 SP04` to stderr.
+
+**Purpose:** Intake classification primitive. Given a raw unstructured blob (email body / meeting transcript / ad-hoc capture), classify it into a canonical `type:` from `vault-schema.json._types`. Upstream of `write-frontmatter` and `cluster-by-topic` in the SP07 Phase 2 Act 2 pipeline.
+
+**Tier:** mechanical (prefilter for high-confidence inputs) + judgment (edge cases requiring Claude synthesis). Registry dispatcher-gate is `mechanical` (silent fast path); `cron_block: none`; `requires_confirmation: false`. Edge-case synthesis fires at invocation time per the rubric below — not gated through `requires_confirmation` because classification emits NDJSON only, never mutates the vault.
+
+**Invocation:**
+
+```
+bash $CLAUDE_HOME/skills/librarian/capabilities/classify.sh < input.ndjson
+```
+
+**Inputs:** NDJSON stream of `{source, content, hints{}}` records on stdin. Manifest read for `vault.type_allowlist[]` (the canonical type list used by the dispatcher to bound classification output).
+
+**Outputs:** NDJSON stream of `{source, type, confidence, rationale}` records on stdout. Each output record carries:
+- `source` — pass-through identifier from input
+- `type` — canonical type drawn from `vault-schema.json._types` (or literal `unknown` when sub-threshold)
+- `confidence` — float in `[0.0, 1.0]`
+- `rationale` — one-line synthesis hint (used by `cluster-by-topic` as a downstream signal)
+
+**Synthesis rubric (v2.1 — fires when shell prefilter cannot classify deterministically):**
+
+1. `confidence >= 0.85` → silent classify; emit record without surfacing to user.
+2. `0.5 <= confidence < 0.85` → present record to user with proposed `type` + rationale; user confirms / overrides before downstream consumption.
+3. `confidence < 0.5` → emit `type: unknown` and trigger a surgical follow-up prompt (request more signal — additional content, hint fields, or explicit user disambiguation).
+
+**Invocation modes:** `ad-hoc`, `phase-2-act-2`.
+
+**Dependencies:** `vault-schema.json`, `lib/findings.sh`.
+
+
+**Output Contract:**
+
+- **Files written:** none. Capability emits NDJSON records to stdout only. Caller (SP07 Phase 2 Act 2) consumes the stream and routes records to `write-frontmatter` (when `type` is known) or back to user-confirmation flow (when `type: unknown`).
+- **Schema type:** NDJSON output records validated against `vault-schema.json._types` for `type` field; record shape itself not formally schematized (intermediate-pipeline contract).
+- **Pre-write validation:** none required (no vault writes). Output record `type` field gated against `vault.type_allowlist[]` from the user manifest before emission; out-of-allowlist types emit as `unknown` with rationale.
+- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-classify.md`. Stub-mode invocation (v2.0 ship state) exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
+- **Tier:** mechanical (with v2.1 judgment-tier escalation per rubric). **requires_confirmation:** false at the dispatcher gate. **cron_block:** none.
+
+---
+
+## Capability: cluster-by-topic
+
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh` (spec-only stub — Plan 71 SP04 T-6, 2026-04-29; implementation deferred to v2.1). Stub exits 2 with `v2.1 deferred per Plan 71 SP04` to stderr.
+
+**Purpose:** Topic clustering primitive. Given a batch of classified records (output of `classify`), group them into topic clusters suitable for canonical-file drafting. Upstream of `draft-canonical-file` in the SP07 Phase 2 Act 3 pipeline.
+
+**Tier:** mechanical (embedding-based clustering on the deterministic path) + judgment (cluster-boundary decisions when cohesion scores fall in the ambiguous range). Registry dispatcher-gate is `mechanical`; `cron_block: none`; `requires_confirmation: false`. v2.1 implementation: pluggable clustering backend — first-pass uses shared-keyword TF-IDF; v2.2 upgrades to embedding-based.
+
+**Invocation:**
+
+```
+bash $CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh < classified.ndjson
+```
+
+**Inputs:** NDJSON stream of `{source, type, content, fields{}}` records on stdin (consumed from `classify` output). Manifest read for `vault.clustering.min_cluster_size` (default `2`).
+
+**Outputs:** NDJSON stream of `{cluster_id, cluster_label, records[], cohesion_score}` records on stdout. Each output record carries:
+- `cluster_id` — stable hash over the constituent record subjects
+- `cluster_label` — synthesized one-line topic label
+- `records[]` — array of pass-through input records assigned to this cluster
+- `cohesion_score` — float in `[0.0, 1.0]` measuring intra-cluster topical similarity
+
+**Synthesis rubric (v2.1 — fires on ambiguous cluster boundaries):**
+
+1. `cohesion_score >= 0.7` → silent emit; cluster is high-confidence and proceeds to `draft-canonical-file` directly.
+2. `0.4 <= cohesion_score < 0.7` → surface cluster to user with proposed split/merge options (split into sub-clusters by secondary topic axis; or merge with a sibling cluster sharing ≥ N tokens).
+3. `cohesion_score < 0.4` → re-emit constituent records as singletons with a `weak-cluster` warning; do not propose a draft.
+
+**Invocation modes:** `ad-hoc`, `phase-2-act-3`.
+
+**Dependencies:** `lib/findings.sh`, `capabilities/classify.sh` (upstream — `cluster-by-topic` consumes its output).
+
+
+**Output Contract:**
+
+- **Files written:** none. Capability emits NDJSON cluster records to stdout only. Caller (SP07 Phase 2 Act 3) consumes the stream and routes clusters to `draft-canonical-file` (when cohesion is high) or back to user-confirmation flow (when cohesion is ambiguous).
+- **Schema type:** NDJSON output records — record shape not formally schematized (intermediate-pipeline contract); `records[]` carries pass-through `classify` output records.
+- **Pre-write validation:** none required (no vault writes). `min_cluster_size` floor enforced from manifest before emission; clusters below floor are dropped (constituent records re-emitted as singletons with `below-min-cluster-size` annotation).
+- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-cluster-by-topic.md`. Stub-mode invocation (v2.0 ship state) exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
+- **Tier:** mechanical (with v2.1 judgment-tier escalation per rubric). **requires_confirmation:** false at the dispatcher gate. **cron_block:** none.
+
+---
+
+## Capability: draft-canonical-file
+
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh` (spec-only stub — Plan 71 SP04 T-6, 2026-04-29; implementation deferred to v2.1). Stub exits 2 with `v2.1 deferred per Plan 71 SP04` to stderr.
+
+**Purpose:** Canonical-file drafting primitive. Given a cluster of related intake records (output of `cluster-by-topic`) plus a target canonical-file type (e.g., `people`, `project`, `engagement`), synthesize a draft canonical file with a populated `## Context` H2 and structured sections per `vault-schema.json` for the given `type:`. Drafts land in a staging area; canonical placement is gated on user confirmation.
+
+**Tier:** judgment. Requires Claude synthesis at every invocation — no deterministic path. Registry dispatcher-gate is `judgment`; `cron_block: skip-non-interactive`; `requires_confirmation: true`. Capability never fires unattended; `/librarian` cron runs short-circuit with `draft-canonical-file: skipped (non-interactive)` when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
+
+**Invocation:**
+
+```
+bash $CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh < cluster.ndjson
+```
+
+**Inputs:** NDJSON stream of `{cluster_id, records[], target_type, target_path_hint}` records on stdin. `target_type` must be a member of `vault-schema.json._types`; `target_path_hint` is an optional manifest-relative path the synthesis pass uses as a placement anchor (final placement still requires user confirmation).
+
+**Outputs:** NDJSON stream of `{path, draft_written, confidence, sections_populated[]}` records on stdout. Side effect: writes draft files to `{vault.root}/_drafts/*.md` (staging area) before stdout emission. Each output record carries:
+- `path` — absolute path of the draft file under `_drafts/`
+- `draft_written` — `true` on successful write, `false` on validation failure
+- `confidence` — float in `[0.0, 1.0]` measuring synthesis-quality
+- `sections_populated[]` — array of H2 / H3 section names successfully drafted
+
+**Synthesis rubric (v2.1 — required per CLAUDE.md skill-creation rules for judgment-tier):**
+
+1. `confidence >= 0.75` → proceed to draft. Write the staging file and emit the NDJSON record. Surface the draft path to the user with accept / reject / edit prompt before any canonical placement.
+2. `0.5 <= confidence < 0.75` → surface cluster to user with `need more signal` message before drafting; offer to (a) request more intake records, (b) split the cluster, or (c) proceed with explicit user override.
+3. `confidence < 0.5` → refuse to draft; emit a `low-confidence-cluster` finding and return the cluster to `cluster-by-topic` for re-evaluation.
+
+**Invocation modes:** `ad-hoc`, `phase-2-act-3`.
+
+**Dependencies:** `vault-schema.json`, `lib/frontmatter.sh`, `capabilities/classify.sh` (transitively, via cluster records), `capabilities/cluster-by-topic.sh` (direct upstream).
+
+
+**Output Contract:**
+
+- **Files written:** `{vault.root}/_drafts/*.md` (staging area only — canonical placement under `{vault.root}/People/`, `{vault.root}/{projects_dir}/`, etc., is gated on user confirmation and is NOT performed by this capability). NDJSON output records emitted to stdout post-write.
+- **Schema type:** draft files are frontmatter-prefixed Markdown validated against `vault-schema.json` for the requested `target_type`. NDJSON output record shape not formally schematized (intermediate-pipeline contract).
+- **Pre-write validation:** for every draft file: (1) frontmatter lint via `lib/frontmatter.sh::validate_frontmatter`; (2) R-40 plan-artifact-schema check (skipped for non-plan target types); (3) `## Context` H2 must be present and non-empty when `target_type` is in `vault.context_section_types[]` (canonical types like `people`, `project`, `engagement`). Failures abort the write before any bytes hit `_drafts/` — block-and-log, never partial.
+- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — schema-invalid drafts never written to staging; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-draft-canonical-file.md`. Stub-mode invocation (v2.0 ship state) exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
+- **Tier:** judgment. **requires_confirmation:** true. **cron_block:** skip-non-interactive — capability exits 0 with `draft-canonical-file: skipped (non-interactive)` log line when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
+
+---
+
+## Capability: write-frontmatter
+
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh` (spec-only stub — Plan 71 SP04 T-6, 2026-04-29; implementation deferred to v2.1). Stub exits 2 with `v2.1 deferred per Plan 71 SP04` to stderr.
+
+**Purpose:** Frontmatter emission primitive. Given a classified record (output of `classify`) plus a target path, emit valid YAML frontmatter conforming to `vault-schema.json` for the given `type:`. The single sanctioned write-path for new vault files in the SP07 Phase 2 Act 2 pipeline; `frontmatter-enforce` is the read/repair counterpart.
+
+**Tier:** mechanical. Pure transform — no Claude synthesis required. Registry dispatcher-gate is `mechanical`; `cron_block: none`; `requires_confirmation: false`. Mutations are gated structurally by the pre-write validation chain rather than by user confirmation.
+
+**Invocation:**
+
+```
+bash $CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh < classified.ndjson
+```
+
+**Inputs:** NDJSON stream of `{type, path, fields{}, content}` records on stdin. `type` must be a member of `vault-schema.json._types`; `path` is the absolute target file path (under `{vault.root}`); `fields{}` is the field map for frontmatter emission; `content` is the body (post-frontmatter) bytes. Manifest read for `vault.tag_prefixes[]` (R-32 tier-2 tag-allowlist enforcement).
+
+**Outputs:** writes frontmatter-prefixed files to target paths under `{vault.root}/`; emits NDJSON of `{path, fields_written, validation_result}` to stdout for caller consumption. Each output record carries:
+- `path` — pass-through target path
+- `fields_written` — array of frontmatter field names successfully emitted
+- `validation_result` — one of `pass` / `fail-frontmatter-lint` / `fail-r40` / `fail-r32-tier-2` / `fail-tag-allowlist`
+
+**Pre-write validation chain (load-bearing — every write gates through all three):**
+
+1. **Frontmatter lint** via `lib/frontmatter.sh::validate_frontmatter` — required-field matrix mirrors `vault-schema.json` per the file's `type:`; empty-string optionals rejected; tag-list-vs-string shape enforced.
+2. **R-40 plan-artifact-schema check** — when `type` is a plan-artifact type (per `plans-schema.json`), the additional R-40 plan-artifact frontmatter requirements are checked atop the vault-schema base.
+3. **R-32 tier-2 tag-allowlist** — every emitted `tags:` entry validated against `vault-schema.json._tag_prefixes` ∪ `manifest.vault.tag_prefixes[]`. Out-of-allowlist tags abort the write.
+
+**Pre-write-guard interlock:** writes also flow through the SP02 `pre-write-guard.sh` PreToolUse hook chain at the harness level (Tier 1 advisory + Tier 2 manifest-block + Tier 3 cascade-waiver). `write-frontmatter` is the in-capability validation; `pre-write-guard` is the harness-level structural backstop. Both must pass.
+
+**Invocation modes:** `ad-hoc`, `phase-2-act-2`, `phase-2-act-3`.
+
+**Dependencies:** `vault-schema.json`, `lib/frontmatter.sh`, `pre-write-guard` (SP02 PreToolUse hook chain).
+
+
+**Output Contract:**
+
+- **Files written:** `{vault.root}/**/*.md` (frontmatter-prefixed Markdown files at the target path supplied per input record). Atomic temp+rename via `lib/frontmatter.sh::write_atomic`; never partial-write. NDJSON output records emitted to stdout post-write.
+- **Schema type:** every written file is a frontmatter-prefixed Markdown file validated against `vault-schema.json` for the input `type:`. NDJSON output record shape not formally schematized (intermediate-pipeline contract).
+- **Pre-write validation:** three-step chain — (1) frontmatter lint, (2) R-40 plan-artifact-schema check (when applicable), (3) R-32 tier-2 tag-allowlist check. All three must pass before the temp file is opened. Failures abort the write before any bytes touch the target path; the write is replaced with a `validation_result: fail-*` NDJSON record on stdout.
+- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — schema-invalid writes never reach the target path; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-write-frontmatter.md`. Stub-mode invocation (v2.0 ship state) exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
+- **Tier:** mechanical. **requires_confirmation:** false at the dispatcher gate. **cron_block:** none.
+
+---
+
 ## Memory Search Strategy
 
 When looking for prior context, search in this order:
