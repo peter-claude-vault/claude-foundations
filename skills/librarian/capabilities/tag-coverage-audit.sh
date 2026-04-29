@@ -38,6 +38,7 @@ source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/paths.sh"
 source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/plan-path.sh"
 source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/findings.sh"
 source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/frontmatter.sh"
+source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/user-manifest-read.sh"
 
 SCOPE=""
 BATCH_SIZE=100
@@ -66,11 +67,7 @@ if [[ -r "$VAULT_SCHEMA" ]] && command -v jq >/dev/null 2>&1; then
 fi
 
 # Manifest-extension exempt patterns (path globs).
-USER_MANIFEST="${USER_MANIFEST_PATH:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
-EXEMPT_PATTERNS=""
-if [[ -r "$USER_MANIFEST" ]] && command -v jq >/dev/null 2>&1; then
-  EXEMPT_PATTERNS=$(jq -r '.vault.tag_audit_exemptions[]? // empty' "$USER_MANIFEST" 2>/dev/null)
-fi
+EXEMPT_PATTERNS=$(umr_get_array '.vault.tag_audit_exemptions')
 
 # Resolve scope root.
 if [[ -n "$SCOPE" ]]; then
