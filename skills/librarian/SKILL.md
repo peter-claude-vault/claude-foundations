@@ -756,7 +756,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/backup.sh [--dry-run] [--scope <
 | `--scope <dir>` | Restrict to one directory; overrides default set + `BACKUP_TARGETS`. |
 | `--message <msg>` | Override the auto-generated `librarian: {N} files` commit message. |
 
-**Default targets (skipped if not a git repo):** `$VAULT_ROOT`, `$CLAUDE_HOME` (default `$CLAUDE_HOME/`), `$PLANS_DIR` (default `~/.claude-plans/`), plus any paths declared in `manifest.foundation.backup_targets[]`. Override via `BACKUP_TARGETS` env (colon-separated) for testing.
+**Default targets (skipped if not a git repo):** `$VAULT_ROOT`, `$CLAUDE_HOME` (default `$CLAUDE_HOME/`), `$PLANS_DIR` (default `~/.claude-plans/`), plus any paths declared in `manifest.system.backup_targets[]`. Override via `BACKUP_TARGETS` env (colon-separated) for testing.
 
 **Vault filter:** `.obsidian/workspace.json` is reset from stage before commit (high-noise churn file).
 
