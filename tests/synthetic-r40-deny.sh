@@ -57,8 +57,9 @@ make_sbx() {
 JSON
 
   # Plan-path classifier — recognizes spec.md/tasks.md/handoff.md as
-  # canonical plan-root files at depth 2. Mirrors librarian/lib contract.
-  cat > "$SBX/.claude/skills/librarian/lib/plan-path.sh" <<'PLANPATH'
+  # canonical plan-root files at depth 2. Installed at hooks/lib/ post-SP02 T-9
+  # (mirrors librarian/lib contract; skills/librarian fallback removed).
+  cat > "$SBX/.claude/hooks/lib/plan-path.sh" <<'PLANPATH'
 classify_plan_path() {
   local path="$1" plans_dir="${PLANS_DIR:-$HOME/.claude-plans}"
   if [[ "$path" != "$plans_dir/"* ]]; then echo "0|0|"; return; fi

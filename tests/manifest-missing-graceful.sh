@@ -52,7 +52,8 @@ make_sbx_no_manifest() {
   cat > "$SBX/.claude/schemas/vault-schema.json" <<'JSON'
 {"schema_version":"1.0.0","_aliases":{}}
 JSON
-  cat > "$SBX/.claude/skills/librarian/lib/plan-path.sh" <<'PLANPATH'
+  # plan-path.sh stub — installed at hooks/lib/ post-SP02 T-9.
+  cat > "$SBX/.claude/hooks/lib/plan-path.sh" <<'PLANPATH'
 classify_plan_path() { echo "0|0|"; }
 PLANPATH
   echo '{"sessions":{},"pending_reconciliation":false,"last_reconciled":""}' \

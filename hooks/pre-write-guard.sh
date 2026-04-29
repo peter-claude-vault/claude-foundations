@@ -186,10 +186,10 @@ fi
 
 # === R-27: plan naming + status enforcement ===============================
 # Enforce numeric prefix + status header on plan-root files. Sources canonical
-# classifier from skills/librarian/lib/plan-path.sh (foundation distribution
-# duplicates this into hooks/lib/ to break install-order coupling).
+# classifier from hooks/lib/plan-path.sh, duplicated from skills/librarian/lib/
+# at install time (SP02 T-9). Sync contract: any plan-path classification
+# change must propagate to both copies — see SP04 handoff Active Decisions.
 PLAN_PATH_LIB="${CLAUDE_HOME}/hooks/lib/plan-path.sh"
-[ ! -f "$PLAN_PATH_LIB" ] && PLAN_PATH_LIB="${CLAUDE_HOME}/skills/librarian/lib/plan-path.sh"
 if [ -f "$PLAN_PATH_LIB" ]; then
   source "$PLAN_PATH_LIB"
   PS_INFO=$(classify_plan_path "$FILE_PATH" 2>/dev/null || echo "0|0|")

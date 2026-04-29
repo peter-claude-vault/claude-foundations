@@ -61,8 +61,9 @@ make_sbx() {
   "_aliases": {}
 }
 JSON
-  # Minimal plan-path.sh classifier (R-27 path)
-  cat > "$SBX/.claude/skills/librarian/lib/plan-path.sh" <<'PLANPATH'
+  # Minimal plan-path.sh classifier (R-27 path) — installed at hooks/lib/
+  # post-SP02 T-9 (canonical coupling target; skills/librarian fallback removed).
+  cat > "$SBX/.claude/hooks/lib/plan-path.sh" <<'PLANPATH'
 classify_plan_path() {
   local path="$1" plans_dir="${PLANS_DIR:-$HOME/.claude-plans}"
   if [[ "$path" != "$plans_dir/"* ]]; then echo "0|0|"; return; fi

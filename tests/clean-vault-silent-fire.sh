@@ -68,8 +68,9 @@ make_sbx() {
 }
 JSON
 
-  # Minimal plan-path.sh classifier (sourced by pre-write-guard at L171)
-  cat > "$SBX/.claude/skills/librarian/lib/plan-path.sh" <<'PLANPATH'
+  # Minimal plan-path.sh classifier — sourced by pre-write-guard from
+  # hooks/lib/ post-SP02 T-9 (skills/librarian fallback removed).
+  cat > "$SBX/.claude/hooks/lib/plan-path.sh" <<'PLANPATH'
 classify_plan_path() {
   echo "0|0|"
 }
