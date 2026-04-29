@@ -1,0 +1,25 @@
+{
+  "schema_version": "0.1.0-stub",
+  "note": "Registry stub authored at Plan 71 SP09 T-12.7 with the inaugural drift-detect entry. SP04 T-5 expands this to the full 31-entry registry per spec §5; entry shape matches that spec for forward compatibility.",
+  "capabilities": [
+    {
+      "name": "sanctioned-schema-drift-detect",
+      "script": "capabilities/sanctioned-schema-drift-detect.sh",
+      "tier": "mechanical",
+      "invocation_modes": ["standalone", "session-close"],
+      "cron_block": null,
+      "dependencies": [],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [],
+      "requires_confirmation": false,
+      "output_contract": {
+        "files_written": [],
+        "schema_type": null,
+        "pre_write_validation": "none (read-only diff)",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped"
+    }
+  ]
+}
