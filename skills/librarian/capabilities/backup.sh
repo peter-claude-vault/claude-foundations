@@ -51,6 +51,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# shellcheck source=/dev/null
+source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/user-manifest-read.sh"
+
 # Determine target list.
 #
 # Resolution order:
@@ -67,15 +70,9 @@ else
   TARGETS="${TARGETS:+$TARGETS:}${CLAUDE_HOME:-$HOME/.claude}"
   TARGETS="${TARGETS:+$TARGETS:}${PLANS_DIR:-$HOME/.claude-plans}"
   # User-extension list from manifest (graceful-degrade if missing/jq-absent).
-  USER_MANIFEST="${USER_MANIFEST_PATH:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
-  if [[ -r "$USER_MANIFEST" ]] && command -v jq >/dev/null 2>&1; then
-    extra=$(jq -r '.system.backup_targets[]? // empty' "$USER_MANIFEST" 2>/dev/null)
-    if [[ -n "$extra" ]]; then
-      while IFS= read -r extra_path; do
-        [[ -n "$extra_path" ]] && TARGETS="$TARGETS:$extra_path"
-      done <<< "$extra"
-    fi
-  fi
+  while IFS= read -r extra_path; do
+    [[ -n "$extra_path" ]] && TARGETS="$TARGETS:$extra_path"
+  done < <(umr_get_array '.system.backup_targets')
 fi
 
 printf "## Backup"
