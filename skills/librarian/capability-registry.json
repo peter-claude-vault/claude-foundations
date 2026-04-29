@@ -1,25 +1,875 @@
 {
-  "schema_version": "0.1.0-stub",
-  "note": "Registry stub authored at Plan 71 SP09 T-12.7 with the inaugural drift-detect entry. SP04 T-5 expands this to the full 31-entry registry per spec §5; entry shape matches that spec for forward compatibility.",
-  "capabilities": [
-    {
-      "name": "sanctioned-schema-drift-detect",
-      "script": "capabilities/sanctioned-schema-drift-detect.sh",
+  "schema_version": 1,
+  "_note": "Authored at SP04 T-5 (S34 2026-04-29). 31 entries: 27 shipped scripts (incl. SP09 T-12.7's sanctioned-schema-drift-detect) + 4 spec-only stubs (T-6 ships SKILL.md sections + 5-line .sh placeholders). T-9a ships librarian-manifest-validate as the 32nd entry; tracked separately.",
+  "capabilities": {
+    "architect-triage": {
       "tier": "mechanical",
-      "invocation_modes": ["standalone", "session-close"],
-      "cron_block": null,
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-4c"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh",
+        "lib/dates.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "architect_recommendations",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.architect_recommendations[]"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/architect-triage.sh"
+    },
+    "cron-log-architecture": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/cron-log-architecture.sh"
+    },
+    "drift-sweep": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/drift-sweep.sh"
+    },
+    "entity-parity": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "drift_findings.entity_parity",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/entity-parity.sh"
+    },
+    "handoff-disposition-check": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/handoff-disposition-check.sh"
+    },
+    "log-archive": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/dates.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/log-archive.sh"
+    },
+    "people-audit": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "vault-schema.json"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/people-audit.sh"
+    },
+    "plan-index": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh",
+        "lib/plan-path.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "inventory.plan_index",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/plan-index.sh"
+    },
+    "plan-parent-resolve": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/frontmatter.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/plan-parent-resolve.sh"
+    },
+    "rename-detect": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2b"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/rename-detect.sh"
+    },
+    "rename-history-sync": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2b"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "rename_history",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.rename_history[]"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/rename-history-sync.sh"
+    },
+    "sanctioned-schema-drift-detect": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full"
+      ],
+      "cron_block": "none",
       "dependencies": [],
       "emits_findings": true,
       "writes_manifest_subtree": null,
       "default_flags": [],
       "requires_confirmation": false,
       "output_contract": {
-        "files_written": [],
-        "schema_type": null,
-        "pre_write_validation": "none (read-only diff)",
+        "writes": [],
+        "schema": null,
         "failure_mode": "block-and-log"
       },
-      "implementation_status": "shipped"
+      "implementation_status": "shipped",
+      "script": "capabilities/sanctioned-schema-drift-detect.sh"
+    },
+    "skill-parity": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/skill-parity.sh"
+    },
+    "trinity-drift-detect": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2d"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/trinity-drift-detect.sh"
+    },
+    "waiver-audit": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/waiver-audit.sh"
+    },
+    "xref-check": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "xref_graph",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/xref-check.sh"
+    },
+    "backup": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-5"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/user-manifest-read.sh"
+      ],
+      "emits_findings": false,
+      "writes_manifest_subtree": "scan_state.backup",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "{system.backup_targets[]} (filesystem snapshots)"
+        ],
+        "schema": null,
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/backup.sh"
+    },
+    "frontmatter-enforce": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh",
+        "lib/user-manifest-read.sh",
+        "vault-schema.json"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "drift_findings.{provides_canonicality,size_monitoring,schema_type_coverage}",
+      "default_flags": [
+        "--recent",
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/frontmatter-enforce.sh"
+    },
+    "placement-validate": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/user-manifest-read.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "drift_findings.placement",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/placement-validate.sh"
+    },
+    "rename-cascade": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2b"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/user-manifest-read.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--dry-run"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "{vault.root}/**/*.md (wikilink updates after dry-run review)"
+        ],
+        "schema": "vault-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/rename-cascade.sh"
+    },
+    "stale-detect": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/plan-path.sh",
+        "lib/user-manifest-read.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "drift_findings.stale",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/stale-detect.sh"
+    },
+    "sync-check": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-3"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh",
+        "lib/user-manifest-read.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "drift_findings.sync",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/sync-check.sh"
+    },
+    "tag-coverage-audit": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/plan-path.sh",
+        "lib/frontmatter.sh",
+        "lib/user-manifest-read.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": "drift_findings.tag_coverage",
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-manifest.drift_findings.*"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/tag-coverage-audit.sh"
+    },
+    "wikilink-repair": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--dry-run"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "{vault.root}/**/*.md (wikilink fixups after dry-run review)"
+        ],
+        "schema": "vault-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/wikilink-repair.sh"
+    },
+    "mem-promote": {
+      "tier": "judgment",
+      "invocation_modes": [
+        "ad-hoc"
+      ],
+      "cron_block": "skip-non-interactive",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh",
+        "lib/dates.sh",
+        "lib/paths.sh"
+      ],
+      "emits_findings": true,
+      "emits_ndjson_candidates": true,
+      "synthesis_rubric_section": "SKILL.md#mem-promote",
+      "writes_manifest_subtree": null,
+      "default_flags": [],
+      "requires_confirmation": true,
+      "output_contract": {
+        "writes": [
+          "{system.memory_dir}/*.md (with confirmation)",
+          "MEMORY.md (index update)"
+        ],
+        "schema": null,
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/mem-promote.sh"
+    },
+    "memory-hygiene": {
+      "tier": "judgment",
+      "invocation_modes": [
+        "ad-hoc"
+      ],
+      "cron_block": "skip-non-interactive",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh",
+        "lib/dates.sh",
+        "lib/paths.sh"
+      ],
+      "emits_findings": true,
+      "emits_ndjson_candidates": true,
+      "synthesis_rubric_section": "SKILL.md#memory-hygiene",
+      "writes_manifest_subtree": null,
+      "default_flags": [],
+      "requires_confirmation": true,
+      "output_contract": {
+        "writes": [
+          "{system.memory_dir}/*.md (with confirmation)"
+        ],
+        "schema": null,
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/memory-hygiene.sh"
+    },
+    "transcript-mine": {
+      "tier": "judgment",
+      "invocation_modes": [
+        "ad-hoc"
+      ],
+      "cron_block": "skip-non-interactive",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "lib/findings.sh",
+        "lib/manifest.sh",
+        "lib/dates.sh",
+        "lib/user-manifest-read.sh"
+      ],
+      "emits_findings": true,
+      "emits_ndjson_candidates": true,
+      "synthesis_rubric_section": "SKILL.md#transcript-mine",
+      "writes_manifest_subtree": null,
+      "default_flags": [],
+      "requires_confirmation": true,
+      "output_contract": {
+        "writes": [
+          "NDJSON candidates to stdout (caller routes to mem-promote)"
+        ],
+        "schema": null,
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/transcript-mine.sh"
+    },
+    "classify": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "phase-2-act-2"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "lib/findings.sh",
+        "vault-schema.json"
+      ],
+      "emits_findings": false,
+      "writes_manifest_subtree": null,
+      "default_flags": [],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "NDJSON to stdout (caller routes to write-frontmatter)"
+        ],
+        "schema": null,
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "spec-only",
+      "script": "capabilities/classify.sh"
+    },
+    "cluster-by-topic": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "phase-2-act-3"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "lib/findings.sh",
+        "capabilities/classify.sh"
+      ],
+      "emits_findings": false,
+      "writes_manifest_subtree": null,
+      "default_flags": [],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "NDJSON cluster records to stdout (caller routes to draft-canonical-file)"
+        ],
+        "schema": null,
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "spec-only",
+      "script": "capabilities/cluster-by-topic.sh"
+    },
+    "draft-canonical-file": {
+      "tier": "judgment",
+      "invocation_modes": [
+        "ad-hoc",
+        "phase-2-act-3"
+      ],
+      "cron_block": "skip-non-interactive",
+      "dependencies": [
+        "vault-schema.json",
+        "lib/frontmatter.sh",
+        "capabilities/classify.sh",
+        "capabilities/cluster-by-topic.sh"
+      ],
+      "emits_findings": false,
+      "writes_manifest_subtree": null,
+      "default_flags": [],
+      "requires_confirmation": true,
+      "output_contract": {
+        "writes": [
+          "{vault.root}/_drafts/*.md (staging; canonical placement gated on user confirmation)"
+        ],
+        "schema": "vault-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "spec-only",
+      "script": "capabilities/draft-canonical-file.sh"
+    },
+    "write-frontmatter": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "phase-2-act-2",
+        "phase-2-act-3"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "vault-schema.json",
+        "lib/frontmatter.sh",
+        "pre-write-guard"
+      ],
+      "emits_findings": false,
+      "writes_manifest_subtree": null,
+      "default_flags": [],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "{vault.root}/**/*.md (frontmatter-prefixed)"
+        ],
+        "schema": "vault-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "spec-only",
+      "script": "capabilities/write-frontmatter.sh"
     }
-  ]
+  }
 }
