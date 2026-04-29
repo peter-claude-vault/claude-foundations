@@ -2,11 +2,12 @@
 # Synthetic test for lib/user-manifest-read.sh — Plan 71 SP04 T-9b.
 #
 # 4 cases (graceful-degrade contract per helper Output Contract):
-#   1. present-fixture        → all 4 target fields extract correctly
-#   2. missing-manifest       → array empty, object "{}"
-#   3. malformed-json         → array empty, object "{}"
-#   4. empty-manifest         → array empty, object "{}" (well-formed JSON,
-#                               missing fields)
+#   1. present-fixture        → all 5 target fields extract correctly
+#                               (4 of T-9b + transcript_dir scalar of T-4 c5)
+#   2. missing-manifest       → array empty, object "{}", string ""
+#   3. malformed-json         → array empty, object "{}", string ""
+#   4. empty-manifest         → array empty, object "{}", string "" (well-
+#                               formed JSON, missing fields)
 #
 # Usage: bash synthetic-user-manifest-read.sh
 # Exit:  0 on all-pass, 1 otherwise.
@@ -43,7 +44,8 @@ cat > "$TMPDIR_C1/user-manifest.json" <<'JSON'
   "vault": {
     "logs_whitelist_subdirs": ["build/", "ideation-brief/"],
     "tag_audit_exemptions": ["scratch/", "drafts/"],
-    "engagement_aliases": {"acme-corp": "acme", "northwind": "nw"}
+    "engagement_aliases": {"acme-corp": "acme", "northwind": "nw"},
+    "transcript_dir": "/tmp/synthetic-transcripts"
   },
   "system": {
     "backup_targets": ["/srv/extra-repo", "/srv/another-repo"]
@@ -75,6 +77,9 @@ case "$c1_aliases" in
     ;;
 esac
 
+c1_transcripts=$(umr_get_string '.vault.transcript_dir')
+assert_eq "c1-transcript-dir" "$c1_transcripts" "/tmp/synthetic-transcripts"
+
 unset UMR_USER_MANIFEST_PATH
 rm -rf "$TMPDIR_C1"
 
@@ -86,6 +91,9 @@ assert_eq "c2-missing-array-empty" "$c2_backup" ""
 
 c2_aliases=$(umr_get_object '.vault.engagement_aliases')
 assert_eq "c2-missing-object-default" "$c2_aliases" "{}"
+
+c2_transcripts=$(umr_get_string '.vault.transcript_dir')
+assert_eq "c2-missing-string-empty" "$c2_transcripts" ""
 
 unset UMR_USER_MANIFEST_PATH
 
@@ -100,6 +108,9 @@ assert_eq "c3-malformed-array-empty" "$c3_backup" ""
 c3_aliases=$(umr_get_object '.vault.engagement_aliases')
 assert_eq "c3-malformed-object-default" "$c3_aliases" "{}"
 
+c3_transcripts=$(umr_get_string '.vault.transcript_dir')
+assert_eq "c3-malformed-string-empty" "$c3_transcripts" ""
+
 unset UMR_USER_MANIFEST_PATH
 rm -rf "$TMPDIR_C3"
 
@@ -113,6 +124,9 @@ assert_eq "c4-empty-array-empty" "$c4_backup" ""
 
 c4_aliases=$(umr_get_object '.vault.engagement_aliases')
 assert_eq "c4-empty-object-default" "$c4_aliases" "{}"
+
+c4_transcripts=$(umr_get_string '.vault.transcript_dir')
+assert_eq "c4-empty-string-empty" "$c4_transcripts" ""
 
 unset UMR_USER_MANIFEST_PATH
 rm -rf "$TMPDIR_C4"

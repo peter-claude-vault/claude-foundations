@@ -51,6 +51,8 @@ source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/findings.sh"
 source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/manifest.sh"
 # shellcheck source=/dev/null
 source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/dates.sh"
+# shellcheck source=/dev/null
+source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/user-manifest-read.sh"
 
 SCOPE=""
 DRY_RUN="false"
@@ -72,15 +74,10 @@ if [[ -z "${FOUNDATION_TEST_MODE:-}" ]] && [[ -z "${TTY:-}" ]] && ! [ -t 0 ]; th
 fi
 
 # TRANSCRIPT_DIR resolution: env override > user-manifest.vault.transcript_dir
-# > $VAULT_ROOT/Meetings/ install-default. Inline jq matches sync-check (T-3
-# c6) precedent for single-string scalar reads. TODO: when lib/user-manifest-
-# read.sh ships umr_get_string (T-9b carry-forward), refactor to call it.
-USER_MANIFEST="${USER_MANIFEST_PATH:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
+# (via lib/user-manifest-read.sh) > $VAULT_ROOT/Meetings/ install-default.
 if [[ -z "${TRANSCRIPT_DIR:-}" ]]; then
-  if [[ -r "$USER_MANIFEST" ]] && command -v jq >/dev/null 2>&1; then
-    TRANSCRIPT_DIR=$(jq -r '.vault.transcript_dir // ""' "$USER_MANIFEST" 2>/dev/null)
-  fi
-  if [[ -z "${TRANSCRIPT_DIR:-}" ]] && [[ -n "${VAULT_ROOT:-}" ]]; then
+  TRANSCRIPT_DIR="$(umr_get_string '.vault.transcript_dir')"
+  if [[ -z "$TRANSCRIPT_DIR" ]] && [[ -n "${VAULT_ROOT:-}" ]]; then
     TRANSCRIPT_DIR="$VAULT_ROOT/Meetings"
   fi
 fi

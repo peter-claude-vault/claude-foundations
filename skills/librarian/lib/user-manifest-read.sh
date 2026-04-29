@@ -10,6 +10,7 @@
 #   for path in $(umr_get_array '.system.backup_targets'); do ...; done
 #   exemptions=$(umr_get_array '.vault.tag_audit_exemptions')
 #   aliases_json=$(umr_get_object '.vault.engagement_aliases')
+#   transcripts=$(umr_get_string '.vault.transcript_dir')
 #
 # Consumers (at ship time):
 #   - capabilities/backup.sh             (system.backup_targets[])
@@ -17,6 +18,7 @@
 #   - capabilities/placement-validate.sh (vault.logs_whitelist_subdirs[])
 #   - capabilities/stale-detect.sh       (vault.logs_whitelist_subdirs[])
 #   - capabilities/frontmatter-enforce.sh (vault.engagement_aliases{})
+#   - capabilities/transcript-mine.sh    (vault.transcript_dir)
 #
 # Path resolution order:
 #   1. $UMR_USER_MANIFEST_PATH (test/CI override)
@@ -25,8 +27,10 @@
 #
 # Failure mode (best-effort + diagnostic): missing file / missing field /
 # missing jq / parse error → caller-supplied fallback (empty for arrays,
-# `{}` for objects). No findings emitted; no non-zero exit. Capability
-# wrappers handle graceful-degrade per their own Output Contract.
+# `{}` for objects, empty string for scalars). JSON `null` collapses to the
+# scalar fallback (jq `// ""` semantics). No findings emitted; no non-zero
+# exit. Capability wrappers handle graceful-degrade per their own Output
+# Contract.
 #
 # Bash 3.2 clean per R-23.
 
@@ -68,4 +72,22 @@ umr_get_object() {
   else
     printf '%s' "$val"
   fi
+}
+
+# umr_get_string <jq-path>
+# Prints scalar string value. Missing / null / error / non-string → "".
+# jq `// ""` collapses JSON null + missing-key to empty so callers can use
+# `[[ -z "$val" ]]` for fallback chaining (see transcript-mine.sh).
+umr_get_string() {
+  local path="$1"
+  if ! _umr_readable; then
+    return 0
+  fi
+  local manifest val
+  manifest=$(_umr_resolve_path)
+  val=$(jq -r "${path} // \"\"" "$manifest" 2>/dev/null)
+  if [[ "$val" == "null" ]]; then
+    return 0
+  fi
+  printf '%s' "$val"
 }
