@@ -3,7 +3,8 @@
 #
 # 6 cases (registry-parity AC checks):
 #   1. Registry parses as valid JSON
-#   2. Registry contains exactly 31 entries (T-5 spec-canonical count)
+#   2. Registry contains exactly 32 entries (T-5 baseline 31 + T-9 self-entry
+#      for capability-registry-parity = path (a) self-registration)
 #   3. Every shipped entry's script field points to a file that exists on disk
 #   4. Every spec-only entry carries implementation_status:"spec-only"
 #   5. Every judgment-tier entry carries requires_confirmation:true +
@@ -57,10 +58,10 @@ fi
 # Test 2: Exactly 31 entries
 # -----------------------------------------------------------------------------
 COUNT=$(jq '.capabilities | length' "$REGISTRY")
-if [ "$COUNT" = "31" ]; then
-  assert_pass "registry-count-31 (got $COUNT)"
+if [ "$COUNT" = "32" ]; then
+  assert_pass "registry-count-32 (got $COUNT)"
 else
-  assert_fail "registry-count-31" "expected 31, got $COUNT"
+  assert_fail "registry-count-32" "expected 32, got $COUNT"
 fi
 
 # -----------------------------------------------------------------------------
@@ -74,7 +75,7 @@ while IFS=$'\t' read -r name script; do
 done < <(jq -r '.capabilities | to_entries[] | select(.value.implementation_status != "spec-only") | [.key, .value.script] | @tsv' "$REGISTRY")
 
 if [ -z "$MISSING_SCRIPTS" ]; then
-  assert_pass "shipped-scripts-exist (27 expected)"
+  assert_pass "shipped-scripts-exist (28 expected: 27 baseline + capability-registry-parity)"
 else
   assert_fail "shipped-scripts-exist" "missing:$MISSING_SCRIPTS"
 fi

@@ -1377,6 +1377,78 @@ Proceed with all? Or specify capabilities/files to include/exclude.
 
 ---
 
+## Capability: capability-registry-parity
+
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh` (Plan 71 SP04 T-9, 2026-04-29; sources `lib/findings.sh`). Closes the dispatcher-invariant gap that registry/SKILL.md/on-disk drift silently degrades the dispatcher (spec.md L65/L78/L267/L312).
+
+**Purpose:** Runtime audit of `capability-registry.json` against SKILL.md `## Capability:` headings + on-disk capability scripts. Self-registered (the parity audit is itself audited by its own bijection check).
+
+**Invocation:**
+
+```
+bash $CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh [--check|--dry-run]
+```
+
+| Flag | Effect |
+|------|--------|
+| `--check` (default) | Emit findings, no writes |
+| `--dry-run` | Summary counts only, no JSON finding emission |
+
+**Drift classes (per T-9 ACs):**
+
+| Finding | Condition |
+|---------|-----------|
+| `registry-parity-bijection-drift` | SKILL.md heading without registry entry, OR registry entry without SKILL.md heading. `direction` field disambiguates. |
+| `registry-parity-script-missing` | Shipped entry's `script` field points to a file that doesn't exist on disk. (Spec-only entries excluded — implementation deferred to v2.1.) |
+| `registry-parity-schema-version-drift` | Registry `schema_version` ≠ `$EXPECTED_SCHEMA_VERSION` (default 1). |
+| `registry-parity-emits-missing-subtree-field` | Capability with `emits_findings: true` does not declare `writes_manifest_subtree` key (value may be string or null — key MUST be present). |
+
+**Finding shape:**
+
+```json
+{ "finding": "registry-parity-bijection-drift", "file": "<capability-name>",
+  "level": "error", "direction": "skill-md-without-registry-entry|registry-entry-without-skill-md-heading" }
+
+{ "finding": "registry-parity-script-missing", "file": "<capability-name>",
+  "level": "error", "script": "<relative-path>", "expected_path": "<absolute-path>" }
+
+{ "finding": "registry-parity-schema-version-drift", "file": "<registry-path>",
+  "level": "error", "expected": "1", "actual": "<value>" }
+
+{ "finding": "registry-parity-emits-missing-subtree-field", "file": "<capability-name>",
+  "level": "error", "detail": "emits_findings:true but writes_manifest_subtree key absent" }
+```
+
+**Env overrides (testing):** `LIBRARIAN_ROOT_OVERRIDE` (relocate librarian/ root for fixture tests), `FINDINGS_OUTPUT` (append findings instead of stdout), `EXPECTED_SCHEMA_VERSION` (forward-compat).
+
+**Exit codes:** `0` always (report-only — non-zero finding count does NOT change exit), `2` on unknown flag. Pattern matches `cron-log-architecture`.
+
+**Output Format:**
+
+```
+## Capability Registry Parity ({N} drift: bijection={B} script={S} schema-version={V} subtree-field={F})
+
+- registry-parity-bijection-drift: <name> (<direction>)
+- registry-parity-script-missing: <name> → <script>
+- registry-parity-schema-version-drift: expected=<v> actual=<v>
+- registry-parity-emits-missing-subtree-field: <name>
+```
+
+**Tests:** `tests/synthetic-capability-registry-parity-runtime.sh` — runtime drift fixtures (clean baseline + bijection drop both directions + missing-script + schema-version drift + emits-missing-subtree-field). Distinct from `tests/synthetic-capability-registry-parity.sh` which is the unit test for the registry JSON itself.
+
+**Where it fires:** `/librarian capability-registry-parity` (ad-hoc), `/librarian librarian-full` (every full scan), `librarian session-close` Step 2 (drift sweep block), Monday cron via registry `cron_block: monday`.
+
+**Self-reference invariant:** `capability-registry-parity` is itself registered in `capability-registry.json` (32nd entry). The bijection check audits the audit — drift in either direction (SKILL.md heading drops, registry entry drops) is caught by the next run.
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-capability-registry-parity.md`.
+
+---
+
 ## Capability: memory-hygiene
 
 **Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/memory-hygiene.sh` (shipped Plan 63 Sub-plan 03 T-2, 2026-04-20 — pattern exemplar for the Tier 3 shell-prefilter + Claude-synthesis hybrid).
