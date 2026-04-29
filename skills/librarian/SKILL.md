@@ -1449,6 +1449,97 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh [-
 
 ---
 
+## Capability: librarian-manifest-validate
+
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/librarian-manifest-validate.sh` (Plan 71 SP04 T-9a, 2026-04-29; sources `lib/findings.sh` + `lib/manifest.sh`). Closes audit SP04-05 F-1 (SP09 T-7.5 explicit consumer mandate) — staged librarian-manifest writes are validated against `schemas/librarian-manifest-schema.json` before they land.
+
+**Purpose:** Runtime block-and-log gate for librarian-manifest writes. Capabilities that emit `writes_manifest_subtree` invoke this validator with the staged payload; on schema violation the write is denied and a structured diagnostic is logged.
+
+**Invocation:**
+
+```
+bash $CLAUDE_HOME/skills/librarian/capabilities/librarian-manifest-validate.sh [--check|--dry-run] [--file <path> | --stdin] [--schema-file <path>]
+```
+
+| Flag | Effect |
+|------|--------|
+| `--check` (default) | Validate; emit finding + diagnostic + exit 1 on DENY |
+| `--dry-run` | Validate; report-only (no finding emission, no diagnostic, exit 0 on DENY) |
+| `--file <path>` | Validate <path> instead of live manifest |
+| `--stdin` | Read JSON payload from stdin |
+| `--schema-file <path>` | Override `$SCHEMAS_DIR/librarian-manifest-schema.json` |
+
+**Validator tier selection** (auto, override via `MANIFEST_VALIDATOR=ajv|python-jsonschema|minimal`):
+
+| Tier | Engine | Availability |
+|------|--------|--------------|
+| `ajv` | `ajv` Node CLI (full draft 2020-12) | Preferred when `ajv` is in `$PATH` |
+| `python-jsonschema` | `python3 -m jsonschema` (Draft202012Validator) | When `jsonschema` module is importable |
+| `minimal` | Built-in: JSON parses + top-level `required[]` keys present + `schema_version` matches schema's `const` | ALWAYS available; no external deps |
+
+Spec called for two-tier (ajv → python-jsonschema). Tier-3 minimal added at T-9a c1 for synthetic-test determinism and out-of-the-box utility on systems without `ajv` or `jsonschema`. Honest divergence captured for T-13 final acceptance gate.
+
+**Finding shape:**
+
+```json
+{ "finding": "manifest-validate-schema-violation", "file": "<payload-label>",
+  "level": "error", "tier": "ajv|python-jsonschema|minimal",
+  "error_count": "<n>", "schema": "<schema-path>" }
+
+{ "finding": "manifest-validate-schema-missing", "file": "<payload-label>",
+  "level": "advisory", "schema": "<schema-path>",
+  "detail": "schema file absent; validation skipped" }
+```
+
+**Env overrides (testing):** `MANIFEST_VALIDATOR` (force tier), `SCHEMAS_DIR` (relocate schemas/), `MANIFEST_PATH` (override target), `FINDINGS_OUTPUT` (append findings instead of stdout), `ERROR_LOG_DIR` (override `$CLAUDE_HOME/logs/librarian-errors/`).
+
+**Exit codes:** `0` on PASS or graceful skip (advisory), `1` on DENY (schema violation, finding + diagnostic written), `2` on unknown flag, `3` on payload missing/unreadable.
+
+**Output Format:**
+
+```
+## Librarian Manifest Validate (PASS via <tier>)
+
+- payload: <path-or-stdin-label>
+- schema:  <schema-path>
+```
+
+```
+## Librarian Manifest Validate (DENY via <tier> — <N> errors)
+
+- payload: <path-or-stdin-label>
+- schema:  <schema-path>
+- diagnostic: $CLAUDE_HOME/logs/librarian-errors/<date>-manifest-validate.md
+```
+
+**Diagnostic log shape** (`$CLAUDE_HOME/logs/librarian-errors/<date>-manifest-validate.md`, append-only per UTC date):
+
+```
+## <ISO-timestamp> — schema violation
+
+- payload: <path>
+- schema:  <schema-path>
+- tier:    <validator-tier>
+- errors:  <N>
+
+```json
+[ "<root>: missing required key '<name>'", ... ]
+```
+```
+
+**Tests:** `tests/synthetic-librarian-manifest-validate.sh` — controlled write fixtures (clean baseline + malformed-deny + missing-schema-graceful-skip + tier-override-coverage + finding-emit-shape conformance).
+
+**Where it fires:** `/librarian librarian-manifest-validate` (ad-hoc), `/librarian librarian-full` (every full scan), `librarian session-close` Step 2 (drift sweep block), Monday cron via registry `cron_block: monday`. Consumer mandate: every capability with `writes_manifest_subtree` SHOULD invoke this validator on its staged payload before write.
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`. On DENY: append-only `$CLAUDE_HOME/logs/librarian-errors/<date>-manifest-validate.md` markdown diagnostic.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); validated payload type per `librarian-manifest-schema.json` root.
+- **Pre-write validation:** caller-provided payload validated against `librarian-manifest-schema.json` via the selected tier; structured errors collected before any finding is emitted.
+- **Failure mode:** block-and-log per CLAUDE.md skill creation rules — schema-invalid payload denied (exit 1) AND diagnostic logged AND finding emitted; never "write and hope".
+
+---
+
 ## Capability: memory-hygiene
 
 **Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/memory-hygiene.sh` (shipped Plan 63 Sub-plan 03 T-2, 2026-04-20 — pattern exemplar for the Tier 3 shell-prefilter + Claude-synthesis hybrid).

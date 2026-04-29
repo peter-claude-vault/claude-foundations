@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "_note": "Authored at SP04 T-5 (S34 2026-04-29). 32 entries: 28 shipped scripts (27 baseline incl. SP09 T-12.7's sanctioned-schema-drift-detect, +1 SP04 T-9 capability-registry-parity self-entry per path (a) self-registration) + 4 spec-only stubs (T-6 ships SKILL.md sections + 5-line .sh placeholders). T-9a will ship librarian-manifest-validate as the 33rd entry; tracked separately.",
+  "_note": "Authored at SP04 T-5 (S34 2026-04-29). 33 entries: 29 shipped scripts (27 baseline incl. SP09 T-12.7's sanctioned-schema-drift-detect, +1 SP04 T-9 capability-registry-parity self-entry per path (a) self-registration, +1 SP04 T-9a librarian-manifest-validate at S37 2026-04-29) + 4 spec-only stubs (T-6 ships SKILL.md sections + 5-line .sh placeholders).",
   "capabilities": {
     "architect-triage": {
       "tier": "mechanical",
@@ -793,6 +793,36 @@
       },
       "implementation_status": "shipped",
       "script": "capabilities/capability-registry-parity.sh"
+    },
+    "librarian-manifest-validate": {
+      "tier": "mechanical",
+      "invocation_modes": [
+        "ad-hoc",
+        "librarian-full",
+        "session-close-step-2"
+      ],
+      "cron_block": "monday",
+      "dependencies": [
+        "lib/findings.sh",
+        "lib/manifest.sh",
+        "schemas/librarian-manifest-schema.json"
+      ],
+      "emits_findings": true,
+      "writes_manifest_subtree": null,
+      "default_flags": [
+        "--check"
+      ],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "librarian-finding NDJSON to stdout (or $FINDINGS_OUTPUT)",
+          "$CLAUDE_HOME/logs/librarian-errors/<date>-manifest-validate.md on DENY"
+        ],
+        "schema": "librarian-manifest-schema.json",
+        "failure_mode": "block-and-log"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/librarian-manifest-validate.sh"
     },
     "classify": {
       "tier": "mechanical",

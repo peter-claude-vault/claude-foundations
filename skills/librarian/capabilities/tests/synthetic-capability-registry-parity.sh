@@ -55,13 +55,13 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Test 2: Exactly 31 entries
+# Test 2: Exactly 33 entries
 # -----------------------------------------------------------------------------
 COUNT=$(jq '.capabilities | length' "$REGISTRY")
-if [ "$COUNT" = "32" ]; then
-  assert_pass "registry-count-32 (got $COUNT)"
+if [ "$COUNT" = "33" ]; then
+  assert_pass "registry-count-33 (got $COUNT)"
 else
-  assert_fail "registry-count-32" "expected 32, got $COUNT"
+  assert_fail "registry-count-33" "expected 33, got $COUNT"
 fi
 
 # -----------------------------------------------------------------------------
@@ -75,7 +75,7 @@ while IFS=$'\t' read -r name script; do
 done < <(jq -r '.capabilities | to_entries[] | select(.value.implementation_status != "spec-only") | [.key, .value.script] | @tsv' "$REGISTRY")
 
 if [ -z "$MISSING_SCRIPTS" ]; then
-  assert_pass "shipped-scripts-exist (28 expected: 27 baseline + capability-registry-parity)"
+  assert_pass "shipped-scripts-exist (29 expected: 27 baseline + capability-registry-parity + librarian-manifest-validate)"
 else
   assert_fail "shipped-scripts-exist" "missing:$MISSING_SCRIPTS"
 fi
