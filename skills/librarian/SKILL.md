@@ -49,21 +49,23 @@ Vault integrity, cross-domain sync, and backup. Single authority on "is the vaul
 
 **Note:** `/librarian` and `/librarian full` run the 5 integrity capabilities (frontmatter-enforce, xref-check, log-archive, stale-detect, placement-validate). They do NOT run sync-check, backup, or session-close — those are invoked explicitly. `drift-sweep` + `people-audit` + `waiver-audit` + `tag-coverage-audit` + `trinity-drift-detect` + `skill-parity` are wired into the **Monday-only** `/librarian full` cron block in `librarian-cron.sh` (non-blocking, supplemental to write-time hooks). `rename-detect | rename-history-sync | rename-cascade` runs as Step 2b of `session-close` (dry-run-cascade only; `--apply` is human-initiated).
 
-**Vault root:** `~/Documents/Obsidian Vault/`
-**Architecture source of truth:** `~/Documents/Obsidian Vault/Vault Architecture.md`
+**Vault root:** `{VAULT_ROOT}` (resolved at runtime via `lib/paths.sh` from `user-manifest.json` `vault.root`)
+**Architecture source of truth:** `{VAULT_ROOT}/{VAULT_ARCHITECTURE_DOC}` (filename resolved from `user-manifest.json` `vault.architecture_doc`; convention is an architecture-of-record document at vault root)
+
+> **Path placeholder convention.** Curly-brace tokens like `{VAULT_ROOT}`, `{VAULT_LOGS}`, `{CLAUDE_HOME}`, `{PLANS_ROOT}` in this document represent values resolved at install time from `user-manifest.json` via `lib/paths.sh`. Shell-style `$VAULT_ROOT` etc. denote the same values exported as environment variables for runtime use. Engagement-shaped examples (`{projects_dir}/*/`, `#engagement/*` tags) are illustrative of installs that opted into `manifest.vault.has_structured_projects: true` during onboarding; greenfield installs without structured projects skip the relevant capability checks silently.
 
 ---
 
 ## Capability: frontmatter-enforce
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/frontmatter-enforce.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 01 T-2; sources `lib/findings.sh` + `lib/manifest.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/frontmatter-enforce.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 01 T-2; sources `lib/findings.sh` + `lib/manifest.sh`).
 
-**Purpose:** Validate and optionally fix frontmatter on vault files against the specs in Vault Architecture.md. Two phases: per-file validation (required fields, empty optionals, tag taxonomy) + four vault-wide drift audits (provides-canonicality, size monitoring, hub-spoke recommendation, schema-type-hook-coverage-gap).
+**Purpose:** Validate and optionally fix frontmatter on vault files against the specs in {VAULT_ARCHITECTURE_DOC}. Two phases: per-file validation (required fields, empty optionals, tag taxonomy) + four vault-wide drift audits (provides-canonicality, size monitoring, hub-spoke recommendation, schema-type-hook-coverage-gap).
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/frontmatter-enforce.sh [--scope <path>|--recent|--full] [--check|--fix] [--dry-run] [--logs-only]
+bash $CLAUDE_HOME/skills/librarian/capabilities/frontmatter-enforce.sh [--scope <path>|--recent|--full] [--check|--fix] [--dry-run] [--logs-only]
 ```
 
 | Flag | Effect |
@@ -81,17 +83,17 @@ bash ~/.claude/skills/librarian/capabilities/frontmatter-enforce.sh [--scope <pa
 - `frontmatter-empty-optional` — optional field set to empty string (`""`, `''`, `null`)
 - `frontmatter-tag-violation` — tag not in R-32 allowlist, or `tags:` is a string instead of a list
 
-**File type detection (alias collapse applied):** path-pattern rules yield one of 20 schema keys or 5 aliases. Aliases resolve as `skill-spec → reference`, `overview → engagement`, `updates → engagement`, `file-index → index`, `tier-2 → reference`. Required-field matrix mirrors `~/.claude/schemas/vault-schema.json`; tag prefix allowlist mirrors `_tag_prefixes` (currently `engagement/`, `project/`, `scope/`, `status/`, `initiative/`, `artefact-bd/`).
+**File type detection (alias collapse applied):** path-pattern rules yield one of 20 schema keys or 5 aliases. Aliases resolve as `skill-spec → reference`, `overview → engagement`, `updates → engagement`, `file-index → index`, `tier-2 → reference`. Required-field matrix mirrors `$CLAUDE_HOME/schemas/vault-schema.json`; tag prefix allowlist mirrors `_tag_prefixes` (default seed: `engagement/`, `project/`, `scope/`, `status/`, `initiative/`; archetype installs may add domain-specific prefixes).
 
-**Scope exemptions:** `.git/`, `.obsidian/`, `.claude/`, `.claude/projects/`, `_test*`, `Logs/ideation-brief-*.md`, `Engagements/*/CLAUDE.md` (navigation, no frontmatter required).
+**Scope exemptions:** `.git/`, `.obsidian/`, `.claude/`, `.claude/projects/`, `_test*`, `Logs/ideation-brief-*.md`, `{projects_dir}/*/CLAUDE.md` (navigation, no frontmatter required).
 
 **Drift audits (always run on `--full` / `--recent`; skipped on `--scope` and `--logs-only`):**
 
-**File type detection** uses path patterns first (e.g. `Meetings/*.md → meeting-note`, `Engagements/*/People/*.md → people`, `Engagements/*/Projects/*/* - PRD.md → prd`), with frontmatter `type:` overriding when explicitly set. Full path→type map is embedded in the runtime; see runtime source for the 20-row table. Required-field matrix mirrors `~/.claude/schemas/vault-schema.json`.
+**File type detection** uses path patterns first (e.g. `Meetings/*.md → meeting-note`, `{projects_dir}/*/People/*.md → people`, `{projects_dir}/*/Projects/*/* - PRD.md → prd`), with frontmatter `type:` overriding when explicitly set. Full path→type map is embedded in the runtime; see runtime source for the 20-row table. Required-field matrix mirrors `$CLAUDE_HOME/schemas/vault-schema.json`.
 
 **Drift audit finding shapes (read-only; never auto-fixed):**
 
-1. `provides-canonicality-drift` — any capability in `provides:` claimed by 2+ canonical-scope files (vault root depth-1 + `Vault Architecture/**` + `Skills/**`); severity `blocking` if any owner is at vault root OR inside `Vault Architecture/`, else `warning`. Allowlist source of truth: `~/.claude/hooks/drift-allowlist.json` (`provides_overlap[].capability`); mirrored into `librarian-manifest.json` on every run. Peter edits the hooks file directly — never hand-edit the manifest. Engagement reference docs, meeting notes, project docs, and daily notes are excluded (`provides:` is project-scoped vocabulary there).
+1. `provides-canonicality-drift` — any capability in `provides:` claimed by 2+ canonical-scope files (vault root depth-1 + `{VAULT_ARCHITECTURE_DIR}/**` + `Skills/**`); severity `blocking` if any owner is at vault root OR inside `{VAULT_ARCHITECTURE_DIR}/`, else `warning`. Allowlist source of truth: `$CLAUDE_HOME/hooks/config/drift-allowlist.json` (`provides_overlap[].capability`); mirrored into `librarian-manifest.json` on every run. Edit the hooks config file directly — never hand-edit the manifest. Engagement reference docs, meeting notes, project docs, and daily notes are excluded (`provides:` is project-scoped vocabulary there).
 
 2. `size-warning-soft` / `size-warning-strong` / `size-guard-violation` — actual lines vs `frontmatter.max_lines`; vault-root files get 400-line default. Thresholds: 70% info, 85% warning, 100% blocking. Finding fields: `file`, `declared_max`, `declared_source` (`frontmatter` | `default_root`), `actual_lines`, `pct_of_max`, `delta`, optional `recommendation`.
 
@@ -108,20 +110,20 @@ Matched rows retain `first_seen`. New rows append with next sequence number. Res
 
 **Env overrides (testing):** `FM_VAULT_SCHEMA`, `FM_PRE_WRITE_GUARD_OVERRIDE`, `FM_POST_WRITE_VERIFY_OVERRIDE`, `FM_DRIFT_ALLOWLIST_FILE_OVERRIDE`, `FM_DOC_DEPENDENCIES_OVERRIDE`, `MANIFEST_PATH`, `FINDINGS_OUTPUT`.
 
-**Extraction baselines & tests:** pre-extraction `drift_findings` snapshot at `~/.claude-plans/63-librarian-capability-extraction/01-tier-1-high-stakes/baselines/frontmatter-enforce-pre-manifest.json`; synthetic test harness at `tests/frontmatter-enforce.sh` (16/16 pass 2026-04-21). Deviations from the legacy model-interpreted output are documented pseudocode-bug corrections per Plan 63 T-1 precedent.
+**Tests:** synthetic test harness at `tests/frontmatter-enforce.sh` (16-assertion acceptance suite). Pre-extraction `drift_findings` baseline at `tests/baselines/frontmatter-enforce-pre-manifest.json`.
 
 ---
 
 ## Capability: xref-check
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/xref-check.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-3; sources `lib/findings.sh` + `lib/manifest.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-3; sources `lib/findings.sh` + `lib/manifest.sh`).
 
 **Purpose:** Detect broken wikilinks, orphaned files, and stale People cross-references. Writes `xref_graph` manifest subtree.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/xref-check.sh [--full|--recent|--scope <path>] [--include-logs]
+bash $CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh [--full|--recent|--scope <path>] [--include-logs]
 ```
 
 | Flag | Effect |
@@ -141,7 +143,7 @@ bash ~/.claude/skills/librarian/capabilities/xref-check.sh [--full|--recent|--sc
 |---|---|---|
 | `xref-broken-link` | error | Target `.md` not found anywhere in vault. |
 | `xref-people-one-way` | warn | File in `*/People/*.md` references another People file without reciprocal back-ref. |
-| `xref-orphan` | info | File has zero inbound links. Excluded by default: `CLAUDE.md`, `_index.md`, `File-Index.md`, `Vault Architecture.md`, `Tasks.md`, `Archive/**`, `Logs/**`. |
+| `xref-orphan` | info | File has zero inbound links. Excluded by default: `CLAUDE.md`, `_index.md`, `File-Index.md`, `{VAULT_ARCHITECTURE_DOC}`, `Tasks.md`, `Archive/**`, `Logs/**`. |
 
 **Manifest write:** `xref_graph` subtree via `manifest_set` (entire replacement — resolved-row drop-out pattern per T-2 precedent). Fields: `last_scan`, `total_files`, `scoped_files`, `broken`, `people_oneway`, `orphan`.
 
@@ -160,7 +162,7 @@ bash ~/.claude/skills/librarian/capabilities/xref-check.sh [--full|--recent|--sc
 - Orphans (info): {count}
 ```
 
-**Tests:** `~/.claude-plans/63-librarian-capability-extraction/02-tier-2-mid-tier/tests/xref-check.sh` — 14/14 pass (happy path cross-link, broken wikilink, alias-style resolution, orphan detection, orphan exclusions for CLAUDE.md/_index.md/Logs, unknown-flag exit 2, manifest subtree persistence, `--scope` single-file).
+**Tests:** `tests/xref-check.sh` — 14/14 pass (happy path cross-link, broken wikilink, alias-style resolution, orphan detection, orphan exclusions for CLAUDE.md/_index.md/Logs, unknown-flag exit 2, manifest subtree persistence, `--scope` single-file).
 
 **Pseudocode-bug correction (extraction time):** SKILL.md legacy pseudocode invoked multiple `echo $RESULT | python3 -c` + `echo $RESULT | python3 - <<PY` subshells. The heredoc-script + stdin-pipe combination silently empties stdin under some bash/python3 combos (python consumes the heredoc AS stdin, ignoring the pipe). Replaced with a single argv-based Python pass returning a multi-line summary + JSON blob. Caught by test Scenario 7 (manifest subtree wrote empty-string `"xref_graph": ""` on first run).
 
@@ -178,9 +180,9 @@ bash ~/.claude/skills/librarian/capabilities/xref-check.sh [--full|--recent|--sc
 - `--batch-size N` — progress emit every N files (default 50). Resets stream-json 180s idle watchdog.
 - `--output <path>` — write findings ndjson to file (cron mode passes `$CAP_LOG`).
 
-**Implementation:** `~/.claude/skills/librarian/capabilities/drift-sweep.sh`. Bash 3.2 clean (R-23). Emits `unregistered_type` and `missing_required` findings.
+**Implementation:** `$CLAUDE_HOME/skills/librarian/capabilities/drift-sweep.sh`. Bash 3.2 clean (R-23). Emits `unregistered_type` and `missing_required` findings.
 
-**Cron wiring:** Monday-only block in `~/.claude/orchestrator/cron-wrappers/librarian-cron.sh`. Non-blocking (`ANY_FAIL` is not flipped on drift-sweep failure). Timing (spine-remediation-followup Phase 4 P4-T04): 884 files / 35.4s / 17 progress emits / worst-case idle 1.9s — ~95× headroom under the 180s stream-json watchdog.
+**Cron wiring:** Monday-only block in `$CLAUDE_HOME/orchestrator/cron-wrappers/librarian-cron.sh`. Non-blocking (`ANY_FAIL` is not flipped on drift-sweep failure). Timing (spine-remediation-followup Phase 4 P4-T04): 884 files / 35.4s / 17 progress emits / worst-case idle 1.9s — ~95× headroom under the 180s stream-json watchdog.
 
 **Finding classes:**
 - `unregistered_type` — `type:` value not in the 24-value R-32 allowlist
@@ -196,7 +198,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 **Scope:** all `*/People/*.md` under vault root.
 
-**Exemptions:** Engagements whose Overview/_index/CLAUDE.md carries `status: complete|archived|historical|closed` are skipped. Auto-discovered — no hardcoded engagement list. (Tiffany + Walmart Digital Partnership are currently auto-exempted per their Overview `status: complete`.)
+**Exemptions:** Engagements whose Overview/_index/CLAUDE.md carries `status: complete|archived|historical|closed` are skipped. Auto-discovered — no hardcoded engagement list. (Skipped silently entirely when `manifest.vault.has_structured_projects: false`.)
 
 **Checks:**
 1. Required `people` fields: `name`, `org`, `role`, `engagement`, `updated`, `tags` (per `vault-schema.json`).
@@ -206,7 +208,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 - `--batch-size N` — progress emit every N files (default 50).
 - `--output <path>` — write findings ndjson to file.
 
-**Implementation:** `~/.claude/skills/librarian/capabilities/people-audit.sh`. Bash 3.2 clean. Runtime 0.6s on 30 files (P4-T03 smoke test).
+**Implementation:** `$CLAUDE_HOME/skills/librarian/capabilities/people-audit.sh`. Bash 3.2 clean. Runtime 0.6s on 30 files (P4-T03 smoke test).
 
 **Cron wiring:** Monday-only block in `librarian-cron.sh`, alongside `drift-sweep`. Zero write-time noise — standalone shell, never hook-invoked.
 
@@ -216,7 +218,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 ## Capability: waiver-audit
 
-**Purpose:** Audit two bypass surfaces for abuse, ad-hoc use, and cluster-to-rule candidates: (a) `~/.claude/hooks/state/cascade-waivers.json` (R-07 waivers) and (b) `~/Desktop/artefact-daily-logs/hook-audit.log` override fires (R-24 `CLAUDE_MEM_DISABLE_OK`, R-27 `PLAN_STATUS_OK`). Observational — emits findings, never blocks. Enforces R-46 (ENFORCEMENT-MAP).
+**Purpose:** Audit two bypass surfaces for abuse, ad-hoc use, and cluster-to-rule candidates: (a) `$HOOKS_STATE/cascade-waivers.json` (R-07 waivers) and (b) `$HOOKS_STATE/hook-audit.log` override fires (R-24 `HOOK_GUARD_DISABLE_OK`, R-27 `PLAN_STATUS_OK`). Observational — emits findings, never blocks. Enforces R-46 (ENFORCEMENT-MAP).
 
 **Scope:** all waivers in the canonical + 4 historical drift shapes; all override fires in the hook-audit log.
 
@@ -227,14 +229,14 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 **Classification buckets (waivers):**
 - `legitimate` — reason matches standing legit markers (R-37 lockstep, mechanical backfill, additive-only, SCHEMA_KEY, type: log, etc.)
-- `ad-hoc` — reason lacks legit markers OR entry_id not in `~/.claude/hooks/doc-dependencies.json` registry
+- `ad-hoc` — reason lacks legit markers OR entry_id not in `$CLAUDE_HOME/hooks/doc-dependencies.json` registry
 - `abuse` — empty reason, <30 char reason without legit marker, OR identical reason repeated across ≥3 sessions for the same entry_id
 - `stale` / `unclassifiable` — reserved for future TTL + edge-case taxonomy (neither fires in v1)
 
 **Abuse signatures (overrides):**
 - `override-rate-warning` — ≥3 override fires on the same calendar date (day is proxy for session since hook-audit.log has no session id)
 
-**Implementation:** `~/.claude/skills/librarian/capabilities/waiver-audit.sh`. Bash 3.2 clean. Read-only against `cascade-waivers.json` (the canonical writer is `~/.claude/hooks/lib/cascade-waiver.sh`, shipped 2026-04-20 Phase-0 Fix 1). Baseline preservation: the capability refuses to write to any `cascade-waiver-audit-*.md` path (Plan 65 T-1 baseline at `Logs/cascade-waiver-audit-2026-04-20.md` is immutable Sub-plan 05 evidence).
+**Implementation:** `$CLAUDE_HOME/skills/librarian/capabilities/waiver-audit.sh`. Bash 3.2 clean. Read-only against `cascade-waivers.json` (the canonical writer is `$CLAUDE_HOME/hooks/lib/cascade-waiver.sh`, shipped 2026-04-20 Phase-0 Fix 1). Baseline preservation: the capability refuses to write to any `cascade-waiver-audit-*.md` path (Plan 65 T-1 baseline at `Logs/cascade-waiver-audit-2026-04-20.md` is immutable Sub-plan 05 evidence).
 
 **Env overrides (testing):** `CASCADE_WAIVER_PATH`, `HOOK_AUDIT_LOG`, `DOC_DEP_FILE`, `FINDINGS_OUTPUT`.
 
@@ -242,7 +244,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 **Finding classes:** `waiver-abuse`, `waiver-ad-hoc`, `waiver-registry-rule-candidate`, `override-fire`, `override-rate-warning`.
 
-**Landed:** Plan 64 Sub-plan 02 T-1 (2026-04-20). 17/17 synthetic tests pass (`~/.claude-plans/64-enforcement-gap-systematic-audit/02-bypass-audit-capability/tests/synthetic-waiver-audit.sh`).
+**Tests:** synthetic test harness at `tests/synthetic-waiver-audit.sh` (17-assertion acceptance suite).
 
 **Enforcement layer for:** ENFORCEMENT-MAP R-46, R-48, R-49, R-50 (Plan 64 Sub-plan 02 added R-46; follow-up rules landed alongside waiver-audit).
 
@@ -250,14 +252,14 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 ## Capability: tag-coverage-audit
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/tag-coverage-audit.sh` (Plan 59 T-1, 2026-04-19; sources `~/.claude/hooks/lib/paths.sh` + `lib/plan-path.sh` + `lib/findings.sh` + `lib/frontmatter.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh` (Plan 59 T-1, 2026-04-19; sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/plan-path.sh` + `lib/findings.sh` + `lib/frontmatter.sh`).
 
 **Purpose:** Vault-wide tag coverage + taxonomy compliance audit. Measures presence of `tags:` frontmatter field, classifies tags against the canonical allowlist (`vault-schema.json` `_tag_prefixes`), and flags residual `#type/*` references remaining after the 2026-04-17 R-37 lockstep `type:` elimination.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <section>] [--batch-size N] [--output <file>] [--verbose]
+bash $CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <section>] [--batch-size N] [--output <file>] [--verbose]
 ```
 
 | Flag | Effect |
@@ -267,18 +269,18 @@ bash ~/.claude/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <sec
 | `--output <file>` | Write NDJSON findings to file instead of stdout. |
 | `--verbose` | Emit per-file diagnostic lines during walk. |
 
-**Scope:** VAULT-ONLY v1 (Plan 59 vault-only scope per Peter 2026-04-19). `$PLANS_DIR` + `Plans/` symlinks exempted (plans-folder tag dimensions are a Q3 follow-up).
+**Scope:** VAULT-ONLY v1. `$PLANS_DIR` + `Plans/` symlinks exempted (plans-folder tag dimensions are a Q3 follow-up).
 
 **Exempt surfaces (do NOT flag):**
 - `Archive/**`, `Tags/**`, `_test*`
 - `Logs/ideation-brief-*.md` (symlinks to `~/.claude-plans/`)
 - `.claude/projects/**` (auto-memory; separate schema domain)
 - `.claude/skills/**` (mirrored skill specs; separate schema domain — added 2026-04-22)
-- Root navigation: `CLAUDE.md`, `Vault Architecture.md` (untagged-navigation convention, added 2026-04-21)
+- Root navigation: `CLAUDE.md`, `{VAULT_ARCHITECTURE_DOC}` (untagged-navigation convention, added 2026-04-21)
 - Plan-root files + any depth ≥2 under `$PLANS_DIR`
 - `Logs/foundations-essays/**` and `Logs/backlog-progress/**` are **no longer exempt** (2026-04-21 exhaustive backfill; `#log/{log-type}` mirrors frontmatter `log-type:`)
 
-**Canonical tag-prefix allowlist (L83 in runtime):** `engagement/`, `project/`, `scope/`, `status/`, `initiative/`, `artefact-bd/`, `about-me/`, `log/`. Runtime uses the post-elimination canonical list so residual `#type/*` is correctly flagged as `historical_type_residual` even while `vault-schema.json._tag_prefixes` still carries stale `type` pending T-2 lockstep removal. Note: Agent C patched `frontmatter-enforce.sh` L255 TAG_PREFIXES on 2026-04-22 to add `about-me/` + `log/` — keep these two lists mirrored.
+**Canonical tag-prefix allowlist (default seed):** `engagement/`, `project/`, `scope/`, `status/`, `initiative/`, `about-me/`, `log/`. Sourced at runtime from `vault-schema.json._tag_prefixes`; archetype installs may extend with domain-specific prefixes via onboarding. The runtime list and the `frontmatter-enforce.sh` `TAG_PREFIXES` constant must stay mirrored — see `lib/frontmatter.sh` for the shared loader.
 
 **Finding classes:**
 - `missing_tags_field` — no `tags:` field at all
@@ -296,14 +298,14 @@ bash ~/.claude/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <sec
 
 ## Capability: wikilink-repair
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/wikilink-repair.sh` (Plan 59 T-3, 2026-04-20 — parallel session with T-5; sources `lib/findings.sh` + Plan 61 `lib/plan-path.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/wikilink-repair.sh` (Plan 59 T-3, 2026-04-20 — parallel session with T-5; sources `lib/findings.sh` + Plan 61 `lib/plan-path.sh`).
 
 **Purpose:** Detect broken `[[wikilinks]]` across the vault and propose repairs seeded from the `doc-dependencies.json` registry. **No heuristic / fuzzy match** — a broken target with no registry seed is logged as `broken-wikilink` for manual triage.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/wikilink-repair.sh [--apply] [--scope <path>] [--report <path>]
+bash $CLAUDE_HOME/skills/librarian/capabilities/wikilink-repair.sh [--apply] [--scope <path>] [--report <path>]
 ```
 
 | Flag | Effect |
@@ -315,7 +317,7 @@ bash ~/.claude/skills/librarian/capabilities/wikilink-repair.sh [--apply] [--sco
 | `--dry-run` | Accepted for CLI-contract symmetry (no-op default). |
 
 **Repair-seed policy:**
-- Propose a repair ONLY when the broken wikilink's target basename exactly matches the basename of a `primary` or `mirrors[]` entry in `~/.claude/hooks/doc-dependencies.json`. The registry is rename-aware (see `rename-history-sync` for how entries are updated).
+- Propose a repair ONLY when the broken wikilink's target basename exactly matches the basename of a `primary` or `mirrors[]` entry in `$CLAUDE_HOME/hooks/doc-dependencies.json`. The registry is rename-aware (see `rename-history-sync` for how entries are updated).
 - Multiple candidates: logged with `ambiguous` flag; no auto-repair.
 
 **Scope exclusions:** `Archive/`, `Logs/foundations-essays/`, `Logs/backlog-progress/`.
@@ -330,14 +332,14 @@ bash ~/.claude/skills/librarian/capabilities/wikilink-repair.sh [--apply] [--sco
 
 ## Capability: rename-detect
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/rename-detect.sh` (Plan 67 Sub-plan 02 T-1, 2026-04-22; sources `lib/findings.sh`, optionally `lib/manifest.sh` under `--register`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/rename-detect.sh` (Plan 67 Sub-plan 02 T-1, 2026-04-22; sources `lib/findings.sh`, optionally `lib/manifest.sh` under `--register`).
 
 **Purpose:** Detect file renames by scanning `git log --diff-filter=R --name-status -M90` across the vault + plans repos over a time window (default last 24h). Emits one NDJSON record per rename. **Upstream signal** for `rename-cascade` — pipe-composable.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/rename-detect.sh [--since <iso8601>] [--root <path>] [--register] [--min-similarity <int>]
+bash $CLAUDE_HOME/skills/librarian/capabilities/rename-detect.sh [--since <iso8601>] [--root <path>] [--register] [--min-similarity <int>]
 ```
 
 | Flag | Effect |
@@ -367,7 +369,7 @@ bash ~/.claude/skills/librarian/capabilities/rename-detect.sh [--since <iso8601>
 
 ## Capability: rename-cascade
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/rename-cascade.sh` (Plan 67 Sub-plan 02 T-2, 2026-04-22). Consumes `rename-detect` NDJSON on stdin; rewrites inbound references. Stdin capture pattern avoids the `python3 heredoc` stdin-swallow bug (`feedback_python_heredoc_argv.md`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/rename-cascade.sh` (Plan 67 Sub-plan 02 T-2, 2026-04-22). Consumes `rename-detect` NDJSON on stdin; rewrites inbound references. Stdin capture pattern avoids the `python3 heredoc` stdin-swallow bug (`feedback_python_heredoc_argv.md`).
 
 **Purpose:** Apply the rename cascade — update inbound `[[wikilinks]]`, optionally frontmatter path refs (`spec_path`, `handoff_path`, `ideation_brief_path`, `tasks_path`), and `parent_plan:` slugs when a plan directory is renamed.
 
@@ -402,15 +404,15 @@ rename-detect.sh | rename-cascade.sh --include-frontmatter    # include path-val
 
 ## Capability: rename-history-sync
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/rename-history-sync.sh` (Plan 67 Sub-plan 02 T-3, 2026-04-22).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/rename-history-sync.sh` (Plan 67 Sub-plan 02 T-3, 2026-04-22).
 
-**Purpose:** Maintain the `rename_history[]` field on `~/.claude/hooks/doc-dependencies.json`. Two idempotent sub-commands.
+**Purpose:** Maintain the `rename_history[]` field on `$CLAUDE_HOME/hooks/doc-dependencies.json`. Two idempotent sub-commands.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/rename-history-sync.sh migrate
-bash ~/.claude/skills/librarian/capabilities/rename-history-sync.sh append < <rename-detect-ndjson>
+bash $CLAUDE_HOME/skills/librarian/capabilities/rename-history-sync.sh migrate
+bash $CLAUDE_HOME/skills/librarian/capabilities/rename-history-sync.sh append < <rename-detect-ndjson>
 ```
 
 | Sub-command | Effect |
@@ -418,7 +420,7 @@ bash ~/.claude/skills/librarian/capabilities/rename-history-sync.sh append < <re
 | `migrate` | Add empty `rename_history: []` to any entry missing it. Idempotent. |
 | `append` | Read `rename-detect` NDJSON from stdin; append each matching `{from, to, at, commit}` row to the entry whose `primary` or `mirrors[].file` basename matches the `old_path`. |
 
-**Env overrides (testing):** `DOC_DEP_FILE` (default `~/.claude/hooks/doc-dependencies.json`).
+**Env overrides (testing):** `DOC_DEP_FILE` (default `$CLAUDE_HOME/hooks/doc-dependencies.json`).
 
 **Exit codes:** `0` success, `2` missing registry file.
 
@@ -428,14 +430,14 @@ bash ~/.claude/skills/librarian/capabilities/rename-history-sync.sh append < <re
 
 ## Capability: trinity-drift-detect
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/trinity-drift-detect.sh` (Plan 67 Sub-plan 04 T-1, 2026-04-22; sources `~/.claude/hooks/lib/paths.sh` + `lib/findings.sh`). Addresses the drift class caught by the 2026-04-21 validation audit: sub-plan spec/manifest declared `status: complete`, but tasks.md ledger lagged with `not-started`/`in-progress` per-task statuses, masking incomplete work as complete.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/trinity-drift-detect.sh` (Plan 67 Sub-plan 04 T-1, 2026-04-22; sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/findings.sh`). Addresses the drift class caught by the 2026-04-21 validation audit: sub-plan spec/manifest declared `status: complete`, but tasks.md ledger lagged with `not-started`/`in-progress` per-task statuses, masking incomplete work as complete.
 
 **Purpose:** Detect disagreement between `spec.md` / `manifest.json` / `tasks.md` / per-task T-N statuses across plan-root and sub-plan-root directories.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/trinity-drift-detect.sh [--scope <path>] [--dry-run]
+bash $CLAUDE_HOME/skills/librarian/capabilities/trinity-drift-detect.sh [--scope <path>] [--dry-run]
 ```
 
 | Flag | Effect |
@@ -482,14 +484,14 @@ For every directory containing BOTH `spec.md` and `manifest.json`, compare `spec
 
 ## Capability: log-archive
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/log-archive.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-1; sources `~/.claude/hooks/lib/paths.sh` + `lib/findings.sh` + `lib/dates.sh` — `lib/dates.sh` co-shipped in the same commit). Note: `paths.sh` lives under `~/.claude/hooks/lib/`, not `librarian/lib/`; librarian's own `lib/plan-path.sh` is a separate helper for plan-root detection.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-1; sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/findings.sh` + `lib/dates.sh` — `lib/dates.sh` co-shipped in the same commit). Note: `paths.sh` lives under `$CLAUDE_HOME/hooks/lib/`, not `librarian/lib/`; librarian's own `lib/plan-path.sh` is a separate helper for plan-root detection.
 
 **Purpose:** Archive old top-level Logs/ files to `Archive/Logs/{YYYY}-W{WW}/` per retention thresholds. Never deletes — only `mv`.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/log-archive.sh [--dry-run | --execute]
+bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --execute]
 ```
 
 | Flag | Effect |
@@ -523,13 +525,13 @@ bash ~/.claude/skills/librarian/capabilities/log-archive.sh [--dry-run | --execu
 - Remaining in Logs/: {N} files (within retention window)
 ```
 
-**Tests:** `~/.claude-plans/63-librarian-capability-extraction/02-tier-2-mid-tier/tests/log-archive.sh` — 19/19 pass 2026-04-21 (happy path, threshold boundaries, symlink skip, non-dated preservation, dry-run no-op + lib/dates.sh direct smoke tests).
+**Tests:** `tests/log-archive.sh` — 19/19 pass 2026-04-21 (happy path, threshold boundaries, symlink skip, non-dated preservation, dry-run no-op + lib/dates.sh direct smoke tests).
 
 ---
 
 ## Capability: stale-detect
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/stale-detect.sh` (extracted from pseudocode 2026-04-20 via Plan 63 Sub-plan 01 T-4; sources `lib/manifest.sh` + `lib/plan-path.sh` + `lib/findings.sh`). Plan 67 Sub-plan 04 T-2 (2026-04-22) added **Check #8** (trinity-lag) without disturbing the 7-rule pseudocode contract.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/stale-detect.sh` (extracted from pseudocode 2026-04-20 via Plan 63 Sub-plan 01 T-4; sources `lib/manifest.sh` + `lib/plan-path.sh` + `lib/findings.sh`). Plan 67 Sub-plan 04 T-2 (2026-04-22) added **Check #8** (trinity-lag) without disturbing the 7-rule pseudocode contract.
 
 **Purpose:** Identify files that may need attention based on age or missing processing.
 
@@ -586,11 +588,11 @@ bash ~/.claude/skills/librarian/capabilities/log-archive.sh [--dry-run | --execu
 
 ### Rules
 
-1. **Vault root** may only contain: `CLAUDE.md`, `Vault Architecture.md`, `Tasks.md`
+1. **Vault root** may only contain: `CLAUDE.md`, `{VAULT_ARCHITECTURE_DOC}`, `Tasks.md`
 2. **Project folders** should only contain files matching `{Project} - *.md` plus `_index.md` and `File-Index.md` (navigation/reference scaffolding — see Index File Convention below)
-3. **People files** must be in `Engagements/*/People/` folders
+3. **People files** must be in `{projects_dir}/*/People/` folders
 4. **Meeting notes** must be in `Meetings/`
-5. **Engagement root** should only contain the 4 standard files + CLAUDE.md + `_index.md` + `File-Index.md` + `.DS_Store`. (See Vault Architecture.md for `File-Index.md` — auto-maintained by digest-run as the fallback link-routing destination when project is ambiguous.)
+5. **Engagement root** should only contain the 4 standard files + CLAUDE.md + `_index.md` + `File-Index.md` + `.DS_Store`. (See {VAULT_ARCHITECTURE_DOC} for `File-Index.md` — auto-maintained by digest-run as the fallback link-routing destination when project is ambiguous.)
 6. **Reference/ (Tier 1)** should not contain engagement-specific files
 7. **Logs/** is for dated operational logs only. Allowed patterns: dated logs matching `{log-type}-{date}-*.md` (e.g., `digest-*`, `session-auto-close-*`, `librarian-cron-error-*`), `build-*.md` build session records, and `ideation-brief-*.md` (vault-visibility symlinks or pending-retrofit files — canonical location is `~/.claude-plans/{slug}/00-ideation-brief.md`, see `project_backlog_cron_brief_paths.md` memory). No other content files in `Logs/`, `Archive/`, `.obsidian/`, `.git/`, `.claude/`.
 
@@ -598,7 +600,7 @@ bash ~/.claude/skills/librarian/capabilities/log-archive.sh [--dry-run | --execu
 
 `_index.md` is a folder-navigation artifact used at engagement roots, project roots, and People/ subfolders to improve Claude Code's filesystem traversal efficiency. It is always allowed and should not be flagged.
 
-`File-Index.md` is a scaffolding file that houses external resource links (SharePoint, Google Drive, Excel) and file paths. It exists at project roots (`Engagements/*/Projects/*/File-Index.md`) for workstream-scoped links and at engagement roots (`Engagements/*/File-Index.md`) as the fallback destination for digest-run Phase 2.5 when links can't be clearly routed to a project. See `~/.claude/skills/digest-run/SKILL.md` Phase 2.5 and Vault Architecture.md.
+`File-Index.md` is a scaffolding file that houses external resource links (SharePoint, Google Drive, Excel) and file paths. It exists at project roots (`{projects_dir}/*/Projects/*/File-Index.md`) for workstream-scoped links and at engagement roots (`{projects_dir}/*/File-Index.md`) as the fallback destination for digest-run Phase 2.5 when links can't be clearly routed to a project. See `$CLAUDE_HOME/skills/digest-run/SKILL.md` Phase 2.5 and {VAULT_ARCHITECTURE_DOC}.
 
 `ideation-brief-*.md` in `Logs/` is load-bearing infrastructure for the autonomous orchestration workflow — see `project_backlog_cron_brief_paths.md` and `project_autonomous_orchestration.md`. Never relocate, delete, or enforce log-frontmatter schema on these files. Canonical location is `~/.claude-plans/{slug}/00-ideation-brief.md`; the `Logs/` path is a symlink (or a pending-retrofit regular file awaiting T-8 in `vault-workflow-restructure`). Frontmatter-enforce must skip files matching `Logs/ideation-brief-*.md`.
 
@@ -623,14 +625,14 @@ bash ~/.claude/skills/librarian/capabilities/log-archive.sh [--dry-run | --execu
 
 ## Capability: sync-check
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/sync-check.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 01 T-3; sources `lib/findings.sh` + `lib/manifest.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/sync-check.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 01 T-3; sources `lib/findings.sh` + `lib/manifest.sh`).
 
-**Purpose:** Cross-domain consistency between backend (`~/.claude/`) and vault (`~/Documents/Obsidian Vault/`). Deterministic checklist of known relationships — not agent-based discovery.
+**Purpose:** Cross-domain consistency between backend (`$CLAUDE_HOME`) and vault (`$VAULT_ROOT`). Deterministic checklist of known relationships — not agent-based discovery.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/sync-check.sh [--scope <group|check-name>] [--check|--fix] [--dry-run]
+bash $CLAUDE_HOME/skills/librarian/capabilities/sync-check.sh [--scope <group|check-name>] [--check|--fix] [--dry-run]
 ```
 
 | Flag | Effect |
@@ -644,13 +646,13 @@ bash ~/.claude/skills/librarian/capabilities/sync-check.sh [--scope <group|check
 **The seven checks (grouped):**
 
 **backend group (1–4):**
-1. **skill-runtime** — hash compare `~/.claude/skills/{X}/SKILL.md` vs vault copy at `.claude/skills/{X}.md`. Auto-fix: copy backend → vault.
+1. **skill-runtime** — hash compare `$CLAUDE_HOME/skills/{X}/SKILL.md` vs vault copy at `.claude/skills/{X}.md`. Auto-fix: copy backend → vault.
 2. **skills-index** — every backend skill has a row in `Skills/_index.md`; every index row points to a spec. Manual (new skill → needs design spec).
 3. **memory-paths** — memory files' filesystem path references resolve. Auto-fix: flag stale references.
-4. **root-claude-md** — referenced absolute paths in `~/.claude/CLAUDE.md` resolve. Auto-fix or manual.
+4. **root-claude-md** — referenced absolute paths in `$CLAUDE_HOME/CLAUDE.md` resolve. Auto-fix or manual.
 
 **vault group (5–6):**
-5. **vault-claude-md** — engagement list matches `Engagements/*/` dirs. Missing: folder exists but not documented; stale: documented but folder missing. Manual.
+5. **vault-claude-md** — engagement list matches `{projects_dir}/*/` dirs. Missing: folder exists but not documented; stale: documented but folder missing. Manual.
 6. **vault-architecture** — directory tree in VA.md matches filesystem. Manual.
 
 **cross group (7):**
@@ -660,20 +662,20 @@ bash ~/.claude/skills/librarian/capabilities/sync-check.sh [--scope <group|check
 
 **Env overrides (testing):** `SC_BACKEND_ROOT`, `SC_MEMORY_ROOT`, `SC_ROOT_CLAUDE_MD`, `SC_VAULT_CLAUDE_MD`, `SC_VAULT_ARCH_MD`, `SC_SKILLS_INDEX`, `MANIFEST_PATH`, `FINDINGS_OUTPUT`.
 
-**Tests:** `~/.claude-plans/63-librarian-capability-extraction/01-tier-1-high-stakes/tests/sync-check.sh` — 12/12 pass 2026-04-21 (--scope backend/vault/cross + persistent S-NNN IDs across runs).
+**Tests:** `tests/sync-check.sh` — 12/12 pass 2026-04-21 (--scope backend/vault/cross + persistent S-NNN IDs across runs).
 
 ---
 
 ## Capability: backup
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/backup.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-2).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/backup.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-2).
 
 **Purpose:** Git add/commit/push across tracked directories. Mechanical close-the-loop. Graceful degradation on push failure (logged, never retried, exit 0).
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/backup.sh [--dry-run] [--scope <dir>] [--message <msg>]
+bash $CLAUDE_HOME/skills/librarian/capabilities/backup.sh [--dry-run] [--scope <dir>] [--message <msg>]
 ```
 
 | Flag | Effect |
@@ -682,7 +684,7 @@ bash ~/.claude/skills/librarian/capabilities/backup.sh [--dry-run] [--scope <dir
 | `--scope <dir>` | Restrict to one directory; overrides default set + `BACKUP_TARGETS`. |
 | `--message <msg>` | Override the auto-generated `librarian: {N} files` commit message. |
 
-**Default targets (skipped if not a git repo):** `$VAULT_ROOT`, `~/artefact-dashboard`, `$CLAUDE_HOME` (`~/.claude/`), `$PLANS_DIR` (`~/.claude-plans/`). Override via `BACKUP_TARGETS` env (colon-separated) for testing.
+**Default targets (skipped if not a git repo):** `$VAULT_ROOT`, `$CLAUDE_HOME` (default `$CLAUDE_HOME/`), `$PLANS_DIR` (default `~/.claude-plans/`), plus any paths declared in `manifest.foundation.backup_targets[]`. Override via `BACKUP_TARGETS` env (colon-separated) for testing.
 
 **Vault filter:** `.obsidian/workspace.json` is reset from stage before commit (high-noise churn file).
 
@@ -699,21 +701,21 @@ bash ~/.claude/skills/librarian/capabilities/backup.sh [--dry-run] [--scope <dir
 - {dir}: not a git repo, skipped
 ```
 
-**Tests:** `~/.claude-plans/63-librarian-capability-extraction/02-tier-2-mid-tier/tests/backup.sh` — 13/13 pass (clean tree, dirty tree dry-run, dirty tree live commit, push failure graceful, unknown-flag exit 2, `--message` override, `--scope` precedence, non-git skip).
+**Tests:** `tests/backup.sh` — 13/13 pass (clean tree, dirty tree dry-run, dirty tree live commit, push failure graceful, unknown-flag exit 2, `--message` override, `--scope` precedence, non-git skip).
 
 
 ---
 
 ## Capability: plan-index
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/plan-index.sh` (extracted from pseudocode 2026-04-20 via Plan 63 Sub-plan 01 T-1; co-ships with `lib/manifest.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/plan-index.sh` (extracted from pseudocode 2026-04-20 via Plan 63 Sub-plan 01 T-1; co-ships with `lib/manifest.sh`).
 
 **Purpose:** Regenerate `~/.claude-plans/_index.md` as a status-grouped navigation index. Runs during `librarian full`. Read-only walk of `~/.claude-plans/` + one atomic file write.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/plan-index.sh [--dry-run] [--parent <slug>]
+bash $CLAUDE_HOME/skills/librarian/capabilities/plan-index.sh [--dry-run] [--parent <slug>]
 ```
 
 | Flag | Effect |
@@ -773,20 +775,20 @@ _Plans missing a detectable status. Fix by adding a `**Status:**` header or `man
 
 Sub-initiatives with internal session structure (e.g. `57-spine-remediation/`) appear once in the index under the master plan's status; internal session directories are not flattened.
 
-**Extraction baselines & tests:** `~/.claude-plans/63-librarian-capability-extraction/01-tier-1-high-stakes/baselines/` holds pre/post `_index.md` + dual-run stdout. Deviations from the legacy model-interpreted output are documented pseudocode-bug corrections (adding `partial` to the Active vocabulary; collapsing whitespace in status-line heads; dotfile filtering at the walker).
+**Tests:** `tests/plan-index.sh` — synthetic acceptance suite. Baselines at `tests/baselines/`.
 
 ---
 
 ## Capability: plan-parent-resolve
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/plan-parent-resolve.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-7; sources `lib/findings.sh` + `lib/frontmatter.sh`). Enforcement layer for ENFORCEMENT-MAP R-28 (spine-remediation Session 24 Phase 1, 2026-04-14).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/plan-parent-resolve.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-7; sources `lib/findings.sh` + `lib/frontmatter.sh`). Enforcement layer for ENFORCEMENT-MAP R-28 (spine-remediation Session 24 Phase 1, 2026-04-14).
 
 **Purpose:** Walk the `parent_plan:` frontmatter chain for sub-task files under `$PLANS_DIR`, resolving inherited state and detecting drift. Read-only — emits findings only; never writes.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/plan-parent-resolve.sh [--file <path>] [--parent <slug>] [--dry-run]
+bash $CLAUDE_HOME/skills/librarian/capabilities/plan-parent-resolve.sh [--file <path>] [--parent <slug>] [--dry-run]
 ```
 
 | Flag | Effect |
@@ -832,7 +834,7 @@ None block writes or session close. R-28 is drift-surface enforcement only.
 - Chain too deep: {count}
 ```
 
-**Tests:** `~/.claude-plans/63-librarian-capability-extraction/02-tier-2-mid-tier/tests/plan-parent-resolve.sh` — 15/15 pass (covers all 6 Session 24 cases + 5 wrapper-CLI cases + scope exclusion for `handoff.md` and `tests/`). Complementary Session 24 harness still lives at `~/.claude-plans/57-spine-remediation/24-parent-plan-inheritance-and-master-initiative-migration/tests/test-parent-resolver.sh`.
+**Tests:** `tests/plan-parent-resolve.sh` — 15-assertion acceptance suite covering scope exclusion for `handoff.md` and `tests/`.
 
 **Pseudocode-bug correction (extraction time):** the Session 24 inline resolver only recognized `<slug>/` and `<slug>.md` forms. Live corpus (2026-04-20) has 63 files carrying `parent_plan: <slug-without-prefix>` pointing at `NN-<slug>/` dirs — the convention documented in CLAUDE.md rule #5. The capability accepts all three forms. Pre-fix live signal: 63 spurious broken pointers. Post-fix: 0 broken, 9 real self-cycle findings in `56-spine-remediation-finalization/` surface as legitimate drift.
 
@@ -841,14 +843,14 @@ None block writes or session close. R-28 is drift-surface enforcement only.
 
 ## Capability: cron-log-architecture
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/cron-log-architecture.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-4; sources `lib/findings.sh`). Enforcement layer for ENFORCEMENT-MAP R-22 (spine-remediation Session 19 Module 19-A).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/cron-log-architecture.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-4; sources `lib/findings.sh`). Enforcement layer for ENFORCEMENT-MAP R-22 (spine-remediation Session 19 Module 19-A).
 
 **Purpose:** Detect plists whose `StandardOutPath`/`StandardErrorPath` competes with a wrapper's dated-`LOG_FILE=$(date …)` pattern. Report-only — resolution requires a human `launchctl unload/load`.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/cron-log-architecture.sh [--scope all|plist|allowlist] [--allowlist-path <path>]
+bash $CLAUDE_HOME/skills/librarian/capabilities/cron-log-architecture.sh [--scope all|plist|allowlist] [--allowlist-path <path>]
 ```
 
 | Flag | Effect |
@@ -858,7 +860,7 @@ bash ~/.claude/skills/librarian/capabilities/cron-log-architecture.sh [--scope a
 | `--scope allowlist` | Print the allowlist file's contents and exit. |
 | `--allowlist-path <path>` | Override the exceptions JSON path. |
 
-**Scope:** `$PLIST_DIR/com.*.plist` (default `~/Library/LaunchAgents`) correlated against wrappers under `$CRON_WRAPPERS_RES` (default `~/.claude/orchestrator/cron-wrappers`). Plists whose Program is not a script under `$CRON_WRAPPERS_RES` are silently skipped (not spine-remediation-managed).
+**Scope:** `$PLIST_DIR/com.*.plist` (default `~/Library/LaunchAgents`) correlated against wrappers under `$CRON_WRAPPERS_RES` (default `$CLAUDE_HOME/orchestrator/cron-wrappers`). Plists whose Program is not a script under `$CRON_WRAPPERS_RES` are silently skipped (not spine-remediation-managed).
 
 **Allowlist:** `$CRON_LOG_EXCEPTIONS` (default `$HOOKS_DIR/cron-log-architecture-exceptions.json`). Schema `{ "<label>": "<reason>", ... }`. Allowlisted labels are emitted at `level=info` with `allowlisted_reason` field; non-allowlisted are `level=error`.
 
@@ -884,7 +886,7 @@ bash ~/.claude/skills/librarian/capabilities/cron-log-architecture.sh [--scope a
 - <label> (ALLOWLISTED — <reason>)
 ```
 
-**Tests:** `~/.claude-plans/63-librarian-capability-extraction/02-tier-2-mid-tier/tests/cron-log-architecture.sh` — 12/12 pass (compliant, mismatch blocking, allowlisted info downgrade, wrapper without dated pattern, plist outside CRON_WRAPPERS, unknown-flag, `--scope allowlist`).
+**Tests:** `tests/cron-log-architecture.sh` — 12/12 pass (compliant, mismatch blocking, allowlisted info downgrade, wrapper without dated pattern, plist outside CRON_WRAPPERS, unknown-flag, `--scope allowlist`).
 
 **Where it fires:** `/librarian cron-log-architecture` (ad-hoc), `/librarian full` (every full scan), `librarian session-close` Step 2 (when Touched Files include plists or wrappers).
 
@@ -894,15 +896,15 @@ bash ~/.claude/skills/librarian/capabilities/cron-log-architecture.sh [--scope a
 
 ## Capability: handoff-disposition-check
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/handoff-disposition-check.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-5; sources `lib/findings.sh`). Enforcement layer for ENFORCEMENT-MAP R-25. Codifies `feedback_no_remembered_followups.md`.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/handoff-disposition-check.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-5; sources `lib/findings.sh`). Enforcement layer for ENFORCEMENT-MAP R-25. Codifies `feedback_no_remembered_followups.md`.
 
 **Purpose:** Block session-close when touched `*handoff.md` files contain unresolved follow-up language without a disposition tag within a 2-line window.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/handoff-disposition-check.sh --files <file> [--files <file> ...]
-echo "<path>" | ~/.claude/skills/librarian/capabilities/handoff-disposition-check.sh
+bash $CLAUDE_HOME/skills/librarian/capabilities/handoff-disposition-check.sh --files <file> [--files <file> ...]
+echo "<path>" | $CLAUDE_HOME/skills/librarian/capabilities/handoff-disposition-check.sh
 ```
 
 | Flag | Effect |
@@ -940,7 +942,7 @@ echo "<path>" | ~/.claude/skills/librarian/capabilities/handoff-disposition-chec
 
 **Where it fires:** `librarian session-close` Step 2 Scoped Integrity Check (alongside `plan-index-touch-regen`, `doc-dependency-cascade-audit`). NOT in `/librarian full` — handoffs are session-scoped.
 
-**Tests:** `~/.claude-plans/63-librarian-capability-extraction/02-tier-2-mid-tier/tests/handoff-disposition-check.sh` — 13/13 pass (compliant, missing disposition, out-of-window, `laterally` word-boundary, `todos.txt` word-boundary, unknown-flag, multi-`--files`, stdin scope, non-handoff skip).
+**Tests:** `tests/handoff-disposition-check.sh` — 13/13 pass (compliant, missing disposition, out-of-window, `laterally` word-boundary, `todos.txt` word-boundary, unknown-flag, multi-`--files`, stdin scope, non-handoff skip).
 
 **Regex tuning:** deliberately tight — literal words only, word-boundary-guarded. False positives (e.g. `laterally`, `todos.txt`) verified negative in tests. Tighten if Session 21+ surfaces new false-positive classes; never relax dispositions.
 
@@ -948,14 +950,14 @@ echo "<path>" | ~/.claude/skills/librarian/capabilities/handoff-disposition-chec
 
 ## Capability: skill-parity
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/skill-parity.sh` (Plan 12 skill-optimizer scope evolution, 2026-04-21; sources `lib/findings.sh`). Absorbs the mechanical (bash-checkable) subset of the original skill-optimizer Axis 1 config audit. Bash-vs-LLM boundary: LLM-interpreted checks (effort calibration, argument-hint extraction, description rewrite, disable-model-invocation heuristics) remain in `/skill-optimizer --skill {name}`.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/skill-parity.sh` (Plan 12 skill-optimizer scope evolution, 2026-04-21; sources `lib/findings.sh`). Absorbs the mechanical (bash-checkable) subset of the original skill-optimizer Axis 1 config audit. Bash-vs-LLM boundary: LLM-interpreted checks (effort calibration, argument-hint extraction, description rewrite, disable-model-invocation heuristics) remain in `/skill-optimizer --skill {name}`.
 
-**Scope:** `~/.claude/skills/*/SKILL.md` — not vault content.
+**Scope:** `$CLAUDE_HOME/skills/*/SKILL.md` — not vault content.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/skill-parity.sh [--check|--fix] [--scope <dir>] [--dry-run]
+bash $CLAUDE_HOME/skills/librarian/capabilities/skill-parity.sh [--check|--fix] [--scope <dir>] [--dry-run]
 ```
 
 | Flag | Effect |
@@ -981,20 +983,20 @@ bash ~/.claude/skills/librarian/capabilities/skill-parity.sh [--check|--fix] [--
 
 **Where it fires:** surfaces in `/librarian full` supplemental block. Richer skill analysis (intent alignment, external benchmarking, LLM-judged frontmatter proposals) is the scope of the standalone `/skill-optimizer --skill {name}` skill.
 
-**Tests:** `~/.claude-plans/12-skill-optimizer/tests/skill-parity.sh` — 16/16 pass (happy path, missing frontmatter, missing name, name mismatch, missing description, description length, `--fix` add-name, `--fix` idempotent, `--fix` leaves existing name, `--scope`, `--dry-run`, unknown flag).
+**Tests:** `tests/skill-parity.sh` — 16-assertion acceptance suite.
 
 ---
 
 ## Capability: entity-parity
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/entity-parity.sh` (Plan 68; V1 shipped 2026-04-21 for skill entity; V2 extended 2026-04-21 to `plan` + `memory-file`). Cross-surface parity driven by the `entities` section of `~/.claude/hooks/doc-dependencies.json`. V3 (deferred) adds event-time advisory via pre-write-guard; V4 (deferred) adds `--apply` + session-close Step 2d gate.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/entity-parity.sh` (Plan 68; V1 shipped 2026-04-21 for skill entity; V2 extended 2026-04-21 to `plan` + `memory-file`). Cross-surface parity driven by the `entities` section of `$CLAUDE_HOME/hooks/doc-dependencies.json`. V3 (deferred) adds event-time advisory via pre-write-guard; V4 (deferred) adds `--apply` + session-close Step 2d gate.
 
 **Scope (V2):** three entity types — `skill`, `plan`, `memory-file`. Each entity declares a canonical path template (with `{placeholder}`), a `canonical_field`, an `instance_enumerator` (glob), and N mirrors. Mirror paths may be vault-root-relative, home-relative (`~/...`), or include a `#row[{key}]` suffix indicating a row-within-file selector.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/entity-parity.sh [--check] [--scope <dir>] [--entity-type <type>] [--dry-run]
+bash $CLAUDE_HOME/skills/librarian/capabilities/entity-parity.sh [--check] [--scope <dir>] [--entity-type <type>] [--dry-run]
 ```
 
 | Flag | Effect |
@@ -1035,8 +1037,8 @@ bash ~/.claude/skills/librarian/capabilities/entity-parity.sh [--check] [--scope
 **Where it fires:** Monday cron block in `librarian-cron.sh` (wired alongside `drift-sweep`, `people-audit`, `waiver-audit`, `skill-parity` — non-blocking). Manual invocation remains available.
 
 **Tests:**
-- V1: `~/.claude-plans/68-entity-parity-enforcement/01-v1-bare-bones/tests/entity-parity.sh` — 26/26 pass.
-- V2: `~/.claude-plans/68-entity-parity-enforcement/02-v2-coverage/tests/entity-parity.sh` — 27/27 pass (backlog-row three pointer forms, memory-index-line, `optional` mirror silent-when-absent, `match_kind: json-field`, `exclude_basenames`, `--entity-type` filter, persistent ID stability across V2 findings).
+- V1: `tests/entity-parity-v1.sh` — 26-assertion acceptance suite.
+- V2: `tests/entity-parity-v2.sh` — 27-assertion suite covering backlog-row three pointer forms, memory-index-line, `optional` mirror silent-when-absent, `match_kind: json-field`, `exclude_basenames`, `--entity-type` filter, persistent ID stability across V2 findings.
 
 **Baseline (real inventory, 2026-04-21 V2 dry-run):** 170 instances scanned; 40 findings; all legitimate drift, zero detector bugs.
 - skill: 29 (V1 unchanged) — 3 canonical-missing-description, 7 mirror-missing, 9 mirror-absent-description (info), 3 description-mismatch, 7 index-row-missing
@@ -1073,7 +1075,7 @@ Librarian Report — YYYY-MM-DD HH:MM
 
 ## Cron Health (X issues)
 [cron-health findings: blocking rows for each *cron-error*.md newer than 24h by filename epoch]
-[tripwire findings: blocking rows for each TRIPWIRE line in ~/.claude/hooks/state/tripwire.log newer than 24h]
+[tripwire findings: blocking rows for each TRIPWIRE line in $CLAUDE_HOME/hooks/state/tripwire.log newer than 24h]
 
 ## Cron Log Architecture (X mismatches)
 [cron-log-architecture-mismatch findings: blocking rows for plists whose StandardOutPath conflicts with wrapper dated-log pattern — R-22]
@@ -1095,7 +1097,7 @@ End-of-session reconciliation — a deterministic chain of extracted librarian c
 
 **Invocation:** `/librarian session-close [--deep]`
 
-**Orchestrator:** `~/.claude/skills/librarian/capabilities/session-close.sh` (Plan 63 Sub-plan 04, 2026-04-21). Deterministic shell; chains extracted capability shells; advisory-only (always exits 0).
+**Orchestrator:** `$CLAUDE_HOME/skills/librarian/capabilities/session-close.sh` (Plan 63 Sub-plan 04, 2026-04-21). Deterministic shell; chains extracted capability shells; advisory-only (always exits 0).
 
 ### Flags
 
@@ -1120,12 +1122,12 @@ Default if no registry: **solo**.
 
 1. **Scoped integrity** (Step 2): `frontmatter-enforce --check` → `xref-check` → `placement-validate` → `stale-detect` → `cron-log-architecture` → `handoff-disposition-check` → `plan-index` → `plan-parent-resolve`.
 2. **Rename cascade** (Step 2b, Plan 67 SP02 T-4, 2026-04-22): `rename-detect` over last-24h git log across VAULT + PLANS → `rename-history-sync append` onto `doc-dependencies.json` → `rename-cascade` (dry-run only; `--apply` is human-initiated). Empty 24h window is a valid no-op. Logged as `rename-cascade-pipeline` + per-subcommand status in the aggregated log.
-3. **Reconciliation sweep** (Step 2c): `~/.claude/hooks/reconcile-sessions.sh`. **Skipped in `scoped` mode** (R-42 defers to reconciler). Idempotent and lock-guarded; safe to fire in `solo` and `reconciler`.
+3. **Reconciliation sweep** (Step 2c): `$CLAUDE_HOME/hooks/reconcile-sessions.sh`. **Skipped in `scoped` mode** (R-42 defers to reconciler). Idempotent and lock-guarded; safe to fire in `solo` and `reconciler`.
 4. **Trinity drift detect** (Step 2d, Plan 67 SP04 T-1, 2026-04-22): `trinity-drift-detect` full walk of `$PLANS_DIR` depth 2 + 3. Surfaces `spec-manifest-divergence`, `trinity-task-ledger-lag`, `header-trinity-divergence`. Advisory; does not block close.
 5. **Sync check** (Step 3): `sync-check --fix` (full scope).
 6. **Architect triage** (Step 4c): `architect-triage` — reads `Logs/architect-*.md`, deduplicates against backlog + manifest.
 7. **Backup** (Step 5): `backup` capability. **Skipped in `scoped` mode** to avoid partial-state commits during overlapping sessions.
-8. **Aggregated log** (Step 6): single write to `~/Documents/Obsidian Vault/Logs/session-close-YYYYMMDD-HHMMSS.md`. Capability-by-capability status recorded. Idempotent: second invocation within 60s short-circuits without double-writing.
+8. **Aggregated log** (Step 6): single write to `{VAULT_LOGS}/session-close-YYYYMMDD-HHMMSS.md`. Capability-by-capability status recorded. Idempotent: second invocation within 60s short-circuits without double-writing.
 
 ### Capability error handling
 
@@ -1156,9 +1158,9 @@ Individual capabilities MAY write their own sub-logs + findings per their SKILL.
 ### Cross-references
 
 - Individual capability contracts: see `## Capability: <name>` sections in this SKILL.md.
-- R-42 scope contract: `~/.claude-plans/57-spine-remediation/` and `ENFORCEMENT-MAP.md`.
+- R-42 scope contract: see `ENFORCEMENT-MAP.md`.
 - R-41 plan-index staleness tripwire: `plan-index` capability section.
-- Aggregated report schema: `~/.claude/schemas/vault-schema.json` (type: log, log-type: session-close).
+- Aggregated report schema: `$CLAUDE_HOME/schemas/vault-schema.json` (type: log, log-type: session-close).
 
 ---
 
@@ -1171,7 +1173,7 @@ When `--fix` is invoked and the scope exceeds **10 files**, a mandatory pre-flig
 1. **Dry-run first pass:** Execute all applicable capabilities in `--check` mode. Collect the full list of proposed changes.
 2. **Cross-check:** Do any proposed changes conflict with each other? (e.g., two capabilities both want to modify the same field on the same file with different values)
 3. **Dependency check:** For each target file, check if any file that links TO it (inbound edges from `xref_graph`) is also being modified. Flag cascading risk.
-4. **Summary to Peter:** Present a grouped summary before executing:
+4. **Summary to the user:** Present a grouped summary before executing:
 
 ```
 ## Pre-Flight Summary ({N} files affected)
@@ -1202,7 +1204,7 @@ Proceed with all? Or specify capabilities/files to include/exclude.
 
 ## Capability: memory-hygiene
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/memory-hygiene.sh` (shipped Plan 63 Sub-plan 03 T-2, 2026-04-20 — pattern exemplar for the Tier 3 shell-prefilter + Claude-synthesis hybrid).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/memory-hygiene.sh` (shipped Plan 63 Sub-plan 03 T-2, 2026-04-20 — pattern exemplar for the Tier 3 shell-prefilter + Claude-synthesis hybrid).
 
 **Purpose:** Lifecycle maintenance for the Claude memory system. Shell prefilter handles 5 deterministic drift classes as direct findings; emits NDJSON candidates for 3 judgment classes that Claude synthesizes here at runtime.
 
@@ -1213,7 +1215,7 @@ Proceed with all? Or specify capabilities/files to include/exclude.
 | `--scope <path>` | Override memory directory | — |
 | `--dry-run` | Summary counts only, no emission | off |
 | `--help` | Usage | — |
-| `MEMORY_DIR` | Memory files root | `$HOME/.claude/projects/-Users-petertiktinsky/memory/` |
+| `MEMORY_DIR` | Memory files root | `$HOME/.claude/projects/<cwd-slug>/memory/` |
 | `MEMORY_INDEX_PATH` | MEMORY.md path | `$MEMORY_DIR/MEMORY.md` |
 | `FINDINGS_OUTPUT` | Finding output sink (file, else stdout) | stdout |
 | `STALENESS_THRESHOLD_DAYS` | Staleness cutoff | 30 |
@@ -1258,7 +1260,7 @@ Every judgment candidate carries:
 ```
 
 Full schema + per-capability evidence payloads live at
-`~/.claude-plans/63-librarian-capability-extraction/03-tier-3-hybrid/prefilter-contract.md §1`.
+`tests/prefilter-contract.md §1`.
 
 ### Model synthesis prompt (LIVE — this IS what Claude executes)
 
@@ -1267,7 +1269,7 @@ When `/librarian memory-hygiene` emits NDJSON candidates, Claude reads each line
 **For `#2 status-verification` candidates:**
 1. Read the `content_excerpt` — does it explicitly state the project/plan/engagement is complete, closed, or superseded?
 2. If explicit: CONFIRM closure. Refresh `last_verified` to today. Optionally archive.
-3. If ambiguous: escalate to Peter with the excerpt + `last_verified` age for a manual call.
+3. If ambiguous: escalate to the user with the excerpt + `last_verified` age for a manual call.
 4. If the excerpt contradicts the `status: complete` frontmatter: flag as conflict.
 
 **For `#3 overlap` candidates:**
@@ -1287,7 +1289,7 @@ When `/librarian memory-hygiene` emits NDJSON candidates, Claude reads each line
 
 ### Output format (runtime)
 
-After synthesis, Claude renders proposals in the following markdown to Peter:
+After synthesis, Claude renders proposals in the following markdown to the user:
 
 ```
 ## Memory Hygiene ({N} files checked)
@@ -1335,23 +1337,23 @@ When a new memory is being created (by any skill or by the auto-memory system), 
 
 ### Tests + two-gate acceptance status
 
-- Tests: `~/.claude-plans/63-librarian-capability-extraction/03-tier-3-hybrid/tests/memory-hygiene.sh` — 19 assertions across 5 scenarios (deterministic direct-fire, NDJSON shape, empty-state, Gate A adversarial recall, --dry-run summary).
+- Tests: `tests/memory-hygiene.sh` — 19 assertions across 5 scenarios (deterministic direct-fire, NDJSON shape, empty-state, Gate A adversarial recall, --dry-run summary).
 - Gate A (adversarial prefilter recall): **5/5 seeded anomalies surfaced** (verified 2026-04-20 T-2).
-- Gate B (proposal acceptance delta): pending Peter's judge-pack pass at `baselines/judge-pack/memory-hygiene.md`.
+- Gate B (proposal acceptance delta): pending user judge-pack pass at `baselines/judge-pack/memory-hygiene.md`.
 
 
 ---
 
 ## Capability: transcript-mine
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/transcript-mine.sh` (Plan 63 Sub-plan 03 T-3, 2026-04-20; sources `lib/findings.sh` + `lib/manifest.sh` + `lib/dates.sh`). Hybrid shell-prefilter + Claude-synthesis. **Phase 1 + Phase 2 are deterministic shell** — they discover transcripts and emit NDJSON signal candidates. **Phase 3 + Phase 4 are Claude synthesis at runtime** using the prompt below against the NDJSON stream.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/transcript-mine.sh` (Plan 63 Sub-plan 03 T-3, 2026-04-20; sources `lib/findings.sh` + `lib/manifest.sh` + `lib/dates.sh`). Hybrid shell-prefilter + Claude-synthesis. **Phase 1 + Phase 2 are deterministic shell** — they discover transcripts and emit NDJSON signal candidates. **Phase 3 + Phase 4 are Claude synthesis at runtime** using the prompt below against the NDJSON stream.
 
 **Purpose:** Mine meeting transcripts for implicit knowledge — decisions, preferences, action-items, tool-mentions, corrections — that was never explicitly saved as a memory. Proposes new memory entries for review.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/transcript-mine.sh [--scope <path>] [--dry-run] [--help]
+bash $CLAUDE_HOME/skills/librarian/capabilities/transcript-mine.sh [--scope <path>] [--dry-run] [--help]
 ```
 
 | Flag | Effect |
@@ -1360,9 +1362,9 @@ bash ~/.claude/skills/librarian/capabilities/transcript-mine.sh [--scope <path>]
 | `--dry-run` | Summary counts only — no NDJSON emission |
 | `--help` | Usage + env overrides |
 
-**Env overrides (testing):** `TRANSCRIPT_DIR` (default `$HOME/Documents/Obsidian Vault/Meetings/`), `TRANSCRIPT_GLOB` (default `*.md`), `FINDINGS_OUTPUT` (default stdout).
+**Env overrides (testing):** `TRANSCRIPT_DIR` (default `$VAULT_ROOT/Meetings/`), `TRANSCRIPT_GLOB` (default `*.md`), `FINDINGS_OUTPUT` (default stdout).
 
-**NDJSON schema:** per `~/.claude-plans/63-librarian-capability-extraction/03-tier-3-hybrid/prefilter-contract.md §1`. Each line:
+**NDJSON schema:** per `tests/prefilter-contract.md §1`. Each line:
 
 ```json
 {
@@ -1387,7 +1389,7 @@ bash ~/.claude/skills/librarian/capabilities/transcript-mine.sh [--scope <path>]
 
 | Category | Keyword regex (word-boundary, case-insensitive) |
 |----------|------------------------------------------------|
-| `decision` | decided, approved, going with, the plan is, let's go, `**Decision:**`, Peter's position |
+| `decision` | decided, approved, going with, the plan is, let's go, `**Decision:**` |
 | `preference` | prefer(s\|red\|ring), from now on, I like, dislike(s\|d), avoid, always, never |
 | `action-item` | will do, will (follow up\|send\|share\|draft\|review), follow-up, deadline, owner, by `<date>` |
 | `tool-mention` | Claude, skill, script, cron, hook, librarian, memory |
@@ -1423,11 +1425,11 @@ confidence: high|medium|low
 ```
 
 **Confidence levels:**
-- **High:** Direct statement from Peter ("don't do X", "always use Y")
+- **High:** Direct statement from the user ("don't do X", "always use Y")
 - **Medium:** Implied from correction or decision context
 - **Low:** Inferred from pattern across multiple sessions
 
-In `--propose` mode: output all proposals as a report for Peter's review.
+In `--propose` mode: output all proposals as a report for the user's review.
 In `--apply` mode: write high-confidence proposals directly (with memory pre-write guard validation from Plan 20), present medium/low for approval.
 
 ### Output Format
@@ -1460,28 +1462,28 @@ In `--apply` mode: write high-confidence proposals directly (with memory pre-wri
 
 ### Tests + two-gate acceptance status
 
-- Tests: `~/.claude-plans/63-librarian-capability-extraction/03-tier-3-hybrid/tests/transcript-mine.sh` — 17 assertions across 6 scenarios (NDJSON schema, no-match, malformed skip, Gate A adversarial, --dry-run, frontmatter strip).
+- Tests: `tests/transcript-mine.sh` — 17 assertions across 6 scenarios (NDJSON schema, no-match, malformed skip, Gate A adversarial, --dry-run, frontmatter strip).
 - Gate A (adversarial prefilter recall): **0 candidates from 20L DQ Sheet placeholder** (verified 2026-04-20 T-3). PASS — near-zero condition satisfied.
-- Gate B (proposal acceptance delta): pending Peter's judge-pack pass at `baselines/judge-pack/transcript-mine.md`.
+- Gate B (proposal acceptance delta): pending user judge-pack pass at `baselines/judge-pack/transcript-mine.md`.
 
 ---
 
 ## Capability: architect-triage
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/architect-triage.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-6; sources `lib/findings.sh` + `lib/manifest.sh` + `lib/dates.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/architect-triage.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-6; sources `lib/findings.sh` + `lib/manifest.sh` + `lib/dates.sh`).
 
 **Purpose:** Surface untracked architect `[R-NNN]` recommendations as System Backlog candidates. Dedupe against Backlog row text + prior manifest state. Manifest I/O heavy — persists `architect_recommendations` subtree via `manifest_set`.
 
 **Invocation:**
 
 ```
-bash ~/.claude/skills/librarian/capabilities/architect-triage.sh [--check|--apply]
+bash $CLAUDE_HOME/skills/librarian/capabilities/architect-triage.sh [--check|--apply]
 ```
 
 | Flag | Effect |
 |------|--------|
 | `--check` | Report untracked recommendations + update manifest. No Backlog write. Default. |
-| `--apply` | Currently blocks with `exit 4`. Main-session flag; Backlog writes are Peter-authorized. |
+| `--apply` | Currently blocks with `exit 4`. Main-session flag; Backlog writes are user-authorized. |
 | `--dry-run` | Alias for `--check`. |
 
 **Extraction regex:** `^\*\*\[R-(\d+)\]\s+([^*]+?)\*\*\s*(?:\`\[([A-Za-z\-]+)\]\`)?` — matches `**[R-NNN] Title** ` + optional `\`[cat]\`` bucket tag. **Category:** and **Confidence:** lines scanned in the next 2KB of body for metadata.
@@ -1536,13 +1538,13 @@ bash ~/.claude/skills/librarian/capabilities/architect-triage.sh [--check|--appl
 
 **Session-close integration (Step 4c):** gates on last_scanned_log vs newest log mtime — only fires if a new log exists. Runs after Step 4b (System Backlog Update).
 
-**Tests:** `~/.claude-plans/63-librarian-capability-extraction/02-tier-2-mid-tier/tests/architect-triage.sh` — 14/14 pass (new untracked, Backlog dedupe, manifest completed dropout, duplicate-across-logs dedupe, unknown-flag exit 2, `--apply` blocked exit 4, manifest subtree persistence, prior-status preservation).
+**Tests:** `tests/architect-triage.sh` — 14/14 pass (new untracked, Backlog dedupe, manifest completed dropout, duplicate-across-logs dedupe, unknown-flag exit 2, `--apply` blocked exit 4, manifest subtree persistence, prior-status preservation).
 
 ---
 
 ## Capability: mem-promote
 
-**Runtime:** `~/.claude/skills/librarian/capabilities/mem-promote.sh` (shipped Plan 63 Sub-plan 03 T-4, 2026-04-20 — Tier 3 hybrid: shell prefilter + Claude synthesis).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/mem-promote.sh` (shipped Plan 63 Sub-plan 03 T-4, 2026-04-20 — Tier 3 hybrid: shell prefilter + Claude synthesis).
 
 **Purpose:** Query claude-mem's observation database for high-value patterns and propose promotions to the auto-memory system. Bridges the gap between claude-mem's wide-net automatic capture and auto-memory's curated, always-available context.
 
@@ -1555,7 +1557,7 @@ bash ~/.claude/skills/librarian/capabilities/architect-triage.sh [--check|--appl
 | `--dry-run` | Summary counts only, no emission | off |
 | `--help` | Usage | — |
 | `MEM_SESSION_PATH` | Colon-separated session JSONL paths (test mode) | — |
-| `MEMORY_DIR` | Memory files root | `$HOME/.claude/projects/-Users-petertiktinsky/memory/` |
+| `MEMORY_DIR` | Memory files root | `$HOME/.claude/projects/<cwd-slug>/memory/` |
 | `CLAUDE_MEM_DB` | claude-mem SQLite DB | `$HOME/.claude-mem/claude-mem.db` |
 | `FINDINGS_OUTPUT` | Finding output sink (file, else stdout) | stdout |
 | `MEM_PROMOTE_CLUSTER_THRESHOLD` | Jaccard threshold for within-session cluster consolidation | 0.5 |
@@ -1618,7 +1620,7 @@ Pair-overlap findings (when >1 session scanned) carry:
 }
 ```
 
-Full schema + per-capability evidence payloads live at `~/.claude-plans/63-librarian-capability-extraction/03-tier-3-hybrid/prefilter-contract.md §1`.
+Full schema + per-capability evidence payloads live at `tests/prefilter-contract.md §1`.
 
 ### Phase 3: Promotion Proposal Generation (LIVE — this IS what Claude executes)
 
@@ -1647,7 +1649,7 @@ confidence: high|medium|low
 
 1. For `promotion-candidate` with `dedup_decision: novel` — produce an **ADD proposal**. Confidence from type: `decision`/`bugfix` → high, `feature`/`change` → medium, `discovery` → low.
 2. For `promotion-candidate` with `dedup_decision: variant` — produce an **UPDATE proposal** targeting the matched memory file. Merge new detail into the existing body; refresh `last_verified`.
-3. For `promotion-candidate` with `dedup_decision: duplicate` — **SKIP**, but surface to Peter if `match_score < 0.8` (for confirmation).
+3. For `promotion-candidate` with `dedup_decision: duplicate` — **SKIP**, but surface to the user if `match_score < 0.8` (for confirmation).
 4. For `pair-overlap` findings — **COLLAPSE**: both subjects refer to the same underlying work. Emit ONE consolidated proposal, not two. The higher-jaccard cross-session pair is the strongest collapse signal.
 5. For clusters of ≥3 promotion-candidates sharing a topic cluster (session-work on the same plan/feature/domain) — propose a **bulk UPDATE** to the matching project/feature memory, not per-observation proposals. Saves churn; preserves signal.
 
@@ -1701,9 +1703,9 @@ Create an audit trail from curated memory back to the raw observation that gener
 
 ### Tests + two-gate acceptance status
 
-- Tests: `~/.claude-plans/63-librarian-capability-extraction/03-tier-3-hybrid/tests/mem-promote.sh` — 19 assertions across 7 scenarios (novel candidate emission, duplicate/variant detection, nonexistent-session handling, Gate A adversarial pair, --dry-run summary, within-session cluster consolidation, unknown-flag exit 2).
+- Tests: `tests/mem-promote.sh` — 19 assertions across 7 scenarios (novel candidate emission, duplicate/variant detection, nonexistent-session handling, Gate A adversarial pair, --dry-run summary, within-session cluster consolidation, unknown-flag exit 2).
 - Gate A (adversarial pair-overlap): **4 pair-aware findings emit** (shared-token jaccard 0.30-0.40 across the 8b4eccad + 83468272 pair — cascade-waiver ×2, partial-status, Plan 64 SP02). Gate A PASS per prefilter-contract.md (disjunctive "collapse OR pair-aware finding").
-- Gate B (proposal acceptance delta): pending Peter's judge-pack pass at `baselines/judge-pack/mem-promote.md`.
+- Gate B (proposal acceptance delta): pending user judge-pack pass at `baselines/judge-pack/mem-promote.md`.
 
 ---
 
@@ -1723,7 +1725,7 @@ Each layer is progressively more curated and more available.
 
 ---
 
-## Shared Helpers (`~/.claude/skills/librarian/lib/`)
+## Shared Helpers (`$CLAUDE_HOME/skills/librarian/lib/`)
 
 Five shared shell libraries, sourced by capability scripts to keep invariants in one place (Plan 61 seed, extended by Plans 63/64/67). Contract: every capability that emits findings, reads/writes the manifest, handles dates, parses frontmatter, or resolves plan paths sources the relevant helper instead of inlining logic.
 
@@ -1735,17 +1737,17 @@ Five shared shell libraries, sourced by capability scripts to keep invariants in
 | `lib/frontmatter.sh` | Single-file YAML-frontmatter parser (bash 3.2 compatible; no `declare -A`). Returns key-value pairs. | `frontmatter_load`, `frontmatter_get` | plan-parent-resolve, tag-coverage-audit |
 | `lib/plan-path.sh` | Plan-root detection under `$PLANS_DIR`. Disambiguates depth-2 plan-root files from depth-≥3 sub-task files. | `is_plan_root_file`, `plan_root_for` | stale-detect, tag-coverage-audit, plan-parent-resolve |
 
-**Note:** `lib/plan-path.sh` is librarian-local. The paths helper `lib/paths.sh` lives under `~/.claude/hooks/lib/paths.sh` (vault/plans/logs env exports) — librarian capabilities source it via absolute path, not via `librarian/lib/`. Do not conflate the two.
+**Note:** `lib/plan-path.sh` is librarian-local. The paths helper `lib/paths.sh` lives under `$CLAUDE_HOME/hooks/lib/paths.sh` (vault/plans/logs env exports) — librarian capabilities source it via absolute path, not via `librarian/lib/`. Do not conflate the two.
 
 ---
 
 ## Hard Rules
 
-1. **Survivorship.** Never modify fields that already have values. Never overwrite Peter's edits.
+1. **Survivorship.** Never modify fields that already have values. Never overwrite the user's edits.
 2. **No deletions.** Librarian moves files (log-archive) and adds fields (frontmatter-enforce --fix). It never deletes files or removes field values.
 3. **Report before acting.** Default mode is always `--check` / `--dry-run`. Auto-fix requires explicit `--fix` flag.
 4. **Skip non-content files.** Ignore `.json`, `.DS_Store`, `.obsidian/`, `.git/`, `.claude/`, image files. Also skip `librarian-manifest.json` — it is infrastructure, not content.
-5. **Vault Architecture.md is source of truth.** All rules derive from it. If a file violates a rule not in VA.md, it's not a violation.
+5. **{VAULT_ARCHITECTURE_DOC} is source of truth.** All rules derive from it. If a file violates a rule not in VA.md, it's not a violation.
 
 ---
 
@@ -1755,22 +1757,24 @@ Any skill that writes to the vault should read `librarian-manifest.json` before 
 
 ### Protocol
 
-Before writing a vault file, the writing skill reads `~/Documents/Obsidian Vault/Logs/librarian-manifest.json` and validates:
+Before writing a vault file, the writing skill reads `{VAULT_LOGS}/librarian-manifest.json` and validates:
 
 | # | Check | Manifest Path | On Failure |
 |---|-------|--------------|------------|
-| 1 | **Engagement exists** | `engagements[slug]` — present and check status | Stop, ask Peter. Do not create new engagement structure without approval. |
-| 2 | **Project exists** | `engagements[slug].projects[project_slug]` — present and not complete | Stop, ask Peter. |
+| 1 | **Engagement exists** | `engagements[slug]` — present and check status | Stop, ask the user. Do not create new engagement structure without approval. |
+| 2 | **Project exists** | `engagements[slug].projects[project_slug]` — present and not complete | Stop, ask the user. |
 | 3 | **People file exists** | `engagements[slug].people[]` — path exists | Create it (allowed). Log the creation. |
 | 4 | **Tags valid** | `tags.taxonomy` — all tags being written are in the taxonomy | Use closest match or omit. Flag in output. |
-| 5 | **Routing destination valid** | `inventory.by_type` + `engagements` structure — target directory exists | Stop, ask Peter. |
-| 6 | **No duplication** | `inventory.by_type[*][].path` — no existing file with same name | Stop, ask Peter. |
+| 5 | **Routing destination valid** | `inventory.by_type` + `engagements` structure — target directory exists | Stop, ask the user. |
+| 6 | **No duplication** | `inventory.by_type[*][].path` — no existing file with same name | Stop, ask the user. |
+
+> **Greenfield note.** Rows 1, 2, 3, 5 reference engagement/project structure. When `manifest.vault.has_structured_projects: false`, these checks are skipped — the writing skill proceeds to row 4 (tag validation) and row 6 (duplication) only.
 
 ### Staleness Handling
 
 If `manifest.generated` is >24 hours old, the writing skill should log a warning but proceed. The manifest is advisory, not blocking.
 
-If the manifest is missing entirely, the skill falls back to the old behavioral approach: direct filesystem scanning and the pre-write checklist in Vault Architecture.md.
+If the manifest is missing entirely, the skill falls back to the old behavioral approach: direct filesystem scanning and the pre-write checklist in {VAULT_ARCHITECTURE_DOC}.
 
 ### Who Reads the Manifest
 
@@ -1783,7 +1787,7 @@ If the manifest is missing entirely, the skill falls back to the old behavioral 
 
 ## Infrastructure: Vault Manifest
 
-Librarian maintains a persistent state file at `~/Documents/Obsidian Vault/Logs/librarian-manifest.json`. The manifest is a structured snapshot of the vault's current state — file inventory, engagement/project structure, tag usage, cross-reference graph, scan history, and pending issues.
+Librarian maintains a persistent state file at `{VAULT_LOGS}/librarian-manifest.json`. The manifest is a structured snapshot of the vault's current state — file inventory, engagement/project structure, tag usage, cross-reference graph, scan history, and pending issues.
 
 **Purpose:** Skip full vault rediscovery on every run. Diff against current filesystem (glob + mtime comparison) instead of scanning every file. Other skills read the manifest to validate their writes before committing them.
 
@@ -1821,28 +1825,28 @@ Librarian maintains a persistent state file at `~/Documents/Obsidian Vault/Logs/
     "{slug}": {
       "name": "Display Name",
       "status": "active|complete",
-      "path": "Engagements/{Name}/",
+      "path": "{projects_dir}/{Name}/",
       "projects": {
         "{slug}": {
           "name": "Display Name",
           "status": "planning|active|paused|complete",
-          "path": "Engagements/{Name}/Projects/{Project}/"
+          "path": "{projects_dir}/{Name}/Projects/{Project}/"
         }
       },
       "people": [
-        { "name": "Full Name", "path": "Engagements/{Name}/People/{Name}.md" }
+        { "name": "Full Name", "path": "{projects_dir}/{Name}/People/{Name}.md" }
       ]
     }
   },
 
   "tags": {
     "taxonomy": {
-      "engagement": ["#engagement/cdmo-ddx", "#engagement/walmart", "#engagement/tiffany", "#engagement/artefact-bd"],
-      "project": ["#project/b2c-renovate", "#project/bar-dashboard", "#project/1p-acquisition", "#project/gold-layer-qa"],
+      "engagement": ["#engagement/{slug-1}", "#engagement/{slug-2}", "#engagement/{slug-3}"],
+      "project": ["#project/{slug-1}", "#project/{slug-2}", "#project/{slug-3}"],
       "scope": ["#scope/decision", "#scope/action-item", "#scope/essay", "#scope/braindump", "#scope/inbox"],
       "status": ["#status/processed", "#status/pending", "#status/needs-review"]
     },
-    "in_use": { "#engagement/cdmo-ddx": 0 },
+    "in_use": { "#engagement/{slug-1}": 0 },
     "orphaned": [],
     "unrecognized": []
   },
@@ -1886,7 +1890,7 @@ Librarian maintains a persistent state file at `~/Documents/Obsidian Vault/Logs/
   "backend_sync": {
     "skill_runtimes": {
       "{name}": {
-        "backend_path": "~/.claude/skills/{name}/SKILL.md",
+        "backend_path": "$CLAUDE_HOME/skills/{name}/SKILL.md",
         "vault_copy_path": ".claude/skills/{name}.md",
         "in_sync": true,
         "backend_mtime": "ISO",
@@ -1896,7 +1900,7 @@ Librarian maintains a persistent state file at `~/Documents/Obsidian Vault/Logs/
   },
 
   "architect_recommendations": {
-    "last_scanned_log": "architect-2026-04-02-gold-layer-qa.md",
+    "last_scanned_log": "architect-{YYYY-MM-DD}-{topic-slug}.md",
     "recommendations": [
       {
         "id": "R-001",
@@ -1928,7 +1932,7 @@ Librarian maintains a persistent state file at `~/Documents/Obsidian Vault/Logs/
         "id": "SM-001",
         "type": "size-warning-soft|size-warning-strong|size-guard-violation",
         "severity": "info|warning|blocking",
-        "file": "Vault Architecture.md",
+        "file": "{VAULT_ARCHITECTURE_DOC}",
         "declared_max": 400,
         "declared_source": "frontmatter|default_root",
         "actual_lines": 681,
@@ -1948,7 +1952,7 @@ Librarian maintains a persistent state file at `~/Documents/Obsidian Vault/Logs/
 
 **Schema notes:**
 - `inventory.by_type` uses the same file-type detection logic as `frontmatter-enforce` (path-pattern matching). No new detection logic.
-- `engagements` is derived by scanning `Engagements/*/` directories and reading Overview frontmatter for status + PRD frontmatter for project status. Also includes `Artefact-BD/` with its own structure.
+- `engagements` is derived by scanning `{projects_dir}/*/` directories (declared in `manifest.vault.projects_dir`; default seed `"Engagements"`) and reading Overview frontmatter for status + PRD frontmatter for project status. Additional top-level project containers may be declared in `manifest.vault.additional_project_dirs[]`. Skipped entirely when `manifest.vault.has_structured_projects: false`.
 - `xref_graph` stores summary stats and broken/orphaned lists inline. Full edge list goes to a companion file (`librarian-manifest-edges.json`) only when >1000 edges — otherwise inline under an `edges` array.
 - `pending_issues` carries forward unresolved manual-classification findings across runs so they don't get rediscovered every time. Auto-fixed items are removed on the run that fixes them.
 - `backend_sync` covers global skills: session-close, digest-run, design-audit, meeting-processor, librarian, architect.
@@ -1972,12 +1976,12 @@ Librarian maintains a persistent state file at `~/Documents/Obsidian Vault/Logs/
    - **New files** (in glob, not in manifest): classify, parse frontmatter, extract links, add to inventory
    - **Modified files** (mtime differs): re-parse frontmatter, re-extract links, update inventory entry
    - **Deleted files** (in manifest, not in glob): remove from inventory, remove outbound edges, flag inbound edges as newly broken
-   - **Engagement/project structure:** re-scan only if any file in `Engagements/` or `Artefact-BD/` has changed mtime
+   - **Engagement/project structure:** re-scan only if any file in `{projects_dir}/` or any `manifest.vault.additional_project_dirs[]` entry has changed mtime (skipped when `manifest.vault.has_structured_projects: false`)
    - **Tags:** recompute `in_use` counts from inventory entries (cheap — iterate manifest, not files)
 
 3. **Merge findings:** Capability findings from this run update `scan_state.findings_by_capability`. New manual items added to `pending_issues`. Auto-fixed items removed from `pending_issues`.
 
-4. **Write manifest** to `~/Documents/Obsidian Vault/Logs/librarian-manifest.json` (overwrite).
+4. **Write manifest** to `{VAULT_LOGS}/librarian-manifest.json` (overwrite).
 
 ### Manifest as API
 
