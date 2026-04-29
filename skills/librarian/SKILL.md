@@ -2091,6 +2091,58 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh < classifie
 
 ---
 
+## Capability: sanctioned-schema-drift-detect
+
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/sanctioned-schema-drift-detect.sh` (shipped Plan 71 SP09 T-12.7, 2026-04-28; defense-in-depth tripwire against unsanctioned drift between live `$CLAUDE_HOME/schemas/` and foundation-repo distribution source).
+
+**Purpose:** Verify that the 3 sanctioned schemas in the live install (`vault-schema.json`, `plans-schema.json`, `plan-manifest-schema.json`) are byte-identical to the foundation-repo distribution source. The schemas retained post-SP09 T-10 atomic revert are the load-bearing structural contracts for vault writes (R-32 / R-40 / plan-manifest validation); silent drift between live and source would invalidate every downstream pre-write-validation chain.
+
+**Invocation:**
+
+```
+bash $CLAUDE_HOME/skills/librarian/capabilities/sanctioned-schema-drift-detect.sh [--json]
+```
+
+| Flag / env | Purpose | Default |
+|------------|---------|---------|
+| `--json` | Emit findings as a single JSON object (`{"drift_count":N,"findings":[...]}`) | text |
+| `-h` / `--help` | Usage | — |
+| `FOUNDATION_REPO` | Foundation-repo root (test override) | `$HOME/Code/claude-foundations-v2` |
+| `LIVE_SCHEMAS` | Live schemas directory (test override) | `$HOME/.claude/schemas` |
+
+**Sanctioned schemas (post-SP09 T-10):**
+
+1. `vault-schema.json` — vault file frontmatter contract (R-32 source of truth).
+2. `plans-schema.json` — plan-artifact frontmatter contract (R-40 source of truth).
+3. `plan-manifest-schema.json` — plan-manifest.json contract.
+
+These three are the only schemas retained after the SP09 atomic revert. Any other schema appearing under `$CLAUDE_HOME/schemas/` is unsanctioned drift; this capability flags it via the `MISSING-SOURCE` shape.
+
+**Drift shapes:**
+
+- `MISSING-LIVE: <path>` — sanctioned schema absent from the live install (foundation-repo has it; live does not).
+- `MISSING-SOURCE: <path>` — sanctioned schema absent from foundation-repo (live has it; source does not). Should never fire for the 3 sanctioned schemas; fires here would indicate distribution-source drift.
+- `DRIFT: <name> (live <live-path> differs from source <src-path>)` — both files exist but `diff -q` reports a byte difference.
+
+**Exit codes:**
+
+- `0` — no drift; all 3 sanctioned schemas byte-identical to source.
+- `1` — drift detected; findings written to stdout (text mode) or as JSON (`--json`).
+- `2` — usage / unknown flag.
+
+**Tests:** integrated into the foundation-repo grep-audit pre-flight; runs as part of `/librarian` (mode `librarian-full`) on every invocation. No standalone synthetic test harness — tripwire semantics verified by the pre-flight grep-audit gate (foundation grep-audit clean implies live-source bijection on the 3 sanctioned schemas).
+
+
+**Output Contract:**
+
+- **Files written:** none. Capability emits drift findings to stdout (text or JSON via `--json`); writes nothing to the manifest, the vault, or the foundation-repo. Read-only across both trees.
+- **Schema type:** text-mode output is `PASS:` / `FAIL: <N> finding(s):` framed; JSON-mode output validates against ad-hoc shape `{"drift_count": int, "findings": [string]}` (no formal schema — capability is its own consumer via exit code).
+- **Pre-write validation:** N/A (no writes).
+- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — invocation errors (missing trees, unknown flags) exit non-zero with stderr diagnostic; never silently passes through drift. Drift exits 1 by design (signal-bearing); usage errors exit 2.
+- **Tier:** mechanical. **requires_confirmation:** false. **cron_block:** none — capability is read-only and safe to fire from `/librarian` cron.
+
+---
+
 ## Memory Search Strategy
 
 When looking for prior context, search in this order:
