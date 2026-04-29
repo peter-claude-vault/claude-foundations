@@ -65,9 +65,28 @@ EXCLUDE_RE='/\.git/|/node_modules/|/file-history/|/grep-audit-patterns/|/grep-au
 PY_TMP=$(mktemp -d -t grep-audit-py.XXXXXX)
 trap 'rm -rf "$PY_TMP"' EXIT INT TERM
 
+# Both helpers match patterns INTERNALLY against content only. Earlier
+# revisions emitted "path:line:content" then piped to a separate `grep -f
+# patterns` stage — but when $TARGET is absolute (e.g. invoked from outside
+# the repo), the emitted path itself contains "/Users/<name>/..." which
+# self-matches the literal pattern list. The match must scope to content
+# alone; doing it inside Python keeps the path out of the match input.
 cat > "${PY_TMP}/layer2_nfkc.py" <<'PY'
 import os, re, sys, unicodedata
 target, excl = sys.argv[1], re.compile(sys.argv[2])
+lit_path, re_path = sys.argv[3], sys.argv[4]
+parts = []
+with open(lit_path) as fh:
+    for line in fh:
+        s = line.strip()
+        if s:
+            parts.append(re.escape(s))
+with open(re_path) as fh:
+    for line in fh:
+        s = line.strip()
+        if s:
+            parts.append(s)
+PAT = re.compile('|'.join(parts), re.IGNORECASE) if parts else None
 for root, dirs, files in os.walk(target):
     dirs[:] = [d for d in dirs if not excl.search(os.path.join(root, d) + '/')]
     for fn in files:
@@ -78,7 +97,9 @@ for root, dirs, files in os.walk(target):
             with open(path, 'r', errors='replace') as fh:
                 for i, line in enumerate(fh, 1):
                     nfkc = unicodedata.normalize('NFKC', line)
-                    if nfkc != line:
+                    if nfkc == line:
+                        continue
+                    if PAT and PAT.search(nfkc):
                         sys.stdout.write("{}:{}:{}\n".format(path, i, nfkc.rstrip()))
         except (OSError, UnicodeError):
             continue
@@ -87,6 +108,19 @@ PY
 cat > "${PY_TMP}/layer3_base64.py" <<'PY'
 import os, re, sys, base64
 target, excl = sys.argv[1], re.compile(sys.argv[2])
+lit_path, re_path = sys.argv[3], sys.argv[4]
+parts = []
+with open(lit_path) as fh:
+    for line in fh:
+        s = line.strip()
+        if s:
+            parts.append(re.escape(s))
+with open(re_path) as fh:
+    for line in fh:
+        s = line.strip()
+        if s:
+            parts.append(s)
+PAT = re.compile('|'.join(parts), re.IGNORECASE) if parts else None
 blob_re = re.compile(rb'[A-Za-z0-9+/]{40,}={0,2}')
 for root, dirs, files in os.walk(target):
     dirs[:] = [d for d in dirs if not excl.search(os.path.join(root, d) + '/')]
@@ -106,7 +140,8 @@ for root, dirs, files in os.walk(target):
             except Exception:
                 continue
             for ln in text.splitlines():
-                sys.stdout.write("{}:<base64-blob>:{}\n".format(path, ln))
+                if PAT and PAT.search(ln):
+                    sys.stdout.write("{}:<base64-blob>:{}\n".format(path, ln))
 PY
 
 # --- Per-layer state ---
@@ -131,11 +166,11 @@ if [ -n "$l1_lit" ] || [ -n "$l1_re" ]; then
 fi
 
 # ======================================================================
-# Layer 2: NFKC
+# Layer 2: NFKC (matching is internal to the helper — see comment above)
 # ======================================================================
 l2_out=$(
   python3 "${PY_TMP}/layer2_nfkc.py" "$TARGET" "$EXCLUDE_RE" \
-    | grep -E -i -f "$PATTERNS_LITERAL" -f "$PATTERNS_REGEX" 2>/dev/null \
+    "$PATTERNS_LITERAL" "$PATTERNS_REGEX" 2>/dev/null \
     || true
 )
 if [ -n "$l2_out" ]; then
@@ -144,11 +179,11 @@ if [ -n "$l2_out" ]; then
 fi
 
 # ======================================================================
-# Layer 3: base64
+# Layer 3: base64 (matching is internal to the helper — see comment above)
 # ======================================================================
 l3_out=$(
   python3 "${PY_TMP}/layer3_base64.py" "$TARGET" "$EXCLUDE_RE" \
-    | grep -E -i -f "$PATTERNS_LITERAL" -f "$PATTERNS_REGEX" 2>/dev/null \
+    "$PATTERNS_LITERAL" "$PATTERNS_REGEX" 2>/dev/null \
     || true
 )
 if [ -n "$l3_out" ]; then

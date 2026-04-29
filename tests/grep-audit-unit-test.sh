@@ -123,9 +123,41 @@ else
   fails=$((fails + 1))
 fi
 
+# --- Path-self-match regression test ---
+# Earlier revisions of grep-audit.sh piped Python helper output (which prefixes
+# every emitted line with the absolute file path) through a separate
+# `grep -f patterns` stage. When invoked with an absolute target inside
+# /Users/<name>/, the path prefix itself self-matched the literal pattern
+# list, producing false positives on layers 2 and 3. Fix: matching moved
+# inside the helpers, scoped to file content only. This test re-exercises
+# the failure class.
+#
+# Setup: a subdir whose NAME matches the literal pattern list, containing a
+# file with NFKC-triggering content that is otherwise clean (no Peter
+# strings, no base64 leaks). Pre-fix: layer 2 = 1 (false positive from path).
+# Post-fix: layer 2 = 0 (content alone is matched).
+__SELFMATCH_DIRNAME="peter""tiktinsky-self-match-probe"
+selfmatch_dir="${DOGFOOD_ROOT}/${__SELFMATCH_DIRNAME}"
+mkdir -p "$selfmatch_dir"
+# Innocuous NFKC-triggering content — fullwidth digit '1' (U+FF11) normalizes
+# to ASCII '1', triggering Layer 2's "nfkc != line" emit. No Peter strings.
+printf 'just innocuous text with a fullwidth one: \xef\xbc\x91\n' > "$selfmatch_dir/clean.txt"
+json=$(GREP_AUDIT_SKIP_LAYER4=1 "$AUDIT" "$selfmatch_dir" 2>/dev/null || true)
+hit2=$(json_field "$json" layer2)
+hit3=$(json_field "$json" layer3)
+total=$(json_field "$json" hits_total)
+if [ "$hit2" = '0' ] && [ "$hit3" = '0' ] && [ "$total" = '0' ]; then
+  printf 'unit-test PASS (path-self-match): clean content under peter-pathed dir → 0 hits\n'
+else
+  printf 'unit-test FAIL (path-self-match): expected all-zero; got l2=%s l3=%s total=%s\n' \
+    "$hit2" "$hit3" "$total" >&2
+  printf '  json: %s\n' "$json" >&2
+  fails=$((fails + 1))
+fi
+
 if [ "$fails" -gt 0 ]; then
   printf 'unit-test: %d failure(s)\n' "$fails" >&2
   exit 8
 fi
-printf 'unit-test: all 4 layers validated\n'
+printf 'unit-test: all 4 layers + path-self-match regression validated\n'
 exit 0
