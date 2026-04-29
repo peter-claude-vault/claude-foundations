@@ -1910,7 +1910,7 @@ Each layer is progressively more curated and more available.
 
 ## Shared Helpers (`$CLAUDE_HOME/skills/librarian/lib/`)
 
-Five shared shell libraries, sourced by capability scripts to keep invariants in one place (Plan 61 seed, extended by Plans 63/64/67). Contract: every capability that emits findings, reads/writes the manifest, handles dates, parses frontmatter, or resolves plan paths sources the relevant helper instead of inlining logic.
+Six shared shell libraries, sourced by capability scripts to keep invariants in one place (Plan 61 seed, extended by Plans 63/64/67/71). Contract: every capability that emits findings, reads/writes the manifests, handles dates, parses frontmatter, or resolves plan paths sources the relevant helper instead of inlining logic.
 
 | Helper | Purpose | Key exports | Primary consumers |
 |--------|---------|-------------|-------------------|
@@ -1919,8 +1919,16 @@ Five shared shell libraries, sourced by capability scripts to keep invariants in
 | `lib/dates.sh` | ISO-8601 date math + week-of-year conversions. Bash 3.2 clean. | `date_iso`, `days_since`, `yyyy_ww_from_iso` | log-archive, session-close, transcript-mine, architect-triage |
 | `lib/frontmatter.sh` | Single-file YAML-frontmatter parser (bash 3.2 compatible; no `declare -A`). Returns key-value pairs. | `frontmatter_load`, `frontmatter_get` | plan-parent-resolve, tag-coverage-audit |
 | `lib/plan-path.sh` | Plan-root detection under `$PLANS_DIR`. Disambiguates depth-2 plan-root files from depth-≥3 sub-task files. | `is_plan_root_file`, `plan_root_for` | stale-detect, tag-coverage-audit, plan-parent-resolve |
+| `lib/user-manifest-read.sh` | Read API for `user-manifest.json` fields with default-fallback semantics; centralizes the path-resolution chain + jq-absent / file-absent / parse-error degrade. | `umr_get_array`, `umr_get_object` | backup, tag-coverage-audit, placement-validate, stale-detect, frontmatter-enforce |
 
 **Note:** `lib/plan-path.sh` is librarian-local. The paths helper `lib/paths.sh` lives under `$CLAUDE_HOME/hooks/lib/paths.sh` (vault/plans/logs env exports) — librarian capabilities source it via absolute path, not via `librarian/lib/`. Do not conflate the two.
+
+**Output Contract — `lib/user-manifest-read.sh` (Plan 71 SP04 T-9b, 2026-04-29):**
+
+- **Files written:** none. Helper is read-only against `user-manifest.json`.
+- **Schema:** consumed manifest validates against `schemas/user-manifest-schema.json` (1.3.0+ for `system.backup_targets[]` and `vault.tag_audit_exemptions[]`); helper does NOT validate, defers to capability-level Output Contracts.
+- **Pre-write validation:** N/A (read-only).
+- **Failure mode:** best-effort + diagnostic. Missing manifest / missing field / `jq` absent / parse error → caller-supplied fallback (empty for arrays, `{}` for objects). No findings emitted; no non-zero exit. Capability wrappers handle graceful-degrade per their own block-and-log Output Contracts.
 
 ---
 
