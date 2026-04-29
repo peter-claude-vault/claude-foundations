@@ -40,6 +40,8 @@ fi
 source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/findings.sh"
 # shellcheck source=/dev/null
 source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/plan-path.sh"
+# shellcheck source=/dev/null
+source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/user-manifest-read.sh"
 
 SCOPE=""
 RECENT="false"
@@ -61,11 +63,7 @@ PLANS_SCOPE="${PLANS_DIR:-$HOME/.claude-plans}"
 # Read user-extension Logs/ subdirectory whitelist from manifest. Foundation
 # ships an empty list; users append their operationally-meaningful Logs/
 # subdirectories (e.g. backlog-progress/, etc.). Shared with placement-validate.
-USER_MANIFEST="${USER_MANIFEST_PATH:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
-LOGS_WHITELIST_SUBDIRS=""
-if [[ -r "$USER_MANIFEST" ]] && command -v jq >/dev/null 2>&1; then
-  LOGS_WHITELIST_SUBDIRS=$(jq -r '.vault.logs_whitelist_subdirs[]? // empty' "$USER_MANIFEST" 2>/dev/null | tr '\n' '|')
-fi
+LOGS_WHITELIST_SUBDIRS=$(umr_get_array '.vault.logs_whitelist_subdirs' | tr '\n' '|')
 export LOGS_WHITELIST_SUBDIRS
 
 python3 - "$VAULT_SCOPE" "$PLANS_SCOPE" "$RECENT" "$DRY_RUN" <<'PY'
