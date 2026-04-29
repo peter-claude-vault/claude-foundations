@@ -166,6 +166,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh [--full|--recent|-
 
 **Pseudocode-bug correction (extraction time):** SKILL.md legacy pseudocode invoked multiple `echo $RESULT | python3 -c` + `echo $RESULT | python3 - <<PY` subshells. The heredoc-script + stdin-pipe combination silently empties stdin under some bash/python3 combos (python consumes the heredoc AS stdin, ignoring the pipe). Replaced with a single argv-based Python pass returning a multi-line summary + JSON blob. Caught by test Scenario 7 (manifest subtree wrote empty-string `"xref_graph": ""` on first run).
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; manifest subtree `xref_graph` via `manifest_set`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/xref_graph`.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a).
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-xref-check.md`.
+
 ---
 
 ## Capability: drift-sweep
@@ -189,6 +197,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh [--full|--recent|-
 - `missing_required` — required fields (per vault-schema.json) missing
 
 Findings are weekly-review material, not write-time advisories. Human resolution path: add type to schema + hooks + CLAUDE.md (R-37 lockstep) OR correct the file.
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-drift-sweep.md`.
 
 ---
 
@@ -247,6 +263,14 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 **Tests:** synthetic test harness at `tests/synthetic-waiver-audit.sh` (17-assertion acceptance suite).
 
 **Enforcement layer for:** ENFORCEMENT-MAP R-46, R-48, R-49, R-50 (Plan 64 Sub-plan 02 added R-46; follow-up rules landed alongside waiver-audit).
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; optional `$REPORT_PATH` markdown report when `--report` flag set.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-waiver-audit.md`.
 
 ---
 
@@ -328,6 +352,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/wikilink-repair.sh [--apply] [--
 
 **Exit codes:** `0` success, `2` unknown flag. Defensive — never fails on missing files or parse errors; emits warning findings instead.
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; vault `.md` files when `--live` (default `--dry-run`).
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-wikilink-repair.md`.
+
 ---
 
 ## Capability: rename-detect
@@ -365,6 +397,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/rename-detect.sh [--since <iso86
 
 **Session-close integration:** Step 2b (Plan 67 SP02 T-4). See session-close chain below.
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-rename-detect.md`.
+
 ---
 
 ## Capability: rename-cascade
@@ -400,6 +440,14 @@ rename-detect.sh | rename-cascade.sh --include-frontmatter    # include path-val
 
 **Session-close integration:** Step 2b runs `rename-detect | rename-cascade` in dry-run only — `--apply` is human-initiated.
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; vault `.md` files when `--live` (default `--dry-run`).
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-rename-cascade.md`.
+
 ---
 
 ## Capability: rename-history-sync
@@ -425,6 +473,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/rename-history-sync.sh append < 
 **Exit codes:** `0` success, `2` missing registry file.
 
 **Session-close integration:** Step 2b runs `rename-detect | tee (rename-history-sync append) | rename-cascade`. Downstream consumer: `wikilink-repair` uses the rename-aware registry as its sole repair source.
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; manifest subtree `rename_history` via `manifest_set`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/rename_history`.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a).
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-rename-history-sync.md`.
 
 ---
 
@@ -480,6 +536,14 @@ For every directory containing BOTH `spec.md` and `manifest.json`, compare `spec
 
 **Complementary to:** `stale-detect` Check #8 (same drift class surfaces there as `trinity-lag` category, plan-root scope only); `trinity-drift-detect` adds the broader divergence classes + sub-plan-root walk.
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-trinity-drift-detect.md`.
+
 ---
 
 ## Capability: log-archive
@@ -526,6 +590,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 ```
 
 **Tests:** `tests/log-archive.sh` — 19/19 pass 2026-04-21 (happy path, threshold boundaries, symlink skip, non-dated preservation, dry-run no-op + lib/dates.sh direct smoke tests).
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; archived log files relocated to `Logs/Archive/` when `--live` (default `--dry-run`).
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-log-archive.md`.
 
 ---
 
@@ -777,6 +849,14 @@ Sub-initiatives with internal session structure (e.g. `57-spine-remediation/`) a
 
 **Tests:** `tests/plan-index.sh` — synthetic acceptance suite. Baselines at `tests/baselines/`.
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; `$PLANS_ROOT/_index.md` regenerated atomically.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-plan-index.md`.
+
 ---
 
 ## Capability: plan-parent-resolve
@@ -839,6 +919,14 @@ None block writes or session close. R-28 is drift-surface enforcement only.
 **Pseudocode-bug correction (extraction time):** the Session 24 inline resolver only recognized `<slug>/` and `<slug>.md` forms. Live corpus (2026-04-20) has 63 files carrying `parent_plan: <slug-without-prefix>` pointing at `NN-<slug>/` dirs — the convention documented in CLAUDE.md rule #5. The capability accepts all three forms. Pre-fix live signal: 63 spurious broken pointers. Post-fix: 0 broken, 9 real self-cycle findings in `56-spine-remediation-finalization/` surface as legitimate drift.
 
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-plan-parent-resolve.md`.
+
 ---
 
 ## Capability: cron-log-architecture
@@ -891,6 +979,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/cron-log-architecture.sh [--scop
 **Where it fires:** `/librarian cron-log-architecture` (ad-hoc), `/librarian full` (every full scan), `librarian session-close` Step 2 (when Touched Files include plists or wrappers).
 
 **Session 19 baseline preserved:** 9 plists + 9 dated wrappers. Session 19 Module 19-A fixed `com.digest-run.plist`; 8 remaining deferred to cron-log-architecture-exceptions.json or case-by-case resolution.
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-cron-log-architecture.md`.
 
 ---
 
@@ -946,6 +1042,14 @@ echo "<path>" | $CLAUDE_HOME/skills/librarian/capabilities/handoff-disposition-c
 
 **Regex tuning:** deliberately tight — literal words only, word-boundary-guarded. False positives (e.g. `laterally`, `todos.txt`) verified negative in tests. Tighten if Session 21+ surfaces new false-positive classes; never relax dispositions.
 
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-handoff-disposition-check.md`.
+
 ---
 
 ## Capability: skill-parity
@@ -984,6 +1088,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/skill-parity.sh [--check|--fix] 
 **Where it fires:** surfaces in `/librarian full` supplemental block. Richer skill analysis (intent alignment, external benchmarking, LLM-judged frontmatter proposals) is the scope of the standalone `/skill-optimizer --skill {name}` skill.
 
 **Tests:** `tests/skill-parity.sh` — 16-assertion acceptance suite.
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-skill-parity.md`.
 
 ---
 
@@ -1044,6 +1156,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/entity-parity.sh [--check] [--sc
 - skill: 29 (V1 unchanged) — 3 canonical-missing-description, 7 mirror-missing, 9 mirror-absent-description (info), 3 description-mismatch, 7 index-row-missing
 - plan: 10 — all `index-row-missing` (plans lacking System Backlog rows; consistent with R-15 principle)
 - memory-file: 1 — `index-row-missing` (memory file absent from MEMORY.md)
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output.
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-entity-parity.md`.
 
 ---
 
@@ -1539,6 +1659,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/architect-triage.sh [--check|--a
 **Session-close integration (Step 4c):** gates on last_scanned_log vs newest log mtime — only fires if a new log exists. Runs after Step 4b (System Backlog Update).
 
 **Tests:** `tests/architect-triage.sh` — 14/14 pass (new untracked, Backlog dedupe, manifest completed dropout, duplicate-across-logs dedupe, unknown-flag exit 2, `--apply` blocked exit 4, manifest subtree persistence, prior-status preservation).
+
+
+**Output Contract:**
+
+- **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; manifest subtree `architect_recommendations` via `manifest_set`.
+- **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/architect_recommendations`.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a).
+- **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-architect-triage.md`.
 
 ---
 
