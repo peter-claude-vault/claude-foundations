@@ -8,7 +8,8 @@
 #   4. Every spec-only entry carries implementation_status:"spec-only"
 #   5. Every judgment-tier entry carries requires_confirmation:true +
 #      cron_block:"skip-non-interactive" (dispatcher gate)
-#   6. SKILL.md ## Capability: headings are a subset of registry keys
+#   6. SKILL.md ## Capability: headings ↔ registry keys form a strict bijection
+#      (every heading is a registry key AND every registry key has a heading)
 #
 # Usage: bash synthetic-capability-registry-parity.sh
 # Exit:  0 on 6/6 pass, 1 otherwise.
@@ -106,7 +107,10 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Test 6: SKILL.md ## Capability: headings ⊆ registry keys
+# Test 6: SKILL.md ## Capability: headings ↔ registry keys (strict bijection)
+# Both directions: SKILL.md ⊆ registry AND registry ⊆ SKILL.md.
+# Tightened from subset assertion to bijection by Plan 71 SP04 T-6 c4
+# (2026-04-29) once T-6 c2/c3 closed all 5 missing SKILL.md headings.
 # -----------------------------------------------------------------------------
 if [ ! -f "$SKILL_MD" ]; then
   assert_fail "skill-md-exists" "missing $SKILL_MD"
@@ -119,12 +123,17 @@ else
   grep -E "^## Capability: " "$SKILL_MD" | sed 's/^## Capability: //' | sort -u > "$SKILL_KEYS_FILE"
 
   ORPHAN_HEADINGS=$(comm -23 "$SKILL_KEYS_FILE" "$REG_KEYS_FILE")
+  ORPHAN_KEYS=$(comm -13 "$SKILL_KEYS_FILE" "$REG_KEYS_FILE")
   SKILL_COUNT=$(wc -l < "$SKILL_KEYS_FILE" | tr -d ' ')
+  REG_COUNT=$(wc -l < "$REG_KEYS_FILE" | tr -d ' ')
 
-  if [ -z "$ORPHAN_HEADINGS" ]; then
-    assert_pass "skill-md-subset-of-registry ($SKILL_COUNT SKILL.md headings, all in registry)"
+  if [ -z "$ORPHAN_HEADINGS" ] && [ -z "$ORPHAN_KEYS" ]; then
+    assert_pass "skill-md-registry-bijection ($SKILL_COUNT SKILL.md headings ↔ $REG_COUNT registry keys, zero orphans both directions)"
   else
-    assert_fail "skill-md-subset-of-registry" "orphan headings (in SKILL.md but not registry):$(echo "$ORPHAN_HEADINGS" | tr '\n' ' ')"
+    DETAIL=""
+    [ -n "$ORPHAN_HEADINGS" ] && DETAIL="$DETAIL orphan-headings(SKILL.md\\registry):$(echo "$ORPHAN_HEADINGS" | tr '\n' ' ')"
+    [ -n "$ORPHAN_KEYS" ] && DETAIL="$DETAIL orphan-keys(registry\\SKILL.md):$(echo "$ORPHAN_KEYS" | tr '\n' ' ')"
+    assert_fail "skill-md-registry-bijection" "$DETAIL"
   fi
 fi
 
