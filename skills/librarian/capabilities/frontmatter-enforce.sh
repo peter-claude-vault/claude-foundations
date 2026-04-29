@@ -43,6 +43,8 @@ fi
 source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/findings.sh"
 # shellcheck source=/dev/null
 source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/manifest.sh"
+# shellcheck source=/dev/null
+source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/user-manifest-read.sh"
 
 SCOPE=""
 MODE="check"         # check | fix
@@ -72,7 +74,6 @@ VAULT_SCHEMA="${FM_VAULT_SCHEMA:-${SCHEMAS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/sc
 PRE_WRITE_GUARD="${FM_PRE_WRITE_GUARD_OVERRIDE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/pre-write-guard.sh}"
 POST_WRITE_VERIFY="${FM_POST_WRITE_VERIFY_OVERRIDE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/post-write-verify.sh}"
 DOC_DEPENDENCIES="${FM_DOC_DEPENDENCIES_OVERRIDE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/doc-dependencies.json}"
-USER_MANIFEST_FE="${USER_MANIFEST_PATH:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
 
 VAULT_SCOPE="${SCOPE:-$VAULT_ROOT}"
 
@@ -82,7 +83,7 @@ export FM_VAULT_SCHEMA="$VAULT_SCHEMA"
 export FM_PRE_WRITE_GUARD="$PRE_WRITE_GUARD"
 export FM_POST_WRITE_VERIFY="$POST_WRITE_VERIFY"
 export FM_DOC_DEPENDENCIES="$DOC_DEPENDENCIES"
-export FM_USER_MANIFEST="$USER_MANIFEST_FE"
+export FM_ENGAGEMENT_ALIASES_JSON="$(umr_get_object '.vault.engagement_aliases')"
 export FM_VAULT_ROOT="$VAULT_ROOT"
 export FM_VAULT_LOGS="$VAULT_LOGS"
 
@@ -286,18 +287,18 @@ def days_since_mtime(full):
         return 0
 
 # ---------- path-based tag inference (for --fix mode) ----------
-# Engagement aliases sourced from manifest.vault.engagement_aliases{}. Each
-# entry maps a directory name (case-insensitive) to a tag slug. When no alias
-# matches, the directory name is slugified directly. Foundation ships an empty
-# map; users populate as their engagement taxonomy stabilizes.
+# Engagement aliases sourced from manifest.vault.engagement_aliases{} via the
+# shell-level lib/user-manifest-read.sh helper (FM_ENGAGEMENT_ALIASES_JSON env
+# var carries the materialized JSON object). Each entry maps a directory name
+# (case-insensitive) to a tag slug. When no alias matches, the directory name
+# is slugified directly. Foundation ships an empty map; users populate as
+# their engagement taxonomy stabilizes.
 def _load_engagement_aliases():
-    manifest_path = os.environ.get("FM_USER_MANIFEST", "")
+    raw = os.environ.get("FM_ENGAGEMENT_ALIASES_JSON", "{}")
     try:
-        with open(manifest_path) as fh:
-            doc = json.load(fh)
+        aliases = json.loads(raw)
     except Exception:
         return {}
-    aliases = (doc.get("vault") or {}).get("engagement_aliases") or {}
     if not isinstance(aliases, dict):
         return {}
     return {str(k).lower(): str(v) for k, v in aliases.items() if isinstance(v, str)}
