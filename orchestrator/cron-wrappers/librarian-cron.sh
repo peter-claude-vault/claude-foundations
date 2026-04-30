@@ -50,9 +50,13 @@ echo "=== librarian-cron launchd-fire-received: $(date -Iseconds) pid=$$ ===" >>
 claude_lockf_reexec "$LOCK_FILE" "$@"
 
 # --- Weekday guard ---
+# SKIP_WEEKENDS env exported by render-launchd.sh into plist EnvironmentVariables
+# (T-12 wiring; see schemas/orchestration-schema.json jobs[].skip_weekends).
+# Default true preserves pre-T-12 hardcoded weekend-skip behavior. Set to
+# "false" to opt into weekend runs.
 DOW=$(date +%u)  # 1=Mon ... 7=Sun
-if [ "$DOW" -gt 5 ]; then
-  echo "$(date -Iseconds) Weekend — skipping librarian scan" >> "$LOG_DIR/librarian-cron-skip.log"
+if [ "${SKIP_WEEKENDS:-true}" = "true" ] && [ "$DOW" -gt 5 ]; then
+  echo "$(date -Iseconds) Weekend — skipping librarian scan (SKIP_WEEKENDS=true)" >> "$LOG_DIR/librarian-cron-skip.log"
   exit 0
 fi
 
