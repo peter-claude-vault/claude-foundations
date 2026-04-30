@@ -1,0 +1,949 @@
+{
+  "files": [
+    {
+      "mode": "0644",
+      "path": "hooks/DROPPED-RULES.md",
+      "sha256": "14ef70363aa241d37d7120f6ed2bcae563dbac26cbae4f350d924c32ff9fa110",
+      "size": 5745
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/MANIFEST.txt",
+      "sha256": "0acdf85b2bed97180d3a97d5ef7515f68b21aafcdf6b3e451835358f8175f0e9",
+      "size": 706
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/README.md",
+      "sha256": "14bd7e49c453d2d357bf6d4935ab28137f9e803165aa559b9bafc28a105146b3",
+      "size": 4256
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/auto-commit-surfaces.sh",
+      "sha256": "89c8bb42d213927542def10fd1c88ba4f3940c7cf8bbb76563ef385c50a55d47",
+      "size": 1744
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/config/cron-log-architecture-exceptions.json",
+      "sha256": "421243c79abfd444027a61f989a5043e94091d4b46c618cabadd800a797b7eef",
+      "size": 237
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/config/doc-dependencies.json",
+      "sha256": "a7c2132f13604b3167d5d6ff427f2aaa57e4806c6bf76c30ffdcbadda3af4382",
+      "size": 27
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/config/drift-allowlist.json",
+      "sha256": "8786c3e74be57929341f79618ecf6183477df818ad40d4f5c88950ef7170c413",
+      "size": 214
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/cron-health-banner.sh",
+      "sha256": "d42cfa155a0e0342666566b35172335587a6c97ac38560b07aa8b0e94ed3fd9b",
+      "size": 11008
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/lib/cascade-waiver.sh",
+      "sha256": "fea531c4fae21ade7a4f75b3175c908c5a47571404aa88bafb512e965d75b299",
+      "size": 4237
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/lib/dates.sh",
+      "sha256": "05ede2056cc619bcadb600b89d0bfa72d91bceec31203785d8ee9e80844a2c6f",
+      "size": 3892
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/lib/lockf.sh",
+      "sha256": "bec872b5ed3d393e3b923b56f1bb975b90b31854ce6ce2c764ae0828c890bdda",
+      "size": 5140
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/lib/paths.sh",
+      "sha256": "a9b9ddde6c08e62d7c6832afd701915b0df89498280d86db90008d4d0fa8708e",
+      "size": 5112
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/lib/plan-path.sh",
+      "sha256": "fd0f26b8034dd03c5b4d83e3c42ba767f77f229bb69c0ee4fa30d7074913304f",
+      "size": 4442
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/lib/registry-op.sh",
+      "sha256": "fb7b7dd836dc493e3fffc2ba689d2a036278fbaf67b775a7a8d9264e8d9a820e",
+      "size": 3351
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/lib/registry.sh",
+      "sha256": "2303ee4180adfeb2c780db777d287c68809800d506598781f37cffc5384656a5",
+      "size": 4378
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/lib/research-queue.sh",
+      "sha256": "f8406ab72c236c228534b727d3ca8fe811055481762e979e269e4e85905053f2",
+      "size": 3329
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/memory-consolidation-check.sh",
+      "sha256": "4e0ec64a3d7c7f3d61bf8465cba693501f333f3e238a38e32d10507994cee51b",
+      "size": 3227
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/memory-consolidation-run.sh",
+      "sha256": "2b431d1df3dab4e1c63873ceedd134ad868f26764be4aa09d345f73a76cee870",
+      "size": 7996
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/post-write-verify.sh",
+      "sha256": "520f8fd85fe57c0f33010b5bcec71b1931d88f3632f79d1f879acf8556ea1e9f",
+      "size": 9101
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/pre-compact-checkpoint.sh",
+      "sha256": "4539173b69bdd192414e18b5aed4705c63bfec3865a210ae4314e05372e0ab25",
+      "size": 5984
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/pre-write-guard.sh",
+      "sha256": "f40a24ca3548130db67abe59e09ff39b0694fdc1353841ba11a51426c7e52f6f",
+      "size": 31658
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/prompt-context.sh",
+      "sha256": "a35f84c571cc90b114f4094309353c36d3e20a59a6e1d7206d34338cfcb39aff",
+      "size": 6209
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/reconcile-sessions.sh",
+      "sha256": "017d7955ceb6af8ce3ee87e31b1f5204380f46a98f6dd232dca81ca0f13ad4b6",
+      "size": 3874
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/session-auto-close.sh",
+      "sha256": "6a8fcb26ddd01e9fc007d24aa4362e5aedb0fb657c1bb3bef043f8038eca8094",
+      "size": 5098
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/session-deregister.sh",
+      "sha256": "3878deb6e09316ab5a8d8f385328775169cb312c5c3d29c6c690dcecae98a5a3",
+      "size": 2995
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/session-register.sh",
+      "sha256": "45d48a61f876b83b44d70d44b7ebcb073f648558e702fd2bb1532a64feb3e528",
+      "size": 3348
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/session-start-canary.sh",
+      "sha256": "ed880979bbe24ad050e142b3745cad76b3721fd3d174c723b185c2d2b23a98c7",
+      "size": 2511
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/stop-checkpoint-check.sh",
+      "sha256": "fa27118b925e07556310b7e69fa92ddacea73e501f412b2edab7c1a81d857fe4",
+      "size": 1741
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/stop-drift-scan.sh",
+      "sha256": "d6b2cc202d98ba5adb922b390efdbab1477b64dc8d84180d3bae1ca90873c636",
+      "size": 3066
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/tasks-md-autosync.sh",
+      "sha256": "85dd8348838a5dbfb30f2a2234007712919e5bbf7665bae8f8361460e2cc866d",
+      "size": 3947
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/track-vault-write.sh",
+      "sha256": "eae5b445d2f50974a77b8109ca8ca849bc46efda1aacb14ab39e98c9ea13b315",
+      "size": 1221
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/worker-statusline.sh",
+      "sha256": "c583c0e81766ddd3560ccb37920a6b0fdaacb99c08445bfa4eeb7d045cacf951",
+      "size": 1052
+    },
+    {
+      "mode": "0644",
+      "path": "installer/README.md",
+      "sha256": "bb306dca4faa508b2a1c107a2bfb38dc409455bf143af733baa939ff64743ab7",
+      "size": 94
+    },
+    {
+      "mode": "0755",
+      "path": "installer/bootout-launchd.sh",
+      "sha256": "d655d13ae02f0a8cf90ebb32a4a3f15daf7aff938c0d41fa07de9313e82f0918",
+      "size": 5778
+    },
+    {
+      "mode": "0755",
+      "path": "installer/render-launchd.sh",
+      "sha256": "8b8410cf934bb82d20458171a01c26fbdf3a66eed17b2176b6df0d66bc26f6e0",
+      "size": 10249
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/MANIFEST.txt",
+      "sha256": "5094260e81ae13c27b99afaa1ea6fc7d56fa6120e41af3b0f567bbaf4e71845f",
+      "size": 5244
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/README.md",
+      "sha256": "1ff0598c2c1b89f4493162e72a16c3a03e904666e352381544e4690501d11cf5",
+      "size": 95
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/SKILL.md",
+      "sha256": "c771d51308f57b159015b527fc6d67dcf569971f4e36a45de4ac85ab219d5f9e",
+      "size": 8312
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/archetype-inference.sh",
+      "sha256": "3cd1c9abfd2224913f159ed3ddde6ffa41f629e7a21cede08ed54f8f201b0611",
+      "size": 7287
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/archetype-keywords.json",
+      "sha256": "0e1cee7d3ac8af07d683f2f2f1016ffcfef07f62fd1705d5e20c70a7bd2d0b35",
+      "size": 3692
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/bootstrap-schemas.sh",
+      "sha256": "4ca1807208d0d6dc5c51ebe8535ddb167c25be1806a3ba07625c04c6f10111a0",
+      "size": 25431
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/extraction-prompts/section-A.md",
+      "sha256": "fb45591bf9ab74b6e654d259fb042bcf785c4c20c02089cbdd364c4aa6097caa",
+      "size": 3728
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/extraction-prompts/section-B.md",
+      "sha256": "0c41b5e1cf8466ae0ad42757df3fccf6ecb42560fd39a8206a93c4c2c7558966",
+      "size": 7314
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/extraction-prompts/section-C.md",
+      "sha256": "0b2f5b359949235a12fc278a895582306890b1ce9784ec812fc1650d240f3f0c",
+      "size": 8303
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/extraction-prompts/section-D.md",
+      "sha256": "4606f199ff042c98d6670c520ee78d44ac873d87474007a1965460ba6828180b",
+      "size": 9894
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/extraction-prompts/section-E.md",
+      "sha256": "05337d7f249e7f3cde8a121542e3049d993069ae9f450e6e266c605ac427c5f6",
+      "size": 3696
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/consultant-orchestration.json",
+      "sha256": "5bb76040839a18319fab4ba197ae772b2536b47f71adf494dde97d619238576c",
+      "size": 271
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/consultant-section-B.txt",
+      "sha256": "1cf5a653980e8c86b30e4ffc6c412ac8e57fe7b3b85f74dabc2cdd9d681a0892",
+      "size": 2473
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/consultant-section-C.txt",
+      "sha256": "1f4fbae806265340dade01940d5eab772d30e6a030109b30cd336367cf053a89",
+      "size": 2381
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/consultant-section-D.txt",
+      "sha256": "ff03ed414cfe90b39bdbaee04e9c00995283e37b9bcd426fef2bae4e3016f873",
+      "size": 1356
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/consultant-vault-schema.json",
+      "sha256": "941881bde518d576118da94d98e846dc1d5297e4181868583da05018b7a83f14",
+      "size": 3957
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/consultant.json",
+      "sha256": "07a646037d353f73c24d6bcdb3f7a28befb27e42de4453f3e5040438bbbb0976",
+      "size": 3327
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/developer-orchestration.json",
+      "sha256": "5593eb27e83179b1ca2afaf3fa6b3ca8e186e9f5daf95c23cb9ae4b5df7b40d3",
+      "size": 928
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/developer-section-B.txt",
+      "sha256": "3331fafc2403e30aa1c748690d58e917a5eea2fed8c84f3115cb381c7e9d98e0",
+      "size": 2698
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/developer-section-C.txt",
+      "sha256": "723b8fef5377ef6c3fd80814dbfeea67b2378f042b3da748159a8f98b89d8025",
+      "size": 2142
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/developer-section-D.txt",
+      "sha256": "9abb3acf56b2d93616fb928761b009c42f0db80ba33bd353cc7dbd3e8102c6af",
+      "size": 1256
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/developer-vault-schema.json",
+      "sha256": "0cbda06e22187755f28356253d5c2cdcf44151fd9c907c783fa7c3b1b580e71a",
+      "size": 3949
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/developer.json",
+      "sha256": "6c6a4a036de30e692ebbb2c771f5d73d008262ddbc02111a816a023e14d61f4c",
+      "size": 3300
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/writer-orchestration.json",
+      "sha256": "bf8b4d92ff635628aecf392d00bf11e0e6f348015444c9c198390011a79c740c",
+      "size": 945
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/writer-section-B.txt",
+      "sha256": "8a5b68f5abbc8f38acd429d29733d1db17610ec964e597f294f0d2f89c52dfd6",
+      "size": 2793
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/writer-section-C.txt",
+      "sha256": "51389242201d8a137e4289b4c0d88bce3473d008bb9b5fbd921bbbdc1caa05b2",
+      "size": 2365
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/writer-section-D.txt",
+      "sha256": "81f623d7e7503ed7438749001c9c1644a12ab829221d15fec7b833c96166b732",
+      "size": 1738
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/writer-vault-schema.json",
+      "sha256": "5e91804f1dd29ccb32d358174b53ba254ddbb96315dddeacfe7f7b1de2423a18",
+      "size": 3942
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/fixtures/writer.json",
+      "sha256": "f0faab2da5a949450954c74922bb0252341cc615936a3dcf1eb310a6de80ee71",
+      "size": 3226
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/initial-job-setup-flow.md",
+      "sha256": "e5abde8fff75097b0d49e9fefea572fafb174fa3633b80405a239a1b2c2f2e6a",
+      "size": 17494
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/onboarder-design.md",
+      "sha256": "77ba6969b16efcee44e3aacfcbfb29601be1f309e12db4111c1f0877851f73f6",
+      "size": 20999
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/q-field-map.json",
+      "sha256": "76751183babd39f71e2aea06429e2e39234a94334a5e1b00a92253447b177f06",
+      "size": 18806
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/archetype-inference-test.sh",
+      "sha256": "45f95ced75fe1c38b017f0e5f418d3040670f200b9dfcf4c5e6cd87738707292",
+      "size": 6626
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/grep-audit.sh",
+      "sha256": "6b1831e747744df9fe761322328f218d10a03cb33772c6376f595e8521bcbfc4",
+      "size": 5507
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/rollback-test.sh",
+      "sha256": "5afaaa66026842fa235679fc7720596c14b5777fbbc27ed9feeee782389c0fa2",
+      "size": 8374
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/round-trip-test.sh",
+      "sha256": "68dec8be1715dfec365d91419b5b43cd787fbbabb67328b27d1526d5b4d6a7d3",
+      "size": 14136
+    },
+    {
+      "mode": "0644",
+      "path": "orchestrator/MANIFEST.txt",
+      "sha256": "a9858bd85a4d10704e00a1e534123c2e0cf03150afe8d1855e0804cb36096df4",
+      "size": 6775
+    },
+    {
+      "mode": "0644",
+      "path": "orchestrator/README.md",
+      "sha256": "07ac75f66ac0b038d362031fafb8e55cdcc41371027e2603947b006859d545b5",
+      "size": 97
+    },
+    {
+      "mode": "0644",
+      "path": "orchestrator/cron-wrappers/architect-cron.sh",
+      "sha256": "f25820460593469910192cd70e3f608b8e503a65bee89b36301b4f637c93ee5b",
+      "size": 4057
+    },
+    {
+      "mode": "0644",
+      "path": "orchestrator/cron-wrappers/librarian-cron.sh",
+      "sha256": "4bfd29835964b05a1a1219a9e536ff6b79b6d003bc87a639d681bf3ea2c0424c",
+      "size": 10085
+    },
+    {
+      "mode": "0755",
+      "path": "orchestrator/dispatch.sh",
+      "sha256": "d9fa3db3cfeb9414648467999060ed40e461ed3235ce90a98a6b5ee08dfa10b7",
+      "size": 13993
+    },
+    {
+      "mode": "0755",
+      "path": "orchestrator/job-runner.sh",
+      "sha256": "eb2b5424476327764ea9bff6b3e510bfa99b3b4232af3ef0bbdc7bab73d4ff11",
+      "size": 11246
+    },
+    {
+      "mode": "0644",
+      "path": "orchestrator/lib/claude-p.sh",
+      "sha256": "53d3f22290dd2d159d8ef1117efd6546123abd31a8dfb022c20d8445ece4f742",
+      "size": 2416
+    },
+    {
+      "mode": "0644",
+      "path": "orchestrator/lib/idle-watchdog.sh",
+      "sha256": "e067b6fa7fd2572cbf06da01a05b6c3590ccc56a635bb937c54f1ecd395f29fe",
+      "size": 5415
+    },
+    {
+      "mode": "0644",
+      "path": "orchestrator/lib/tripwire.sh",
+      "sha256": "ea2671886cf609cef51620d2e8d6598b68493d6f95dfa124b36c2ed994762625",
+      "size": 4061
+    },
+    {
+      "mode": "0755",
+      "path": "orchestrator/lib/verifier.sh",
+      "sha256": "268c1265e06cf1129495c8b6a0490477701808650c5dd3b874c2c29815a67487",
+      "size": 8302
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/README.md",
+      "sha256": "db17aeb6e7a3cbad1ae8566031d8e9daff6595d53a87562d271121e5d3b674ed",
+      "size": 4283
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/librarian-manifest-schema.json",
+      "sha256": "afbb79330718b915c3fe6bde0163f8a4d2884b37221922bbc6b70816c54e91d7",
+      "size": 4887
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/orchestration-schema.json",
+      "sha256": "3508661e7180daf335bf9133d39e090b8cd8c6e7832402f39c140c4c7a2ab541",
+      "size": 4531
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/plan-manifest-schema.json",
+      "sha256": "15b5e43725a36987fb70093dffd908d942c6d8780d6951570bb8b6eb83c20a49",
+      "size": 2986
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/plans-schema.json",
+      "sha256": "78d80090e49b08e65e291968e73e6284bf5de1c2b5fdfac6a93fbba379464aaf",
+      "size": 1465
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/user-manifest-schema.json",
+      "sha256": "313260eb21eca2da30822fdd86d6ce1b647f8d183996849d52d6bf0cf3c95bad",
+      "size": 14250
+    },
+    {
+      "mode": "0644",
+      "path": "schemas/vault-schema.json",
+      "sha256": "4fcae298b3bf137de39d61d06a5b52195c1283459f3b3198b10ba035ff53a4b1",
+      "size": 3898
+    },
+    {
+      "mode": "0644",
+      "path": "skills/architect/SKILL.md",
+      "sha256": "043ee03f0d24abd4628613e300c266b1cf61ff330d04670605e3466f02f650c8",
+      "size": 26834
+    },
+    {
+      "mode": "0644",
+      "path": "skills/backlog-hygiene/SKILL.md",
+      "sha256": "8f3f28f07441e36dd9a733426340bc2919313de88abf4ed8291db6ef3c81c4b3",
+      "size": 12743
+    },
+    {
+      "mode": "0644",
+      "path": "skills/backlog-research/SKILL.md",
+      "sha256": "e1bca237b541773f6c282fb90ae3a83cb6f90459271184d8385df454293cc850",
+      "size": 13381
+    },
+    {
+      "mode": "0644",
+      "path": "skills/backlog-triage/SKILL.md",
+      "sha256": "1d60f4d43ee4d2890c08b3d02c2e6d748d851b10bddeaf63d65ec5655e0d6b45",
+      "size": 7389
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/SKILL.md",
+      "sha256": "6bbeeb2370982ddac2b85faaa2f1e022ec8c54330a4429be860da2842b74b00e",
+      "size": 162764
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/architect-triage.sh",
+      "sha256": "ea7cf492f18fb62b05a63d8d6899ed8828b7d01f0cad56a21e5a2eca03c55b18",
+      "size": 10046
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/capabilities/backup.sh",
+      "sha256": "532385c3fc62dd192f4401e1e65db0c52e2ba5e0c11575df6116b75e337b5dfd",
+      "size": 5156
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/capability-registry-parity.sh",
+      "sha256": "6bad821144efca3e7e8d5b70301ec4b1dd6cfd5d036f21282a78435773b918d0",
+      "size": 8275
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/classify.sh",
+      "sha256": "4d28c963c43b190898e6b859efc5c14e09d1cde0881a575426e29d5806be632c",
+      "size": 254
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/cluster-by-topic.sh",
+      "sha256": "1f1a4c32f0dfe4978355c90e93c839def98983ace3a2f86a2f68405babdec0f3",
+      "size": 278
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/cron-log-architecture.sh",
+      "sha256": "f2d8e75e54bb2ff1f25807f6cea89472884a47eeb88c8f58dd330fd4e9e41ecc",
+      "size": 7162
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/draft-canonical-file.sh",
+      "sha256": "51a3c33eba5636af7b7c1aceb8147409269446042678c18b4dd1abb4cfb8a8f5",
+      "size": 290
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/drift-sweep.sh",
+      "sha256": "9da401eabba8e26eb192328568fa3dc519a32169399b43fa9c4fc1574b8222df",
+      "size": 4077
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/entity-parity.sh",
+      "sha256": "33780a31e1b5da85e15e28f9c6c2e528e987364630fad4c542314e26c842ee4d",
+      "size": 20923
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/frontmatter-enforce.sh",
+      "sha256": "136bd30868d08cc54b2586e3c219ddd23b4050493625ebcf77ad5f5f07632d89",
+      "size": 33724
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/handoff-disposition-check.sh",
+      "sha256": "467e84f3657607c20d03d06ba6b3d14021b706b4ab66bec429a30572e36f0360",
+      "size": 3769
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/librarian-manifest-validate.sh",
+      "sha256": "c8d4545701139d686b5cf58968a174b8e1d80c5af8c4dd6ef0a7e29e68e3b7f2",
+      "size": 11921
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/log-archive.sh",
+      "sha256": "eb815866692fddd8207d34faeaca6cf783a3a2c7311b25338284c199f64dd732",
+      "size": 4969
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/mem-promote.sh",
+      "sha256": "6be3936f87878a84aaaf06909b636a9bbc8ebbae3fa1df5d2fd85693426080b2",
+      "size": 18807
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/memory-hygiene.sh",
+      "sha256": "27f5530be7e63bcab7bde96c1a4ef674947e5c087544eb3e26129e4b28954746",
+      "size": 17071
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/capabilities/people-audit.sh",
+      "sha256": "36b953655a7c1fa440bc8db9504ce7cae36447df73b7c846ec614cac76dbaddb",
+      "size": 6730
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/capabilities/placement-validate.sh",
+      "sha256": "4d818937c79c9fde29121919e012c29575073d1840592b63187fe440257ab312",
+      "size": 11573
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/plan-index.sh",
+      "sha256": "7fbefafc18c8497e0673a5478d6f1ceed90f51e209f44fc649fa970728f470ce",
+      "size": 12649
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/plan-parent-resolve.sh",
+      "sha256": "d2ee38d13a6c455281e1f71af6e8fe3ced2fbd61cc6a21b9730d075c2178c42d",
+      "size": 8358
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/rename-cascade.sh",
+      "sha256": "c2648bab89333f66c339d434b359d1087ab24b9f2dfa9e3aa2efe4f3a911382e",
+      "size": 11985
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/rename-detect.sh",
+      "sha256": "75a3e62468fc13fcdd3d343368b3b2fc61d2e631bdc8a6e16d2f53e041aed875",
+      "size": 5107
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/rename-history-sync.sh",
+      "sha256": "3121e61aa83c3b91d8937bf6d15648e49c46f085b7d5dc60b83c976cee5a6efe",
+      "size": 4833
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/sanctioned-schema-drift-detect.sh",
+      "sha256": "304b1ea5d3c08d3d3fe0ce921d8cd3e1121acbae96b26471953dd978566750cc",
+      "size": 2473
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/skill-parity.sh",
+      "sha256": "f2b4605904d9c0d1f5481fa8cdc8a6a0d7113bf368daf13dd5c67ad77932663d",
+      "size": 6550
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/capabilities/stale-detect.sh",
+      "sha256": "e0f2ad7a724ecd9aa4ef7c7d3bee1db3ba2684a2a5ad1d5d512b29736cc02dc2",
+      "size": 15195
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/capabilities/sync-check.sh",
+      "sha256": "5dd999ff7dd4c093ff61b3d249a3e3c59124be199532303df557a59d06699e6b",
+      "size": 19849
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/capabilities/tag-coverage-audit.sh",
+      "sha256": "64f6c66ab54413d2d0c67f404fa60bde596955f159c5cf7302ea925c49d5c394",
+      "size": 8167
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-architect-triage-ar-prefix.sh",
+      "sha256": "d39d300f9e8f374dfc6d944fb05d90ec5d36c8c740d33b3f929f5e6fb33e42e0",
+      "size": 5480
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-capability-registry-parity-runtime.sh",
+      "sha256": "e015a32a9ef2c50a326363e6a585e7f37528cf36f5ea7c4beb6dafd315b66853",
+      "size": 10402
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-capability-registry-parity.sh",
+      "sha256": "6026bcf998051ef18b9e27b35db48f455d901200a3bfc592170c633ee04b1825",
+      "size": 6266
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-librarian-manifest-skeleton.sh",
+      "sha256": "8589550fbac388160b49e7ddd68b4d0834c1eedec7e7d951e3d54cba6e7d5984",
+      "size": 4145
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-librarian-manifest-validate.sh",
+      "sha256": "796f8548cf927b871e0080610c094a936914fd87186ff40cdc5569d24f86dafa",
+      "size": 11390
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-parent-plan-cascade.sh",
+      "sha256": "f912d04cc78d101ba434d5ea12b7b45c4f32923daf6ff14b18f3b088f2a239db",
+      "size": 3234
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-rename-cascade.sh",
+      "sha256": "aaf876fbd3decbf636f26a521038dc3e671a3860c4e4bea4962cc1e250e59049",
+      "size": 5251
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-rename-detect.sh",
+      "sha256": "776e8617c4faba152bc2902dc35eb28ad0e45eeb3490a1b5171b0006ebf94f30",
+      "size": 6063
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-rename-history-sync.sh",
+      "sha256": "f04e3ec863af9a34c3350586af938675e85686e84b4122c57782834f4a5346c6",
+      "size": 3145
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-sync-check-gate.sh",
+      "sha256": "342b959e2aca16da1e98d9615dd9c0a07206c09f9b769586617ddcc153fe9de7",
+      "size": 3291
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-trinity-drift.sh",
+      "sha256": "997a0e0f3faa0e64f137d0ed169513b794d323bbe4da4c25ea6e90ebd3876d6b",
+      "size": 5137
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-user-manifest-read.sh",
+      "sha256": "b3740eb79691c9ae73a01dafd48f2c6f01ae250088cbd9baaa92cb3e0205dc6a",
+      "size": 4471
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/tests/synthetic-wikilink-repair.sh",
+      "sha256": "082203bb569d68c7c58996c833a44034c15866e97edaf912257214c7bceeffd6",
+      "size": 4809
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/transcript-mine.sh",
+      "sha256": "674a94d5c27159d221bae47ff68f1a647cf87df90ccbea413a006bbd9b4515e7",
+      "size": 9276
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/trinity-drift-detect.sh",
+      "sha256": "fb0042d7c5c4e1f26b249e0404c84a75425c484935ffe8b88699d8a2ef9599ea",
+      "size": 10942
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/waiver-audit.sh",
+      "sha256": "3347923871e4cf91dbb03a7567ff4f39b4404f6d94e398f4157c3bc1eb30d140",
+      "size": 13432
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/wikilink-repair.sh",
+      "sha256": "641f4d31fab744de9d4b24d3272c5697f511bf4446a07c74692366920db1c90b",
+      "size": 10733
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/write-frontmatter.sh",
+      "sha256": "2aced20c9137f218c1ce0536b865f6cfeb46fd8a7319d18c531f50457e506252",
+      "size": 281
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/xref-check.sh",
+      "sha256": "9f5bd56895001adbf7e4f79677965a24b1bc7f2d1a61b7b0469c86f68c0d47bc",
+      "size": 10459
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/capability-registry.json",
+      "sha256": "dcc9773409f3b7bf38057faaf01da7c3a0e6207aca7263248068638a74b7db16",
+      "size": 26012
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/lib/dates.sh",
+      "sha256": "05ede2056cc619bcadb600b89d0bfa72d91bceec31203785d8ee9e80844a2c6f",
+      "size": 3892
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/lib/findings.sh",
+      "sha256": "859572de130cdf83a6885b25959d9db6f841f5f5c42d6860233de7091134684b",
+      "size": 1456
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/lib/frontmatter.sh",
+      "sha256": "e87c6cff2fcec84a5541ab125803e46879f67eab510d0c3b173524045381da9c",
+      "size": 1917
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/lib/manifest.sh",
+      "sha256": "7d02845385c6f371bca2c1213cfaa66c58d4a486f5e2c4cd89e1c5ab7a8efc40",
+      "size": 5044
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/lib/plan-path.sh",
+      "sha256": "fd0f26b8034dd03c5b4d83e3c42ba767f77f229bb69c0ee4fa30d7074913304f",
+      "size": 4442
+    },
+    {
+      "mode": "0644",
+      "path": "skills/librarian/lib/user-manifest-read.sh",
+      "sha256": "70905006e5a3b4635b90f2037e2385bcaae9d367f697d75cad92f07403788202",
+      "size": 3214
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/tests/sp09-T-12.7-drift-detect.sh",
+      "sha256": "1f9edcf8dddb1e8a80f66a1355d89341deae483d4815d9be2e91aa910e7730d6",
+      "size": 2657
+    },
+    {
+      "mode": "0644",
+      "path": "skills/morning-brief/SKILL.md",
+      "sha256": "665bfd7a9544c365827e6fea50b25e136af6f912c3c67c6b5d762c2d8af0dc51",
+      "size": 17873
+    },
+    {
+      "mode": "0644",
+      "path": "templates/README.md",
+      "sha256": "60940e23d4a4e82c7f2f264066d49a0dec409d3bd42248b96fbe7be4f137fd2f",
+      "size": 3270
+    },
+    {
+      "mode": "0644",
+      "path": "templates/launchd/architect.plist.tmpl",
+      "sha256": "cbf129ca9e805da2bac9a6cd1982d7d2671f3da3587ff28ffcbaac737bcad3bd",
+      "size": 1274
+    },
+    {
+      "mode": "0644",
+      "path": "templates/launchd/librarian.plist.tmpl",
+      "sha256": "25b49197a155f5d50a86531c0401bbc1c5adf549df0db9a9388bf90e42870a3d",
+      "size": 1207
+    },
+    {
+      "mode": "0644",
+      "path": "templates/librarian-manifest-skeleton.json",
+      "sha256": "b4621356aed3d602c948d03830f3e7004f45db555cd8528ba369e81c8982a7ca",
+      "size": 485
+    },
+    {
+      "mode": "0644",
+      "path": "templates/settings-fragments/auto-commit.json",
+      "sha256": "94dc849e15bbb325818a4f66191e92b03d93a94517425ca6feaf46a931972bd2",
+      "size": 484
+    },
+    {
+      "mode": "0644",
+      "path": "templates/settings-fragments/memory-consolidation.json",
+      "sha256": "ac3837047f1cbc817388cc74fea71ffbcf51ad112bff944c6d8d9ea731de3bb4",
+      "size": 473
+    },
+    {
+      "mode": "0644",
+      "path": "templates/settings-fragments/multi-session.json",
+      "sha256": "a70a17f71ab852d755a842223382dbbe764f88d5bf5835d111f6f666a0af904e",
+      "size": 594
+    },
+    {
+      "mode": "0644",
+      "path": "templates/settings-fragments/tasks-md-autosync.json",
+      "sha256": "03b2dae16361d29520f9a85265acb1d9dec832687f478ccd7f2c24cad74da459",
+      "size": 480
+    },
+    {
+      "mode": "0644",
+      "path": "templates/settings.json",
+      "sha256": "0fd2c0adc5a69f4c5222002bf5ff2c052425b61d2f30c259c3ca3d5149891616",
+      "size": 2035
+    }
+  ],
+  "generated_at": "2026-04-30T23:31:08Z",
+  "generator_sha256": "72ce8a38a7a417887239d8b1a4242f15b333e77b2013e0ac5130f8d1b39b54ab",
+  "version": "v2.0.0-rc1"
+}

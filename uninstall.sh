@@ -1,5 +1,13 @@
 #!/bin/bash
-# uninstall.sh — Plan 71 SP08 T-2 (S61 happy-path slice)
+# uninstall.sh — Plan 71 SP08 T-2 (S61 happy-path slice + S62 allowlist update)
+#
+# S62 update: foundation-manifest.json added to foundation_known_entries
+# allowlist (symmetric with install.sh foundation_known_entries L87).
+# Removed during uninstall as foundation provenance — not user content.
+# Future T-2 follow-up: uninstall.sh will read this baseline pre-rm and
+# perform sha256 fingerprint match for user-edited foundation file
+# preservation (currently rm by basename allowlist; backup-before-mutation
+# mitigates accidental loss).
 #
 # Slice scope (S61):
 #   - CLAUDE_HOME-first resolution from G1-pre symmetric (R-55 invariant)
@@ -121,7 +129,8 @@ fi
 
 # --- foundation-known basename allowlist (mirror of install.sh L87) ---
 # Source: install.sh foundation_known_entries. Symmetric with G1-main heuristic.
-foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json"
+# Includes foundation-manifest.json (T-5 baseline; install.sh Step 13.5).
+foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json foundation-manifest.json"
 
 info "CLAUDE_HOME=$CLAUDE_HOME"
 info "LAUNCHCTL_BIN=$LAUNCHCTL_BIN"

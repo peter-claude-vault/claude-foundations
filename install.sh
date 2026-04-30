@@ -1,7 +1,7 @@
 #!/bin/bash
-# install.sh — Plan 71 SP08 T-1 (S59 happy-path slice + S60 G1 follow-up)
+# install.sh — Plan 71 SP08 T-1 (S59 happy-path slice + S60 G1 follow-up + S62 T-5 baseline ship)
 #
-# Slice scope (S59 + S60 cumulative):
+# Slice scope (S59 + S60 + S62 cumulative):
 #   - CLAUDE_HOME-first resolution (R-55 invariant; AC #1)
 #   - G1-pre 100ms preflight (no FS writes; AC #2)              [S60]
 #   - G1-main $HOME/.claude equality gate + I-UNDERSTAND-APRIL-13
@@ -10,10 +10,13 @@
 #   - LABEL_PREFIX=com.claude-foundations preserved via cp -R installer/ +
 #     templates/launchd/ (G6 namespace isolation)
 #   - settings.json atomic jq-merge with G7 silent-key-deletion gate
+#   - foundation-manifest.json baseline copy (T-5 generator output;       [S62]
+#     enables G2 foreign-content detection + uninstall fingerprint match)
 #
 # DEFERRED to subsequent T-1 follow-up sessions:
-#   - G2 foreign-content detector / G3 backup proof-of-life (need T-5
-#     foundation-manifest.json baseline)
+#   - G2 foreign-content detector (T-5 baseline now shipping at S62;       [S62]
+#     consumer logic still deferred to T-1 follow-up)
+#   - G3 backup proof-of-life
 #   - G4 vault-symlink, G5 PLANS_HOME, G8 UID-0 refuse, G9 dry-run-default,
 #     G10 provenance-write-failure-as-11
 #   - claude-mem preservation policy (T-1.5 bundles plugins/claude-mem/v<VERSION>/ first)
@@ -84,7 +87,7 @@ fi
 # Refuse if $CLAUDE_HOME == $HOME/.claude AND target exists with non-foundation
 # content, unless --force-install AND I-UNDERSTAND-APRIL-13 sentinel typed.
 # String comparison (not resolution) per R-55 carve-out.
-foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json"
+foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json foundation-manifest.json"
 
 g1_main_has_non_foundation_content() {
   local d="$1"
@@ -294,18 +297,45 @@ for schema in "$CLAUDE_HOME/schemas"/*.json; do
   fi
 done
 
+# Step 13.5: ship foundation-manifest.json baseline (T-5 / S62)
+# Generator is at $SOURCE_REPO/generate-foundation-manifest.sh; output is
+# committed at $SOURCE_REPO/foundation-manifest.json at release-cut time.
+# install.sh ships the static artifact (cp -n; never clobber user variant).
+# Consumed by uninstall.sh fingerprint match + future G2 foreign-content
+# detector (deferred to T-1 follow-up). Absence is non-fatal during the
+# slice window (warns only) so install on a partial-bootstrap foundation-repo
+# remains usable; T-5 baseline ships before v2.0.0-rc1 release-cut.
+manifest_src="$SOURCE_REPO/foundation-manifest.json"
+manifest_dst="$CLAUDE_HOME/foundation-manifest.json"
+if [ -f "$manifest_src" ]; then
+  cp -n "$manifest_src" "$manifest_dst" 2>/dev/null || true
+  if [ -f "$manifest_dst" ]; then
+    if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$manifest_dst" 2>/dev/null; then
+      diag "foundation-manifest.json parse failure post-copy: $manifest_dst"
+      exit 30
+    fi
+  fi
+else
+  warn "foundation-manifest.json not present at SOURCE_REPO root (T-5 baseline absent; G2 + fingerprint match unavailable until generated)"
+fi
+
 # Step 14: provenance log header (G10 emit; full G10 enforcement at T-1 follow-up)
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
 {
-  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59 + S60)\n'
+  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59 + S60 + S62 baseline ship)\n'
   printf 'timestamp: %s\n'        "$ts"
   printf 'CLAUDE_HOME: %s\n'      "$CLAUDE_HOME"
   printf 'SOURCE_REPO: %s\n'      "$SOURCE_REPO"
   printf 'force_install: %s\n'    "$FORCE_INSTALL"
   printf 'install.sh sha256: %s\n' "$(shasum -a 256 "$0" 2>/dev/null | awk '{print $1}')"
-  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + I-UNDERSTAND-APRIL-13 sentinel\n'
-  printf 'deferred: G2/G3 fingerprint; G4/G5/G8/G9/G10 red-team; claude-mem preservation; --dry-run/--apply matrix; --force-all/--no-preserve-config; full 19-exit-code matrix\n'
+  if [ -f "$manifest_dst" ]; then
+    printf 'foundation_manifest_sha256: %s\n' "$(shasum -a 256 "$manifest_dst" 2>/dev/null | awk '{print $1}')"
+  else
+    printf 'foundation_manifest_sha256: (absent)\n'
+  fi
+  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + I-UNDERSTAND-APRIL-13 sentinel + foundation-manifest.json baseline copy (T-5)\n'
+  printf 'deferred: G2 detector (T-5 baseline now shipping; consumer deferred); G3 backup; G4/G5/G8/G9/G10 red-team; claude-mem preservation; --dry-run/--apply matrix; --force-all/--no-preserve-config; full 19-exit-code matrix\n'
 } > "$log_path" || { diag "provenance log write failed"; exit 11; }
 
 info "install complete (slice). next-steps:"
