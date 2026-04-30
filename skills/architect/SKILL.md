@@ -137,7 +137,9 @@ Best practices from the broader Obsidian/PKM ecosystem and Claude Code community
 - Claude Code community patterns for skill composition and vault management
 - Any relevant tooling updates (MCP servers, Obsidian plugins, Claude features)
 
-**Uses:** WebSearch, WebFetch. If unavailable, skip and note in report.
+**Uses:** WebSearch, WebFetch.
+
+**Try/skip pattern.** Wrap WebSearch + WebFetch invocations in try/skip. On any failure (no network, tool unavailable, rate-limit, non-zero exit, or timeout), emit the dimension section in the report with the literal note `> External research unavailable in this environment (no network / tool access); skipped.` and continue to the next dimension. **Never cascade-fail the run on Dimension 7 errors** — Dimension 7 is informational and must not block report emission. This applies in both standard and `--adaptive` modes, and on both first-scan and steady-state runs.
 
 ---
 
@@ -265,6 +267,18 @@ Report includes a **Depth Allocation** table:
 ```
 
 This prevents over-investment in healthy dimensions and concentrates effort where it matters.
+
+---
+
+## First-Scan Behavior
+
+The architect runs cleanly on a freshly-onboarded user with zero prior reports. Two implementation branches handle the empty-state path; both are detected from manifest state, not a CLI flag.
+
+**`--compare` short-circuit.** If `--compare` is passed (or auto-resolves from `manifest.architect.auto_compare: true`) and `librarian_manifest.architect_recommendations.last_scanned_log == null`, the Convergence section emits a `> First scan, no prior data to compare.` note and continues to Recommendations with an empty Convergence table. Exit code is 0; the run is not blocked on missing history.
+
+**`--adaptive` natural downgrade (recommended default).** On a freshly-onboarded user, Dimensions 1 (Metrics Collection) and 6 (Skill & Automation) naturally fall to the **Cool** tier per the Adaptive Depth Mode classifier — `librarian_manifest.scan_state.findings_by_capability` is empty (no signal density), and `manifest.skills[]` lists only the foundation-shipped skills (sparse coverage by definition, not by drift). Both dimensions produce shallow base-foundation summaries instead of gap detection. This is expected first-scan behavior, not a degradation; the Depth Allocation table reflects it explicitly.
+
+**No `--first-scan` flag.** First-scan is detected from manifest state (`last_scanned_log == null` plus empty `findings_by_capability`), not a dedicated CLI surface. `--adaptive` is the recommended default UX for first-scan and steady-state alike — the same code path handles both.
 
 ---
 
