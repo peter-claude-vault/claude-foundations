@@ -28,11 +28,12 @@ tests/foundation/
       user-manifest-structured.json    # has_structured_projects: true
       user-manifest-flat.json          # has_structured_projects: false
       librarian-manifest.json          # copy of templates/librarian-manifest-skeleton.json
-    vault-minimal/                   # synthetic vault root (one tree, two manifests select shape)
-      CLAUDE.md
-      Vault Architecture.md
-      Logs/.gitkeep
-      Engagements/.../...            # only walked when structured manifest selected
+    vault-minimal/                   # synthetic vault root (single tree, both manifests pass)
+      CLAUDE.md                        # plain markdown, no frontmatter -> detect_type=None -> silent skip
+      Vault Architecture.md            # plain markdown, no frontmatter -> silent skip
+      Logs/.gitkeep                    # empty Logs/ -> log-archive no-op
+      # No Engagements/ -> structured manifest finds nothing to check (still passes);
+      # flat manifest skips engagement-tree checks silently per SKILL.md L55.
 ```
 
 ## Hermetic-isolation contract
