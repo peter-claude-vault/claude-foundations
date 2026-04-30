@@ -1,0 +1,86 @@
+{
+  "system": {
+    "schema_version": "1.4.0",
+    "timezone": null,
+    "standards_version": null,
+    "created_date": null,
+    "phases_completed": [],
+    "opt_outs": [],
+    "ingestion_state": null,
+    "onboarding_state": null,
+    "is_fresh": true,
+    "backup_targets": []
+  },
+  "identity": {
+    "name": "T-12 Synthetic User",
+    "email": null,
+    "role": null,
+    "industry": null,
+    "seniority": null,
+    "organization": null,
+    "working_hours": null
+  },
+  "paths": {
+    "vault_root": "__VAULT_ROOT__",
+    "plans_root": "__PLANS_ROOT__",
+    "hooks_state": null,
+    "cron_log_dir": null
+  },
+  "tools": {
+    "calendar": null,
+    "messaging": [],
+    "email": null,
+    "transcription": null,
+    "tasks": null,
+    "dev_env": null
+  },
+  "vault": {
+    "root": "__VAULT_ROOT__",
+    "is_fresh": true,
+    "organizational_method": "engagement-tree",
+    "top_level_folder": "Engagements",
+    "has_structured_projects": true,
+    "canonical_file_types": [],
+    "tag_prefixes": ["engagement/", "project/", "scope/", "status/"],
+    "logs_whitelist_subdirs": [],
+    "transcript_dir": null,
+    "context_section_types": [],
+    "engagement_aliases": {},
+    "default_audience": null,
+    "wikilink_contract": null,
+    "root_directories": [],
+    "context_documents": [],
+    "tag_audit_exemptions": []
+  },
+  "projects": {
+    "active": []
+  },
+  "people": {},
+  "behavioral": {
+    "autonomy": null,
+    "cadence_default": null,
+    "hook_preferences": {},
+    "communication_style": null
+  },
+  "backlog": {
+    "index_path": null,
+    "archive_path": null,
+    "progress_dir": null,
+    "clusters": []
+  },
+  "architect": {
+    "output_dir": null,
+    "cadence": null,
+    "benchmarks": {
+      "orphan_pct_max": 5,
+      "avg_links_min": 3,
+      "frontmatter_consistency_min": 95
+    },
+    "dimensions_enabled": [],
+    "default_mode": null,
+    "auto_compare": null,
+    "external_research_enabled": null,
+    "prior_seed": [],
+    "archetype_research": {}
+  }
+}
