@@ -278,8 +278,17 @@ Record yourself answering all four, in any order. Aim for 2–3 minutes.
 
 `behavioral.autonomy`, `orchestration.jobs[0]` (id, enabled=true,
 schedule defaulted to `06:00` for librarian and `Mon 06:00` for architect,
-log_path defaulted, idle_watchdog_sec=180), `architect.prior_seed`,
+log_path defaulted, idle_watchdog_sec=180, budget_usd=5/10 per-job,
+model=sonnet/opus per-job, skip_weekends=true for librarian),
+`architect.prior_seed`,
 `behavioral.hook_preferences.notification_style`.
+
+The `budget_usd`, `model`, and `skip_weekends` defaults were added by
+SP03 T-12 (S56) per the SP02-T-0 additive amendment pattern. The 8-question
+customization sub-flow that surfaces these fields as user-facing
+overrides is documented at `onboarding/initial-job-setup-flow.md`. No new
+Q-IDs are added to the §10 namespace lock — the sub-flow is a UX
+expansion of D-2's `defaults_applied` table, owned by SP07 T-9.
 
 ### Minimum-viable
 

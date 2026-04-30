@@ -250,7 +250,15 @@
         "O.jobs[0].enabled": true,
         "O.jobs[0].schedule": {"librarian": {"hour": 6, "minute": 0}, "architect": {"hour": 6, "minute": 0, "dow": [1]}},
         "O.jobs[0].log_path": "default-per-job-id",
-        "O.jobs[0].idle_watchdog_sec": 180
+        "O.jobs[0].idle_watchdog_sec": 180,
+        "O.jobs[0].budget_usd": {"librarian": 5, "architect": 10},
+        "O.jobs[0].model": {"librarian": "sonnet", "architect": "opus"},
+        "O.jobs[0].skip_weekends": {"librarian": true, "architect": null}
+      },
+      "subflow_reference": {
+        "_comment": "Per-job customization of these defaults (8-question flow) is documented at onboarding/initial-job-setup-flow.md (SP03 T-12 contract). The sub-flow surfaces these fields as user-facing customizations; no new Q-IDs are added to the §10 namespace lock. SP07 T-9 implements the rendering shell.",
+        "doc": "onboarding/initial-job-setup-flow.md",
+        "owner_task": "SP03:T-12"
       }
     },
     "D-3": {
@@ -412,11 +420,12 @@
       "schema_path": "U.identity.email"
     },
     "timezone": {
-      "source": "systemsetup",
-      "command": "systemsetup -gettimezone",
-      "command_fallback": "date +%Z",
+      "source": "etc_localtime_symlink",
+      "command": "readlink /etc/localtime 2>/dev/null | sed 's|.*/zoneinfo/||'",
+      "command_fallback": "echo America/New_York",
       "feeds_q_id": "A-3",
-      "schema_path": "U.system.timezone"
+      "schema_path": "U.system.timezone",
+      "_amendment_note": "S56 CFF-S56-5 fix: systemsetup -gettimezone requires admin even for read (fails under launchd's restricted env); date +%Z returns the abbreviation (EDT) which is non-IANA and rejected by Q3 validation. readlink /etc/localtime is privilege-free, launchd-context-safe, and returns the IANA Continent/City form. Byte-identical to installer/render-launchd.sh:169 (S55 commit 48cee95)."
     },
     "vault_root": {
       "source": "filesystem_scan",
