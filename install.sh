@@ -1,34 +1,41 @@
 #!/bin/bash
-# install.sh — Plan 71 SP08 T-1 happy-path slice (S59 partial)
+# install.sh — Plan 71 SP08 T-1 (S59 happy-path slice + S60 G1 follow-up)
 #
-# Slice scope (per S59 sliced T-1 prompt + spec.md L240-255 audit-2026-04-29):
+# Slice scope (S59 + S60 cumulative):
 #   - CLAUDE_HOME-first resolution (R-55 invariant; AC #1)
+#   - G1-pre 100ms preflight (no FS writes; AC #2)              [S60]
+#   - G1-main $HOME/.claude equality gate + I-UNDERSTAND-APRIL-13
+#     sentinel + --force-install flag (AC #3)                    [S60]
 #   - 14-asset write-sequence (audit F-01..F-05)
 #   - LABEL_PREFIX=com.claude-foundations preserved via cp -R installer/ +
 #     templates/launchd/ (G6 namespace isolation)
 #   - settings.json atomic jq-merge with G7 silent-key-deletion gate
 #
-# DEFERRED to T-1 follow-up sessions:
-#   - G1-pre 100ms preflight + G1-main equality gate (sentinel I-UNDERSTAND-APRIL-13)
-#   - G2/G3 fingerprint manifest (foundation-manifest.json from T-5)
-#   - G4/G5/G8/G9/G10 red-team guards
-#   - claude-mem preservation policy (T-1.5 must bundle plugins/claude-mem/v<VERSION>/ first)
+# DEFERRED to subsequent T-1 follow-up sessions:
+#   - G2 foreign-content detector / G3 backup proof-of-life (need T-5
+#     foundation-manifest.json baseline)
+#   - G4 vault-symlink, G5 PLANS_HOME, G8 UID-0 refuse, G9 dry-run-default,
+#     G10 provenance-write-failure-as-11
+#   - claude-mem preservation policy (T-1.5 bundles plugins/claude-mem/v<VERSION>/ first)
 #   - --dry-run/--apply default flow + state classification (fresh|foundation-only|mixed|user-only)
-#   - --force-install/--force-all/--no-preserve-config flag matrix
-#   - 19-exit-code full matrix (slice subset below)
+#   - --force-all / --no-preserve-config flag matrix
+#   - Full 19-exit-code matrix (slice subset below)
 #
-# Exit codes (slice subset):
+# Exit codes (slice subset; S59 + S60):
 #   0   success
-#   10  prereq missing (CLAUDE_HOME unset/empty; required binary absent;
-#                       SOURCE_REPO not a foundation-repo)
+#   10  prereq missing (CLAUDE_HOME unset/empty per G1-pre; required binary
+#                       absent; SOURCE_REPO not a foundation-repo)
 #   11  permission/write failure
 #   30  schema parse failure (post-install)
 #   40  settings.json merge conflict requires human resolution (jq error)
+#   51  G1-main fired ($HOME/.claude equality + non-foundation content,    [S60]
+#       missing --force-install or I-UNDERSTAND-APRIL-13 sentinel)
 #   57  G7 fired (settings.json merge would silently delete keys)
 #
 # R-23 bash 3.2 compat. R-37 single-deliverable. R-55 zero $HOME/.claude
 # resolution paths in script body (literal $HOME/.claude appears only in
-# the AC #1 / G1-pre user-facing error text per spec.md L74).
+# the AC #1 / G1-pre user-facing error text per spec.md L74 and the G1-main
+# string-equality comparison per spec.md L75).
 
 set -u
 
@@ -37,7 +44,17 @@ diag() { printf 'install FAIL: %s\n' "$1" >&2; }
 info() { printf 'install: %s\n' "$1"; }
 warn() { printf 'install WARN: %s\n' "$1" >&2; }
 
-# --- G1-pre lite (slice; full 100ms-bound preflight at T-1 follow-up) ---
+# --- argv parse (in-memory only; no FS; pre-G1-pre to keep 100ms bound) ---
+FORCE_INSTALL=0
+for arg in "$@"; do
+  case "$arg" in
+    --force-install) FORCE_INSTALL=1 ;;
+  esac
+done
+
+# --- G1-pre: CLAUDE_HOME unset/empty preflight (AC #2; spec.md L74) ---
+# Fires BEFORE binary check / SOURCE_REPO resolve / any mkdir. No FS writes.
+# Acceptance: headless exit within 100ms.
 if [ -z "${CLAUDE_HOME:-}" ]; then
   diag "CLAUDE_HOME not set. Export CLAUDE_HOME=\$HOME/.claude or a custom path before running install.sh. Never rely on \$HOME/.claude implicit default — hard-fail is required for installer safety."
   exit 10
@@ -61,6 +78,53 @@ SOURCE_REPO="${SOURCE_REPO:-$script_dir}"
 if [ ! -d "$SOURCE_REPO/hooks" ] || [ ! -d "$SOURCE_REPO/skills" ] || [ ! -d "$SOURCE_REPO/schemas" ]; then
   diag "SOURCE_REPO does not look like a foundation-repo (missing hooks/, skills/, or schemas/): $SOURCE_REPO"
   exit 10
+fi
+
+# --- G1-main: $HOME/.claude equality gate (AC #3; spec.md L75) ---
+# Refuse if $CLAUDE_HOME == $HOME/.claude AND target exists with non-foundation
+# content, unless --force-install AND I-UNDERSTAND-APRIL-13 sentinel typed.
+# String comparison (not resolution) per R-55 carve-out.
+foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json"
+
+g1_main_has_non_foundation_content() {
+  local d="$1"
+  [ -d "$d" ] || return 1
+  local entry base known found
+  for entry in "$d"/* "$d"/.[!.]*; do
+    [ -e "$entry" ] || continue
+    base="${entry##*/}"
+    found=0
+    for known in $foundation_known_entries; do
+      if [ "$base" = "$known" ]; then
+        found=1
+        break
+      fi
+    done
+    if [ "$found" = "0" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [ "$CLAUDE_HOME" = "$HOME/.claude" ] && [ -d "$CLAUDE_HOME" ]; then
+  if g1_main_has_non_foundation_content "$CLAUDE_HOME"; then
+    if [ "$FORCE_INSTALL" != "1" ]; then
+      diag "G1-main fired: \$CLAUDE_HOME equals \$HOME/.claude AND target contains non-foundation content. Pass --force-install AND type I-UNDERSTAND-APRIL-13 sentinel to proceed (April-13 protection)."
+      exit 51
+    fi
+    printf 'install: type I-UNDERSTAND-APRIL-13 to confirm: ' >&2
+    sentinel=""
+    if ! IFS= read -r sentinel; then
+      diag "G1-main fired: sentinel not provided (stdin EOF). Aborting."
+      exit 51
+    fi
+    if [ "$sentinel" != "I-UNDERSTAND-APRIL-13" ]; then
+      diag "G1-main fired: sentinel mismatch. Expected literal 'I-UNDERSTAND-APRIL-13'. Aborting."
+      exit 51
+    fi
+    info "G1-main sentinel verified; proceeding under --force-install"
+  fi
 fi
 
 info "CLAUDE_HOME=$CLAUDE_HOME"
@@ -234,19 +298,20 @@ done
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
 {
-  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59)\n'
+  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59 + S60)\n'
   printf 'timestamp: %s\n'        "$ts"
   printf 'CLAUDE_HOME: %s\n'      "$CLAUDE_HOME"
   printf 'SOURCE_REPO: %s\n'      "$SOURCE_REPO"
+  printf 'force_install: %s\n'    "$FORCE_INSTALL"
   printf 'install.sh sha256: %s\n' "$(shasum -a 256 "$0" 2>/dev/null | awk '{print $1}')"
-  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge\n'
-  printf 'deferred: G1-pre 100ms; G2/G3 fingerprint; G4-G10 red-team; claude-mem preservation; --dry-run/--apply matrix; full 19-exit-code matrix\n'
+  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + I-UNDERSTAND-APRIL-13 sentinel\n'
+  printf 'deferred: G2/G3 fingerprint; G4/G5/G8/G9/G10 red-team; claude-mem preservation; --dry-run/--apply matrix; --force-all/--no-preserve-config; full 19-exit-code matrix\n'
 } > "$log_path" || { diag "provenance log write failed"; exit 11; }
 
 info "install complete (slice). next-steps:"
 info "  - render plists at runtime: \$CLAUDE_HOME/installer/render-launchd.sh --staging-dir \$CLAUDE_HOME/Library/LaunchAgents.staging librarian|architect"
 info "  - claude-mem bundle: deferred to SP08 T-1.5"
-info "  - full G1-G10 firewall: deferred to SP08 T-1 follow-up"
+info "  - G2-G10 firewall (foreign-content / backup / vault-symlink / PLANS_HOME / UID-0 / dry-run / provenance-fail): deferred to SP08 T-1 follow-up"
 info "provenance: $log_path"
 
 exit 0
