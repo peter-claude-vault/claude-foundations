@@ -230,7 +230,7 @@ exploratory: N
 
 Sections: Skill Anatomy → Dependency Map (with diagram) → Integration Surface → Optimization Analysis → External Research → Recommendations → Summary.
 
-Recommendations use the same `[R-NNN]` format as standard reports, plus a new **Skill Enhancement Proposal** format when applicable.
+Recommendations use the same `[AR-NNN]` format as standard reports, plus a new **Skill Enhancement Proposal** format when applicable.
 
 ---
 
@@ -396,7 +396,7 @@ Report body sections (in order):
 ### Standard Recommendation
 
 ```
-### [R-NNN] {Title}
+### [AR-NNN] {Title}
 
 **Problem:** {What's wrong, with evidence — metrics, file paths, or pattern}
 **Proposal:** {What to change}
@@ -410,7 +410,7 @@ Report body sections (in order):
 ### New Skill Proposal
 
 ```
-### [R-NNN] New Skill: {name}
+### [AR-NNN] New Skill: {name}
 
 **Trigger:** {when/how invoked}
 **Purpose:** {what it does}
@@ -426,7 +426,7 @@ Report body sections (in order):
 ### Skill Enhancement Proposal
 
 ```
-### [R-NNN] Enhance: {skill name}
+### [AR-NNN] Enhance: {skill name}
 
 **Current:** {what the skill does now}
 **Proposed:** {what it should do}
@@ -451,7 +451,7 @@ Per CLAUDE.md skill-creation rules: every vault-writing skill declares files wri
 - **Pre-write validation:**
   1. Frontmatter completeness — `type`, `subtype`, `date`, `timestamp`, `recommendations-total`, confidence-tier counts must be populated; missing fields block the write.
   2. Vault-schema validation — frontmatter parses against `vault-schema.json` `architect-report` entry; type-mismatch blocks the write.
-  3. Recommendation-validation gate — every `[R-NNN]` (or `[AR-NNN]` post-SP05 T-4 lockstep) item passes the 4-check gate (rule / history / impact / external) before inclusion in the report (§Recommendation Validation Gate).
+  3. Recommendation-validation gate — every `[AR-NNN]` item passes the 4-check gate (rule / history / impact / external) before inclusion in the report (§Recommendation Validation Gate).
   4. Coverage Map presence — Dimension 6 must include a Coverage Map table; missing-coverage-map blocks the write (Hard Rule 8).
 
 - **Failure mode:** **block-and-log** — never "write and hope". On validation failure: emit a structured diagnostic to `{VAULT_LOGS}/architect-error-{YYYY-MM-DD}.md` (payload + failed-validation-class + remediation hint) and abort the report write. The user sees the diagnostic path in the run summary; they choose whether to address the failure manually or re-invoke `/architect` once upstream data (manifest, vault state) is corrected.

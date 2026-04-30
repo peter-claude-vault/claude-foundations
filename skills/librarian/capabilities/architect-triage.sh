@@ -16,9 +16,11 @@
 #   - Backlog: $SYSTEM_BACKLOG_PATH (default "$VAULT_ROOT/System Backlog.md").
 #   - Manifest: architect_recommendations subtree via manifest_set.
 #
-# Extracts `[R-NNN]` + title + **Category:**/**Confidence:** fields.
+# Extracts `[AR-NNN]` + title + **Category:**/**Confidence:** fields.
+# Legacy `[R-NNN]` entries (pre-SP05 T-4 lockstep) are skipped with an advisory
+# log line per source file — prefix is reserved for ENFORCEMENT-MAP rule IDs.
 # Dedupe:
-#   - Current Backlog: grep R-NNN in Notes column.
+#   - Current Backlog: grep AR-NNN in Notes column.
 #   - Manifest architect_recommendations[].id with status in
 #     {deferred, rejected, completed, tracked}.
 #
@@ -90,7 +92,7 @@ if os.path.isfile(backlog_path):
     except Exception:
         pass
 
-backlog_rec_ids = set(m.group(0) for m in re.finditer(r"R-\d+", backlog_text))
+backlog_rec_ids = set(m.group(0) for m in re.finditer(r"AR-\d+", backlog_text))
 
 # Previously-triaged manifest state.
 prior_recs = {}
@@ -99,12 +101,14 @@ for r in (existing.get("recommendations") or []):
     if rid:
         prior_recs[rid] = r
 
-HEAD_RE = re.compile(r"^\*\*\[R-(\d+)\]\s+([^*]+?)\*\*\s*(?:`\[([A-Za-z\-]+)\]`)?", re.M)
+HEAD_RE = re.compile(r"^\*\*\[AR-(\d+)\]\s+([^*]+?)\*\*\s*(?:`\[([A-Za-z\-]+)\]`)?", re.M)
+LEGACY_HEAD_RE = re.compile(r"^\*\*\[R-(\d+)\]\s", re.M)
 CAT_RE = re.compile(r"^\*\*Category:\*\*\s*(.+)$", re.M)
 CONF_RE = re.compile(r"^\*\*Confidence:\*\*\s*(.+)$", re.M)
 
 all_recs = []  # {id, title, category, confidence, source_log, line}
 seen_ids = set()
+legacy_skips = []  # [{source, count}] — pre-SP05 T-4 lockstep entries
 
 # Walk files newest-first (filename is ISO-ish date, sort by name reversed).
 for lf in sorted(log_files, reverse=True):
@@ -113,9 +117,12 @@ for lf in sorted(log_files, reverse=True):
     except Exception:
         continue
     source = os.path.basename(lf)
+    legacy_count = sum(1 for _ in LEGACY_HEAD_RE.finditer(text))
+    if legacy_count > 0:
+        legacy_skips.append({"source": source, "count": legacy_count})
     for m in HEAD_RE.finditer(text):
         num = m.group(1)
-        rid = f"R-{int(num):03d}"
+        rid = f"AR-{int(num):03d}"
         if rid in seen_ids:
             continue
         seen_ids.add(rid)
@@ -170,6 +177,7 @@ out = {
     "backlog_matches": backlog_matches,
     "manifest_matches": manifest_matches,
     "last_scanned_log": last_log,
+    "legacy_skips": legacy_skips,
 }
 print(json.dumps(out))
 PY
@@ -197,6 +205,20 @@ def emit(rec, level="info"):
         print(line)
 for rec in doc["untracked"]:
     emit(rec, "info")
+# Per-source advisory line for legacy [R-NNN] entries (pre-SP05 T-4 lockstep).
+for skip in doc.get("legacy_skips", []):
+    line = json.dumps({
+        "finding": "architect-legacy-prefix-skipped",
+        "file": skip["source"],
+        "count": skip["count"],
+        "level": "advisory",
+        "note": "[R-NNN] entries pre-date SP05 T-4 lockstep; canonical prefix is [AR-NNN].",
+    })
+    if findings_out:
+        with open(findings_out, "a") as f:
+            f.write(line + "\n")
+    else:
+        print(line)
 PY
 rm -f /tmp/architect-triage-emit.$$
 
@@ -239,6 +261,21 @@ printf "## Architect Triage (%d logs scanned, %d recommendations found)\n\n" \
 printf -- "- Untracked (surface for Backlog): %d\n" "$UNTRACKED_N"
 printf -- "- Already in Backlog (tracked via row): %d\n" "$BACKLOG_N"
 printf -- "- Tracked in manifest (prior triage): %d\n" "$MANIFEST_N"
+
+# Surface legacy-prefix advisory in the report (zero-cost when none found).
+LEGACY_REPORT=$(python3 - "$RESULT" <<'PY'
+import json, sys
+doc = json.loads(sys.argv[1])
+skips = doc.get("legacy_skips", [])
+if not skips:
+    sys.exit(0)
+total = sum(s["count"] for s in skips)
+print(f"- Legacy `[R-NNN]` entries skipped (advisory): {total} across {len(skips)} log(s)")
+for s in skips:
+    print(f"  - {s['source']}: {s['count']}")
+PY
+)
+[[ -n "$LEGACY_REPORT" ]] && printf "%s\n" "$LEGACY_REPORT"
 
 if [[ "$UNTRACKED_N" -gt 0 ]]; then
   printf "\n### Untracked Recommendations\n\n"
