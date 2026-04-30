@@ -64,6 +64,23 @@
           "cold_wake_probe": {
             "type": "boolean",
             "default": true
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 3600,
+            "description": "Job wall-clock timeout in seconds; consumed by job-runner.sh (CLI override > orchestration.json > fallback 3600)"
+          },
+          "model": {
+            "type": "string",
+            "enum": ["sonnet", "opus", "haiku"],
+            "default": "sonnet",
+            "description": "Claude model for --model flag; consumed by job-runner.sh (CLI override > orchestration.json > fallback sonnet)"
+          },
+          "budget_usd": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Per-job --max-budget-usd cap; consumed by job-runner.sh. Absent means unlimited (no flag passed)."
           }
         }
       }
