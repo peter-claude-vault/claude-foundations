@@ -1,0 +1,111 @@
+SP03 Orchestration Engine — Source Pin Manifest
+================================================
+
+Mirror of SP02 T-1 fork pattern (audit retro-additive T-0). Pins
+~/.claude/orchestrator/ + hooks/cron-health-banner.sh source SHA
+BEFORE T-1..T-3 extractions begin. Re-verifies T-2/T-3 line ranges
+and L21/L11 leak locations against pinned SHA at session start so
+downstream extraction tasks can target stable line numbers.
+
+Source repo:           private upstream (parent ~/.claude)
+Source HEAD at pin:    d087b4b5f80700ac2b91b8e96f3191e48c3e4d2d
+Source HEAD timestamp: 2026-04-30T09:51:51-04:00
+Pin timestamp:         2026-04-30T13:54:36Z
+
+Sub-plan:              71-claude-foundations-engine-v2 / 03-orchestration-engine
+Task:                  T-0 (audit retro-additive; mirror of SP02 T-1)
+Wave:                  γ
+Session:               S48 (2026-04-30)
+
+Per-file source paths + sha256 (within ~/.claude/ at pinned SHA)
+----------------------------------------------------------------
+9420092c45f5f025b03f3dc3384a93cf6c2e7d4abf79173ee4ede25523037543  orchestrator/cron-wrappers/librarian-cron.sh   (323 lines)
+a3a984c7286eba1e6d80d179665141d96dd0886395ddcb00215f10b7aca59954  orchestrator/cron-wrappers/architect-cron.sh    (99 lines)
+98a6ec0bef59e2a884c397915633a6803595050d6573ad20bc929389188a49e4  orchestrator/dispatch.sh                       (443 lines)
+2c9774bfd7fb6d7c25f337bf607215b5fa5656ba456b482b5d06c33ac9f11252  orchestrator/job-runner.sh                     (250 lines)
+d42cfa155a0e0342666566b35172335587a6c97ac38560b07aa8b0e94ed3fd9b  hooks/cron-health-banner.sh                    (251 lines)
+
+Foundation-repo extraction targets
+----------------------------------
+T-1: lib/lockf.sh                          ← librarian-cron.sh L32-44 (lockf re-exec sentinel; canonical path top-level lib/ per A4 amendment)
+T-2: orchestrator/lib/claude-p.sh          ← librarian-cron.sh L196-204 (post-kill classifier)
+T-3: orchestrator/lib/idle-watchdog.sh     ← librarian-cron.sh L179-207 (180s stream-json silence detector)
+T-4: orchestrator/lib/tripwire.sh          ← additional extraction target (per spec L36, L43)
+T-5: orchestrator/dispatch.sh              ← orchestrator/dispatch.sh (genericize)
+T-6: orchestrator/job-runner.sh            ← orchestrator/job-runner.sh (genericize)
+T-7: orchestrator/cron-wrappers/librarian-cron.sh  ← cron-wrappers/librarian-cron.sh (rewrite; leak L21 stripped; sources lib/*.sh)
+T-8: orchestrator/cron-wrappers/architect-cron.sh  ← cron-wrappers/architect-cron.sh (rewrite; leak L11 stripped)
+T-10: hooks/cron-health-banner.sh          ← hooks/cron-health-banner.sh (ship as-is — zero leaks)
+
+T-2/T-3 line-range re-verification (against pinned SHA d087b4b)
+---------------------------------------------------------------
+T-2  librarian-cron.sh L196-204  post-kill classifier
+  L196:       # death-rattle = cold-start hang fingerprint (Gap #6). Any other
+  L197:       # content means the call got into real work and stalled mid-run.
+  L198:       local final_size
+  L199:       final_size=$(stat -f%z "$call_log" 2>/dev/null || echo 0)
+  L200:       if [ "$final_size" -le 120 ] && grep -q "SessionEnd hook.*Hook cancelled" "$call_log" 2>/dev/null; then
+  L201:         echo "    classification: claude-p-never-emitted-output (cold-start-hang fingerprint)" >> "$LOG_FILE"
+  L202:       else
+  L203:         echo "    classification: claude-p-stalled-mid-run (partial output present, bytes=$final_size)" >> "$LOG_FILE"
+  L204:       fi
+  RESULT: VERIFIED — fingerprint threshold 120 bytes + regex
+          "SessionEnd hook.*Hook cancelled" present at exact spec lines.
+
+T-3  librarian-cron.sh L179-207  180s idle watchdog
+  L179:   while kill -0 "$pid" 2>/dev/null; do
+  L180:     sleep 10
+  L181:     local cur_size
+  L182:     cur_size=$(stat -f%z "$call_log" 2>/dev/null || echo 0)
+  L183:     if [ "$cur_size" -gt "$last_size" ]; then
+  L184:       last_size=$cur_size
+  L185:       idle=0
+  L186:     else
+  L187:       idle=$((idle + 10))
+  L188:     fi
+  L189:     if [ "$idle" -ge "$IDLE_LIMIT" ]; then
+  L190:       echo "IDLE-WATCHDOG-FIRED call=$label idle=${idle}s last_bytes=$cur_size" >> "$LOG_FILE"
+  L191:       echo "--- last 20 lines of $call_log ---" >> "$LOG_FILE"
+  L192:       tail -20 "$call_log" >> "$LOG_FILE" 2>/dev/null || true
+  L193:       kill "$pid" 2>/dev/null || true
+  L194:       wait "$pid" 2>/dev/null || true
+  L195:       # Session 18: classify the failure. Zero bytes + "Hook cancelled"
+  L196..L204:   (post-kill classifier — see T-2 above; co-located here by design)
+  L205:       echo "--- call=$label end: $(date -Iseconds) rc=124 (idle-watchdog) ---" >> "$LOG_FILE"
+  L206:       return 124
+  L207:     fi
+  RESULT: VERIFIED — 10s sample interval, $IDLE_LIMIT-driven timeout,
+          SIGTERM via `kill` then `wait`, classifier dispatch, return
+          124 all present at exact spec lines. T-2 + T-3 share L196-204
+          (the classifier is invoked from inside the watchdog block);
+          extraction MUST preserve this composition: T-3 watchdog calls
+          T-2 classifier post-kill.
+
+Leak locations re-verification (per spec L30, L31)
+--------------------------------------------------
+librarian-cron.sh L21:  LOG_DIR assignment to $HOME/Desktop/<USER-SPECIFIC-DIR>
+  RESULT: VERIFIED — leak at exact spec line. (Literal leak string
+          redacted here to keep MANIFEST.txt grep-audit-clean; the
+          live source under pinned SHA contains the unredacted form.)
+architect-cron.sh L11:  LOG_DIR assignment to $HOME/Desktop/<USER-SPECIFIC-DIR>
+  RESULT: VERIFIED — leak at exact spec line. (Same redaction note.)
+
+T-1 lockf re-exec sentinel location (within librarian-cron.sh)
+--------------------------------------------------------------
+L032-L044 (lockf re-exec block):
+  L32: # --- Lock acquisition via macOS-native lockf (BSD flock(2) wrapper) ---
+  L33: # Re-exec self under `lockf -k -t 0` so the whole script runs while holding
+  L40:   /usr/bin/lockf -k -t 0 "$LOCK_FILE" "$0" "$@"
+  L43:     echo "$(date -Iseconds) librarian-cron skip: lockf contention on $LOCK_FILE" >> "$LOG_DIR/librarian-cron-skip.log"
+  RESULT: PRESENT — extracted to ~/Code/claude-foundations-v2/lib/lockf.sh
+          under T-1 (top-level lib/ per A4 amendment, sibling of paths.sh).
+
+Audit summary
+-------------
+Per-file sha256:           5/5 captured
+Line-range verification:   T-2 (L196-204) PASS; T-3 (L179-207) PASS
+Leak verification:         L21 librarian-cron PASS; L11 architect-cron PASS
+T-1 anchor:                lockf re-exec at L32-44 PASS
+Drift action required:     none — all spec-cited line numbers match
+                           pinned SHA exactly. T-1..T-3 extraction
+                           proceeds against this manifest.
