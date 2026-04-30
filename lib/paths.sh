@@ -82,6 +82,14 @@ export CRON_WRAPPERS="${CRON_WRAPPERS:-$CLAUDE_HOME/orchestrator/cron-wrappers}"
 # mkdir -p's via consumers. Override via env (test/CI) wins.
 export CLAUDE_LOG_DIR="${CLAUDE_LOG_DIR:-$CLAUDE_HOME/logs}"
 
+# --- orchestration manifest (install-convention) ---
+# Per-job runtime config: enabled flag, schedule, timeout, idle watchdog,
+# model, budget. Consumed by job-runner.sh + cron wrappers via jq lookup
+# keyed on job id (SP01 schema's `id` field; runtime slug). SP07 onboarder
+# writes it; SP01 owns the schema. Missing-file is graceful-degrade —
+# consumers fall back to hardcoded defaults.
+export ORCHESTRATION_JSON="${ORCHESTRATION_JSON:-$CLAUDE_HOME/orchestration.json}"
+
 # --- git infrastructure ---
 # CLAUDE_GIT_REPO + PLANS_GIT_REPO mirror their containing dirs by default but
 # may be overridden via env when the user separates config repo from working tree.
