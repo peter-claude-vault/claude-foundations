@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "User Manifest",
-  "description": "Identity and config manifest for a Claude Foundations install. Instance file: user-manifest.json. 10 required top-level sections (identity/paths/tools/vault/projects/people/behavioral/backlog/architect/system) per SP01 v1.0.0 reviewer-coherence; 1.1.0 adds 3 optional sections (hooks/schema/plans) + vault.root_directories[] for SP02 hook-config externalization (Lead 2 §2); 1.2.0 adds 3 optional sections (dashboard/brief_repos/crons) + vault.context_documents[] for SP06 generic-processing-skills consumption (per SP09 T-9 fold-in, AR-3); 1.3.0 adds system.backup_targets[] + vault.tag_audit_exemptions[] for SP04 T-3 capability wiring (per Plan 71 S30 recipe-vs-schema drift triage; replaces aspirational `foundation.backup_targets` + `domain.engagement_aliases` paths in original SP04 spec — engagement_aliases already lives at vault.engagement_aliases since 1.0.0).",
+  "description": "Identity and config manifest for a Claude Foundations install. Instance file: user-manifest.json. 10 required top-level sections (identity/paths/tools/vault/projects/people/behavioral/backlog/architect/system) per SP01 v1.0.0 reviewer-coherence; 1.1.0 adds 3 optional sections (hooks/schema/plans) + vault.root_directories[] for SP02 hook-config externalization (Lead 2 §2); 1.2.0 adds 3 optional sections (dashboard/brief_repos/crons) + vault.context_documents[] for SP06 generic-processing-skills consumption (per SP09 T-9 fold-in, AR-3); 1.3.0 adds system.backup_targets[] + vault.tag_audit_exemptions[] for SP04 T-3 capability wiring (per Plan 71 S30 recipe-vs-schema drift triage; replaces aspirational `foundation.backup_targets` + `domain.engagement_aliases` paths in original SP04 spec — engagement_aliases already lives at vault.engagement_aliases since 1.0.0); 1.4.0 widens architect.prior_seed from string|null to string[] (breaking) + adds default benchmarks (orphan_pct_max=5, avg_links_min=3, frontmatter_consistency_min=95) for SP05 T-2 generic-architect contract (per Plan 71 SP05 spec L57 recipe; closes longstanding architect.prior_seed schema-vs-AC drift carry-forward S32+).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -156,13 +156,23 @@
         "cadence": { "type": ["string", "null"] },
         "benchmarks": {
           "type": "object",
-          "additionalProperties": true
+          "additionalProperties": true,
+          "default": {
+            "orphan_pct_max": 5,
+            "avg_links_min": 3,
+            "frontmatter_consistency_min": 95
+          },
+          "description": "Generic PKM heuristic benchmarks. Defaults per SP05 spec §benchmark-tier-thresholds: orphan_pct_max=5, avg_links_min=3, frontmatter_consistency_min=95. Onboarder Q4 may override."
         },
         "dimensions_enabled": { "type": "array", "items": { "type": "string" } },
         "default_mode": { "type": ["string", "null"] },
         "auto_compare": { "type": ["boolean", "null"] },
         "external_research_enabled": { "type": ["boolean", "null"] },
-        "prior_seed": { "type": ["string", "null"] },
+        "prior_seed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Free-text concerns from Onboarder Q1. 1.4.0+ widens from string|null to string[] (breaking)."
+        },
         "archetype_research": {
           "type": "object",
           "additionalProperties": false,
@@ -178,7 +188,7 @@
       "required": ["schema_version"],
       "properties": {
         "timezone": { "type": ["string", "null"] },
-        "schema_version": { "const": "1.3.0" },
+        "schema_version": { "const": "1.4.0" },
         "standards_version": { "type": ["string", "null"] },
         "created_date": { "type": ["string", "null"] },
         "phases_completed": { "type": "array", "items": { "type": "string" } },
