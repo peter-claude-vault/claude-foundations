@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>${USER_HOME}</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:${USER_HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>CLAUDE_HOME</key>
+		<string>${CLAUDE_HOME}</string>
+		<key>CLAUDE_LOG_DIR</key>
+		<string>${CLAUDE_LOG_DIR}</string>
+		<key>TZ</key>
+		<string>${TIMEZONE}</string>
+	</dict>
+	<key>Label</key>
+	<string>${LABEL_PREFIX}.architect-analysis</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>${CLAUDE_HOME}/orchestrator/cron-wrappers/architect-cron.sh</string>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>${CLAUDE_LOG_DIR}/architect-stderr.log</string>
+	<key>StandardOutPath</key>
+	<string>${CLAUDE_LOG_DIR}/architect-stdout.log</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>${ARCHITECT_HOUR}</integer>
+		<key>Minute</key>
+		<integer>${ARCHITECT_MINUTE}</integer>
+		<key>Weekday</key>
+		<integer>${ARCHITECT_WEEKDAY}</integer>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>${USER_HOME}</string>
+</dict>
+</plist>
