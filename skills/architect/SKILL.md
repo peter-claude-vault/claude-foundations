@@ -423,6 +423,27 @@ Report body sections (in order):
 
 ---
 
+## Output Contract
+
+Per CLAUDE.md skill-creation rules: every vault-writing skill declares files written, schema type, pre-write validation steps, and failure mode. Architect writes ONE artifact per invocation — its own report — and never modifies vault content, skill specs, or configuration files (Hard Rule 1).
+
+- **Files written:**
+  - Standard mode: `{architect.output_dir}/architect-{YYYY-MM-DD}.md` (default `{architect.output_dir}` resolves to `{VAULT_LOGS}` from `manifest.architect.output_dir`)
+  - Skill mode (`--skill {name}`): `{architect.output_dir}/architect-{YYYY-MM-DD}-{skill-name}.md`
+  - Both targets are append-once-per-day; same-day re-invocations overwrite the existing file.
+
+- **Schema type:** `architect-report` (validated against `vault-schema.json` `type` enum entry; frontmatter must carry `type: architect-report` + `subtype: full|skill-analysis` + the report-specific fields documented in §Output Format).
+
+- **Pre-write validation:**
+  1. Frontmatter completeness — `type`, `subtype`, `date`, `timestamp`, `recommendations-total`, confidence-tier counts must be populated; missing fields block the write.
+  2. Vault-schema validation — frontmatter parses against `vault-schema.json` `architect-report` entry; type-mismatch blocks the write.
+  3. Recommendation-validation gate — every `[R-NNN]` (or `[AR-NNN]` post-SP05 T-4 lockstep) item passes the 4-check gate (rule / history / impact / external) before inclusion in the report (§Recommendation Validation Gate).
+  4. Coverage Map presence — Dimension 6 must include a Coverage Map table; missing-coverage-map blocks the write (Hard Rule 8).
+
+- **Failure mode:** **block-and-log** — never "write and hope". On validation failure: emit a structured diagnostic to `{VAULT_LOGS}/architect-error-{YYYY-MM-DD}.md` (payload + failed-validation-class + remediation hint) and abort the report write. The user sees the diagnostic path in the run summary; they choose whether to address the failure manually or re-invoke `/architect` once upstream data (manifest, vault state) is corrected.
+
+---
+
 ## Hard Rules
 
 1. **Propose, never modify.** Writes only to `Logs/` (its own report). Never edits vault content, skill specs, or configuration files.
