@@ -28,8 +28,10 @@ tests/foundation/architect-fixtures/
   README.md            (this file)
   structural.sh        # ACs 1-5 reframed × 3 archetypes (T-5 c1)
   triage-runtime.sh    # AC 6 × 3 archetypes (T-5 c2)
-  run.sh               # orchestrator: invokes structural + triage-runtime
 ```
+
+Both scripts are stand-alone; invoke directly. Mirrors T-12's two-file layout
+(`librarian-full/run.sh` + `librarian-full/capability-coverage.sh`).
 
 Fixtures are read from `onboarding/fixtures/{consultant,developer,writer}.json`
 + sidecars (no per-archetype paired manifests are authored — the librarian-manifest
