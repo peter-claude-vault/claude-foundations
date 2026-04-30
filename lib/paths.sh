@@ -76,6 +76,12 @@ export VAULT_LOGS
 # --- cron wrappers (install-convention) ---
 export CRON_WRAPPERS="${CRON_WRAPPERS:-$CLAUDE_HOME/orchestrator/cron-wrappers}"
 
+# --- log dir (install-convention; replaces user-specific Desktop leak) ---
+# Consumed by dispatch.sh delayed-launchd plists, job-runner.sh log header,
+# and cron wrappers. SP08 install.sh creates the dir; runtime gracefully
+# mkdir -p's via consumers. Override via env (test/CI) wins.
+export CLAUDE_LOG_DIR="${CLAUDE_LOG_DIR:-$CLAUDE_HOME/logs}"
+
 # --- git infrastructure ---
 # CLAUDE_GIT_REPO + PLANS_GIT_REPO mirror their containing dirs by default but
 # may be overridden via env when the user separates config repo from working tree.
