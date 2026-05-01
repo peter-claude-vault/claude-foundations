@@ -2354,6 +2354,15 @@ Six shared shell libraries, sourced by capability scripts to keep invariants in 
 4. **Skip non-content files.** Ignore `.json`, `.DS_Store`, `.obsidian/`, `.git/`, `.claude/`, image files. Also skip `librarian-manifest.json` — it is infrastructure, not content.
 5. **{VAULT_ARCHITECTURE_DOC} is source of truth.** All rules derive from it. If a file violates a rule not in VA.md, it's not a violation.
 
+### Multi-Session Coordination (Plan 42 Phase 3, carved into foundation 2026-04-30)
+
+These rules govern librarian behavior when multiple Claude Code sessions are active concurrently against the same vault. They complement R-42 (pending-reconciliation sweep) and the registry/reconciler infrastructure under `{VAULT_LOGS}/.coordination/`. Rules 6 and 9 are gated by `manifest.hooks.multi_session.enabled` — when disabled, the registry/reconciler hooks are not registered in `settings.json` and these rules become advisory. Rule 7 (atomic writes) and Rule 8 (mtime re-read) apply universally regardless of multi-session enablement.
+
+6. **Lock shared infrastructure writes.** Writes to `librarian-manifest.json` go through `lib/manifest.sh` helpers (`manifest_set`, `manifest_append_finding`), which acquire `fcntl.flock` on `{VAULT_LOGS}/.coordination/manifest.lock` for the read-modify-write critical section. Direct manifest mutation (jq pipelines, hand-rolled Python) is forbidden — concurrent writers will lose updates. New manifest writers MUST use the helpers.
+7. **Write-then-rename for every vault file.** All vault file writes use `write-to-temp` followed by `os.replace` / `mv` for atomic publication. Vault filesystem watchers and concurrent readers see only the final state, never a torn write. Direct in-place editing of multi-line vault files is forbidden.
+8. **Mtime re-read before tasks-file write.** Before writing `Tasks.md` (or whatever file `manifest.tools.tasks` resolves to — `digest-run`, `reconcile-day`, `meeting-processor`, any future writer), re-read the file if its mtime is newer than the cached read. The tasks file is LLM-written and lock-free by design — the mtime guard is the protection against concurrent-session lost updates. If the re-read shows divergence, re-merge against the fresh state instead of overwriting. (`TASKS_LOCK` declared in `lib/registry.sh` is reserved for a future script-driven tasks-file mutator and remains unconsumed today.)
+9. **Registry update on every vault write.** The PostToolUse `track-vault-write.sh` hook runs automatically on Edit/Write into the vault path and appends the file to the session's `touched_files` list. Do not bypass — running raw shell `mv`/`cp`/`tee` against vault paths skips the hook and leaves the registry blind to the mutation, which downstream defeats the overlap-warning surface in `prompt-context.sh` and the reconciler's audit trail. Prefer the Edit/Write tools.
+
 ---
 
 ## Intake Contract

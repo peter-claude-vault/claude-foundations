@@ -21,8 +21,13 @@
 #   - capabilities/sync-check.sh            (pending — T-3)
 #
 # Bash 3.2 clean per R-23 (macOS /bin/bash). Depends on $VAULT_LOGS.
-# Atomic writes use temp-file + mv. No external lockf — single-writer
-# invariant holds because /librarian is invoked one-at-a-time.
+# Atomic writes use temp-file + mv. Concurrent-session safety via
+# fcntl.flock on $VAULT_LOGS/.coordination/manifest.lock — Plan 42 T-2e-i
+# (carved into foundation 2026-04-30 from live ~/.claude/). Atomic rename
+# alone prevents torn writes but not lost updates under concurrent
+# multi-session writers; flock closes that race. Lock held only across
+# the RMW critical section; readers (manifest_get) remain lock-free since
+# reads tolerate stale-by-one-tick output.
 
 # Idempotent paths.sh source guard.
 if [[ -z "${VAULT_LOGS:-}" ]]; then
@@ -84,34 +89,39 @@ manifest_set() {
   local path="$1"
   local value="$2"
   local tmp="${MANIFEST_PATH}.tmp.$$"
-  python3 - "$MANIFEST_PATH" "$path" "$value" "$tmp" <<'PY'
-import json, sys, os
+  local lockfile="$VAULT_LOGS/.coordination/manifest.lock"
+  mkdir -p "$(dirname "$lockfile")" 2>/dev/null || true
+  python3 - "$MANIFEST_PATH" "$path" "$value" "$tmp" "$lockfile" <<'PY'
+import json, sys, os, fcntl
 manifest_path = sys.argv[1]
 path_str = sys.argv[2]
 raw_value = sys.argv[3]
 tmp = sys.argv[4]
-try:
-    with open(manifest_path) as f:
-        doc = json.load(f)
-except Exception:
-    doc = {}
-parts = [p for p in path_str.lstrip('.').split('.') if p]
-if not parts:
-    raise SystemExit("manifest_set: refusing to replace root document")
-# Coerce raw_value to JSON where possible.
-try:
-    value = json.loads(raw_value)
-except Exception:
-    value = raw_value
-cur = doc
-for p in parts[:-1]:
-    if not isinstance(cur.get(p), dict):
-        cur[p] = {}
-    cur = cur[p]
-cur[parts[-1]] = value
-with open(tmp, 'w') as f:
-    json.dump(doc, f, indent=2, ensure_ascii=False)
-os.replace(tmp, manifest_path)
+lockfile = sys.argv[5]
+with open(lockfile, 'a') as lf:
+    fcntl.flock(lf.fileno(), fcntl.LOCK_EX)
+    try:
+        with open(manifest_path) as f:
+            doc = json.load(f)
+    except Exception:
+        doc = {}
+    parts = [p for p in path_str.lstrip('.').split('.') if p]
+    if not parts:
+        raise SystemExit("manifest_set: refusing to replace root document")
+    # Coerce raw_value to JSON where possible.
+    try:
+        value = json.loads(raw_value)
+    except Exception:
+        value = raw_value
+    cur = doc
+    for p in parts[:-1]:
+        if not isinstance(cur.get(p), dict):
+            cur[p] = {}
+        cur = cur[p]
+    cur[parts[-1]] = value
+    with open(tmp, 'w') as f:
+        json.dump(doc, f, indent=2, ensure_ascii=False)
+    os.replace(tmp, manifest_path)
 PY
 }
 
@@ -124,31 +134,36 @@ manifest_append_finding() {
   local section="$1"
   local finding="$2"
   local tmp="${MANIFEST_PATH}.tmp.$$"
-  python3 - "$MANIFEST_PATH" "$section" "$finding" "$tmp" <<'PY'
-import json, sys, os
+  local lockfile="$VAULT_LOGS/.coordination/manifest.lock"
+  mkdir -p "$(dirname "$lockfile")" 2>/dev/null || true
+  python3 - "$MANIFEST_PATH" "$section" "$finding" "$tmp" "$lockfile" <<'PY'
+import json, sys, os, fcntl
 manifest_path = sys.argv[1]
 section = sys.argv[2]
 finding_raw = sys.argv[3]
 tmp = sys.argv[4]
-try:
-    with open(manifest_path) as f:
-        doc = json.load(f)
-except Exception:
-    doc = {}
-try:
-    finding = json.loads(finding_raw)
-except Exception:
-    # Permit bare strings; wrap under { "message": ... }.
-    finding = {"message": finding_raw}
-df = doc.setdefault("drift_findings", {})
-lst = df.setdefault(section, [])
-if not isinstance(lst, list):
-    # Defensive: replace with fresh list rather than crash.
-    lst = []
-    df[section] = lst
-lst.append(finding)
-with open(tmp, 'w') as f:
-    json.dump(doc, f, indent=2, ensure_ascii=False)
-os.replace(tmp, manifest_path)
+lockfile = sys.argv[5]
+with open(lockfile, 'a') as lf:
+    fcntl.flock(lf.fileno(), fcntl.LOCK_EX)
+    try:
+        with open(manifest_path) as f:
+            doc = json.load(f)
+    except Exception:
+        doc = {}
+    try:
+        finding = json.loads(finding_raw)
+    except Exception:
+        # Permit bare strings; wrap under { "message": ... }.
+        finding = {"message": finding_raw}
+    df = doc.setdefault("drift_findings", {})
+    lst = df.setdefault(section, [])
+    if not isinstance(lst, list):
+        # Defensive: replace with fresh list rather than crash.
+        lst = []
+        df[section] = lst
+    lst.append(finding)
+    with open(tmp, 'w') as f:
+        json.dump(doc, f, indent=2, ensure_ascii=False)
+    os.replace(tmp, manifest_path)
 PY
 }
