@@ -374,6 +374,139 @@ assert_path_absent "$CH7/hooks/pre-write-guard.sh" "T7.3: hooks/pre-write-guard.
 assert_path_absent "$CH7/hooks/lib"                "T7.4: hooks/lib/ removed (foundation code)"
 
 # =====================================================================
+# T8 — S63 fingerprint match: user-edited foundation file PRESERVED
+# =====================================================================
+printf 'T8: fingerprint match — user-edited foundation preserved + diagnostic + provenance\n'
+
+CH8="$(mk_tmp)"
+MOCK_DIR8="$(mk_tmp)"
+write_mock_launchctl "$MOCK_DIR8/mock-launchctl"
+
+CLAUDE_HOME="$CH8" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
+  >"$CH8/.install-stdout" 2>"$CH8/.install-stderr" || true
+
+# User edit: append a line to a foundation file (sha256 mismatch vs baseline)
+echo "# user edit appended at $(date -u +%s)" >> "$CH8/hooks/pre-write-guard.sh"
+
+rc=0
+CLAUDE_HOME="$CH8" LAUNCHCTL_BIN="$MOCK_DIR8/mock-launchctl" \
+  bash "$UNINSTALL_SH" >"$CH8/.uninstall-stdout" 2>"$CH8/.uninstall-stderr" || rc=$?
+
+assert_eq "0" "$rc" "T8.1: uninstall exits 0 on user-edited foundation"
+assert_path_exists "$CH8/hooks/pre-write-guard.sh" "T8.2: user-edited foundation file PRESERVED"
+assert_grep "user-edited foundation file preserved: hooks/pre-write-guard.sh" "$CH8/.uninstall-stderr" \
+  "T8.3: preservation diagnostic on stderr"
+
+prov8="$(ls "$CH8/logs"/uninstall-*.log 2>/dev/null | head -1)"
+assert_grep "user_edited_foundation_count: 1" "$prov8" "T8.4: provenance count=1"
+assert_grep "  - hooks/pre-write-guard.sh"     "$prov8" "T8.5: provenance lists edited path"
+
+# =====================================================================
+# T9 — S63 clean uninstall: no edits → user_edited_foundation_count=0
+# =====================================================================
+printf 'T9: clean uninstall — all foundation files match baseline; count=0\n'
+
+CH9="$(mk_tmp)"
+MOCK_DIR9="$(mk_tmp)"
+write_mock_launchctl "$MOCK_DIR9/mock-launchctl"
+
+CLAUDE_HOME="$CH9" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
+  >"$CH9/.install-stdout" 2>"$CH9/.install-stderr" || true
+
+rc=0
+CLAUDE_HOME="$CH9" LAUNCHCTL_BIN="$MOCK_DIR9/mock-launchctl" \
+  bash "$UNINSTALL_SH" >"$CH9/.uninstall-stdout" 2>"$CH9/.uninstall-stderr" || rc=$?
+
+assert_eq "0" "$rc" "T9.1: uninstall exits 0 on clean state"
+
+prov9="$(ls "$CH9/logs"/uninstall-*.log 2>/dev/null | head -1)"
+assert_grep "user_edited_foundation_count: 0" "$prov9" "T9.2: provenance count=0"
+assert_grep "fingerprint_check_skipped: false" "$prov9" "T9.3: provenance fingerprint not skipped"
+assert_path_absent "$CH9/hooks/pre-write-guard.sh" "T9.4: clean foundation file removed"
+
+# =====================================================================
+# T10 — S63 --force-rm-edited removes user-edited foundation
+# =====================================================================
+printf 'T10: --force-rm-edited removes user-edited foundation\n'
+
+CH10="$(mk_tmp)"
+MOCK_DIR10="$(mk_tmp)"
+write_mock_launchctl "$MOCK_DIR10/mock-launchctl"
+
+CLAUDE_HOME="$CH10" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
+  >"$CH10/.install-stdout" 2>"$CH10/.install-stderr" || true
+
+echo "# user edit" >> "$CH10/hooks/pre-write-guard.sh"
+
+rc=0
+CLAUDE_HOME="$CH10" LAUNCHCTL_BIN="$MOCK_DIR10/mock-launchctl" \
+  bash "$UNINSTALL_SH" --force-rm-edited \
+  >"$CH10/.uninstall-stdout" 2>"$CH10/.uninstall-stderr" || rc=$?
+
+assert_eq "0" "$rc" "T10.1: uninstall --force-rm-edited exits 0"
+assert_path_absent "$CH10/hooks/pre-write-guard.sh" "T10.2: user-edited foundation REMOVED with flag"
+assert_grep "user-edited foundation file removed (--force-rm-edited): hooks/pre-write-guard.sh" \
+  "$CH10/.uninstall-stderr" "T10.3: removal warning on stderr"
+
+prov10="$(ls "$CH10/logs"/uninstall-*.log 2>/dev/null | head -1)"
+assert_grep "force_rm_edited: 1"               "$prov10" "T10.4: provenance records flag"
+
+# =====================================================================
+# T11 — S63 missing foundation-manifest.json (default) → exit 10
+# =====================================================================
+printf 'T11: missing foundation-manifest.json (default) → exit 10\n'
+
+CH11="$(mk_tmp)"
+MOCK_DIR11="$(mk_tmp)"
+write_mock_launchctl "$MOCK_DIR11/mock-launchctl"
+
+CLAUDE_HOME="$CH11" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
+  >"$CH11/.install-stdout" 2>"$CH11/.install-stderr" || true
+
+# Remove the manifest after install to simulate slice-tolerant install scenario
+rm -f "$CH11/foundation-manifest.json"
+
+rc=0
+CLAUDE_HOME="$CH11" LAUNCHCTL_BIN="$MOCK_DIR11/mock-launchctl" \
+  bash "$UNINSTALL_SH" >"$CH11/.uninstall-stdout" 2>"$CH11/.uninstall-stderr" || rc=$?
+
+assert_eq "10" "$rc" "T11.1: missing manifest → exit 10"
+assert_grep "foundation-manifest.json missing" "$CH11/.uninstall-stderr" "T11.2: missing-manifest diagnostic"
+assert_path_exists "$CH11/hooks/pre-write-guard.sh" "T11.3: foundation files retained on refusal"
+
+# =====================================================================
+# T12 — S63 --force-remove falls back to basename allowlist
+# =====================================================================
+printf 'T12: --force-remove falls back to basename allowlist on missing manifest\n'
+
+CH12="$(mk_tmp)"
+MOCK_DIR12="$(mk_tmp)"
+write_mock_launchctl "$MOCK_DIR12/mock-launchctl"
+
+CLAUDE_HOME="$CH12" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
+  >"$CH12/.install-stdout" 2>"$CH12/.install-stderr" || true
+
+# Pre-seed user content to verify it's preserved even in fallback mode
+mkdir -p "$CH12/my-user-project"
+echo "user data" > "$CH12/my-user-project/notes.md"
+
+rm -f "$CH12/foundation-manifest.json"
+
+rc=0
+CLAUDE_HOME="$CH12" LAUNCHCTL_BIN="$MOCK_DIR12/mock-launchctl" \
+  bash "$UNINSTALL_SH" --force-remove \
+  >"$CH12/.uninstall-stdout" 2>"$CH12/.uninstall-stderr" || rc=$?
+
+assert_eq "0" "$rc" "T12.1: --force-remove exits 0 on missing manifest"
+assert_path_absent "$CH12/hooks/pre-write-guard.sh" "T12.2: foundation removed via fallback"
+assert_path_absent "$CH12/skills"                    "T12.3: skills/ removed via fallback"
+assert_path_exists "$CH12/my-user-project/notes.md"  "T12.4: user content preserved through fallback"
+
+prov12="$(ls "$CH12/logs"/uninstall-*.log 2>/dev/null | head -1)"
+assert_grep "fingerprint_check_skipped: true" "$prov12" "T12.5: provenance notes skipped"
+assert_grep "force_remove: 1"                 "$prov12" "T12.6: provenance records flag"
+
+# =====================================================================
 # Summary
 # =====================================================================
 printf '\n=== uninstall-happy-path-unit-test ===\n'

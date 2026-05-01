@@ -1,53 +1,66 @@
 #!/bin/bash
-# uninstall.sh — Plan 71 SP08 T-2 (S61 happy-path slice + S62 allowlist update)
+# uninstall.sh — Plan 71 SP08 T-2 (S61 happy-path + S62 allowlist + S63 fingerprint match)
 #
-# S62 update: foundation-manifest.json added to foundation_known_entries
-# allowlist (symmetric with install.sh foundation_known_entries L87).
-# Removed during uninstall as foundation provenance — not user content.
-# Future T-2 follow-up: uninstall.sh will read this baseline pre-rm and
-# perform sha256 fingerprint match for user-edited foundation file
-# preservation (currently rm by basename allowlist; backup-before-mutation
-# mitigates accidental loss).
+# S63 update: sha256 fingerprint match against $CLAUDE_HOME/foundation-manifest.json
+# baseline (T-5 baseline shipped at install.sh Step 13.5 / S62 ded54f4). Per-file
+# walk inside foundation directories: match → rm; mismatch → preserve + record in
+# user_edited_foundation[]; not-in-baseline → preserve. --force-rm-edited overrides
+# preservation. --force-remove permits uninstall when manifest is absent (falls
+# back to basename-allowlist rm for the foundation directories).
 #
-# Slice scope (S61):
+# Slice scope (S61 + S62 + S63 cumulative):
 #   - CLAUDE_HOME-first resolution from G1-pre symmetric (R-55 invariant)
 #   - Provenance-log-driven CLAUDE_HOME confirmation: read header line
 #     `CLAUDE_HOME: <path>` from most-recent $CLAUDE_HOME/logs/install-*.log
 #     (G10 consume) and assert equality with env-supplied $CLAUDE_HOME
+#   - foundation-manifest.json read + parse + per-file fingerprint table   [S63]
 #   - .pre-uninstall-<ts>/ backup via cp -R (round-trip integrity)
 #   - launchctl bootout gui/$UID com.claude-foundations.* (LAUNCHCTL_BIN env
 #     override for MOCK_LAUNCHCTL=1 hermetic tests; defense-in-depth G6)
 #   - G6 namespace gate: refuse to bootout labels outside com.claude-foundations.*
 #     prefix; secondary guard catches impersonation labels (prefix as substring
 #     but not at position 1)
-#   - rm foundation-known basename allowlist at $CLAUDE_HOME root (mirror of
-#     install.sh L87 foundation_known_entries)
+#   - Per-file fingerprint walk inside foundation_known_entries directories:   [S63]
+#       baseline match → rm; baseline mismatch → preserve + log to stderr +
+#       record in provenance user_edited_foundation[]; not-in-baseline → preserve
+#   - Root-level foundation files (settings.json, settings.local.json,
+#     foundation-manifest.json) — not tracked in manifest; rm by basename       [S63]
+#     (settings.json reverse-merge deferred per CFF-S61-3)
 #   - Preserve logs/ (uninstall provenance lands here) + hooks/state/ (session
-#     state; nested under foundation hooks/) + everything not in foundation set
-#   - Provenance log header at $CLAUDE_HOME/logs/uninstall-*.log on completion
+#     state preserved naturally by per-file walk — files not in baseline) +
+#     everything not in foundation set
+#   - Provenance log header at $CLAUDE_HOME/logs/uninstall-*.log on completion,
+#     including user_edited_foundation_count + per-file listing                  [S63]
 #
 # DEFERRED to subsequent T-2 follow-up sessions:
-#   - sha256 fingerprint match vs T-5 foundation-manifest.json baseline
-#     (currently rm by basename allowlist; user-edited foundation file
-#     would be removed without review summary)
-#   - settings.json baseline jq-reverse unmerge (G7-symmetric; needs T-5)
+#   - 10s/plist timeout wrapper around launchctl bootout (CFF-S61-1)
+#   - settings.json baseline jq-reverse unmerge (G7-symmetric; CFF-S61-3)
 #   - --selective <hooks|skills|plists|schemas|onboarding|lib|orchestrator|
 #     templates|plugins|installer> / --full / --dry-run / --keep-backup flag
-#     matrix (slice ships with no flags; default behavior is full + keep-backup)
+#     matrix (slice ships with --force-rm-edited + --force-remove only)
 #   - Negative-test rehearsal under SP00 runner-shell in SP00 Docker image
 #     (T-3 territory; SP00-owned)
-#   - User-edited foundation file preservation review summary (depends on
-#     fingerprint match; deferred with G2)
+#   - Provenance-log freshness validation (CFF-S61-4)
 #
 # Exit codes (slice subset):
 #   0   success
 #   10  prereq missing (CLAUDE_HOME unset/empty per G1-pre symmetric;
 #                       required binary absent; provenance log missing;
-#                       CLAUDE_HOME mismatch with provenance log header)
+#                       CLAUDE_HOME mismatch with provenance log header;
+#                       foundation-manifest.json missing without --force-remove;
+#                       foundation-manifest.json parse/extract failure)
 #   11  permission/write failure (backup mkdir, backup cp, or provenance write)
 #   56  G6 fired (label outside com.claude-foundations.* prefix encountered
 #                 during bootout discovery; foundation rm NOT performed;
 #                 backup retained for forensic review)
+#
+# Flags (S63):
+#   --force-rm-edited   rm user-edited foundation files even on fingerprint
+#                       mismatch (warns per file). Default off; preservation is
+#                       the load-bearing safety property.
+#   --force-remove      permit uninstall when foundation-manifest.json absent
+#                       (falls back to basename-allowlist rm of foundation
+#                       directories). Default off; manifest-missing is exit 10.
 #
 # R-23 bash 3.2 compat. R-37 single-deliverable. R-55 zero $HOME/.claude
 # resolution paths in script body (literal $HOME/.claude appears only in
@@ -59,6 +72,16 @@ set -u
 diag() { printf 'uninstall FAIL: %s\n' "$1" >&2; }
 info() { printf 'uninstall: %s\n' "$1"; }
 warn() { printf 'uninstall WARN: %s\n' "$1" >&2; }
+
+# --- argv parse (S63 fingerprint flags; in-memory only; pre-G1-pre) ---
+FORCE_RM_EDITED=0
+FORCE_REMOVE=0
+for arg in "$@"; do
+  case "$arg" in
+    --force-rm-edited) FORCE_RM_EDITED=1 ;;
+    --force-remove)    FORCE_REMOVE=1 ;;
+  esac
+done
 
 # --- G1-pre symmetric: CLAUDE_HOME unset/empty preflight (no FS writes) ---
 # Mirrors install.sh L58-61. Acceptance: headless exit fast; zero filesystem mutation.
@@ -76,7 +99,7 @@ if ! command -v "$LAUNCHCTL_BIN" >/dev/null 2>&1; then
   diag "missing prereq binary: $LAUNCHCTL_BIN (LAUNCHCTL_BIN env var)"
   exit 10
 fi
-for bin in plutil awk; do
+for bin in plutil awk jq python3 shasum find; do
   if ! command -v "$bin" >/dev/null 2>&1; then
     diag "missing prereq binary: $bin"
     exit 10
@@ -134,6 +157,53 @@ foundation_known_entries="hooks skills schemas onboarding orchestrator templates
 
 info "CLAUDE_HOME=$CLAUDE_HOME"
 info "LAUNCHCTL_BIN=$LAUNCHCTL_BIN"
+
+# --- foundation-manifest.json read + per-file fingerprint baseline (S63) ---
+# Reads $CLAUDE_HOME/foundation-manifest.json (T-5 baseline shipped at install
+# Step 13.5). Extracts {path, sha256} pairs to a tmp tab-separated file for
+# path-keyed awk lookup (bash 3.2 lacks associative arrays).
+#
+# Default: missing manifest → exit 10 (refuse uninstall; safety property).
+# --force-remove: missing manifest → fingerprint_check_skipped=1; falls back
+# to basename-allowlist rm of foundation directories.
+manifest_path="$CLAUDE_HOME/foundation-manifest.json"
+fingerprint_check_skipped=0
+manifest_records_tmp=""
+manifest_record_count=0
+
+if [ -f "$manifest_path" ]; then
+  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$manifest_path" 2>/dev/null; then
+    diag "foundation-manifest.json parse failure at $manifest_path"
+    exit 10
+  fi
+  manifest_records_tmp="$(mktemp -t uninstall-manifest.XXXXXX 2>/dev/null)" || {
+    diag "manifest tmp allocation failed"
+    exit 11
+  }
+  if ! jq -r '.files[] | "\(.path)\t\(.sha256)"' "$manifest_path" > "$manifest_records_tmp" 2>/dev/null; then
+    diag "foundation-manifest.json files[] extraction failed"
+    rm -f "$manifest_records_tmp"
+    exit 10
+  fi
+  manifest_record_count="$(wc -l <"$manifest_records_tmp" | tr -d ' ')"
+  info "fingerprint baseline loaded: $manifest_record_count records"
+else
+  if [ "$FORCE_REMOVE" = "1" ]; then
+    warn "foundation-manifest.json absent at $manifest_path — --force-remove set; falling back to basename-allowlist rm"
+    fingerprint_check_skipped=1
+  else
+    diag "foundation-manifest.json missing at $manifest_path — refusing uninstall (use --force-remove to fall back to basename-allowlist)"
+    exit 10
+  fi
+fi
+
+# Helper: lookup baseline sha256 by relative-to-CLAUDE_HOME path.
+# Empty stdout → not in baseline.
+lookup_baseline_sha() {
+  local rel="$1"
+  [ -z "$manifest_records_tmp" ] && return 0
+  awk -F'\t' -v p="$rel" '$1 == p {print $2; exit}' "$manifest_records_tmp"
+}
 
 # --- backup: .pre-uninstall-<ts>/ via cp -R ---
 ts="$(date -u +%Y%m%d-%H%M%S)"
@@ -215,30 +285,37 @@ fi
 
 info "bootout complete: $boot_count labels"
 
-# --- preserve hooks/state/ across foundation hooks/ removal ---
-# hooks/ is foundation-known (gets rm-rf'd) but hooks/state/ is session state.
-# Move hooks/state/ aside, rm hooks/, then move hooks/state/ back.
-hooks_state_tmp=""
-if [ -d "$CLAUDE_HOME/hooks/state" ]; then
-  hooks_state_tmp="$CLAUDE_HOME/.uninstall-tmp-hooks-state-$$"
-  if mv "$CLAUDE_HOME/hooks/state" "$hooks_state_tmp" 2>/dev/null; then
-    info "hooks/state/ preserved aside: $hooks_state_tmp"
-  else
-    warn "hooks/state/ preserve mv failed; will be removed with hooks/"
-    hooks_state_tmp=""
-  fi
-fi
-
-# --- rm foundation files at $CLAUDE_HOME root per allowlist ---
+# --- rm foundation files at $CLAUDE_HOME root with per-file fingerprint walk (S63) ---
+# Top-level dispatch:
+#   - logs/                    → preserve entirely (uninstall provenance lands here)
+#   - non-foundation entries   → preserve (basename not in foundation_known_entries)
+#   - foundation root files    → rm by basename (manifest does NOT track
+#                                 settings.json / settings.local.json /
+#                                 foundation-manifest.json; reverse-merge is
+#                                 deferred per CFF-S61-3)
+#   - foundation directories   → per-file walk:
+#         baseline match    → rm
+#         baseline mismatch → preserve + log + record (or rm if --force-rm-edited)
+#         not in baseline   → preserve (user content under foundation dir;
+#                              hooks/state/ session files land here)
+#       After per-file walk, prune empty subdirs bottom-up via find -depth -delete.
+#
+# When fingerprint_check_skipped=1 (manifest absent + --force-remove), per-file
+# walk degenerates to rm-rf the foundation directories — basename allowlist
+# fallback for graceful recovery from incomplete-install state.
 removed_count=0
 preserved_count=0
+user_edited_foundation_count=0
+user_edited_paths_log="$(mktemp -t uninstall-edited.XXXXXX 2>/dev/null)" || {
+  diag "user-edited tmp allocation failed"
+  exit 11
+}
 
 for entry in "$CLAUDE_HOME"/* "$CLAUDE_HOME"/.[!.]*; do
   [ -e "$entry" ] || continue
   base="${entry##*/}"
   case "$base" in
     .pre-uninstall-*) continue ;;
-    .uninstall-tmp-hooks-state-*) continue ;;
   esac
 
   found=0
@@ -249,55 +326,118 @@ for entry in "$CLAUDE_HOME"/* "$CLAUDE_HOME"/.[!.]*; do
     fi
   done
 
-  if [ "$found" = "1" ]; then
-    # Preserve logs/ entirely (uninstall provenance log writes here next).
-    if [ "$base" = "logs" ]; then
-      info "preserving logs/ (uninstall provenance destination)"
-      preserved_count=$((preserved_count + 1))
+  if [ "$found" = "0" ]; then
+    info "preserved (non-foundation): $entry"
+    preserved_count=$((preserved_count + 1))
+    continue
+  fi
+
+  if [ "$base" = "logs" ]; then
+    info "preserving logs/ (uninstall provenance destination)"
+    preserved_count=$((preserved_count + 1))
+    continue
+  fi
+
+  if [ -d "$entry" ]; then
+    # Foundation directory — per-file fingerprint walk
+    if [ "$fingerprint_check_skipped" = "1" ]; then
+      # Fallback: basename-allowlist mode rm-rf the directory
+      if rm -rf "$entry" 2>/dev/null; then
+        info "removed (basename fallback): $entry"
+        removed_count=$((removed_count + 1))
+      else
+        warn "rm failed for $entry"
+      fi
       continue
     fi
+    while IFS= read -r f; do
+      [ -z "$f" ] && continue
+      rel="${f#$CLAUDE_HOME/}"
+      sha_baseline="$(lookup_baseline_sha "$rel")"
+      if [ -n "$sha_baseline" ]; then
+        sha_actual="$(shasum -a 256 "$f" 2>/dev/null | awk '{print $1}')"
+        if [ "$sha_actual" = "$sha_baseline" ]; then
+          if rm -f "$f" 2>/dev/null; then
+            removed_count=$((removed_count + 1))
+          else
+            warn "rm failed: $f"
+          fi
+        else
+          if [ "$FORCE_RM_EDITED" = "1" ]; then
+            warn "user-edited foundation file removed (--force-rm-edited): $rel"
+            if rm -f "$f" 2>/dev/null; then
+              removed_count=$((removed_count + 1))
+            else
+              warn "rm failed: $f"
+            fi
+          else
+            warn "user-edited foundation file preserved: $rel (rm with --force-rm-edited if intentional)"
+            printf '%s\n' "$rel" >> "$user_edited_paths_log"
+            user_edited_foundation_count=$((user_edited_foundation_count + 1))
+            preserved_count=$((preserved_count + 1))
+          fi
+        fi
+      else
+        info "preserved (not in baseline): $rel"
+        preserved_count=$((preserved_count + 1))
+      fi
+    done <<EOF
+$(find "$entry" -type f 2>/dev/null)
+EOF
+    # Prune empty subdirs bottom-up; -depth so leaves go first.
+    find "$entry" -depth -type d -empty -exec rmdir {} \; 2>/dev/null || true
+  else
+    # Foundation root file (settings.json / settings.local.json /
+    # foundation-manifest.json). Manifest doesn't track these. rm by basename.
     if rm -rf "$entry" 2>/dev/null; then
       info "removed $entry"
       removed_count=$((removed_count + 1))
     else
       warn "rm failed for $entry"
     fi
-  else
-    info "preserved (non-foundation): $entry"
-    preserved_count=$((preserved_count + 1))
   fi
 done
 
-# --- restore hooks/state/ if it was preserved aside ---
-if [ -n "$hooks_state_tmp" ] && [ -d "$hooks_state_tmp" ]; then
-  mkdir -p "$CLAUDE_HOME/hooks" || warn "hooks/ recreate failed for hooks/state/ restore"
-  if mv "$hooks_state_tmp" "$CLAUDE_HOME/hooks/state" 2>/dev/null; then
-    info "hooks/state/ restored"
-    preserved_count=$((preserved_count + 1))
-  else
-    warn "hooks/state/ restore mv failed; left at $hooks_state_tmp for manual recovery"
-  fi
-fi
-
-info "rm complete: removed=$removed_count preserved=$preserved_count"
+info "rm complete: removed=$removed_count preserved=$preserved_count user_edited=$user_edited_foundation_count"
 
 # --- provenance log header (G10 emit; symmetric with install.sh) ---
 log_path="$CLAUDE_HOME/logs/uninstall-$(date -u +%Y%m%d-%H%M%S)-$$.log"
+if [ "$fingerprint_check_skipped" = "1" ]; then
+  fingerprint_check_skipped_str="true"
+else
+  fingerprint_check_skipped_str="false"
+fi
 {
-  printf 'uninstall.sh provenance — Plan 71 SP08 T-2 slice (S61)\n'
-  printf 'timestamp: %s\n'             "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  printf 'CLAUDE_HOME: %s\n'           "$CLAUDE_HOME"
-  printf 'consumed_install_log: %s\n'  "$provenance_log"
-  printf 'backup_dir: %s\n'            "$backup_dir"
-  printf 'backup_entry_count: %d\n'    "$backup_count"
-  printf 'bootout_count: %d\n'         "$boot_count"
-  printf 'removed_count: %d\n'         "$removed_count"
-  printf 'preserved_count: %d\n'       "$preserved_count"
-  printf 'launchctl_bin: %s\n'         "$LAUNCHCTL_BIN"
-  printf 'uninstall.sh sha256: %s\n'   "$(shasum -a 256 "$0" 2>/dev/null | awk '{print $1}')"
-  printf 'slice_scope: G1-pre symmetric + provenance-log-driven CLAUDE_HOME confirm + .pre-uninstall-<ts>/ backup + launchctl bootout (LAUNCHCTL_BIN-overridable, G6-gated, com.claude-foundations.* only) + foundation-known basename allowlist removal + logs/ + hooks/state/ + non-foundation top-level preservation\n'
-  printf 'deferred: sha256 fingerprint match vs T-5 foundation-manifest.json; settings.json baseline jq-reverse unmerge; --selective/--full/--dry-run/--keep-backup flag matrix; SP00 runner-shell negative rehearsal; user-edited foundation file review summary\n'
-} > "$log_path" || { diag "uninstall provenance log write failed"; exit 11; }
+  printf 'uninstall.sh provenance — Plan 71 SP08 T-2 slice (S61 + S62 + S63 fingerprint match)\n'
+  printf 'timestamp: %s\n'                       "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'CLAUDE_HOME: %s\n'                     "$CLAUDE_HOME"
+  printf 'consumed_install_log: %s\n'            "$provenance_log"
+  printf 'backup_dir: %s\n'                      "$backup_dir"
+  printf 'backup_entry_count: %d\n'              "$backup_count"
+  printf 'bootout_count: %d\n'                   "$boot_count"
+  printf 'removed_count: %d\n'                   "$removed_count"
+  printf 'preserved_count: %d\n'                 "$preserved_count"
+  printf 'user_edited_foundation_count: %d\n'    "$user_edited_foundation_count"
+  printf 'fingerprint_check_skipped: %s\n'       "$fingerprint_check_skipped_str"
+  printf 'manifest_record_count: %d\n'           "$manifest_record_count"
+  printf 'force_rm_edited: %d\n'                 "$FORCE_RM_EDITED"
+  printf 'force_remove: %d\n'                    "$FORCE_REMOVE"
+  printf 'launchctl_bin: %s\n'                   "$LAUNCHCTL_BIN"
+  printf 'uninstall.sh sha256: %s\n'             "$(shasum -a 256 "$0" 2>/dev/null | awk '{print $1}')"
+  if [ -s "$user_edited_paths_log" ]; then
+    printf 'user_edited_foundation:\n'
+    while IFS= read -r p; do
+      [ -z "$p" ] && continue
+      printf '  - %s\n' "$p"
+    done < "$user_edited_paths_log"
+  fi
+  printf 'slice_scope: G1-pre symmetric + provenance-log-driven CLAUDE_HOME confirm + foundation-manifest.json read + .pre-uninstall-<ts>/ backup + launchctl bootout (LAUNCHCTL_BIN-overridable, G6-gated, com.claude-foundations.* only) + per-file fingerprint walk inside foundation directories + basename rm for foundation root files + logs/ + non-foundation top-level preservation + --force-rm-edited / --force-remove\n'
+  printf 'deferred: 10s/plist timeout wrapper around launchctl bootout; settings.json baseline jq-reverse unmerge (G7-symmetric); --selective/--full/--dry-run/--keep-backup flag matrix; SP00 runner-shell negative rehearsal; provenance-log freshness validation\n'
+} > "$log_path" || { diag "uninstall provenance log write failed"; rm -f "$manifest_records_tmp" "$user_edited_paths_log"; exit 11; }
+
+# --- cleanup tmp files ---
+[ -n "$manifest_records_tmp" ] && rm -f "$manifest_records_tmp"
+rm -f "$user_edited_paths_log"
 
 info "uninstall complete (slice). next-steps:"
 info "  - restore round-trip: cp -R $backup_dir/. \$CLAUDE_HOME/"

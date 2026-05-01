@@ -555,8 +555,8 @@
     {
       "mode": "0644",
       "path": "skills/librarian/SKILL.md",
-      "sha256": "6bbeeb2370982ddac2b85faaa2f1e022ec8c54330a4429be860da2842b74b00e",
-      "size": 162764
+      "sha256": "a2254987fbae744c62b33fd2acdf473ffdbf2ad21d7e3df8be68a68ac13ee1dd",
+      "size": 165231
     },
     {
       "mode": "0755",
@@ -861,8 +861,8 @@
     {
       "mode": "0644",
       "path": "skills/librarian/lib/manifest.sh",
-      "sha256": "7d02845385c6f371bca2c1213cfaa66c58d4a486f5e2c4cd89e1c5ab7a8efc40",
-      "size": 5044
+      "sha256": "240547fa7bf27953b3f983cde0d28b6166443bd75e93d306617318e13ede90d1",
+      "size": 6014
     },
     {
       "mode": "0644",
@@ -943,7 +943,7 @@
       "size": 2035
     }
   ],
-  "generated_at": "2026-04-30T23:31:08Z",
+  "generated_at": "2026-05-01T05:10:11Z",
   "generator_sha256": "72ce8a38a7a417887239d8b1a4242f15b333e77b2013e0ac5130f8d1b39b54ab",
   "version": "v2.0.0-rc1"
 }
