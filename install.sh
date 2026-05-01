@@ -1,30 +1,32 @@
 #!/bin/bash
-# install.sh — Plan 71 SP08 T-1 (S59 happy-path slice + S60 G1 follow-up + S62 T-5 baseline ship)
+# install.sh — Plan 71 SP08 T-1 (S59 happy-path + S60 G1 + S62 baseline ship + S64 G2 follow-up)
 #
-# Slice scope (S59 + S60 + S62 cumulative):
+# Slice scope (S59 + S60 + S62 + S64 cumulative):
 #   - CLAUDE_HOME-first resolution (R-55 invariant; AC #1)
 #   - G1-pre 100ms preflight (no FS writes; AC #2)              [S60]
 #   - G1-main $HOME/.claude equality gate + I-UNDERSTAND-APRIL-13
 #     sentinel + --force-install flag (AC #3)                    [S60]
+#   - G2 foreign-content detector — sha256 drift in foundation files  [S64]
+#     against $SOURCE_REPO/foundation-manifest.json baseline; refuse
+#     install on drift unless --force-install + sentinel; sentinel
+#     reused from G1-main if both fire in same session.
 #   - 14-asset write-sequence (audit F-01..F-05)
 #   - LABEL_PREFIX=com.claude-foundations preserved via cp -R installer/ +
 #     templates/launchd/ (G6 namespace isolation)
 #   - settings.json atomic jq-merge with G7 silent-key-deletion gate
 #   - foundation-manifest.json baseline copy (T-5 generator output;       [S62]
-#     enables G2 foreign-content detection + uninstall fingerprint match)
+#     consumed by G2 detector + uninstall fingerprint match)
 #
 # DEFERRED to subsequent T-1 follow-up sessions:
-#   - G2 foreign-content detector (T-5 baseline now shipping at S62;       [S62]
-#     consumer logic still deferred to T-1 follow-up)
-#   - G3 backup proof-of-life
-#   - G4 vault-symlink, G5 PLANS_HOME, G8 UID-0 refuse, G9 dry-run-default,
-#     G10 provenance-write-failure-as-11
+#   - G3 backup proof-of-life (53)
+#   - G4 vault-symlink (54), G5 PLANS_HOME (55), G8 UID-0 refuse (58),
+#     G9 dry-run-default (59), G10 provenance-write-failure-as-11
 #   - claude-mem preservation policy (T-1.5 bundles plugins/claude-mem/v<VERSION>/ first)
 #   - --dry-run/--apply default flow + state classification (fresh|foundation-only|mixed|user-only)
 #   - --force-all / --no-preserve-config flag matrix
 #   - Full 19-exit-code matrix (slice subset below)
 #
-# Exit codes (slice subset; S59 + S60):
+# Exit codes (slice subset; S59 + S60 + S64):
 #   0   success
 #   10  prereq missing (CLAUDE_HOME unset/empty per G1-pre; required binary
 #                       absent; SOURCE_REPO not a foundation-repo)
@@ -32,6 +34,8 @@
 #   30  schema parse failure (post-install)
 #   40  settings.json merge conflict requires human resolution (jq error)
 #   51  G1-main fired ($HOME/.claude equality + non-foundation content,    [S60]
+#       missing --force-install or I-UNDERSTAND-APRIL-13 sentinel)
+#   52  G2 fired (foreign-content sha256 drift in foundation files,        [S64]
 #       missing --force-install or I-UNDERSTAND-APRIL-13 sentinel)
 #   57  G7 fired (settings.json merge would silently delete keys)
 #
@@ -54,6 +58,11 @@ for arg in "$@"; do
     --force-install) FORCE_INSTALL=1 ;;
   esac
 done
+
+# --- sentinel-verified flag (G1-main + G2 share single ceremony per S64) ---
+# Set to 1 after the first successful I-UNDERSTAND-APRIL-13 prompt; later
+# guards consult it to avoid re-prompting in the same install invocation.
+sentinel_verified=0
 
 # --- G1-pre: CLAUDE_HOME unset/empty preflight (AC #2; spec.md L74) ---
 # Fires BEFORE binary check / SOURCE_REPO resolve / any mkdir. No FS writes.
@@ -126,12 +135,121 @@ if [ "$CLAUDE_HOME" = "$HOME/.claude" ] && [ -d "$CLAUDE_HOME" ]; then
       diag "G1-main fired: sentinel mismatch. Expected literal 'I-UNDERSTAND-APRIL-13'. Aborting."
       exit 51
     fi
+    sentinel_verified=1
     info "G1-main sentinel verified; proceeding under --force-install"
   fi
 fi
 
 info "CLAUDE_HOME=$CLAUDE_HOME"
 info "SOURCE_REPO=$SOURCE_REPO"
+
+# --- G2: foreign-content detector (S64; spec §Installer firewall guards) ---
+# Walks $CLAUDE_HOME for files inside foundation-known directories whose
+# relative path is tracked by $SOURCE_REPO/foundation-manifest.json baseline
+# but whose actual sha256 differs (drift). Files NOT in baseline (user
+# content under a foundation directory; hooks/state/ session files; etc.)
+# are not violations — cp -n preserves them naturally.
+#
+# Refuses install on any violation unless --force-install AND
+# I-UNDERSTAND-APRIL-13 sentinel typed (sentinel reused from G1-main if
+# both fire in the same session; single ceremony per session).
+#
+# Skip conditions (G2 is a no-op):
+#   - $CLAUDE_HOME does not exist (fresh install, mkdir-p ahead)
+#   - $SOURCE_REPO/foundation-manifest.json absent (T-5 baseline not yet
+#     generated; warns; cannot compare without baseline)
+#   - jq extraction failure (warns; degrade-open rather than wedge install)
+g2_violations=""
+g2_violation_count=0
+
+g2_detect_foreign_content() {
+  local manifest_src="$SOURCE_REPO/foundation-manifest.json"
+
+  if [ ! -f "$manifest_src" ]; then
+    info "G2: foundation-manifest.json absent at SOURCE_REPO; foreign-content detection skipped"
+    return 0
+  fi
+  if [ ! -d "$CLAUDE_HOME" ]; then
+    return 0
+  fi
+
+  local baseline_tmp
+  baseline_tmp="$(mktemp -t install-g2-baseline.XXXXXX 2>/dev/null)" || {
+    warn "G2: tmp allocation failed; foreign-content detection skipped"
+    return 0
+  }
+  if ! jq -r '.files[] | "\(.path)\t\(.sha256)"' "$manifest_src" > "$baseline_tmp" 2>/dev/null; then
+    warn "G2: foundation-manifest.json files[] extraction failed; foreign-content detection skipped"
+    rm -f "$baseline_tmp"
+    return 0
+  fi
+
+  local entry base known found f rel sha_actual sha_baseline
+  for entry in "$CLAUDE_HOME"/* "$CLAUDE_HOME"/.[!.]*; do
+    [ -e "$entry" ] || continue
+    base="${entry##*/}"
+    found=0
+    for known in $foundation_known_entries; do
+      if [ "$base" = "$known" ]; then
+        found=1
+        break
+      fi
+    done
+    [ "$found" = "0" ] && continue          # non-foundation entry (G1-main domain)
+    [ -d "$entry" ] || continue              # only walk directories
+    [ "$base" = "logs" ] && continue         # logs/ is append-only provenance
+
+    while IFS= read -r f; do
+      [ -z "$f" ] && continue
+      rel="${f#$CLAUDE_HOME/}"
+      sha_baseline="$(awk -F'\t' -v p="$rel" '$1 == p {print $2; exit}' "$baseline_tmp")"
+      [ -z "$sha_baseline" ] && continue   # not in baseline = user content
+      sha_actual="$(shasum -a 256 "$f" 2>/dev/null | awk '{print $1}')"
+      if [ "$sha_actual" != "$sha_baseline" ]; then
+        if [ -z "$g2_violations" ]; then
+          g2_violations="$rel"
+        else
+          g2_violations="$g2_violations
+$rel"
+        fi
+        g2_violation_count=$((g2_violation_count + 1))
+      fi
+    done <<EOF
+$(find "$entry" -type f 2>/dev/null)
+EOF
+  done
+
+  rm -f "$baseline_tmp"
+}
+
+g2_detect_foreign_content
+
+if [ "$g2_violation_count" -gt 0 ]; then
+  diag "G2 fired: foreign content (sha256 drift) detected in $g2_violation_count foundation file(s):"
+  printf '%s\n' "$g2_violations" | while IFS= read -r p; do
+    [ -z "$p" ] || printf '  %s\n' "$p" >&2
+  done
+  if [ "$FORCE_INSTALL" != "1" ]; then
+    diag "Pass --force-install AND type I-UNDERSTAND-APRIL-13 sentinel to proceed (cp -n preserves your edits; April-13 protection)."
+    exit 52
+  fi
+  if [ "$sentinel_verified" = "1" ]; then
+    info "G2: sentinel reused from G1-main; proceeding under --force-install"
+  else
+    printf 'install: type I-UNDERSTAND-APRIL-13 to confirm G2 override: ' >&2
+    sentinel=""
+    if ! IFS= read -r sentinel; then
+      diag "G2 fired: sentinel not provided (stdin EOF). Aborting."
+      exit 52
+    fi
+    if [ "$sentinel" != "I-UNDERSTAND-APRIL-13" ]; then
+      diag "G2 fired: sentinel mismatch. Expected literal 'I-UNDERSTAND-APRIL-13'. Aborting."
+      exit 52
+    fi
+    sentinel_verified=1
+    info "G2 sentinel verified; proceeding under --force-install"
+  fi
+fi
 
 # --- 14-asset write sequence (per spec.md L240-255 audit-2026-04-29) ---
 
@@ -323,25 +441,33 @@ fi
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
 {
-  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59 + S60 + S62 baseline ship)\n'
+  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59 + S60 + S62 + S64 G2)\n'
   printf 'timestamp: %s\n'        "$ts"
   printf 'CLAUDE_HOME: %s\n'      "$CLAUDE_HOME"
   printf 'SOURCE_REPO: %s\n'      "$SOURCE_REPO"
   printf 'force_install: %s\n'    "$FORCE_INSTALL"
+  printf 'sentinel_verified: %s\n' "$sentinel_verified"
   printf 'install.sh sha256: %s\n' "$(shasum -a 256 "$0" 2>/dev/null | awk '{print $1}')"
   if [ -f "$manifest_dst" ]; then
     printf 'foundation_manifest_sha256: %s\n' "$(shasum -a 256 "$manifest_dst" 2>/dev/null | awk '{print $1}')"
   else
     printf 'foundation_manifest_sha256: (absent)\n'
   fi
-  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + I-UNDERSTAND-APRIL-13 sentinel + foundation-manifest.json baseline copy (T-5)\n'
-  printf 'deferred: G2 detector (T-5 baseline now shipping; consumer deferred); G3 backup; G4/G5/G8/G9/G10 red-team; claude-mem preservation; --dry-run/--apply matrix; --force-all/--no-preserve-config; full 19-exit-code matrix\n'
+  printf 'g2_violation_count: %s\n' "$g2_violation_count"
+  if [ "$g2_violation_count" -gt 0 ]; then
+    printf 'g2_violations:\n'
+    printf '%s\n' "$g2_violations" | while IFS= read -r p; do
+      [ -z "$p" ] || printf '  - %s\n' "$p"
+    done
+  fi
+  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + G2 foreign-content detector + I-UNDERSTAND-APRIL-13 sentinel (single-ceremony G1+G2) + foundation-manifest.json baseline copy (T-5)\n'
+  printf 'deferred: G3 backup; G4/G5/G8/G9/G10 red-team; claude-mem preservation; --dry-run/--apply matrix; --force-all/--no-preserve-config; full 19-exit-code matrix\n'
 } > "$log_path" || { diag "provenance log write failed"; exit 11; }
 
 info "install complete (slice). next-steps:"
 info "  - render plists at runtime: \$CLAUDE_HOME/installer/render-launchd.sh --staging-dir \$CLAUDE_HOME/Library/LaunchAgents.staging librarian|architect"
 info "  - claude-mem bundle: deferred to SP08 T-1.5"
-info "  - G2-G10 firewall (foreign-content / backup / vault-symlink / PLANS_HOME / UID-0 / dry-run / provenance-fail): deferred to SP08 T-1 follow-up"
+info "  - G3-G10 firewall (backup / vault-symlink / PLANS_HOME / UID-0 / dry-run / provenance-fail): deferred to SP08 T-1 follow-up"
 info "provenance: $log_path"
 
 exit 0
