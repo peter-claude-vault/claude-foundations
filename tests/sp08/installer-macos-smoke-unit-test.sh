@@ -444,9 +444,17 @@ T6_SHA_A=$(git -C "$T6_REPO" rev-parse HEAD)
 #
 # IMPORTANT: this test file must NOT itself contain the full pattern token
 # (else the foundation-repo grep-audit baseline collides with this test).
-# Token is assembled at runtime from harmless fragments. Each fragment
-# in isolation is not a pattern hit.
-LEAK_FRAG_A=$(printf 'p'; printf 'eter'; printf 'tikt'; printf 'insky')
+# Token is assembled at runtime via printf hex escapes — Layer 1 (raw),
+# Layer 2 (NFKC), and Layer 3 (base64-decode) all see only the literal
+# escape sequence text in the source, never the resolved bytes. printf
+# evaluates the escapes at runtime to produce the actual pattern token,
+# which then lands in the synthetic repo's commit history where Layer 4
+# (git log -p diff) detects it.
+#
+# Tested S70 (2026-05-01): adjacent-fragment construction
+# (printf 'p'; printf 'eter'; ...) was caught by both Layer 2 and Layer 3
+# at hits_total:4 vs baseline 2. Hex escapes restore baseline.
+LEAK_FRAG_A=$(printf '\x70\x65\x74\x65\x72\x74\x69\x6b\x74\x69\x6e\x73\x6b\x79')
 cat > "$T6_REPO/dist/install.sh" <<LEAK
 #!/bin/bash
 # Synthetic dist installer for grep-audit Layer-4 test.
