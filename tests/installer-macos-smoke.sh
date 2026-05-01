@@ -21,9 +21,12 @@
 # isolation surfaces with PATH-injected mock-launchctl; this driver is
 # specifically the layer that requires real launchctl + ephemeral host.
 #
-# Output: $MACOS_SMOKE_OUTPUT_DIR/macos-smoke-passed.json (unsigned at L2;
-# L3 release.yml gate will GPG-sign it per spec §release-attestation
-# signing protocol).
+# Output: $MACOS_SMOKE_OUTPUT_DIR/macos-smoke-passed.json. The driver emits
+# the JSON unsigned; L3 (S72) signs at workflow level via Sigstore + OIDC
+# (actions/attest-build-provenance@v2 in macos-smoke.yml; release.yml
+# verifies via `gh attestation verify`). Spec §release-attestation signing
+# protocol updated S72 from GPG-detach-sign to Sigstore-OIDC — operational
+# ceremony cost incompatible with release cadence.
 #
 # Bash 3.2 clean (R-23). R-37 single-deliverable (driver + workflow YAML).
 

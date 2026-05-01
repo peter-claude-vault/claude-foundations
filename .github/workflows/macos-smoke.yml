@@ -1,10 +1,19 @@
 name: macos-smoke
 
-# Plan 71 SP08 T-5 L2 — real launchctl bootstrap rc=0 verification on an
-# ephemeral macos-14 runner. Closes AC #4 + CFF-S55-4 + SP03 T-15 AC #7
-# inheritance. Emits macos-smoke-passed.json artifact consumed by L3
-# release.yml gate (signed in L3 per spec §release-attestation signing
-# protocol).
+# Plan 71 SP08 T-5 L2 + L3 — real launchctl bootstrap rc=0 verification on
+# an ephemeral macos-14 runner, plus Sigstore-via-OIDC signing of the emitted
+# macos-smoke-passed.json attestation. Closes AC #4 + CFF-S55-4 + SP03 T-15
+# AC #7 inheritance (L2) + AC #6 (L3 signed attestation). Consumed by
+# release.yml gate (verifies signature + field-gate before v* tag accepted).
+#
+# L3 signing (S72): actions/attest-build-provenance@v2 signs the JSON's
+# digest via Sigstore Fulcio using the GHA OIDC token; bundle is written to
+# GitHub's attestation registry indexed by digest. release.yml verifies via
+# `gh attestation verify`. Choice rationale (S72): GPG/Yubikey path
+# (spec L285-287 original) requires manual sign step at every release —
+# operationally incompatible with planned release cadence. Threat model is
+# stale-JSON-substitution / forged-fields, not state-actor supply-chain;
+# OIDC + Rekor transparency log is the right ceremony level.
 #
 # Architectural note (S70): sandbox-exec is filesystem-only isolation and
 # cannot contain real `launchctl bootstrap` (launchctl uses inherited
@@ -28,6 +37,8 @@ on:
 
 permissions:
   contents: read
+  id-token: write       # OIDC token exchanged at Sigstore Fulcio for L3 signing
+  attestations: write   # Write attestation to GitHub's attestation registry
 
 jobs:
   macos-smoke:
@@ -74,6 +85,18 @@ jobs:
         run: |
           chmod +x tests/installer-macos-smoke.sh
           bash tests/installer-macos-smoke.sh
+
+      - name: Sign macos-smoke-passed.json via Sigstore (OIDC)
+        # Only sign on driver success — failure paths emit logs but no
+        # attestation. attest-build-provenance@v2 exchanges the GHA OIDC
+        # token at Fulcio for a short-lived signing cert, signs the JSON's
+        # SHA-256 digest, posts the bundle to GitHub's attestation registry
+        # (indexed by digest), and writes a copy to $RUNNER_TEMP. release.yml
+        # verifies via `gh attestation verify` (looks up registry by digest).
+        if: success()
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ runner.temp }}/smoke-out/macos-smoke-passed.json
 
       - name: Upload macos-smoke-passed.json (always)
         if: always()

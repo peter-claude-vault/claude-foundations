@@ -1,0 +1,148 @@
+name: release
+
+# Plan 71 SP08 T-5 L3 + T-8 — release-tag gate for v* (non-rc) tags.
+#
+# Verifies the macos-smoke-passed.json attestation before any release work
+# proceeds. Four checks must all pass:
+#
+#   1. A successful macos-smoke run exists for the tag's commit SHA.
+#   2. The Sigstore attestation for the JSON verifies against the GHA OIDC
+#      issuer + this repository's workload identity (`gh attestation verify`).
+#      Proves the JSON was emitted by macos-smoke.yml on this SHA, not
+#      forged or stale.
+#   3. JSON field-gate: smoke_exit == 0; foundation_sha == github.sha;
+#      generated_at < 7 days old.
+#   4. (Implicit) The signed JSON's digest matches the attestation's subject
+#      digest — enforced by `gh attestation verify` itself.
+#
+# Triggers on `v*` tags excluding `v*-rc*` (rc tags fire macos-smoke.yml).
+# Spec L174-175 (T-5 AC #6 + AC #9) + L244 (T-8 release tag gate). Sigstore
+# choice: S72 (replaces L285-287 GPG draft per "Hard Constraints Override
+# Spec Text" — operational ceremony cost incompatible with release cadence;
+# threat model is stale-JSON-substitution, not state-actor supply-chain).
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '!v*-rc*'
+
+permissions:
+  contents: read
+  attestations: read    # gh attestation verify reads from registry
+  actions: read         # gh run list / gh run download for cross-run artifact
+
+jobs:
+  verify-attestation:
+    name: verify macos-smoke-passed.json attestation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MAX_AGE_DAYS: '7'
+    steps:
+      - name: Checkout (need git history to resolve tag SHA)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag SHA + locate macos-smoke run
+        id: locate
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          TAG_SHA=$(git rev-list -n 1 "$TAG_NAME")
+          printf 'tag_name=%s\n' "$TAG_NAME" >> "$GITHUB_OUTPUT"
+          printf 'tag_sha=%s\n'  "$TAG_SHA"  >> "$GITHUB_OUTPUT"
+
+          RUN_ID=$(gh run list \
+            --workflow=macos-smoke.yml \
+            --commit="$TAG_SHA" \
+            --status=success \
+            --limit=1 \
+            --json databaseId \
+            --jq '.[0].databaseId // ""')
+
+          if [ -z "$RUN_ID" ]; then
+            printf '::error::No successful macos-smoke run found for SHA %s.\n' "$TAG_SHA"
+            printf '  Cut a v*-rc* tag on this SHA first to fire macos-smoke,\n' >&2
+            printf '  then re-cut v* once it succeeds.\n' >&2
+            exit 60
+          fi
+
+          printf 'run_id=%s\n' "$RUN_ID" >> "$GITHUB_OUTPUT"
+          printf '== macos-smoke run %s succeeded for SHA %s ==\n' "$RUN_ID" "$TAG_SHA"
+
+      - name: Download macos-smoke-passed.json artifact
+        run: |
+          mkdir -p attestation
+          gh run download "${{ steps.locate.outputs.run_id }}" \
+            -n macos-smoke-passed \
+            -D attestation/ \
+            -R "${{ github.repository }}"
+
+          if [ ! -f attestation/macos-smoke-passed.json ]; then
+            printf '::error::macos-smoke-passed.json not present in artifact.\n' >&2
+            exit 61
+          fi
+
+      - name: Verify Sigstore attestation
+        # `gh attestation verify` looks up the attestation in GitHub's
+        # registry by the file's SHA-256 digest, verifies the Sigstore
+        # bundle's signature against Fulcio's root cert, and confirms the
+        # workload identity matches this repository (--repo). Any tampering
+        # with the JSON between sign and verify breaks the digest match.
+        run: |
+          gh attestation verify \
+            attestation/macos-smoke-passed.json \
+            -R "${{ github.repository }}"
+
+      - name: Verify attestation field-gate (smoke_exit + foundation_sha + generated_at)
+        run: |
+          ATT="attestation/macos-smoke-passed.json"
+
+          GENERATED_AT=$(jq -r '.generated_at' "$ATT")
+          FOUNDATION_SHA=$(jq -r '.foundation_sha' "$ATT")
+          SMOKE_EXIT=$(jq -r '.smoke_exit' "$ATT")
+
+          # Field-gate 1: smoke_exit must be 0
+          if [ "$SMOKE_EXIT" != "0" ]; then
+            printf '::error::smoke_exit=%s (expected 0)\n' "$SMOKE_EXIT" >&2
+            exit 62
+          fi
+
+          # Field-gate 2: foundation_sha must match the tag's commit SHA
+          if [ "$FOUNDATION_SHA" != "${{ steps.locate.outputs.tag_sha }}" ]; then
+            printf '::error::foundation_sha=%s does not match tag SHA %s\n' \
+              "$FOUNDATION_SHA" "${{ steps.locate.outputs.tag_sha }}" >&2
+            exit 63
+          fi
+
+          # Field-gate 3: generated_at must be < MAX_AGE_DAYS
+          # ubuntu-latest ships GNU date; -d parses ISO-8601 cleanly.
+          NOW=$(date -u +%s)
+          GEN=$(date -u -d "$GENERATED_AT" +%s 2>/dev/null || echo 0)
+          if [ "$GEN" = "0" ]; then
+            printf '::error::generated_at unparsable: %s\n' "$GENERATED_AT" >&2
+            exit 64
+          fi
+          AGE_DAYS=$(( (NOW - GEN) / 86400 ))
+          if [ "$AGE_DAYS" -ge "$MAX_AGE_DAYS" ]; then
+            printf '::error::attestation age %d days >= max %s days\n' \
+              "$AGE_DAYS" "$MAX_AGE_DAYS" >&2
+            exit 65
+          fi
+
+          printf '== attestation field-gate PASS ==\n'
+          printf '  generated_at:    %s (age %d days)\n' "$GENERATED_AT" "$AGE_DAYS"
+          printf '  foundation_sha:  %s\n' "$FOUNDATION_SHA"
+          printf '  smoke_exit:      %s\n' "$SMOKE_EXIT"
+
+      - name: Release-eligible signal
+        # T-8 wires the actual release publish (notes + tarball + docs +
+        # burner-key revocation audit). L3's job is the gate; this step
+        # exits 0 only when all attestation checks pass — a green run
+        # signals "release-eligible" for the downstream T-8 publish flow.
+        run: |
+          printf '== release gate PASS for tag %s on SHA %s ==\n' \
+            "${{ steps.locate.outputs.tag_name }}" \
+            "${{ steps.locate.outputs.tag_sha }}"
