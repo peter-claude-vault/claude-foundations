@@ -152,7 +152,7 @@ t3_stderr="$t3_home/stderr.log"
 t3_stdout="$t3_home/stdout.log"
 t3_rc=0
 ( HOME="$t3_home" CLAUDE_HOME="$t3_home/.claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" --force-install >"$t3_stdout" 2>"$t3_stderr" \
+  bash "$INSTALL_SH" --force-install --apply >"$t3_stdout" 2>"$t3_stderr" \
   <<<"I-UNDERSTAND-APRIL-13" ) || t3_rc=$?
 assert_eq "0" "$t3_rc" "T3.1: correct sentinel + --force-install → exit 0"
 assert_grep "sentinel verified" "$t3_stdout" "T3.2: sentinel-verified info line emitted (stdout)"
@@ -198,7 +198,7 @@ mkdir -p "$t5_home/.claude/hooks" "$t5_home/.claude/skills"
 t5_stderr="$t5_home/stderr.log"
 t5_rc=0
 ( HOME="$t5_home" CLAUDE_HOME="$t5_home/.claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" --force-install >/dev/null 2>"$t5_stderr" \
+  bash "$INSTALL_SH" --force-install --apply >/dev/null 2>"$t5_stderr" \
   <<<"I-UNDERSTAND-APRIL-13" ) || t5_rc=$?
 assert_eq "0" "$t5_rc" "T5.1: foundation-only content → exit 0"
 # Note: g1_main_has_non_foundation_content returns 1 for foundation-only,
@@ -223,7 +223,7 @@ printf 'arbitrary\n' > "$t6_claude/random.txt"
 t6_stderr="$t6_home/stderr.log"
 t6_rc=0
 ( HOME="$t6_home" CLAUDE_HOME="$t6_claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" >/dev/null 2>"$t6_stderr" ) || t6_rc=$?
+  bash "$INSTALL_SH" --force-install --apply >/dev/null 2>"$t6_stderr" ) || t6_rc=$?
 assert_eq "0" "$t6_rc" "T6.1: CLAUDE_HOME != \$HOME/.claude → install proceeds"
 
 printf '\n=== T7: G1-main NOT triggered when target dir empty (fresh install path) ===\n'
@@ -234,7 +234,7 @@ t7_home="$(mk_tmp)"
 t7_stderr="$t7_home/stderr.log"
 t7_rc=0
 ( HOME="$t7_home" CLAUDE_HOME="$t7_home/.claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" >/dev/null 2>"$t7_stderr" ) || t7_rc=$?
+  bash "$INSTALL_SH" --apply >/dev/null 2>"$t7_stderr" ) || t7_rc=$?
 assert_eq "0" "$t7_rc" "T7.1: fresh \$HOME/.claude → install proceeds (no G1-main trip)"
 
 printf '\n=== install-g1-unit-test ===\n'

@@ -101,7 +101,7 @@ mkdir -p "$t1_claude"                    # exists but empty
 t1_stderr="$t1_home/stderr.log"
 t1_rc=0
 ( HOME="$t1_home" CLAUDE_HOME="$t1_claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" >/dev/null 2>"$t1_stderr" ) || t1_rc=$?
+  bash "$INSTALL_SH" --apply >/dev/null 2>"$t1_stderr" ) || t1_rc=$?
 assert_eq "0" "$t1_rc" "T1.1: empty CLAUDE_HOME → install proceeds (G2 no-op)"
 
 t1_log="$(find "$t1_claude/logs" -name 'install-*.log' 2>/dev/null | head -1)"
@@ -142,7 +142,7 @@ t3_stderr="$t3_home/stderr.log"
 t3_stdout="$t3_home/stdout.log"
 t3_rc=0
 ( HOME="$t3_home" CLAUDE_HOME="$t3_claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" --force-install >"$t3_stdout" 2>"$t3_stderr" \
+  bash "$INSTALL_SH" --force-install --apply >"$t3_stdout" 2>"$t3_stderr" \
   <<<"I-UNDERSTAND-APRIL-13" ) || t3_rc=$?
 assert_eq "0" "$t3_rc" "T3.1: drift + --force-install + sentinel → exit 0"
 assert_grep "G2 sentinel verified" "$t3_stdout" "T3.2: G2 sentinel-verified info emitted"

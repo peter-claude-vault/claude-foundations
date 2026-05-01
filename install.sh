@@ -1,7 +1,7 @@
 #!/bin/bash
-# install.sh — Plan 71 SP08 T-1 (S59 happy-path + S60 G1 + S62 baseline ship + S64 G2 + S65 G3-G10)
+# install.sh — Plan 71 SP08 T-1 (S59 happy-path + S60 G1 + S62 baseline + S64 G2 + S65 G3-G10 + S66 G9 + flag matrix)
 #
-# Slice scope (S59 + S60 + S62 + S64 + S65 cumulative):
+# Slice scope (S59 + S60 + S62 + S64 + S65 + S66 cumulative):
 #   - CLAUDE_HOME-first resolution (R-55 invariant; AC #1)
 #   - G1-pre 100ms preflight (no FS writes; AC #2)              [S60]
 #   - G1-main $HOME/.claude equality gate + I-UNDERSTAND-APRIL-13
@@ -20,6 +20,21 @@
 #     NN-*/ plans without --retrofit-existing (waiver stub; v2.1 retrofit
 #     logic deferred).
 #   - G8 UID-0 refuse — exit 58 if id -u == 0; NO override.             [S65]
+#   - G9 dry-run as default — first invocation without --apply emits    [S66]
+#     action-plan JSON to stdout with zero $CLAUDE_HOME writes; --apply
+#     required to actually install. Posture, not refuse-gate; gate fires
+#     after all pre-flight guards (G1-pre..G8 + state-classify) and
+#     before Step 1 mkdir.
+#   - State classification (fresh|foundation-only|mixed|user-only)      [S66]
+#     computed once after G2 close, before G3 gate; user-only without
+#     --force-install → exit 21; recorded in provenance.
+#   - --force-all flag — broader override than --force-install;         [S66]
+#     promotes Steps 2-10 cp -n → cp -f (foundation-known files
+#     overwritten unconditionally; user-content under foundation dirs
+#     still preserved naturally by walking known-name set, not all files).
+#   - --no-preserve-config flag — explicit claude-mem preservation      [S66]
+#     waiver per spec §claude-mem Preservation Policy; requires
+#     --force-install (exit 11 if missing). Defaults OFF.
 #   - G10 provenance-write failure → exit 11 (audit/tick — already      [S65]
 #     enforced at log_path write site; counted live as of S65).
 #   - 14-asset write-sequence (audit F-01..F-05)
@@ -32,20 +47,25 @@
 # DEFERRED to subsequent T-1 follow-up sessions:
 #   - G6 install-side label sentinel (transitively preserved via cp -R
 #     installer/; render-launchd.sh enforces at runtime)
-#   - G9 dry-run-default (59) — structural posture flip; default --apply
-#     vs default --dry-run requires write-engine refactor + retrofit of
-#     all existing tests with --apply
-#   - claude-mem preservation policy (T-1.5 bundles plugins/claude-mem/v<VERSION>/ first)
-#   - --force-all / --no-preserve-config flag matrix
-#   - State classification (fresh|foundation-only|mixed|user-only) +
-#     user-only refuse without --force-install
-#   - Top-level exit codes 20/21/22 (state-classification specific) + 60
+#   - claude-mem preservation policy full implementation (T-1.5 must
+#     bundle plugins/claude-mem/v<VERSION>/ first; install.sh slice
+#     tolerates absence with informational log + flag matrix wired)
+#   - Top-level exit code 20 (conflict-manifest workflow; v2.1 rsync
+#     backup-before-merge surface)
+#   - Top-level exit code 22 (rsync-backup actual failure; v2.1 surface
+#     distinct from G3's prove-the-destination-works check at exit 53)
+#   - Top-level exit code 60 (grep-audit hit on installed tree; v2.1
+#     consumer integration of tools/grep-audit.sh)
 #
-# Exit codes (slice subset; S59 + S60 + S64 + S65):
-#   0   success
+# Exit codes (slice subset; S59 + S60 + S64 + S65 + S66):
+#   0   success (includes G9 dry-run JSON emit)
 #   10  prereq missing (CLAUDE_HOME unset/empty per G1-pre; required binary
 #                       absent; SOURCE_REPO not a foundation-repo)
-#   11  permission/write failure (includes G10 provenance-write failure)
+#   11  permission/write failure (includes G10 provenance-write failure;
+#                       --no-preserve-config without --force-install)
+#   21  state=user-only without --force-install ($CLAUDE_HOME contains    [S66]
+#       only non-foundation content; refuses to risk overwriting an
+#       unrelated installation)
 #   30  schema parse failure (post-install)
 #   40  settings.json merge conflict requires human resolution (jq error)
 #   51  G1-main fired ($HOME/.claude equality + non-foundation content,    [S60]
@@ -60,6 +80,10 @@
 #       --retrofit-existing)
 #   57  G7 fired (settings.json merge would silently delete keys)
 #   58  G8 fired (UID 0; no override)                                      [S65]
+#   59  G9 RESERVED — dry-run default is the posture (not refuse-gate);    [S66]
+#       --apply required to leave dry-run. 59 is allocated per spec but
+#       cannot fire under current implementation (any dry-run violation
+#       would be a code-tampering condition).
 #
 # R-23 bash 3.2 compat. R-37 single-deliverable. R-55 zero $HOME/.claude
 # resolution paths in script body (literal $HOME/.claude appears only in
@@ -70,17 +94,34 @@
 set -u
 
 # --- diagnostics ---
+# info() routes to stderr in dry-run mode (APPLY_MODE=0) so the G9 action-plan
+# JSON on stdout stays valid for jq parsing. In --apply mode, info() goes to
+# stdout per the existing test contract (install-g1 T3.2 stdout grep
+# "sentinel verified"; install-g2 T3.2 "G2 sentinel verified"; install-g3-g10
+# T1.2 "G3: backup proof-of-life passed").
 diag() { printf 'install FAIL: %s\n' "$1" >&2; }
-info() { printf 'install: %s\n' "$1"; }
+info() {
+  if [ "${APPLY_MODE:-0}" = "0" ]; then
+    printf 'install: %s\n' "$1" >&2
+  else
+    printf 'install: %s\n' "$1"
+  fi
+}
 warn() { printf 'install WARN: %s\n' "$1" >&2; }
 
 # --- argv parse (in-memory only; no FS; pre-G1-pre to keep 100ms bound) ---
 FORCE_INSTALL=0
+FORCE_ALL=0
+NO_PRESERVE_CONFIG=0
+APPLY_MODE=0
 BACKUP_DIR=""
 RETROFIT_EXISTING=0
 while [ $# -gt 0 ]; do
   case "$1" in
+    --apply)                APPLY_MODE=1 ;;
     --force-install)        FORCE_INSTALL=1 ;;
+    --force-all)            FORCE_ALL=1 ;;
+    --no-preserve-config)   NO_PRESERVE_CONFIG=1 ;;
     --backup-dir)           shift; BACKUP_DIR="${1:-}" ;;
     --backup-dir=*)         BACKUP_DIR="${1#--backup-dir=}" ;;
     --retrofit-existing)    RETROFIT_EXISTING=1 ;;
@@ -88,6 +129,15 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+# --- flag mutual-exclusion (S66; spec.md §claude-mem Preservation Policy L138) ---
+# --no-preserve-config requires --force-install. Pre-flight refuse — fires
+# before any guard / FS work. Exit 11 (permission/write failure family;
+# argv-mismatch precondition for the destructive claude-mem path).
+if [ "$NO_PRESERVE_CONFIG" = "1" ] && [ "$FORCE_INSTALL" != "1" ]; then
+  diag "--no-preserve-config requires --force-install (gating prevents accidental claude-mem config clobber per spec §claude-mem Preservation Policy). Pass both flags together."
+  exit 11
+fi
 
 # --- sentinel-verified flag (G1-main + G2 share single ceremony per S64) ---
 # Set to 1 after the first successful I-UNDERSTAND-APRIL-13 prompt; later
@@ -363,6 +413,76 @@ if [ "$g2_violation_count" -gt 0 ]; then
   fi
 fi
 
+# --- State classification (S66; spec §write sequence + §Installer exit codes 21) ---
+# Walks $CLAUDE_HOME entries and classifies state once after G2 close + before
+# G3 gate. Reuses foundation_known_entries set already declared at L172 for
+# basename matching.
+#   - fresh             — $CLAUDE_HOME does not exist OR exists but is empty
+#   - foundation-only   — every top-level entry matches foundation-known set
+#   - mixed             — at least one foundation entry + at least one non-
+#                          foundation entry (cp -n preserves non-foundation;
+#                          proceeds normally)
+#   - user-only         — at least one entry, NONE matches foundation-known
+#                          (refuse without --force-install → exit 21)
+# user-only is the new April-13-class protection: $CLAUDE_HOME pointed at
+# someone else's installation. G1-main covers the $HOME/.claude case at 51;
+# state-classify covers any $CLAUDE_HOME-equal-to-non-foundation-tree at 21.
+state_classification="unknown"
+if [ ! -d "$CLAUDE_HOME" ]; then
+  state_classification="fresh"
+else
+  # Walk NON-HIDDEN top-level entries only. Foundation has zero top-level
+  # dotfiles; hidden entries are typically user config / test artifacts /
+  # transient redirects, NOT a separate installation. G1-main retains its
+  # broader dotfile walk for the more targeted $HOME/.claude protection (51);
+  # state-classify is the looser non-$HOME/.claude protection (21).
+  state_has_foundation=0
+  state_has_non_foundation=0
+  state_has_any=0
+  state_non_foundation_list=""
+  for entry in "$CLAUDE_HOME"/*; do
+    [ -e "$entry" ] || continue
+    state_has_any=1
+    base="${entry##*/}"
+    matched=0
+    for known in $foundation_known_entries; do
+      if [ "$base" = "$known" ]; then
+        matched=1
+        break
+      fi
+    done
+    if [ "$matched" = "1" ]; then
+      state_has_foundation=1
+    else
+      state_has_non_foundation=1
+      if [ -z "$state_non_foundation_list" ]; then
+        state_non_foundation_list="$base"
+      else
+        state_non_foundation_list="$state_non_foundation_list
+$base"
+      fi
+    fi
+  done
+  if [ "$state_has_any" = "0" ]; then
+    state_classification="fresh"
+  elif [ "$state_has_foundation" = "1" ] && [ "$state_has_non_foundation" = "0" ]; then
+    state_classification="foundation-only"
+  elif [ "$state_has_foundation" = "0" ] && [ "$state_has_non_foundation" = "1" ]; then
+    state_classification="user-only"
+  else
+    state_classification="mixed"
+  fi
+fi
+
+if [ "$state_classification" = "user-only" ] && [ "$FORCE_INSTALL" != "1" ]; then
+  diag "state=user-only fired: \$CLAUDE_HOME contains only non-foundation content; pass --force-install to acknowledge installer is overwriting a non-foundation tree (April-13-class protection — distinct from G1-main \$HOME/.claude equality at 51). Non-foundation entries:"
+  printf '%s\n' "$state_non_foundation_list" | while IFS= read -r p; do
+    [ -z "$p" ] || printf '  %s\n' "$p" >&2
+  done
+  exit 21
+fi
+info "state classification: $state_classification"
+
 # --- G3: backup proof-of-life (S65; spec.md L77) ---
 # Last gate before destructive ops (Step 12 settings.json mv -f). Two trigger
 # conditions:
@@ -404,7 +524,63 @@ else
   g3_skip_reason="no destructive op pending (no pre-existing settings.json) and --backup-dir not supplied"
 fi
 
+# --- G9: dry-run as default (S66; spec.md L83) ---
+# Posture (not refuse-gate). First invocation without --apply emits action-plan
+# JSON to stdout with zero $CLAUDE_HOME writes; --apply required to actually
+# install. Position: G9 fires AFTER all pre-flight guards (G1-pre, G8, G1-main,
+# G4, G2, state-classify, G3) but BEFORE Step 1 mkdir — the action-plan
+# reflects state validated by every guard. NO --force override (G9 is posture,
+# not refuse). Exit 0 from dry-run; provenance log NOT written (zero FS
+# writes by design).
+if [ "$APPLY_MODE" != "1" ]; then
+  # JSON action-plan emit. Validity contract: jq parseable. Schema:
+  #   {version, claude_home, source_repo, state_classification, flags{...},
+  #    guards_passed[], actions[{step, op, target, source, rationale}], deferred[]}
+  cat <<JSON
+{
+  "version": "1",
+  "claude_home": "$CLAUDE_HOME",
+  "source_repo": "$SOURCE_REPO",
+  "state_classification": "$state_classification",
+  "flags": {
+    "force_install": $FORCE_INSTALL,
+    "force_all": $FORCE_ALL,
+    "no_preserve_config": $NO_PRESERVE_CONFIG,
+    "retrofit_existing": $RETROFIT_EXISTING,
+    "backup_dir": "${BACKUP_DIR:-}"
+  },
+  "guards_passed": ["G1-pre", "G1-main", "G2", "G3", "G4", "G5", "G7", "G8"],
+  "actions": [
+    {"step": 1, "op": "mkdir", "target": "$CLAUDE_HOME/{hooks,hooks/lib,hooks/state,hooks/config,skills,schemas,onboarding,orchestrator,templates,templates/launchd,templates/settings-fragments,plugins,Library/LaunchAgents.staging,installer,logs}", "rationale": "create target tree"},
+    {"step": 2, "op": "cp", "target": "$CLAUDE_HOME/hooks/", "source": "$SOURCE_REPO/hooks/{*.sh,*.md,MANIFEST.txt}", "rationale": "ship hook entry-points + MANIFEST"},
+    {"step": 3, "op": "cp", "target": "$CLAUDE_HOME/hooks/lib/", "source": "$SOURCE_REPO/lib/", "rationale": "ship hook libs (lib/ to hooks/lib/ translation per A4)"},
+    {"step": 4, "op": "cp", "target": "$CLAUDE_HOME/hooks/config/", "source": "$SOURCE_REPO/hooks/config/", "rationale": "ship hook config JSON"},
+    {"step": 5, "op": "cp", "target": "$CLAUDE_HOME/skills/", "source": "$SOURCE_REPO/skills/{8 named}/", "rationale": "ship 8 named skill subtrees recursively"},
+    {"step": 6, "op": "cp", "target": "$CLAUDE_HOME/onboarding/", "source": "$SOURCE_REPO/onboarding/", "rationale": "ship onboarding subtree"},
+    {"step": 7, "op": "cp", "target": "$CLAUDE_HOME/orchestrator/", "source": "$SOURCE_REPO/orchestrator/", "rationale": "ship orchestrator subtree"},
+    {"step": 8, "op": "cp", "target": "$CLAUDE_HOME/installer/", "source": "$SOURCE_REPO/installer/", "rationale": "ship installer subtree (G6 LABEL_PREFIX preserved transitively)"},
+    {"step": 9, "op": "cp", "target": "$CLAUDE_HOME/schemas/", "source": "$SOURCE_REPO/schemas/{6 named}.json", "rationale": "ship 6 named schemas + README"},
+    {"step": 10, "op": "cp", "target": "$CLAUDE_HOME/templates/", "source": "$SOURCE_REPO/templates/{settings,librarian-manifest-skeleton,README}+{launchd,settings-fragments}/", "rationale": "ship templates + launchd tmpl + settings-fragments"},
+    {"step": 11, "op": "cp", "target": "$CLAUDE_HOME/plugins/claude-mem/", "source": "$SOURCE_REPO/plugins/claude-mem/v*/", "rationale": "ship claude-mem bundle if present (T-1.5 deferred; absence informational)"},
+    {"step": 12, "op": "jq-merge", "target": "$CLAUDE_HOME/settings.json", "source": "$CLAUDE_HOME/templates/settings.json", "rationale": "atomic deep-merge with G7 silent-key-deletion gate"},
+    {"step": 13, "op": "validate", "target": "$CLAUDE_HOME/schemas/*.json", "rationale": "post-install schema parse validation"},
+    {"step": 14, "op": "cp", "target": "$CLAUDE_HOME/foundation-manifest.json", "source": "$SOURCE_REPO/foundation-manifest.json", "rationale": "ship T-5 baseline (slice tolerates absence with warn)"},
+    {"step": 15, "op": "log", "target": "$CLAUDE_HOME/logs/install-*.log", "rationale": "G10 provenance log header emit"}
+  ],
+  "deferred": ["G6-install-side-explicit-sentinel", "20-conflict-manifest-v2.1", "22-rsync-backup-v2.1", "60-grep-audit-consumer-v2.1"]
+}
+JSON
+  exit 0
+fi
+
 # --- 14-asset write sequence (per spec.md L240-255 audit-2026-04-29) ---
+
+# cp clobber posture (S66): default --force-all=0 → cp -n (no clobber, preserves
+# user-edited foundation files; G2 baseline-mismatch covers drift detection).
+# --force-all=1 → cp -f (overwrite foundation-known files unconditionally).
+# claude-mem at Step 11 has its own clobber posture per --no-preserve-config.
+cp_clobber="-n"
+[ "$FORCE_ALL" = "1" ] && cp_clobber="-f"
 
 # Step 1: mkdir -p target tree
 target_dirs="hooks hooks/lib hooks/state hooks/config skills schemas onboarding orchestrator templates templates/launchd templates/settings-fragments plugins Library/LaunchAgents.staging installer logs"
@@ -416,19 +592,19 @@ done
 # (cp -n: never clobber; honors user-edited variants)
 for f in "$SOURCE_REPO/hooks"/*.sh "$SOURCE_REPO/hooks"/*.md "$SOURCE_REPO/hooks/MANIFEST.txt"; do
   [ -e "$f" ] || continue
-  cp -n "$f" "$CLAUDE_HOME/hooks/" 2>/dev/null || true
+  cp $cp_clobber "$f" "$CLAUDE_HOME/hooks/" 2>/dev/null || true
 done
 
 # Step 3: lib/ → hooks/lib/  (translation per spec.md L242 + A4)
 for f in "$SOURCE_REPO/lib"/*.sh; do
   [ -e "$f" ] || continue
-  cp -n "$f" "$CLAUDE_HOME/hooks/lib/" 2>/dev/null || true
+  cp $cp_clobber "$f" "$CLAUDE_HOME/hooks/lib/" 2>/dev/null || true
 done
 
 # Step 4: hooks/config/*.json → $CLAUDE_HOME/hooks/config/
 for f in "$SOURCE_REPO/hooks/config"/*.json; do
   [ -e "$f" ] || continue
-  cp -n "$f" "$CLAUDE_HOME/hooks/config/" 2>/dev/null || true
+  cp $cp_clobber "$f" "$CLAUDE_HOME/hooks/config/" 2>/dev/null || true
 done
 
 # Step 5: skills/{8 dirs} → $CLAUDE_HOME/skills/
@@ -439,24 +615,24 @@ for skill in librarian architect backlog-hygiene backlog-triage backlog-research
     warn "skill not present in foundation-repo source: $skill (deferred to its sub-plan)"
     continue
   fi
-  cp -R -n "$src" "$CLAUDE_HOME/skills/" 2>/dev/null || true
+  cp -R $cp_clobber "$src" "$CLAUDE_HOME/skills/" 2>/dev/null || true
 done
 
 # Step 6: onboarding/ → $CLAUDE_HOME/onboarding/
 if [ -d "$SOURCE_REPO/onboarding" ]; then
-  cp -R -n "$SOURCE_REPO/onboarding"/. "$CLAUDE_HOME/onboarding/" 2>/dev/null || true
+  cp -R $cp_clobber "$SOURCE_REPO/onboarding"/. "$CLAUDE_HOME/onboarding/" 2>/dev/null || true
 fi
 
 # Step 7: orchestrator/ → $CLAUDE_HOME/orchestrator/
 if [ -d "$SOURCE_REPO/orchestrator" ]; then
-  cp -R -n "$SOURCE_REPO/orchestrator"/. "$CLAUDE_HOME/orchestrator/" 2>/dev/null || true
+  cp -R $cp_clobber "$SOURCE_REPO/orchestrator"/. "$CLAUDE_HOME/orchestrator/" 2>/dev/null || true
 fi
 
 # Step 8: installer/ → $CLAUDE_HOME/installer/
 # Preserves render-launchd.sh + bootout-launchd.sh with their G6 LABEL_PREFIX
 # default (com.claude-foundations); install.sh does NOT override this default.
 if [ -d "$SOURCE_REPO/installer" ]; then
-  cp -R -n "$SOURCE_REPO/installer"/. "$CLAUDE_HOME/installer/" 2>/dev/null || true
+  cp -R $cp_clobber "$SOURCE_REPO/installer"/. "$CLAUDE_HOME/installer/" 2>/dev/null || true
 fi
 
 # Step 9: schemas/ — 6 named files only (audit F-06)
@@ -466,37 +642,49 @@ for schema in vault-schema plans-schema plan-manifest-schema librarian-manifest-
     diag "schema missing in source: $schema.json"
     exit 11
   fi
-  cp -n "$src" "$CLAUDE_HOME/schemas/" 2>/dev/null || true
+  cp $cp_clobber "$src" "$CLAUDE_HOME/schemas/" 2>/dev/null || true
 done
 # Schemas/README.md ships alongside (operator docs)
 [ -f "$SOURCE_REPO/schemas/README.md" ] && \
-  cp -n "$SOURCE_REPO/schemas/README.md" "$CLAUDE_HOME/schemas/" 2>/dev/null || true
+  cp $cp_clobber "$SOURCE_REPO/schemas/README.md" "$CLAUDE_HOME/schemas/" 2>/dev/null || true
 
 # Step 10: templates/ — settings.json + manifest skeletons + launchd/*.tmpl + settings-fragments/
 for tmpl in settings.json librarian-manifest-skeleton.json README.md; do
   src="$SOURCE_REPO/templates/$tmpl"
   [ -e "$src" ] || continue
-  cp -n "$src" "$CLAUDE_HOME/templates/" 2>/dev/null || true
+  cp $cp_clobber "$src" "$CLAUDE_HOME/templates/" 2>/dev/null || true
 done
 for f in "$SOURCE_REPO/templates/launchd"/*.tmpl; do
   [ -e "$f" ] || continue
-  cp -n "$f" "$CLAUDE_HOME/templates/launchd/" 2>/dev/null || true
+  cp $cp_clobber "$f" "$CLAUDE_HOME/templates/launchd/" 2>/dev/null || true
 done
 for f in "$SOURCE_REPO/templates/settings-fragments"/*.json; do
   [ -e "$f" ] || continue
-  cp -n "$f" "$CLAUDE_HOME/templates/settings-fragments/" 2>/dev/null || true
+  cp $cp_clobber "$f" "$CLAUDE_HOME/templates/settings-fragments/" 2>/dev/null || true
 done
 
 # Step 11: plugins/claude-mem/v<VERSION>/ → $CLAUDE_HOME/plugins/claude-mem/
 # T-1.5 not yet shipped — handle gracefully without failing.
+#
+# claude-mem clobber posture (S66; spec §claude-mem Preservation Policy L136-138):
+#   - default (preserve-config ON): cp -R -n — preserves any existing
+#     plugins/claude-mem/claude-mem.config.json + user/** by no-clobber.
+#   - --no-preserve-config (gated on --force-install at argv parse): cp -R -f
+#     — full overwrite including user config. Logged in provenance.
+#   - --force-all alone does NOT toggle this (per spec L138: "--force-install
+#     alone does NOT disable --preserve-config"; --force-all inherits).
+cm_clobber="-n"
+if [ "$NO_PRESERVE_CONFIG" = "1" ]; then
+  cm_clobber="-f"
+fi
 claude_mem_copied=0
 if [ -d "$SOURCE_REPO/plugins/claude-mem" ]; then
   for vdir in "$SOURCE_REPO/plugins/claude-mem"/v*; do
     [ -d "$vdir" ] || continue
     mkdir -p "$CLAUDE_HOME/plugins/claude-mem"
-    cp -R -n "$vdir"/. "$CLAUDE_HOME/plugins/claude-mem/" 2>/dev/null || true
+    cp -R $cm_clobber "$vdir"/. "$CLAUDE_HOME/plugins/claude-mem/" 2>/dev/null || true
     claude_mem_copied=1
-    info "claude-mem bundle copied from $(basename "$vdir")"
+    info "claude-mem bundle copied from $(basename "$vdir") (cm_clobber=$cm_clobber)"
   done
 fi
 if [ "$claude_mem_copied" = "0" ]; then
@@ -579,7 +767,7 @@ done
 manifest_src="$SOURCE_REPO/foundation-manifest.json"
 manifest_dst="$CLAUDE_HOME/foundation-manifest.json"
 if [ -f "$manifest_src" ]; then
-  cp -n "$manifest_src" "$manifest_dst" 2>/dev/null || true
+  cp $cp_clobber "$manifest_src" "$manifest_dst" 2>/dev/null || true
   if [ -f "$manifest_dst" ]; then
     if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$manifest_dst" 2>/dev/null; then
       diag "foundation-manifest.json parse failure post-copy: $manifest_dst"
@@ -594,11 +782,17 @@ fi
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
 {
-  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59 + S60 + S62 + S64 + S65 G3-G10)\n'
+  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59 + S60 + S62 + S64 + S65 + S66 G9 + flag matrix)\n'
   printf 'timestamp: %s\n'        "$ts"
   printf 'CLAUDE_HOME: %s\n'      "$CLAUDE_HOME"
   printf 'SOURCE_REPO: %s\n'      "$SOURCE_REPO"
+  printf 'apply_mode: %s\n'       "$APPLY_MODE"
+  printf 'dry_run: %s\n'          "0"
+  printf 'action_plan_emitted: %s\n' "0"
   printf 'force_install: %s\n'    "$FORCE_INSTALL"
+  printf 'force_all: %s\n'        "$FORCE_ALL"
+  printf 'no_preserve_config: %s\n' "$NO_PRESERVE_CONFIG"
+  printf 'state_classification: %s\n' "$state_classification"
   printf 'retrofit_existing: %s\n' "$RETROFIT_EXISTING"
   printf 'sentinel_verified: %s\n' "$sentinel_verified"
   printf 'install.sh sha256: %s\n' "$(shasum -a 256 "$0" 2>/dev/null | awk '{print $1}')"
@@ -631,14 +825,15 @@ log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
     done
   fi
   printf 'g8_uid: %s\n' "$g8_uid"
-  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + G2 foreign-content detector + I-UNDERSTAND-APRIL-13 sentinel (single-ceremony G1+G2) + G3 backup proof-of-life + G4 vault-symlink check + G5 plans-dir guard + G8 UID-0 refuse + G10 provenance-write-failure-as-11 + foundation-manifest.json baseline copy (T-5)\n'
-  printf 'deferred: G6 install-side label sentinel (transitively preserved); G9 dry-run-default; claude-mem preservation; --force-all/--no-preserve-config; state classification; top-level exit codes 20/21/22/60\n'
+  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + G2 foreign-content detector + I-UNDERSTAND-APRIL-13 sentinel (single-ceremony G1+G2) + G3 backup proof-of-life + G4 vault-symlink check + G5 plans-dir guard + G8 UID-0 refuse + G9 dry-run-as-default (--apply transitions out) + state classification (fresh|foundation-only|mixed|user-only; user-only refuse at 21) + --force-all flag (cp -n→cp -f for foundation files) + --no-preserve-config flag (gated on --force-install) + G10 provenance-write-failure-as-11 + foundation-manifest.json baseline copy (T-5)\n'
+  printf 'deferred: G6 install-side explicit label sentinel (transitively preserved); claude-mem preservation full implementation (T-1.5 bundle); top-level exit codes 20 (conflict-manifest v2.1) / 22 (rsync-backup v2.1) / 60 (grep-audit consumer v2.1)\n'
 } > "$log_path" || { diag "G10: provenance log write failed at $log_path"; exit 11; }
 
 info "install complete (slice). next-steps:"
 info "  - render plists at runtime: \$CLAUDE_HOME/installer/render-launchd.sh --staging-dir \$CLAUDE_HOME/Library/LaunchAgents.staging librarian|architect"
 info "  - claude-mem bundle: deferred to SP08 T-1.5"
-info "  - G6 install-side label sentinel + G9 dry-run-default flow: deferred to SP08 T-1 follow-up"
+info "  - G6 install-side explicit label sentinel: deferred (transitively preserved via cp -R installer/; render-launchd.sh enforces at runtime)"
+info "  - top-level exit codes 20/22/60: deferred to v2.1 (conflict-manifest, rsync-backup, grep-audit consumer)"
 info "provenance: $log_path"
 
 exit 0

@@ -150,7 +150,7 @@ write_mock_launchctl "$MOCK_DIR1/mock-launchctl"
 # Install first (consumes real CLAUDE_HOME-first installer)
 rc=0
 HOME="$CH1" CLAUDE_HOME="$CH1" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH1/.install-stdout" 2>"$CH1/.install-stderr" || rc=$?
+  --apply >"$CH1/.install-stdout" 2>"$CH1/.install-stderr" || rc=$?
 assert_eq "0" "$rc" "T1.1: install.sh prep exits 0"
 assert_path_exists "$CH1/hooks/pre-write-guard.sh" "T1.2: install seeded hooks/"
 
@@ -207,7 +207,7 @@ MOCK_DIR2="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR2/mock-launchctl"
 
 HOME="$CH2" CLAUDE_HOME="$CH2" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH2/.install-stdout" 2>"$CH2/.install-stderr" || true
+  --apply >"$CH2/.install-stdout" 2>"$CH2/.install-stderr" || true
 
 # Capture pre-uninstall sha256 of a stable foundation file
 pre_sha="$(shasum -a 256 "$CH2/hooks/pre-write-guard.sh" 2>/dev/null | awk '{print $1}')"
@@ -238,7 +238,7 @@ MOCK_DIR3="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR3/mock-launchctl"
 
 HOME="$CH3" CLAUDE_HOME="$CH3" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH3/.install-stdout" 2>"$CH3/.install-stderr" || true
+  --apply >"$CH3/.install-stdout" 2>"$CH3/.install-stderr" || true
 
 # Pre-seed mock with impersonation label (contains prefix substring at non-1 position)
 rc=0
@@ -292,7 +292,7 @@ MOCK_DIR5="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR5/mock-launchctl"
 
 HOME="$CH5" CLAUDE_HOME="$CH5" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH5/.install-stdout" 2>"$CH5/.install-stderr" || true
+  --apply >"$CH5/.install-stdout" 2>"$CH5/.install-stderr" || true
 
 CLAUDE_HOME="$CH5" LAUNCHCTL_BIN="$MOCK_DIR5/mock-launchctl" \
   bash "$UNINSTALL_SH" >"$CH5/.uninstall-stdout" 2>"$CH5/.uninstall-stderr" || true
@@ -322,7 +322,7 @@ MOCK_DIR6="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR6/mock-launchctl"
 
 HOME="$CH6" CLAUDE_HOME="$CH6" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH6/.install-stdout" 2>"$CH6/.install-stderr" || true
+  --apply >"$CH6/.install-stdout" 2>"$CH6/.install-stderr" || true
 
 # Mix in foundation-adjacent and clearly-non-foundation top-level entries
 mkdir -p "$CH6/projects"            # not in allowlist
@@ -356,7 +356,7 @@ MOCK_DIR7="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR7/mock-launchctl"
 
 HOME="$CH7" CLAUDE_HOME="$CH7" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH7/.install-stdout" 2>"$CH7/.install-stderr" || true
+  --apply >"$CH7/.install-stdout" 2>"$CH7/.install-stderr" || true
 
 # Pre-seed session state inside hooks/state/
 echo "session checkpoint" > "$CH7/hooks/state/checkpoint.md"
@@ -383,7 +383,7 @@ MOCK_DIR8="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR8/mock-launchctl"
 
 HOME="$CH8" CLAUDE_HOME="$CH8" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH8/.install-stdout" 2>"$CH8/.install-stderr" || true
+  --apply >"$CH8/.install-stdout" 2>"$CH8/.install-stderr" || true
 
 # User edit: append a line to a foundation file (sha256 mismatch vs baseline)
 echo "# user edit appended at $(date -u +%s)" >> "$CH8/hooks/pre-write-guard.sh"
@@ -411,7 +411,7 @@ MOCK_DIR9="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR9/mock-launchctl"
 
 HOME="$CH9" CLAUDE_HOME="$CH9" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH9/.install-stdout" 2>"$CH9/.install-stderr" || true
+  --apply >"$CH9/.install-stdout" 2>"$CH9/.install-stderr" || true
 
 rc=0
 CLAUDE_HOME="$CH9" LAUNCHCTL_BIN="$MOCK_DIR9/mock-launchctl" \
@@ -434,7 +434,7 @@ MOCK_DIR10="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR10/mock-launchctl"
 
 HOME="$CH10" CLAUDE_HOME="$CH10" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH10/.install-stdout" 2>"$CH10/.install-stderr" || true
+  --apply >"$CH10/.install-stdout" 2>"$CH10/.install-stderr" || true
 
 echo "# user edit" >> "$CH10/hooks/pre-write-guard.sh"
 
@@ -461,7 +461,7 @@ MOCK_DIR11="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR11/mock-launchctl"
 
 HOME="$CH11" CLAUDE_HOME="$CH11" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH11/.install-stdout" 2>"$CH11/.install-stderr" || true
+  --apply >"$CH11/.install-stdout" 2>"$CH11/.install-stderr" || true
 
 # Remove the manifest after install to simulate slice-tolerant install scenario
 rm -f "$CH11/foundation-manifest.json"
@@ -484,7 +484,7 @@ MOCK_DIR12="$(mk_tmp)"
 write_mock_launchctl "$MOCK_DIR12/mock-launchctl"
 
 HOME="$CH12" CLAUDE_HOME="$CH12" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
-  >"$CH12/.install-stdout" 2>"$CH12/.install-stderr" || true
+  --apply >"$CH12/.install-stdout" 2>"$CH12/.install-stderr" || true
 
 # Pre-seed user content to verify it's preserved even in fallback mode
 mkdir -p "$CH12/my-user-project"

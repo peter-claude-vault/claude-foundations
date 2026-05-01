@@ -90,7 +90,7 @@ t1_stdout="$t1_home/stdout.log"
 t1_stderr="$t1_home/stderr.log"
 t1_rc=0
 ( HOME="$t1_home" CLAUDE_HOME="$t1_claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" --backup-dir "$t1_backup" >"$t1_stdout" 2>"$t1_stderr" ) || t1_rc=$?
+  bash "$INSTALL_SH" --backup-dir "$t1_backup" --apply >"$t1_stdout" 2>"$t1_stderr" ) || t1_rc=$?
 assert_eq "0" "$t1_rc" "T1.1: --backup-dir writable + round-trip → exit 0"
 assert_grep "G3: backup proof-of-life passed" "$t1_stdout" "T1.2: G3 success info emitted"
 
@@ -179,7 +179,7 @@ t6_stderr="$t6_home/stderr.log"
 t6_stdout="$t6_home/stdout.log"
 t6_rc=0
 ( HOME="$t6_home" CLAUDE_HOME="$t6_claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" --retrofit-existing >"$t6_stdout" 2>"$t6_stderr" ) || t6_rc=$?
+  bash "$INSTALL_SH" --retrofit-existing --apply >"$t6_stdout" 2>"$t6_stderr" ) || t6_rc=$?
 assert_eq "0" "$t6_rc" "T6.1: PLANS_HOME with NN-*/ + --retrofit-existing → exit 0"
 assert_grep "G5: --retrofit-existing supplied" "$t6_stderr" "T6.2: G5 retrofit-stub warning emitted"
 assert_grep "v2.1 retrofit logic NOT YET IMPLEMENTED" "$t6_stderr" "T6.3: G5 v2.1-deferred warning specific"
@@ -232,7 +232,7 @@ chmod 0555 "$t8_claude/logs"
 t8_stderr="$t8_home/stderr.log"
 t8_rc=0
 ( HOME="$t8_home" CLAUDE_HOME="$t8_claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" 2>"$t8_stderr" ) || t8_rc=$?
+  bash "$INSTALL_SH" --apply 2>"$t8_stderr" ) || t8_rc=$?
 chmod 0755 "$t8_claude/logs" 2>/dev/null  # restore for cleanup
 assert_eq "11" "$t8_rc" "T8.1: provenance log write failure → exit 11"
 assert_grep "G10: provenance log write failed\|provenance log write failed" "$t8_stderr" "T8.2: G10 diagnostic emitted"
