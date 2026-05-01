@@ -220,7 +220,7 @@ printf 'T4: install.sh ships baseline byte-identical to SOURCE_REPO copy\n'
 
 CH="$(mk_tmp)"
 rc=0
-CLAUDE_HOME="$CH" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" >"$CH/.stdout" 2>"$CH/.stderr" || rc=$?
+HOME="$CH" CLAUDE_HOME="$CH" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" >"$CH/.stdout" 2>"$CH/.stderr" || rc=$?
 assert_eq "0" "$rc" "T4.1: install.sh exits 0 with manifest at SOURCE_REPO root"
 assert_path_exists "$CH/foundation-manifest.json" "T4.2: foundation-manifest.json shipped to \$CLAUDE_HOME"
 

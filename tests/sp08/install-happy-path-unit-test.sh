@@ -86,7 +86,9 @@ printf 'T1: fresh install happy-path 14-asset write-sequence\n'
 
 CH="$(mk_tmp)"
 rc=0
-CLAUDE_HOME="$CH" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" >"$CH/.stdout" 2>"$CH/.stderr" || rc=$?
+# HOME isolation: G5 (S65) walks $PLANS_HOME=$HOME/.claude-plans for NN-*/ entries.
+# Set HOME to test tmpdir so PLANS_HOME resolves to an empty path.
+HOME="$CH" CLAUDE_HOME="$CH" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" >"$CH/.stdout" 2>"$CH/.stderr" || rc=$?
 assert_eq "0" "$rc" "T1: install.sh exits 0"
 
 # 14 asset categories:
@@ -165,7 +167,10 @@ cat > "$CH2/settings.json" <<'JSON'
 }
 JSON
 rc=0
-CLAUDE_HOME="$CH2" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" >"$CH2/.stdout" 2>"$CH2/.stderr" || rc=$?
+# HOME isolation (G5) + --backup-dir (G3) — settings.json pre-exists, so G3 fires.
+T4_BACKUP="$CH2/.backup"
+HOME="$CH2" CLAUDE_HOME="$CH2" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
+  --backup-dir "$T4_BACKUP" >"$CH2/.stdout" 2>"$CH2/.stderr" || rc=$?
 assert_eq "0" "$rc" "T4.1: install.sh succeeds when target settings.json pre-exists"
 
 # User key preserved
@@ -226,8 +231,9 @@ JQSHIM
 chmod +x "$SHIM_DIR/jq"
 
 rc=0
-PATH="$SHIM_DIR:$PATH" CLAUDE_HOME="$CH3" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" >"$CH3/.stdout" 2>"$CH3/.stderr" || rc=$?
+T5_BACKUP="$CH3/.backup"
+PATH="$SHIM_DIR:$PATH" HOME="$CH3" CLAUDE_HOME="$CH3" SOURCE_REPO="$REPO_ROOT" \
+  bash "$INSTALL_SH" --backup-dir "$T5_BACKUP" >"$CH3/.stdout" 2>"$CH3/.stderr" || rc=$?
 assert_eq "57" "$rc" "T5.1: G7 fires (exit 57) on silent key deletion"
 
 # Diagnostic message present on stderr

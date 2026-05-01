@@ -1,7 +1,7 @@
 #!/bin/bash
-# install.sh — Plan 71 SP08 T-1 (S59 happy-path + S60 G1 + S62 baseline ship + S64 G2 follow-up)
+# install.sh — Plan 71 SP08 T-1 (S59 happy-path + S60 G1 + S62 baseline ship + S64 G2 + S65 G3-G10)
 #
-# Slice scope (S59 + S60 + S62 + S64 cumulative):
+# Slice scope (S59 + S60 + S62 + S64 + S65 cumulative):
 #   - CLAUDE_HOME-first resolution (R-55 invariant; AC #1)
 #   - G1-pre 100ms preflight (no FS writes; AC #2)              [S60]
 #   - G1-main $HOME/.claude equality gate + I-UNDERSTAND-APRIL-13
@@ -10,39 +10,62 @@
 #     against $SOURCE_REPO/foundation-manifest.json baseline; refuse
 #     install on drift unless --force-install + sentinel; sentinel
 #     reused from G1-main if both fire in same session.
+#   - G3 backup proof-of-life — --backup-dir writability + round-trip   [S65]
+#     test; required when destructive op pending (settings.json pre-
+#     exists in $CLAUDE_HOME); validated whenever supplied.
+#   - G4 vault-symlink distance check — refuse unconditionally if       [S65]
+#     $CLAUDE_HOME walks contain symlinks resolving under
+#     ~/Documents/Obsidian Vault/. April-13 protection; NO override.
+#   - G5 plans-dir guard — refuse if $PLANS_HOME contains existing      [S65]
+#     NN-*/ plans without --retrofit-existing (waiver stub; v2.1 retrofit
+#     logic deferred).
+#   - G8 UID-0 refuse — exit 58 if id -u == 0; NO override.             [S65]
+#   - G10 provenance-write failure → exit 11 (audit/tick — already      [S65]
+#     enforced at log_path write site; counted live as of S65).
 #   - 14-asset write-sequence (audit F-01..F-05)
 #   - LABEL_PREFIX=com.claude-foundations preserved via cp -R installer/ +
-#     templates/launchd/ (G6 namespace isolation)
+#     templates/launchd/ (G6 namespace isolation, transitively)
 #   - settings.json atomic jq-merge with G7 silent-key-deletion gate
 #   - foundation-manifest.json baseline copy (T-5 generator output;       [S62]
 #     consumed by G2 detector + uninstall fingerprint match)
 #
 # DEFERRED to subsequent T-1 follow-up sessions:
-#   - G3 backup proof-of-life (53)
-#   - G4 vault-symlink (54), G5 PLANS_HOME (55), G8 UID-0 refuse (58),
-#     G9 dry-run-default (59), G10 provenance-write-failure-as-11
+#   - G6 install-side label sentinel (transitively preserved via cp -R
+#     installer/; render-launchd.sh enforces at runtime)
+#   - G9 dry-run-default (59) — structural posture flip; default --apply
+#     vs default --dry-run requires write-engine refactor + retrofit of
+#     all existing tests with --apply
 #   - claude-mem preservation policy (T-1.5 bundles plugins/claude-mem/v<VERSION>/ first)
-#   - --dry-run/--apply default flow + state classification (fresh|foundation-only|mixed|user-only)
 #   - --force-all / --no-preserve-config flag matrix
-#   - Full 19-exit-code matrix (slice subset below)
+#   - State classification (fresh|foundation-only|mixed|user-only) +
+#     user-only refuse without --force-install
+#   - Top-level exit codes 20/21/22 (state-classification specific) + 60
 #
-# Exit codes (slice subset; S59 + S60 + S64):
+# Exit codes (slice subset; S59 + S60 + S64 + S65):
 #   0   success
 #   10  prereq missing (CLAUDE_HOME unset/empty per G1-pre; required binary
 #                       absent; SOURCE_REPO not a foundation-repo)
-#   11  permission/write failure
+#   11  permission/write failure (includes G10 provenance-write failure)
 #   30  schema parse failure (post-install)
 #   40  settings.json merge conflict requires human resolution (jq error)
 #   51  G1-main fired ($HOME/.claude equality + non-foundation content,    [S60]
 #       missing --force-install or I-UNDERSTAND-APRIL-13 sentinel)
 #   52  G2 fired (foreign-content sha256 drift in foundation files,        [S64]
 #       missing --force-install or I-UNDERSTAND-APRIL-13 sentinel)
+#   53  G3 fired (backup proof-of-life: --backup-dir absent when           [S65]
+#       destructive op pending; or supplied --backup-dir not writable
+#       or round-trip-broken)
+#   54  G4 fired (vault-symlink reachable under $CLAUDE_HOME; no override) [S65]
+#   55  G5 fired ($PLANS_HOME contains NN-*/ plans without                 [S65]
+#       --retrofit-existing)
 #   57  G7 fired (settings.json merge would silently delete keys)
+#   58  G8 fired (UID 0; no override)                                      [S65]
 #
 # R-23 bash 3.2 compat. R-37 single-deliverable. R-55 zero $HOME/.claude
 # resolution paths in script body (literal $HOME/.claude appears only in
 # the AC #1 / G1-pre user-facing error text per spec.md L74 and the G1-main
-# string-equality comparison per spec.md L75).
+# string-equality comparison per spec.md L75). G4 resolves $HOME/Documents/
+# Obsidian Vault/ as a DETECTION target only — never a write target.
 
 set -u
 
@@ -53,16 +76,32 @@ warn() { printf 'install WARN: %s\n' "$1" >&2; }
 
 # --- argv parse (in-memory only; no FS; pre-G1-pre to keep 100ms bound) ---
 FORCE_INSTALL=0
-for arg in "$@"; do
-  case "$arg" in
-    --force-install) FORCE_INSTALL=1 ;;
+BACKUP_DIR=""
+RETROFIT_EXISTING=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --force-install)        FORCE_INSTALL=1 ;;
+    --backup-dir)           shift; BACKUP_DIR="${1:-}" ;;
+    --backup-dir=*)         BACKUP_DIR="${1#--backup-dir=}" ;;
+    --retrofit-existing)    RETROFIT_EXISTING=1 ;;
+    *)                      ;;
   esac
+  shift
 done
 
 # --- sentinel-verified flag (G1-main + G2 share single ceremony per S64) ---
 # Set to 1 after the first successful I-UNDERSTAND-APRIL-13 prompt; later
 # guards consult it to avoid re-prompting in the same install invocation.
 sentinel_verified=0
+
+# --- G8: UID-0 refuse (S65; spec.md L82) ---
+# Fires before any FS work or env evaluation. Unconditional — no --force override.
+# Root context broadens blast radius irreversibly (April-13 protection).
+g8_uid="$(id -u 2>/dev/null || echo unknown)"
+if [ "$g8_uid" = "0" ]; then
+  diag "G8 fired: install.sh refuses to run as UID 0 (root). Re-run as a non-root user."
+  exit 58
+fi
 
 # --- G1-pre: CLAUDE_HOME unset/empty preflight (AC #2; spec.md L74) ---
 # Fires BEFORE binary check / SOURCE_REPO resolve / any mkdir. No FS writes.
@@ -90,6 +129,40 @@ SOURCE_REPO="${SOURCE_REPO:-$script_dir}"
 if [ ! -d "$SOURCE_REPO/hooks" ] || [ ! -d "$SOURCE_REPO/skills" ] || [ ! -d "$SOURCE_REPO/schemas" ]; then
   diag "SOURCE_REPO does not look like a foundation-repo (missing hooks/, skills/, or schemas/): $SOURCE_REPO"
   exit 10
+fi
+
+# --- G5: $PLANS_HOME plan-dir guard (S65; spec.md L79) ---
+# Refuse if $PLANS_HOME contains existing NN-*/ plans without
+# --retrofit-existing. Foundation ships zero plans; the flag is currently a
+# v2.1 waiver stub (no retrofit logic implemented) but the gate is
+# load-bearing — without it, an install onto a pre-existing plan-tracking
+# tree would be silently underspecified.
+PLANS_HOME="${PLANS_HOME:-$HOME/.claude-plans}"
+g5_existing_plans=""
+g5_existing_count=0
+if [ -d "$PLANS_HOME" ]; then
+  for entry in "$PLANS_HOME"/[0-9][0-9]-*/; do
+    [ -d "$entry" ] || continue
+    base="${entry%/}"
+    base="${base##*/}"
+    if [ -z "$g5_existing_plans" ]; then
+      g5_existing_plans="$base"
+    else
+      g5_existing_plans="$g5_existing_plans
+$base"
+    fi
+    g5_existing_count=$((g5_existing_count + 1))
+  done
+fi
+if [ "$g5_existing_count" -gt 0 ]; then
+  if [ "$RETROFIT_EXISTING" != "1" ]; then
+    diag "G5 fired: \$PLANS_HOME contains $g5_existing_count existing NN-*/ plan(s); pass --retrofit-existing to acknowledge (v2.1 retrofit logic deferred — flag currently waives only). \$PLANS_HOME=$PLANS_HOME"
+    printf '%s\n' "$g5_existing_plans" | while IFS= read -r p; do
+      [ -z "$p" ] || printf '  %s\n' "$p" >&2
+    done
+    exit 55
+  fi
+  warn "G5: --retrofit-existing supplied with $g5_existing_count pre-existing plan(s); v2.1 retrofit logic NOT YET IMPLEMENTED — flag is a waiver stub. Proceeding under explicit user waiver; install does not modify \$PLANS_HOME."
 fi
 
 # --- G1-main: $HOME/.claude equality gate (AC #3; spec.md L75) ---
@@ -138,6 +211,45 @@ if [ "$CLAUDE_HOME" = "$HOME/.claude" ] && [ -d "$CLAUDE_HOME" ]; then
     sentinel_verified=1
     info "G1-main sentinel verified; proceeding under --force-install"
   fi
+fi
+
+# --- G4: vault-symlink distance check (S65; spec.md L78) ---
+# If ~/Documents/Obsidian Vault/ is reachable via symlink under $CLAUDE_HOME,
+# refuse unconditionally. April-13 protection: vault was symlinked into
+# .claude (Plans/ → vault/Plans), bootstrap clobbered the vault. NO override.
+# Detection-only path resolution; never a write target.
+g4_vault_canonical=""
+if [ -d "$HOME/Documents/Obsidian Vault" ]; then
+  g4_vault_canonical="$(cd "$HOME/Documents/Obsidian Vault" 2>/dev/null && pwd -P)"
+fi
+g4_violations=""
+g4_violation_count=0
+if [ -n "$g4_vault_canonical" ] && [ -d "$CLAUDE_HOME" ]; then
+  while IFS= read -r symlink; do
+    [ -z "$symlink" ] && continue
+    resolved="$(readlink -f "$symlink" 2>/dev/null || true)"
+    [ -z "$resolved" ] && continue
+    case "$resolved" in
+      "$g4_vault_canonical"|"$g4_vault_canonical"/*)
+        if [ -z "$g4_violations" ]; then
+          g4_violations="$symlink -> $resolved"
+        else
+          g4_violations="$g4_violations
+$symlink -> $resolved"
+        fi
+        g4_violation_count=$((g4_violation_count + 1))
+        ;;
+    esac
+  done <<EOF
+$(find "$CLAUDE_HOME" -type l 2>/dev/null)
+EOF
+fi
+if [ "$g4_violation_count" -gt 0 ]; then
+  diag "G4 fired: \$CLAUDE_HOME contains $g4_violation_count symlink(s) reaching ~/Documents/Obsidian Vault/. April-13 protection — refuse unconditionally (no --force override; vault clobber prevention)."
+  printf '%s\n' "$g4_violations" | while IFS= read -r v; do
+    [ -z "$v" ] || printf '  %s\n' "$v" >&2
+  done
+  exit 54
 fi
 
 info "CLAUDE_HOME=$CLAUDE_HOME"
@@ -249,6 +361,47 @@ if [ "$g2_violation_count" -gt 0 ]; then
     sentinel_verified=1
     info "G2 sentinel verified; proceeding under --force-install"
   fi
+fi
+
+# --- G3: backup proof-of-life (S65; spec.md L77) ---
+# Last gate before destructive ops (Step 12 settings.json mv -f). Two trigger
+# conditions:
+#   (a) --backup-dir supplied → validate writability + round-trip regardless
+#       of destructive-op state (catches typos / unwritable paths early).
+#   (b) destructive op pending ($CLAUDE_HOME/settings.json pre-exists) AND
+#       --backup-dir absent → exit 53 (no backup → no install).
+# Fresh install (no settings.json yet) without --backup-dir is a no-op
+# (cp -n preserves all other files; mkdir -p is idempotent).
+g3_destructive_op_pending=0
+if [ -f "$CLAUDE_HOME/settings.json" ]; then
+  g3_destructive_op_pending=1
+fi
+g3_proof_of_life_passed=0
+g3_skip_reason=""
+if [ -n "$BACKUP_DIR" ]; then
+  if ! mkdir -p "$BACKUP_DIR" 2>/dev/null; then
+    diag "G3 fired: --backup-dir not creatable: $BACKUP_DIR"
+    exit 53
+  fi
+  g3_test_file="$BACKUP_DIR/.install-g3-proof-$$"
+  if ! ( printf 'g3-roundtrip\n' > "$g3_test_file" ) 2>/dev/null; then
+    diag "G3 fired: --backup-dir not writable (round-trip test failed): $BACKUP_DIR"
+    rm -f "$g3_test_file" 2>/dev/null
+    exit 53
+  fi
+  if [ ! -f "$g3_test_file" ] || [ "$(cat "$g3_test_file" 2>/dev/null)" != "g3-roundtrip" ]; then
+    diag "G3 fired: --backup-dir round-trip readback mismatch: $BACKUP_DIR"
+    rm -f "$g3_test_file" 2>/dev/null
+    exit 53
+  fi
+  rm -f "$g3_test_file" 2>/dev/null
+  g3_proof_of_life_passed=1
+  info "G3: backup proof-of-life passed at $BACKUP_DIR"
+elif [ "$g3_destructive_op_pending" = "1" ]; then
+  diag "G3 fired: \$CLAUDE_HOME/settings.json pre-exists (destructive op pending); --backup-dir <path> required for proof-of-life. No backup → no install."
+  exit 53
+else
+  g3_skip_reason="no destructive op pending (no pre-existing settings.json) and --backup-dir not supplied"
 fi
 
 # --- 14-asset write sequence (per spec.md L240-255 audit-2026-04-29) ---
@@ -437,15 +590,16 @@ else
   warn "foundation-manifest.json not present at SOURCE_REPO root (T-5 baseline absent; G2 + fingerprint match unavailable until generated)"
 fi
 
-# Step 14: provenance log header (G10 emit; full G10 enforcement at T-1 follow-up)
+# Step 14: provenance log header (G10 — write failure exits 11; AC #6 G10 live as of S65)
 ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
 {
-  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59 + S60 + S62 + S64 G2)\n'
+  printf 'install.sh provenance — Plan 71 SP08 T-1 slice (S59 + S60 + S62 + S64 + S65 G3-G10)\n'
   printf 'timestamp: %s\n'        "$ts"
   printf 'CLAUDE_HOME: %s\n'      "$CLAUDE_HOME"
   printf 'SOURCE_REPO: %s\n'      "$SOURCE_REPO"
   printf 'force_install: %s\n'    "$FORCE_INSTALL"
+  printf 'retrofit_existing: %s\n' "$RETROFIT_EXISTING"
   printf 'sentinel_verified: %s\n' "$sentinel_verified"
   printf 'install.sh sha256: %s\n' "$(shasum -a 256 "$0" 2>/dev/null | awk '{print $1}')"
   if [ -f "$manifest_dst" ]; then
@@ -460,14 +614,31 @@ log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
       [ -z "$p" ] || printf '  - %s\n' "$p"
     done
   fi
-  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + G2 foreign-content detector + I-UNDERSTAND-APRIL-13 sentinel (single-ceremony G1+G2) + foundation-manifest.json baseline copy (T-5)\n'
-  printf 'deferred: G3 backup; G4/G5/G8/G9/G10 red-team; claude-mem preservation; --dry-run/--apply matrix; --force-all/--no-preserve-config; full 19-exit-code matrix\n'
-} > "$log_path" || { diag "provenance log write failed"; exit 11; }
+  printf 'g3_backup_dir: %s\n' "${BACKUP_DIR:-(absent)}"
+  printf 'g3_destructive_op_pending: %s\n' "$g3_destructive_op_pending"
+  printf 'g3_proof_of_life_passed: %s\n' "$g3_proof_of_life_passed"
+  if [ -n "$g3_skip_reason" ]; then
+    printf 'g3_skip_reason: %s\n' "$g3_skip_reason"
+  fi
+  printf 'g4_vault_canonical: %s\n' "${g4_vault_canonical:-(absent)}"
+  printf 'g4_violation_count: %s\n' "$g4_violation_count"
+  printf 'g5_plans_home: %s\n' "$PLANS_HOME"
+  printf 'g5_existing_count: %s\n' "$g5_existing_count"
+  if [ "$g5_existing_count" -gt 0 ]; then
+    printf 'g5_existing_plans:\n'
+    printf '%s\n' "$g5_existing_plans" | while IFS= read -r p; do
+      [ -z "$p" ] || printf '  - %s\n' "$p"
+    done
+  fi
+  printf 'g8_uid: %s\n' "$g8_uid"
+  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + G2 foreign-content detector + I-UNDERSTAND-APRIL-13 sentinel (single-ceremony G1+G2) + G3 backup proof-of-life + G4 vault-symlink check + G5 plans-dir guard + G8 UID-0 refuse + G10 provenance-write-failure-as-11 + foundation-manifest.json baseline copy (T-5)\n'
+  printf 'deferred: G6 install-side label sentinel (transitively preserved); G9 dry-run-default; claude-mem preservation; --force-all/--no-preserve-config; state classification; top-level exit codes 20/21/22/60\n'
+} > "$log_path" || { diag "G10: provenance log write failed at $log_path"; exit 11; }
 
 info "install complete (slice). next-steps:"
 info "  - render plists at runtime: \$CLAUDE_HOME/installer/render-launchd.sh --staging-dir \$CLAUDE_HOME/Library/LaunchAgents.staging librarian|architect"
 info "  - claude-mem bundle: deferred to SP08 T-1.5"
-info "  - G3-G10 firewall (backup / vault-symlink / PLANS_HOME / UID-0 / dry-run / provenance-fail): deferred to SP08 T-1 follow-up"
+info "  - G6 install-side label sentinel + G9 dry-run-default flow: deferred to SP08 T-1 follow-up"
 info "provenance: $log_path"
 
 exit 0
