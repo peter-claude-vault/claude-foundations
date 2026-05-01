@@ -66,3 +66,33 @@
 
 ;; --- Network: explicit deny (belt + suspenders vs deny-default) -------
 (deny network*)
+
+;; --- LIMITATION: sandbox-exec does NOT contain launchctl --------------
+;; CRITICAL for SP08 T-5 + any consumer testing launchd-mutating code:
+;;
+;; sandbox-exec is FILESYSTEM (and network) sandboxing. It does NOT
+;; contain `launchctl bootstrap|bootout|load|unload`. launchctl
+;; communicates with launchd via the inherited bootstrap_port (XPC
+;; over Mach), not via `mach-lookup` of a global name — so SBPL
+;; `(deny mach-lookup ...)` rules cannot intercept it. Empirically
+;; verified S70 (2026-05-01): `(deny mach-lookup (global-name
+;; "com.apple.launchd"))` did NOT block `launchctl print user/$UID`
+;; under this profile.
+;;
+;; Implication: a shell that wraps `launchctl bootstrap gui/$UID
+;; <plist>` under sandbox-exec WILL still mutate the host's launchd
+;; state. The (allow file-write* DOGFOOD_ROOT) restriction prevents
+;; the rendered plist from landing outside DOGFOOD_ROOT, but the
+;; bootstrap call itself reaches host launchd uncontained.
+;;
+;; Real launchctl rc verification (CFF-S55-4 / SP03 T-15 AC #7)
+;; MUST run on an isolated macOS guest where the launchd kernel
+;; boundary is separate from Peter's host launchd:
+;;   - GitHub Actions macos-14/15 runner (ephemeral cloud VM) — SP08 T-5 L2
+;;   - macOS guest VM via Apple Virtualization.framework
+;; Local dev consumers MUST PATH-inject tests/mock-launchctl.sh
+;; ahead of /bin/launchctl (SP03 T-14 pattern at
+;; tests/sp03/integration-orchestration-mock-launchctl.sh L93-101).
+;;
+;; This profile's contract is filesystem isolation. Don't expect
+;; more.
