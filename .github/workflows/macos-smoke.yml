@@ -1,0 +1,103 @@
+name: macos-smoke
+
+# Plan 71 SP08 T-5 L2 — real launchctl bootstrap rc=0 verification on an
+# ephemeral macos-14 runner. Closes AC #4 + CFF-S55-4 + SP03 T-15 AC #7
+# inheritance. Emits macos-smoke-passed.json artifact consumed by L3
+# release.yml gate (signed in L3 per spec §release-attestation signing
+# protocol).
+#
+# Architectural note (S70): sandbox-exec is filesystem-only isolation and
+# cannot contain real `launchctl bootstrap` (launchctl uses inherited
+# bootstrap_port over Mach, not mach-lookup of a global name). The only
+# correct containment for kernel-boundary launchd verification is an
+# isolated macOS guest — GitHub-hosted macos-14 runners provide this with
+# zero touch on developer hosts.
+#
+# Triggers:
+#   - Push of v*-rc* tags (release-candidate cuts; gates v2.0.0-rc1)
+#   - Manual workflow_dispatch (verify before tagging or re-run on flake)
+#
+# Cost: macos-14 standard tier ~$0.062/min × ~5 min ≈ $0.30/run on private
+# repo; free on public.
+
+on:
+  push:
+    tags:
+      - 'v*-rc*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos-smoke:
+    name: install → render → bootstrap → uninstall (live launchd)
+    runs-on: macos-14
+    timeout-minutes: 15
+    env:
+      MACOS_SMOKE_OUTPUT_DIR: ${{ runner.temp }}/smoke-out
+    steps:
+      - name: Checkout (full history; grep-audit Layer 4 needs all commits)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install brew prereqs (gettext for envsubst)
+        run: |
+          brew install gettext
+          brew link --force gettext
+          # jq, plutil, launchctl, git pre-installed on macos-14 image.
+
+      - name: Pin Python (grep-audit Layer 2 NFKC determinism)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Pre-flight environment record
+        run: |
+          mkdir -p "$MACOS_SMOKE_OUTPUT_DIR"
+          {
+            printf 'runner_os: %s\n' "$RUNNER_OS"
+            printf 'uname: %s\n'     "$(uname -a)"
+            printf 'whoami: %s\n'    "$(whoami)"
+            printf 'uid: %s\n'       "$(id -u)"
+            printf 'home: %s\n'      "$HOME"
+            printf 'runner_temp: %s\n' "$RUNNER_TEMP"
+            printf 'launchctl: %s\n' "$(command -v launchctl)"
+            printf 'jq: %s\n'        "$(command -v jq)"
+            printf 'envsubst: %s\n'  "$(command -v envsubst)"
+            printf 'plutil: %s\n'    "$(command -v plutil)"
+            printf 'git_sha: %s\n'   "$(git rev-parse HEAD)"
+          } | tee "$MACOS_SMOKE_OUTPUT_DIR/preflight.txt"
+
+      - name: Run installer-macos-smoke driver
+        run: |
+          chmod +x tests/installer-macos-smoke.sh
+          bash tests/installer-macos-smoke.sh
+
+      - name: Upload macos-smoke-passed.json (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-smoke-passed
+          path: ${{ runner.temp }}/smoke-out/macos-smoke-passed.json
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload smoke-out logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-smoke-logs
+          path: ${{ runner.temp }}/smoke-out/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload dogfood-root tree (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-smoke-dogfood-root-failure
+          path: ${{ runner.temp }}/dogfood-root/
+          if-no-files-found: warn
+          retention-days: 30
