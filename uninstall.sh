@@ -285,6 +285,32 @@ fi
 
 info "bootout complete: $boot_count labels"
 
+# --- rm foundation plists at $HOME/Library/LaunchAgents/ (CFF-S71-1) ---
+# uninstall.sh historically operated only on $CLAUDE_HOME contents; rendered
+# plists at $HOME/Library/LaunchAgents/<Label>.plist (written by render-launchd
+# production mode) were outside the removal scope. Stale plists auto-load on
+# reboot, re-bootstrapping the foundation label under launchd despite uninstall
+# completion (wrapper script under $CLAUDE_HOME is gone — fire produces stderr
+# noise but no destructive action; UX-confusing).
+#
+# Symmetric with G6 awk-filter: only com.claude-foundations.*.plist files are
+# removed; foreign plists in the same directory are preserved. Glob iteration
+# uses [ -e ] guard for the empty-glob case (Bash 3.2 compat).
+LA_DIR="${HOME:-/}/Library/LaunchAgents"
+plist_rm_count=0
+if [ -d "$LA_DIR" ]; then
+  for plist in "$LA_DIR"/com.claude-foundations.*.plist; do
+    [ -e "$plist" ] || continue
+    if rm -f "$plist" 2>/dev/null; then
+      info "rm $(basename "$plist") from $LA_DIR"
+      plist_rm_count=$((plist_rm_count+1))
+    else
+      warn "rm failed: $plist"
+    fi
+  done
+fi
+info "plist cleanup: $plist_rm_count foundation plist(s) removed from $LA_DIR"
+
 # --- rm foundation files at $CLAUDE_HOME root with per-file fingerprint walk (S63) ---
 # Top-level dispatch:
 #   - logs/                    → preserve entirely (uninstall provenance lands here)
@@ -415,6 +441,8 @@ fi
   printf 'backup_dir: %s\n'                      "$backup_dir"
   printf 'backup_entry_count: %d\n'              "$backup_count"
   printf 'bootout_count: %d\n'                   "$boot_count"
+  printf 'plist_rm_count: %d\n'                  "$plist_rm_count"
+  printf 'plist_rm_dir: %s\n'                    "$LA_DIR"
   printf 'removed_count: %d\n'                   "$removed_count"
   printf 'preserved_count: %d\n'                 "$preserved_count"
   printf 'user_edited_foundation_count: %d\n'    "$user_edited_foundation_count"
@@ -431,7 +459,7 @@ fi
       printf '  - %s\n' "$p"
     done < "$user_edited_paths_log"
   fi
-  printf 'slice_scope: G1-pre symmetric + provenance-log-driven CLAUDE_HOME confirm + foundation-manifest.json read + .pre-uninstall-<ts>/ backup + launchctl bootout (LAUNCHCTL_BIN-overridable, G6-gated, com.claude-foundations.* only) + per-file fingerprint walk inside foundation directories + basename rm for foundation root files + logs/ + non-foundation top-level preservation + --force-rm-edited / --force-remove\n'
+  printf 'slice_scope: G1-pre symmetric + provenance-log-driven CLAUDE_HOME confirm + foundation-manifest.json read + .pre-uninstall-<ts>/ backup + launchctl bootout (LAUNCHCTL_BIN-overridable, G6-gated, com.claude-foundations.* only) + foundation plist rm at $HOME/Library/LaunchAgents/ (CFF-S71-1; G6-symmetric prefix filter) + per-file fingerprint walk inside foundation directories + basename rm for foundation root files + logs/ + non-foundation top-level preservation + --force-rm-edited / --force-remove\n'
   printf 'deferred: 10s/plist timeout wrapper around launchctl bootout; settings.json baseline jq-reverse unmerge (G7-symmetric); --selective/--full/--dry-run/--keep-backup flag matrix; SP00 runner-shell negative rehearsal; provenance-log freshness validation\n'
 } > "$log_path" || { diag "uninstall provenance log write failed"; rm -f "$manifest_records_tmp" "$user_edited_paths_log"; exit 11; }
 

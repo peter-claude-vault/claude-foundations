@@ -542,6 +542,110 @@ assert_eq "0" "$T6_RC_CLEAN" \
   "T6.4: clean-history repo + Layer 4 enabled → grep-audit rc=0 (no false positives)"
 
 # ===================================================================
+# T7 — uninstall.sh removes foundation plists at $HOME/Library/LaunchAgents/
+#       (CFF-S71-1; symmetric with G6 namespace filter)
+# ===================================================================
+echo ""
+echo "== T7: uninstall.sh removes foundation plists; foreign plists preserved =="
+T7_TMP=$(mk_tmp)
+T7_CH="$T7_TMP/.claude"
+
+# Install + seed for render. seed_fake_home_for_render writes paths.sh +
+# orchestration.json under $T7_TMP. install.sh ships its own paths.sh
+# (translation lib/→hooks/lib/) which would overwrite the seeded one; we
+# call install.sh first, then re-seed orchestration.json so it lands at the
+# canonical $CLAUDE_HOME/orchestration.json paths.sh resolves.
+HOME="$T7_TMP" CLAUDE_HOME="$T7_CH" SOURCE_REPO="$REPO_ROOT" \
+  bash "$INSTALL_SH" --apply >"$T7_TMP/.install.stdout" 2>"$T7_TMP/.install.stderr"
+T7_INSTALL_RC=$?
+assert_eq "0" "$T7_INSTALL_RC" "T7.1: install.sh --apply exits 0"
+
+# Seed orchestration.json fixture for render-launchd (librarian-only schedule)
+cat > "$T7_CH/orchestration.json" <<'EOF'
+{
+  "schema_version": "1.0.0",
+  "platform": "darwin-launchd",
+  "jobs": [
+    {"id": "librarian", "enabled": true, "schedule": {"hour": 6, "minute": 0}, "command": "x", "log_path": "x", "idle_watchdog_sec": 180}
+  ],
+  "tripwires": [],
+  "observability": {"morning_brief_staleness_h": 48, "librarian_staleness_h": 24, "sessionstart_banner_staleness_h": 24}
+}
+EOF
+
+# Render production mode under PATH-injected mock-launchctl → writes plist
+# to $T7_TMP/Library/LaunchAgents/com.claude-foundations.librarian-scan.plist;
+# mock intercepts launchctl bootstrap so host launchd is untouched.
+T7_PATHDIR="$T7_TMP/.path"
+make_launchctl_path_dir "$T7_PATHDIR"
+T7_TRACE_RENDER="$T7_TMP/.results-render"
+mkdir -p "$T7_TRACE_RENDER"
+
+HOME="$T7_TMP" CLAUDE_HOME="$T7_CH" \
+  ORCHESTRATION_JSON="$T7_CH/orchestration.json" \
+  PATH="$T7_PATHDIR:$PATH" \
+  LAUNCHCTL_TRACE_DIR="$T7_TRACE_RENDER" \
+  LAUNCHCTL_PLIST_LINT="$LINT" \
+  bash "$RENDER" librarian </dev/null \
+    >"$T7_TMP/.render.stdout" 2>"$T7_TMP/.render.stderr"
+T7_RENDER_RC=$?
+assert_eq "0" "$T7_RENDER_RC" "T7.2: render-launchd production rc=0 under mock"
+
+T7_FOUNDATION_PLIST="$T7_TMP/Library/LaunchAgents/com.claude-foundations.librarian-scan.plist"
+assert_path_exists "$T7_FOUNDATION_PLIST" \
+  "T7.3: foundation plist landed at \$HOME/Library/LaunchAgents/ post-render"
+
+# Plant a foreign plist alongside the foundation one. G6-symmetric: the
+# uninstall plist-cleanup loop should rm only com.claude-foundations.* plists
+# and preserve foreign plists. Foreign-plist content is a minimal valid plist
+# (plutil-lint not strictly required for survival assertion, but use a real
+# plist shape so any plutil-touching codepath doesn't reject it).
+T7_FOREIGN_PLIST="$T7_TMP/Library/LaunchAgents/com.example.unrelated.plist"
+cat > "$T7_FOREIGN_PLIST" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTD/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.example.unrelated</string>
+  <key>ProgramArguments</key><array><string>/usr/bin/true</string></array>
+</dict></plist>
+EOF
+assert_path_exists "$T7_FOREIGN_PLIST" "T7.4: foreign plist planted (sentinel)"
+
+# Run uninstall.sh under mock-launchctl. LAUNCHCTL_BIN points at mock so the
+# foundation label's bootout is intercepted; the post-bootout plist-cleanup
+# loop is what we're actually testing here (touches filesystem only, not
+# launchctl, so mock is incidental).
+T7_TRACE_UNINSTALL="$T7_TMP/.results-uninstall"
+mkdir -p "$T7_TRACE_UNINSTALL"
+HOME="$T7_TMP" CLAUDE_HOME="$T7_CH" \
+  PATH="$T7_PATHDIR:$PATH" \
+  LAUNCHCTL_TRACE_DIR="$T7_TRACE_UNINSTALL" \
+  LAUNCHCTL_PLIST_LINT="$LINT" \
+  LAUNCHCTL_BIN="$T7_PATHDIR/launchctl" \
+  bash "$UNINSTALL_SH" >"$T7_TMP/.uninstall.stdout" 2>"$T7_TMP/.uninstall.stderr"
+T7_UNINSTALL_RC=$?
+assert_eq "0" "$T7_UNINSTALL_RC" "T7.5: uninstall.sh exits 0"
+
+# Foundation plist removed (CFF-S71-1 fix verifies)
+assert_path_absent "$T7_FOUNDATION_PLIST" \
+  "T7.6: foundation plist removed from \$HOME/Library/LaunchAgents/ post-uninstall (CFF-S71-1)"
+
+# Foreign plist preserved (G6-symmetric namespace filter)
+assert_path_exists "$T7_FOREIGN_PLIST" \
+  "T7.7: foreign plist preserved (G6-symmetric: only com.claude-foundations.* removed)"
+
+# Provenance log records plist_rm_count = 1
+T7_PROV_LOG=$(ls -1 "$T7_CH/logs"/uninstall-*.log 2>/dev/null | head -1)
+if [ -n "$T7_PROV_LOG" ] && [ -r "$T7_PROV_LOG" ]; then
+  T7_PLIST_RM_COUNT=$(grep '^plist_rm_count:' "$T7_PROV_LOG" | awk '{print $2}')
+  assert_eq "1" "$T7_PLIST_RM_COUNT" \
+    "T7.8: provenance log records plist_rm_count=1"
+else
+  printf '  FAIL T7.8: uninstall provenance log not found\n' >&2
+  FAIL=$((FAIL+1))
+fi
+
+# ===================================================================
 # Summary
 # ===================================================================
 echo ""
