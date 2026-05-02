@@ -109,6 +109,14 @@ RUN chmod 0755 /tests/*.sh /entrypoint.sh \
 # route through the mock to record traces in /results/launchctl-trace.ndjson.
 RUN ln -s /tests/mock-launchctl.sh /usr/local/bin/launchctl
 
+# --- plutil shim wiring ---
+# Apple's `plutil` is macOS-only. install.sh + installer/render-launchd.sh +
+# installer/bootout-launchd.sh require it for plist lint + Label extraction.
+# Symlink the Python-backed shim at the same path so call sites are
+# transparent. Real plutil on macOS hosts is unaffected (this only ships
+# inside the container image).
+RUN ln -s /tests/plutil-shim.sh /usr/local/bin/plutil
+
 # /results is the exfil surface: JSON summaries, ndjson traces, audit logs.
 # Created as root (/ is root-owned) then chowned to tester so tests can
 # write without sudo; scp retrieves the tree to the host (not bind-mounted
