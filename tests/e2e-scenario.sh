@@ -62,9 +62,14 @@ MANIFEST
 mkdir -p "$TEST_HOME/vault"
 
 # --- Phase 2: install.sh ---
+# G1-main fires because $CLAUDE_HOME == $HOME/.claude (the canonical April-13
+# vector). install.sh requires --force-install AND the I-UNDERSTAND-APRIL-13
+# sentinel typed via stdin to proceed. Pipe the sentinel; --force-install
+# acknowledges intentional overwrite of fresh tester home.
 {
   echo "=== install.sh ==="
-  CLAUDE_HOME="$CLAUDE_HOME" PLANS_HOME="$PLANS_HOME" \
+  printf 'I-UNDERSTAND-APRIL-13\n' | \
+    CLAUDE_HOME="$CLAUDE_HOME" PLANS_HOME="$PLANS_HOME" \
     SOURCE_REPO="$SOURCE" \
     bash "$SOURCE/install.sh" --apply --force-install 2>&1
   rc=$?
