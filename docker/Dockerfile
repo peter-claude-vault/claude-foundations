@@ -44,6 +44,7 @@ RUN apt-get update \
         bash \
         ca-certificates \
         curl \
+        gettext-base \
         git \
         jq \
         openssh-client \

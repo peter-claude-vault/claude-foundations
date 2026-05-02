@@ -231,8 +231,8 @@
     {
       "mode": "0644",
       "path": "onboarding/SKILL.md",
-      "sha256": "c771d51308f57b159015b527fc6d67dcf569971f4e36a45de4ac85ab219d5f9e",
-      "size": 8312
+      "sha256": "df826abc9b52a24916c3ecb6ddef8f6ce10a408d3d56378ae3307b04d38e6fc7",
+      "size": 8259
     },
     {
       "mode": "0755",
@@ -405,8 +405,8 @@
     {
       "mode": "0644",
       "path": "onboarding/initial-job-setup-flow.md",
-      "sha256": "e5abde8fff75097b0d49e9fefea572fafb174fa3633b80405a239a1b2c2f2e6a",
-      "size": 17494
+      "sha256": "c5110d939bed18be57c654ac9f0ec2198aa9a2974e7b2d35c07859f4683b4ac3",
+      "size": 17157
     },
     {
       "mode": "0755",
@@ -621,8 +621,8 @@
     {
       "mode": "0644",
       "path": "schemas/README.md",
-      "sha256": "db17aeb6e7a3cbad1ae8566031d8e9daff6595d53a87562d271121e5d3b674ed",
-      "size": 4283
+      "sha256": "5b69e66fb9bf43368adca9d8dd278eba060971e4f3f30a354adf71cd1c3dd9f0",
+      "size": 4235
     },
     {
       "mode": "0644",
@@ -1099,7 +1099,7 @@
       "size": 4073
     }
   ],
-  "generated_at": "2026-05-02T21:15:47Z",
+  "generated_at": "2026-05-02T23:41:30Z",
   "generator_sha256": "6663fda7b45539aeeb995555bab3b6aeb81105c4f26d0abefb7b21e33e708f81",
   "version": "v2.0.0-rc1"
 }
