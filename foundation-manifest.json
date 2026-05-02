@@ -399,8 +399,8 @@
     {
       "mode": "0755",
       "path": "onboarding/initial-job-setup.sh",
-      "sha256": "af25c174be88fc49516432fd68e4bb937133d7bab244bdfc406bd59a54f3301b",
-      "size": 7596
+      "sha256": "464c22814bba78fc413c44dbd6b005ef6988788e092e60680bfeb0c5ab8d90d3",
+      "size": 19765
     },
     {
       "mode": "0644",
@@ -1003,7 +1003,7 @@
       "size": 2035
     }
   ],
-  "generated_at": "2026-05-02T15:04:59Z",
+  "generated_at": "2026-05-02T15:41:52Z",
   "generator_sha256": "72ce8a38a7a417887239d8b1a4242f15b333e77b2013e0ac5130f8d1b39b54ab",
   "version": "v2.0.0-rc1"
 }
