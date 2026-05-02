@@ -4,3 +4,5 @@
 .image-digest
 *.log
 /.self-verify/
+/.e2e/
+/.e2e-scenario.sh
