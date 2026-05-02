@@ -35,7 +35,7 @@ d6c422bbcbb571c7e5b0c97b34a158d4729d5e120c5a4ecedfb52c855e0618d2  orchestration-
 
 ## SP06 13-field contract (user-manifest 1.2.0)
 
-The 13 fields enumerated in `~/.claude-plans/71-claude-foundations-engine-v2/06-generic-processing-skills/manifest.json:150-164` (`manifest_fields_consumed`) are all present in foundation-repo `user-manifest-schema.json` v1.2.0:
+The 13 fields enumerated in SP06 (generic-processing-skills) manifest.json:150-164 `manifest_fields_consumed` are all present in foundation-repo `user-manifest-schema.json` v1.2.0:
 
 `vault.root`, `backlog.{index_path,archive_path,progress_dir,clusters[]}`, `dashboard.{enabled,path}`, `paths.{hooks_state,cron_log_dir,plans_root}`, `brief_repos[]`, `crons.groups[]`, `system.timezone`.
 

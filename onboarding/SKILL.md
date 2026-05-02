@@ -140,8 +140,8 @@ DRY-RUN: complete — 2 would-write, 2 no-op (byte-match); zero filesystem mutat
 
 ## Cross-references
 
-- Spec: `~/.claude-plans/71-claude-foundations-engine-v2/01-schemas-and-onboarder-contract/spec.md`
-- Tasks: same dir, `tasks.md` T-10 (lines 544–565), T-11 (`--dry-run`, lines 608–622).
+- Spec: SP01 (schemas-and-onboarder-contract) spec.md
+- Tasks: SP01 tasks.md T-10 (lines 544–565), T-11 (`--dry-run`, lines 608–622).
 - Q→field map: `~/.claude/onboarding/q-field-map.json` (T-8).
 - Extraction prompts: `~/.claude/onboarding/extraction-prompts/section-{A..E}.md` (T-9).
 - Archetype-inference companion: `~/.claude/onboarding/archetype-inference.sh` (T-7a).

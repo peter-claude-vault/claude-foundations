@@ -262,7 +262,7 @@ For SP07 T-11 Alex-archetype greenfield dogfood and Peter reinstall:
 - Wrapped in SP00 T-9 sandbox-exec profile (deny-default; allow only `$DOGFOOD_ROOT/Library/LaunchAgents/` writes + launchctl IPC)
 - `$DOGFOOD_ROOT` is the Lima-scoped `CLAUDE_HOME` isolation root; never resolves to `$HOME` on the real host
 
-See `~/.claude-plans/71-claude-foundations-engine-v2/00-isolation-harness/tasks.md` T-9 (sandbox-exec profile) and `~/.claude-plans/71-claude-foundations-engine-v2/07-onboarder-ux/tasks.md` T-11 (Alex dogfood).
+See SP00 (isolation-harness) tasks.md T-9 (sandbox-exec profile) and SP07 (onboarder-ux) tasks.md T-11 (Alex dogfood).
 
 ## 7. TCC grant pointer
 
@@ -307,11 +307,11 @@ Full macOS-specific instructions (MDM caveats, signed-binary inheritance, sandbo
 
 ## 10. References
 
-- `~/.claude-plans/71-claude-foundations-engine-v2/03-orchestration-engine/spec.md` L96-114 — T-12 spec source
-- `~/.claude-plans/71-claude-foundations-engine-v2/03-orchestration-engine/tasks.md` L296-314 — T-12 task block
-- `~/.claude-plans/71-claude-foundations-engine-v2/07-onboarder-ux/spec.md` L86-102 — production-vs-test isolation
-- `~/.claude-plans/71-claude-foundations-engine-v2/07-onboarder-ux/tasks.md` L184-207 — SP07 T-9 absorbs this flow
-- `~/.claude-plans/71-claude-foundations-engine-v2/08-distribution-installer-adopt/spec.md` L80, L69-105 — G6 + G1-G10 guards
+- SP03 (orchestration-engine) spec L96-114 — T-12 spec source
+- SP03 (orchestration-engine) tasks L296-314 — T-12 task block
+- SP07 (onboarder-ux) spec L86-102 — production-vs-test isolation
+- SP07 (onboarder-ux) tasks L184-207 — SP07 T-9 absorbs this flow
+- SP08 (distribution-installer-adopt) spec L80, L69-105 — G6 + G1-G10 guards
 - `~/Code/claude-foundations-v2/installer/render-launchd.sh` L162-203 — TZ + envsubst allowlist (S55 commit `48cee95`)
 - `~/Code/claude-foundations-v2/templates/launchd/librarian.plist.tmpl` — daily plist (no Weekday key)
 - `~/Code/claude-foundations-v2/templates/launchd/architect.plist.tmpl` — weekly plist (single Weekday)

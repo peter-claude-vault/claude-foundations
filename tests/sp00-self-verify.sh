@@ -303,9 +303,21 @@ fi
 # note, not a runtime ref). The check targets shell-script paths of
 # the form `$HOME/.claude`, `${HOME}/.claude`, `~/.claude` on a line
 # that is NOT a comment.
-home_refs=$(grep -rIn -E '(\$HOME|\$\{HOME\}|(^|[^A-Za-z0-9_])~)/?\.claude' \
+#
+# Regex anchors `\.claude` followed by `(\W|$)` to distinguish the canonical
+# CLAUDE_HOME path from `\.claude-plans` (PLANS_HOME), `\.claude-foundations`
+# (label prefix), `\.claude-mem` (plugin), etc.
+#
+# Exclusions:
+#   - sp00-self-verify.sh + pre-write-guard-foundation-mode.sh: SP00 selftest
+#     primitives that legitimately reach $HOME/.claude (introspection only).
+#   - e2e-lima-dogfood.sh: host-side T-7 dogfood orchestrator that snapshots
+#     $HOME/.claude as part of the pre-dogfood contract (rollback safety).
+#     Runs on host, NOT in container; container surface is governed by
+#     /entrypoint.sh + readiness-gate, not this probe.
+home_refs=$(grep -rIn -E '(\$HOME|\$\{HOME\}|(^|[^A-Za-z0-9_])~)/?\.claude(\W|$)' \
     "$REPO/docker"/*.sh "$REPO/tests"/*.sh "$REPO/lima"/*.yaml 2>/dev/null \
-  | grep -vE '/grep-audit-fixtures/|/grep-audit-patterns/|sp00-self-verify\.sh|pre-write-guard-foundation-mode\.sh' \
+  | grep -vE '/grep-audit-fixtures/|/grep-audit-patterns/|sp00-self-verify\.sh|pre-write-guard-foundation-mode\.sh|e2e-lima-dogfood\.sh' \
   | awk -F: '{
       # Drop lines whose content (post lineno) begins with # after trim.
       content=$0; sub(/^[^:]*:[0-9]+:/, "", content);
