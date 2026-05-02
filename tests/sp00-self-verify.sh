@@ -304,9 +304,12 @@ fi
 # the form `$HOME/.claude`, `${HOME}/.claude`, `~/.claude` on a line
 # that is NOT a comment.
 #
-# Regex anchors `\.claude` followed by `(\W|$)` to distinguish the canonical
-# CLAUDE_HOME path from `\.claude-plans` (PLANS_HOME), `\.claude-foundations`
-# (label prefix), `\.claude-mem` (plugin), etc.
+# Regex anchors `\.claude` followed by `($|[^A-Za-z0-9_-])` to distinguish the
+# canonical CLAUDE_HOME path from `\.claude-plans` (PLANS_HOME),
+# `\.claude-foundations` (label prefix), `\.claude-mem` (plugin), etc. A
+# generic `\W` end-anchor includes `-` and would still match those — the
+# explicit character class excludes `-` to reject them while accepting
+# `/`, `"`, `'`, whitespace, end-of-line.
 #
 # Exclusions:
 #   - sp00-self-verify.sh + pre-write-guard-foundation-mode.sh: SP00 selftest
@@ -315,7 +318,7 @@ fi
 #     $HOME/.claude as part of the pre-dogfood contract (rollback safety).
 #     Runs on host, NOT in container; container surface is governed by
 #     /entrypoint.sh + readiness-gate, not this probe.
-home_refs=$(grep -rIn -E '(\$HOME|\$\{HOME\}|(^|[^A-Za-z0-9_])~)/?\.claude(\W|$)' \
+home_refs=$(grep -rIn -E '(\$HOME|\$\{HOME\}|(^|[^A-Za-z0-9_])~)/?\.claude($|[^A-Za-z0-9_-])' \
     "$REPO/docker"/*.sh "$REPO/tests"/*.sh "$REPO/lima"/*.yaml 2>/dev/null \
   | grep -vE '/grep-audit-fixtures/|/grep-audit-patterns/|sp00-self-verify\.sh|pre-write-guard-foundation-mode\.sh|e2e-lima-dogfood\.sh' \
   | awk -F: '{
