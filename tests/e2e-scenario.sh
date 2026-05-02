@@ -17,7 +17,7 @@
 
 set -uo pipefail
 mkdir -p /results
-SOURCE=/source-repo
+SOURCE=/home/tester/source-repo
 TEST_HOME=/home/tester
 CLAUDE_HOME=$TEST_HOME/.claude
 PLANS_HOME=$TEST_HOME/.claude-plans

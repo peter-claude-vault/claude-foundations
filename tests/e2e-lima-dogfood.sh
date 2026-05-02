@@ -206,10 +206,9 @@ SCENARIO="$REPO/tests/e2e-scenario.sh"
       --network=none \
       -v \"\$HOST_TAR\":/source.tar:ro \
       $IMAGE /bin/bash -c '
-        mkdir -p /tmp/source-repo
-        tar -xf /source.tar -C /tmp/source-repo
-        ln -s /tmp/source-repo /source-repo 2>/dev/null || true
-        bash /source-repo/tests/e2e-scenario.sh
+        mkdir -p /home/tester/source-repo
+        tar -xf /source.tar -C /home/tester/source-repo
+        bash /home/tester/source-repo/tests/e2e-scenario.sh
       '
     rc=\$?
     rm -f \"\$HOST_TAR\"
