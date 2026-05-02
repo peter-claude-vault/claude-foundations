@@ -188,8 +188,8 @@ emit_pairs() {
     done
   fi
 
-  # templates/ — 3 named files at top
-  for f in "$SOURCE_REPO/templates/settings.json" "$SOURCE_REPO/templates/librarian-manifest-skeleton.json" "$SOURCE_REPO/templates/README.md"; do
+  # templates/ — 4 named files at top
+  for f in "$SOURCE_REPO/templates/settings.json" "$SOURCE_REPO/templates/librarian-manifest-skeleton.json" "$SOURCE_REPO/templates/README.md" "$SOURCE_REPO/templates/vault-claude-md-template.md"; do
     [ -f "$f" ] || continue
     base="${f##*/}"
     printf 'templates/%s\ttemplates/%s\n' "$base" "$base"

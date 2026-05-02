@@ -662,6 +662,18 @@
     },
     {
       "mode": "0644",
+      "path": "skills/adopt/SKILL.md",
+      "sha256": "9583870c94882b5d706c45ad667295b6bde68728f11edb21da1b1b376adb70f8",
+      "size": 13127
+    },
+    {
+      "mode": "0755",
+      "path": "skills/adopt/adopt.sh",
+      "sha256": "02b45396e1789b00c1fde6b5584452591c4b9dcbd77cee59700a5b972d73130b",
+      "size": 14717
+    },
+    {
+      "mode": "0644",
       "path": "skills/architect/SKILL.md",
       "sha256": "043ee03f0d24abd4628613e300c266b1cf61ff330d04670605e3466f02f650c8",
       "size": 26834
@@ -1079,9 +1091,15 @@
       "path": "templates/settings.json",
       "sha256": "5bec337101597fccf80b4daf74728e0079d61bf28ed63263db78ee05850e61a0",
       "size": 2175
+    },
+    {
+      "mode": "0644",
+      "path": "templates/vault-claude-md-template.md",
+      "sha256": "137d1200f12859ba41f1dad019b257f3d50d5b61d4898358c859f365c72ce9b2",
+      "size": 4073
     }
   ],
-  "generated_at": "2026-05-02T20:36:48Z",
-  "generator_sha256": "72ce8a38a7a417887239d8b1a4242f15b333e77b2013e0ac5130f8d1b39b54ab",
+  "generated_at": "2026-05-02T21:15:47Z",
+  "generator_sha256": "6663fda7b45539aeeb995555bab3b6aeb81105c4f26d0abefb7b21e33e708f81",
   "version": "v2.0.0-rc1"
 }
