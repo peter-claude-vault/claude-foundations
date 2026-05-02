@@ -439,6 +439,12 @@
       "size": 17381
     },
     {
+      "mode": "0755",
+      "path": "onboarding/voice-capture.sh",
+      "sha256": "9642dc8b2cbc0a9ef3af0693dd0a974f5f67db86cf4db5f1c3826cd9381fccfb",
+      "size": 11009
+    },
+    {
       "mode": "0644",
       "path": "orchestrator/MANIFEST.txt",
       "sha256": "a9858bd85a4d10704e00a1e534123c2e0cf03150afe8d1855e0804cb36096df4",
@@ -961,7 +967,7 @@
       "size": 2035
     }
   ],
-  "generated_at": "2026-05-01T23:26:15Z",
+  "generated_at": "2026-05-02T00:12:39Z",
   "generator_sha256": "72ce8a38a7a417887239d8b1a4242f15b333e77b2013e0ac5130f8d1b39b54ab",
   "version": "v2.0.0-rc1"
 }
