@@ -87,22 +87,41 @@ INSTALL_RC=$(grep -E '^INSTALL_RC=' /results/install.log | cut -d= -f2)
 } > /results/adopt.log 2>&1
 ADOPT_RC=$(grep -E '^ADOPT_RC=' /results/adopt.log | cut -d= -f2)
 
-# --- Phase 4: librarian-cron simulated fire (mock-launchctl) ---
+# --- Phase 4: librarian-cron render + simulated fire (mock-launchctl) ---
+# install.sh stages files but does NOT render plists (next-step per
+# install.sh's stdout). Onboarder Section D runs initial-job-setup.sh which
+# writes orchestration.json; without real onboarder (T-7b), pre-stage a
+# minimal orchestration.json fixture, then invoke render-launchd.sh in
+# production mode (writes to $HOME/Library/LaunchAgents + bootstraps).
 {
-  echo "=== librarian-cron simulated fire ==="
-  PLIST=""
-  for cand in \
-    "$CLAUDE_HOME/Library/LaunchAgents/com.claude-foundations.librarian.plist" \
-    "$TEST_HOME/Library/LaunchAgents/com.claude-foundations.librarian.plist"; do
-    [ -f "$cand" ] && { PLIST="$cand"; break; }
-  done
-  if [ -z "$PLIST" ]; then
-    echo "(no librarian plist found post-install; falling back to template)"
-    PLIST="$SOURCE/templates/launchd/librarian.plist.tmpl"
-  fi
-  echo "plist: $PLIST"
-  launchctl bootstrap gui/1000 "$PLIST" 2>&1
+  echo "=== librarian-cron render + simulated fire ==="
+  mkdir -p "$TEST_HOME/Library/LaunchAgents"
+  cat > "$CLAUDE_HOME/orchestration.json" <<ORCH
+{
+  "schema_version": "1.0.0",
+  "platform": "darwin-launchd",
+  "jobs": [
+    {
+      "id": "librarian",
+      "enabled": true,
+      "schedule": { "hour": 4, "minute": 0 },
+      "command": "$CLAUDE_HOME/orchestrator/cron-wrappers/librarian-cron.sh",
+      "log_path": "$CLAUDE_HOME/logs/librarian-cron.log",
+      "idle_watchdog_sec": 180,
+      "model": "sonnet",
+      "budget_usd": 5
+    }
+  ],
+  "tripwires": {},
+  "observability": {}
+}
+ORCH
+
+  echo "--- render-launchd.sh librarian (production mode) ---"
+  cd "$CLAUDE_HOME"
+  bash "$CLAUDE_HOME/installer/render-launchd.sh" librarian 2>&1
   rc=$?
+  echo "RENDER_RC=$rc"
   echo "CRON_BOOT_RC=$rc"
   echo "--- launchctl-trace.ndjson ---"
   if [ -s /results/launchctl-trace.ndjson ]; then
@@ -127,8 +146,11 @@ TRACE_BYTES=$(grep -E '^TRACE_BYTES=' /results/cron.log | tail -1 | cut -d= -f2)
   rc=$?
   echo "UNINSTALL_RC=$rc"
   echo "--- post-uninstall residue (foundation files) ---"
+  # logs/ is INTENTIONALLY preserved by uninstall.sh as the provenance
+  # destination (uninstall writes its own log there during execution and
+  # cannot remove the directory it's writing to). Excluded from residue.
   surv=0
-  for entry in hooks skills schemas onboarding orchestrator templates plugins installer logs settings.json settings.local.json foundation-manifest.json; do
+  for entry in hooks skills schemas onboarding orchestrator templates plugins installer settings.json settings.local.json foundation-manifest.json; do
     if [ -e "$CLAUDE_HOME/$entry" ]; then
       echo "RESIDUE: $entry"
       surv=$((surv+1))
