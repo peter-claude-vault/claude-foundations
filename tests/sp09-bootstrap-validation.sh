@@ -17,7 +17,7 @@
 # Checks performed:
 #   1. bash -n on bootstrap-schemas.sh + archetype-inference.sh
 #   2. jq -e on all 6 foundation-repo schemas
-#   3. user-manifest-schema.json: system.schema_version.const == "1.2.0"
+#   3. user-manifest-schema.json: system.schema_version.const == "1.5.0"
 #   4. user-manifest-schema.json: 14/14 SP06+F-08 fields PRESENT
 #   5. archetype-inference.sh dry-run against 3 archetype fixtures
 #      (consultant, developer, writer); expect each fixture to be
@@ -89,13 +89,13 @@ for s in vault-schema plans-schema plan-manifest-schema librarian-manifest-schem
   fi
 done
 
-# --- Check 3: user-manifest schema_version.const = 1.2.0 -------------
-printf '\n[3] user-manifest schema_version.const == 1.2.0\n'
+# --- Check 3: user-manifest schema_version.const = 1.5.0 -------------
+printf '\n[3] user-manifest schema_version.const == 1.5.0\n'
 ver=$(jq -r '.properties.system.properties.schema_version.const' "$USER_MANIFEST" 2>/dev/null)
-if [ "$ver" = "1.2.0" ]; then
-  emit_pass "schema_version.const = 1.2.0"
+if [ "$ver" = "1.5.0" ]; then
+  emit_pass "schema_version.const = 1.5.0"
 else
-  emit_fail "schema_version.const = '$ver' (expected 1.2.0)"
+  emit_fail "schema_version.const = '$ver' (expected 1.5.0)"
 fi
 
 # --- Check 4: 14/14 SP06+F-08 fields PRESENT in user-manifest --------

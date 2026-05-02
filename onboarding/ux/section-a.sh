@@ -93,6 +93,11 @@ RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 RUN_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 EXTRACTION_OUT="$INPUTS_DIR/extraction-output-A.json"
 
+# --- foundation-repo source resolution (Bucket A) — for checkpoint.sh ---
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ONBOARDING_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+USER_MANIFEST="${USER_MANIFEST:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
+
 mkdir -p "$INPUTS_DIR" "$(dirname "$AUDIT_LOG")" 2>/dev/null || {
   diag "cannot create output directories"
   exit 3
@@ -429,6 +434,9 @@ elect_opt_out_and_exit() {
   info "Discovery opt-out elected. Manifest will record discovery_skipped."
   emit_extraction_output 1 || { diag "extraction-output write failed"; exit 3; }
   emit_audit_jsonl 1       || { diag "audit JSONL write failed"; exit 3; }
+  # SP07 T-10: per-section checkpoint (A has no transcript).
+  "$ONBOARDING_DIR/checkpoint.sh" --section A --user-manifest "$USER_MANIFEST" \
+    || { diag "checkpoint.sh write failed for section A"; exit 3; }
   info "Section A complete (opt-out path). Continuing to Section B."
   exit 0
 }
@@ -436,6 +444,9 @@ elect_opt_out_and_exit() {
 emit_accepted_and_exit() {
   emit_extraction_output 0 || { diag "extraction-output write failed"; exit 3; }
   emit_audit_jsonl 0       || { diag "audit JSONL write failed"; exit 3; }
+  # SP07 T-10: per-section checkpoint (A has no transcript).
+  "$ONBOARDING_DIR/checkpoint.sh" --section A --user-manifest "$USER_MANIFEST" \
+    || { diag "checkpoint.sh write failed for section A"; exit 3; }
   info "Section A complete. extraction-output-A.json staged at $EXTRACTION_OUT."
   exit 0
 }

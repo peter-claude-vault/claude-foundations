@@ -502,6 +502,14 @@ do_rerecord() {
 
   remove_phases_completed || return 3
 
+  # SP07 T-10: also remove the completion_state[$SECTION] entry. checkpoint.sh
+  # --remove-section is idempotent; safe even if the entry was never written.
+  if ! "$ONBOARDING_DIR/checkpoint.sh" --remove-section "$SECTION_UPPER" \
+       --user-manifest "$USER_MANIFEST"; then
+    diag "checkpoint.sh remove failed for section $SECTION_UPPER"
+    return 3
+  fi
+
   # Append re-record marker as a separate audit event. Per JSONL append-only
   # convention, prior entries remain in the log as historical record.
   local audit_tmp="$AUDIT_LOG.tmp.$$"
@@ -670,11 +678,23 @@ do_accept() {
   fi
 
   # Accept path: append audit line with corrections[] populated, then update
-  # phases_completed[].
+  # phases_completed[]. SP07 T-10: also write the completion_state checkpoint
+  # via checkpoint.sh (writes phases_completed idempotently AND records
+  # completion_state[$SECTION] = {committed_at, transcript_sha?}).
   append_audit_line "$corrections_json" "[]" || return 3
   append_phases_completed || return 3
 
-  info "Section ${SECTION_UPPER} accepted; phases_completed[] updated; corrections=${corrections_json}"
+  local checkpoint_args="--section $SECTION_UPPER --user-manifest $USER_MANIFEST"
+  if [ -r "$TRANSCRIPT_PATH" ]; then
+    checkpoint_args="$checkpoint_args --transcript $TRANSCRIPT_PATH"
+  fi
+  # shellcheck disable=SC2086
+  if ! "$ONBOARDING_DIR/checkpoint.sh" $checkpoint_args; then
+    diag "checkpoint.sh write failed for section $SECTION_UPPER"
+    return 3
+  fi
+
+  info "Section ${SECTION_UPPER} accepted; phases_completed[] + completion_state updated; corrections=${corrections_json}"
   return 0
 }
 

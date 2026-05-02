@@ -79,7 +79,7 @@
   },
   "system": {
     "timezone": "America/New_York",
-    "schema_version": "1.4.0",
+    "schema_version": "1.5.0",
     "standards_version": "1.0.0",
     "created_date": "2026-04-27",
     "phases_completed": ["A", "B", "C", "D", "E"],

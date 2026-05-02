@@ -92,6 +92,11 @@ RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 RUN_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 EXTRACTION_OUT="$INPUTS_DIR/extraction-output-E.json"
 
+# --- foundation-repo source resolution (Bucket A) — for checkpoint.sh ---
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ONBOARDING_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+USER_MANIFEST="${USER_MANIFEST:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
+
 mkdir -p "$INPUTS_DIR" "$(dirname "$AUDIT_LOG")" 2>/dev/null || {
   diag "cannot create output directories"
   exit 3
@@ -249,6 +254,9 @@ emit_audit_jsonl() {
 emit_and_exit() {
   emit_extraction_output || { diag "extraction-output write failed"; exit 3; }
   emit_audit_jsonl       || { diag "audit JSONL write failed"; exit 3; }
+  # SP07 T-10: per-section checkpoint (E has no transcript).
+  "$ONBOARDING_DIR/checkpoint.sh" --section E --user-manifest "$USER_MANIFEST" \
+    || { diag "checkpoint.sh write failed for section E"; exit 3; }
   info "Section E complete. extraction-output-E.json staged at $EXTRACTION_OUT."
   exit 0
 }
