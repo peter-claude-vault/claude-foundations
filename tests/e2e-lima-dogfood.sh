@@ -161,11 +161,10 @@ IMAGE=$(head -n 1 "$REPO/.image-digest")
 [ -n "$IMAGE" ] || { err "empty .image-digest"; exit 2; }
 printf 'image: %s\n' "$IMAGE" | tee "$RESULTS/image.txt"
 
-# Verify image is loaded in Lima cache.
-img_present=$(limactl shell foundations -- bash -lc \
-  "export XDG_RUNTIME_DIR=/run/user/\$(id -u); nerdctl images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -F '$IMAGE' | head -1" \
-  2>&1)
-if [ -z "$img_present" ]; then
+# Verify image is loaded in Lima cache (by digest; nerdctl accepts sha256:...
+# refs to inspect; succeed=present, fail=absent).
+if ! limactl shell foundations -- bash -lc \
+     "export XDG_RUNTIME_DIR=/run/user/\$(id -u); nerdctl image inspect $IMAGE >/dev/null 2>&1"; then
   err "image $IMAGE not in Lima cache; run docker/build.sh"
   exit 2
 fi
