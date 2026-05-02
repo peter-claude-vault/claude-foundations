@@ -470,6 +470,12 @@
     },
     {
       "mode": "0755",
+      "path": "onboarding/ux/section-e.sh",
+      "sha256": "d00e8c2c81e0e3db2ca4c2a8d57c4ba73f8da6f24cbc228b17d14c9314005626",
+      "size": 9364
+    },
+    {
+      "mode": "0755",
       "path": "onboarding/voice-capture.sh",
       "sha256": "9642dc8b2cbc0a9ef3af0693dd0a974f5f67db86cf4db5f1c3826cd9381fccfb",
       "size": 11009
@@ -997,7 +1003,7 @@
       "size": 2035
     }
   ],
-  "generated_at": "2026-05-02T14:42:50Z",
+  "generated_at": "2026-05-02T15:04:59Z",
   "generator_sha256": "72ce8a38a7a417887239d8b1a4242f15b333e77b2013e0ac5130f8d1b39b54ab",
   "version": "v2.0.0-rc1"
 }
