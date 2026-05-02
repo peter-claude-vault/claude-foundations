@@ -197,6 +197,9 @@ SCENARIO="$REPO/tests/e2e-scenario.sh"
     export XDG_RUNTIME_DIR=/run/user/\$(id -u)
     HOST_TAR=\$(mktemp /tmp/source-XXXXXX.tar)
     cat > \"\$HOST_TAR\"
+    # mktemp defaults to mode 600; container runs as tester (uid 1000)
+    # while VM owner is uid 501 — make the tarball world-readable.
+    chmod 0644 \"\$HOST_TAR\"
     nerdctl run --rm \
       --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
       --tmpfs /tmp:uid=1000,gid=1000,mode=1777 \
