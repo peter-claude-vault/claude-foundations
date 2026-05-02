@@ -32,6 +32,8 @@ if [ $# -lt 1 ]; then
 fi
 
 # --- -lint (with optional -s) ------------------------------------------
+# Uses Python plistlib directly — DO NOT compose tests/plist-lint.sh,
+# which itself prefers `plutil` when present and would recurse here.
 if [ "$1" = '-lint' ]; then
   shift
   silent=0
@@ -44,17 +46,18 @@ if [ "$1" = '-lint' ]; then
     err "missing or unreadable plist: ${plist:-<unset>}"
     exit 1
   fi
-  # Compose plist-lint.sh (same image, /tests/plist-lint.sh).
-  if [ -x /tests/plist-lint.sh ]; then
-    if [ "$silent" = '1' ]; then
-      /tests/plist-lint.sh "$plist" >/dev/null 2>&1
-    else
-      /tests/plist-lint.sh "$plist"
-    fi
-    exit $?
-  fi
-  # Fallback: python plistlib parse (matches plist-lint.sh's own fallback).
-  python3 - "$plist" <<'PY'
+  if [ "$silent" = '1' ]; then
+    python3 - "$plist" >/dev/null 2>&1 <<'PY'
+import sys, plistlib
+try:
+    with open(sys.argv[1], 'rb') as f:
+        plistlib.load(f)
+    sys.exit(0)
+except Exception:
+    sys.exit(2)
+PY
+  else
+    python3 - "$plist" <<'PY'
 import sys, plistlib
 try:
     with open(sys.argv[1], 'rb') as f:
@@ -65,6 +68,7 @@ except Exception as e:
     print(f"{sys.argv[1]}: plist parse error — {e}", file=sys.stderr)
     sys.exit(2)
 PY
+  fi
   exit $?
 fi
 
