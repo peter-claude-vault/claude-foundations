@@ -409,6 +409,72 @@
       "size": 20999
     },
     {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-01.sh",
+      "sha256": "0890c6592bcc291ed0c8cf9e1daec687473c9dcfa34f839f7405483cf93ca794",
+      "size": 1222
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-02.sh",
+      "sha256": "daf29c6c1e33fd1aad075e9a22627455546bbddf5078977e47d337792bfb3a2b",
+      "size": 906
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-03.sh",
+      "sha256": "58c84b16276b6768383243fed9d3ba6b83c9d157e1c70bf5c56731655b06f4cc",
+      "size": 734
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-04.sh",
+      "sha256": "e555c2a4b8608d0b83d767a3a33777fad637419ad3a669ac2d9cffc8be32908c",
+      "size": 729
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-05.sh",
+      "sha256": "00778d27551f938c842eddff10fe1bcf39aec286570adc613935949b68de80ba",
+      "size": 732
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-06.sh",
+      "sha256": "ca27e04d8547f29892113fe4a109e31551ad3d4daf2bb3584a2371a57a7a0b51",
+      "size": 753
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-07.sh",
+      "sha256": "21c01430b97430f8345c87d3b821b32d1f3d7760d3f9ed37259eb7a2f2e4fae7",
+      "size": 812
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-08.sh",
+      "sha256": "b7b87427750b6d7edda0ee8b75f30ecbe9946bc333a33bdae407d26eeb801bc1",
+      "size": 735
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-09.sh",
+      "sha256": "278557ab2d7c0646b9571fc76743e1803cf25319e857f7b22e79bd5f439d3ea7",
+      "size": 968
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/surface-10.sh",
+      "sha256": "b9b6b6db0534de99a88049ded62b62e3743b58160e5212edf0eff72140c747b2",
+      "size": 719
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/opt-outs/validate-full-opt-out.sh",
+      "sha256": "6a4d01a36d62e19d925dfb26fbece99dfbd1bce11e507816536a3e0871fb2204",
+      "size": 15360
+    },
+    {
       "mode": "0644",
       "path": "onboarding/q-field-map.json",
       "sha256": "76751183babd39f71e2aea06429e2e39234a94334a5e1b00a92253447b177f06",
@@ -1003,7 +1069,7 @@
       "size": 2035
     }
   ],
-  "generated_at": "2026-05-02T15:41:52Z",
+  "generated_at": "2026-05-02T18:17:58Z",
   "generator_sha256": "72ce8a38a7a417887239d8b1a4242f15b333e77b2013e0ac5130f8d1b39b54ab",
   "version": "v2.0.0-rc1"
 }
