@@ -33,14 +33,14 @@ set -o pipefail
 
 if [[ -z "${VAULT_LOGS:-}" ]]; then
   # shellcheck source=/dev/null
-  source "$HOME/.claude/hooks/lib/paths.sh"
+  source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/paths.sh"
 fi
 # shellcheck source=/dev/null
-source "$HOME/.claude/skills/librarian/lib/findings.sh"
+source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/findings.sh"
 # shellcheck source=/dev/null
-source "$HOME/.claude/skills/librarian/lib/manifest.sh"
+source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/manifest.sh"
 # shellcheck source=/dev/null
-source "$HOME/.claude/skills/librarian/lib/dates.sh"
+source "${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/lib/dates.sh"
 
 MODE="check"
 

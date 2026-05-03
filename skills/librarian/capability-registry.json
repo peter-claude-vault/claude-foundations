@@ -927,6 +927,46 @@
       },
       "implementation_status": "spec-only",
       "script": "capabilities/write-frontmatter.sh"
+    },
+    "session-close": {
+      "tier": "orchestrator",
+      "invocation_modes": [
+        "ad-hoc",
+        "session-close"
+      ],
+      "cron_block": "none",
+      "dependencies": [
+        "hooks/lib/paths.sh",
+        "hooks/reconcile-sessions.sh",
+        "capabilities/frontmatter-enforce.sh",
+        "capabilities/xref-check.sh",
+        "capabilities/placement-validate.sh",
+        "capabilities/stale-detect.sh",
+        "capabilities/cron-log-architecture.sh",
+        "capabilities/handoff-disposition-check.sh",
+        "capabilities/plan-index.sh",
+        "capabilities/plan-parent-resolve.sh",
+        "capabilities/rename-detect.sh",
+        "capabilities/rename-history-sync.sh",
+        "capabilities/rename-cascade.sh",
+        "capabilities/trinity-drift-detect.sh",
+        "capabilities/sync-check.sh",
+        "capabilities/architect-triage.sh",
+        "capabilities/backup.sh"
+      ],
+      "emits_findings": false,
+      "writes_manifest_subtree": null,
+      "default_flags": [],
+      "requires_confirmation": false,
+      "output_contract": {
+        "writes": [
+          "{VAULT_LOGS}/session-close-YYYYMMDD-HHMMSS.md"
+        ],
+        "schema": "vault-schema.json (type:log, log-type:session-close)",
+        "failure_mode": "advisory-log-and-continue"
+      },
+      "implementation_status": "shipped",
+      "script": "capabilities/session-close.sh"
     }
   }
 }

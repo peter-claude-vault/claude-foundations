@@ -1266,9 +1266,9 @@ Librarian Report — YYYY-MM-DD HH:MM
 
 ---
 
-## Invocation Mode: session-close
+## Capability: session-close
 
-End-of-session reconciliation — a deterministic chain of extracted librarian capabilities. Not a new capability. Replaces the standalone `/session-close` skill.
+End-of-session reconciliation — a deterministic shell orchestrator that chains extracted librarian capabilities. Replaces the standalone `/session-close` skill.
 
 **Invocation:** `/librarian session-close [--deep]`
 
