@@ -2,8 +2,8 @@
 # rename-detect — Detect file renames via git log across vault + plans repos.
 #
 # Landed: Plan 67 Sub-plan 02 T-1 (2026-04-22). Scans the last 24h (default)
-# of `git log --diff-filter=R --name-status -M90` across ~/Documents/Obsidian
-# Vault/ and ~/.claude-plans/, emitting one NDJSON record per rename:
+# of `git log --diff-filter=R --name-status -M90` across $VAULT_ROOT and
+# $PLANS_DIR, emitting one NDJSON record per rename:
 #
 #   {"root":"...","old_path":"...","new_path":"...","commit_sha":"...",
 #    "committed_at":"<ISO8601>","similarity":95}

@@ -63,11 +63,11 @@ set -uo pipefail
 
 if [[ -z "${VAULT_LOGS:-}" ]]; then
   # shellcheck source=/dev/null
-  source "$HOME/.claude/hooks/lib/paths.sh"
+  source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/paths.sh"
 fi
 
-CAPS_DIR="$HOME/.claude/skills/librarian/capabilities"
-RECONCILE_SESSIONS_SH="$HOME/.claude/hooks/reconcile-sessions.sh"
+CAPS_DIR="${CLAUDE_HOME:-$HOME/.claude}/skills/librarian/capabilities"
+RECONCILE_SESSIONS_SH="${CLAUDE_HOME:-$HOME/.claude}/hooks/reconcile-sessions.sh"
 SESSION_REGISTRY="$VAULT_LOGS/.coordination/session-registry.json"
 
 LOG_DIR="${SESSION_CLOSE_LOG_DIR:-$VAULT_LOGS}"

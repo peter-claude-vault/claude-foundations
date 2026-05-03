@@ -173,10 +173,10 @@ log_info "PLANS_HOME resolved: $PLANS_HOME_RESOLVED"
 # Reference-leak floor: empty manifest fields fall back to generic placeholders
 # (not Peter-specific). Ensures vault CLAUDE.md is portable across users.
 
-[ -z "$IDENT_NAME" ]              && IDENT_NAME="(unset — set via /onboard --section a)"
-[ -z "$IDENT_ROLE" ]              && IDENT_ROLE="(unset)"
-[ -z "$IDENT_ORG" ]               && IDENT_ORG="(unset)"
-[ -z "$IDENT_INDUSTRY" ]          && IDENT_INDUSTRY="(unset)"
+[ -z "$IDENT_NAME" ]              && IDENT_NAME="_not provided — set via /onboard --section a_"
+[ -z "$IDENT_ROLE" ]              && IDENT_ROLE="_not provided_"
+[ -z "$IDENT_ORG" ]               && IDENT_ORG="_not provided_"
+[ -z "$IDENT_INDUSTRY" ]          && IDENT_INDUSTRY="_not provided_"
 [ -z "$VAULT_ORG_METHOD" ]        && VAULT_ORG_METHOD="flat"
 [ -z "$VAULT_TOP_FOLDER" ]        && VAULT_TOP_FOLDER="Engagements"
 [ -z "$VAULT_DEFAULT_AUDIENCE" ]  && VAULT_DEFAULT_AUDIENCE="self"

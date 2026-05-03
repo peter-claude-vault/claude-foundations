@@ -200,13 +200,25 @@ fmt_msg_arr() {
   fi
 }
 
+fmt_vault_or_manual_hint() {
+  # Per SP10 T-7 C7: filesystem scan covers a narrow heuristic
+  # ($HOME/Documents/*Vault*, $HOME/Vault, $HOME/Obsidian). When no match
+  # fires, surface manual-path entry as the explicit fallback so adopters
+  # know to type "4" rather than accept a no-vault setup by Enter-default.
+  if [ -z "$V_VAULT" ]; then
+    printf '(none detected — type "4" to enter path manually, or "4" then "none" if no vault)'
+  else
+    printf '%s' "$V_VAULT"
+  fi
+}
+
 display_card() {
   printf '\n=== Section A — Welcome & Discovery Review ===\n\n'
   printf "Here's what we already know. Confirm or correct.\n\n"
   printf '  1. Name:           %s\n'  "$(fmt_or_empty "$V_NAME")"
   printf '  2. Email:          %s\n'  "$(fmt_or_empty "$V_EMAIL")"
   printf '  3. Timezone:       %s\n'  "$(fmt_or_empty "$V_TZ")"
-  printf '  4. Vault root:     %s\n'  "$(fmt_or_empty "$V_VAULT")"
+  printf '  4. Vault root:     %s\n'  "$(fmt_vault_or_manual_hint)"
   printf '\nTools detected on this machine:\n\n'
   printf '  5. Calendar:       %s\n'  "$(fmt_or_empty "$V_CAL")"
   printf '  6. Messaging:      %s\n'  "$(fmt_msg_arr)"
