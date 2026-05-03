@@ -1,0 +1,30 @@
+# burner-keys.registry — claude-foundations v2.0
+#
+# This registry tracks every burner ANTHROPIC_API_KEY ever issued during
+# Plan 71 dogfood / smoke runs. Each entry records: key id, created_at,
+# last_known_status (live/revoked), revocation_verified_at, scope.
+#
+# RELEASE_CHECKLIST.md Step 4 (burner-key revocation audit) requires that
+# every entry in this file return 410 Gone or 403 Unauthorized when probed
+# via the Anthropic console API. A single live (200) historical key blocks
+# v2.0.0-rc1 release per spec L245.
+#
+# Format: TSV, one key per line:
+#   key_id<TAB>created_at_iso<TAB>last_known_status<TAB>revocation_verified_at<TAB>scope
+#
+# ---------------------------------------------------------------------------
+# v2.0.0-rc1 cycle entries
+# ---------------------------------------------------------------------------
+# (none — no burner keys were issued during the rc1 cycle)
+#
+# Rationale: SP08 T-7a (Lima E2E dogfood) used fixture-staged
+# user-manifest.json + orchestration.json instead of executing the real
+# onboarder Section A-E flow inside an `sp00-isolation-onboarder` image
+# variant. CFF-S87-2 — which would have required a burner key for the
+# real-onboarder run — was disposed STANDALONE for v2.0.x patch (absorbed
+# into T-9 30-day GA observation window).
+#
+# Result: rc1 ships with zero burner-key exposure surface. Step 4
+# revocation audit is a documented no-op for the rc1 cycle.
+#
+# v2.0.x patch / v2.1+ cycles must populate this file as keys are issued.
