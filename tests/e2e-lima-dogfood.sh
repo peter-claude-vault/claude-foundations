@@ -235,12 +235,11 @@ SCENARIO="$REPO/tests/e2e-scenario.sh"
       --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
       --tmpfs /tmp:uid=1000,gid=1000,mode=1777 \
       --network=none \
-      -e ROLLBACK_DRILL_MODE=$ROLLBACK_DRILL \
       -v \"\$HOST_TAR\":/source.tar:ro \
       $IMAGE /bin/bash -c '
         mkdir -p /home/tester/source-repo
         tar -xf /source.tar -C /home/tester/source-repo
-        bash /home/tester/source-repo/tests/e2e-scenario.sh
+        ROLLBACK_DRILL_MODE=$ROLLBACK_DRILL bash /home/tester/source-repo/tests/e2e-scenario.sh
       '
     rc=\$?
     rm -f \"\$HOST_TAR\"
