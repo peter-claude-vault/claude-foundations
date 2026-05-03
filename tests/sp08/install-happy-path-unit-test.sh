@@ -120,6 +120,32 @@ done
 prov_count="$(ls "$CH/logs"/install-*.log 2>/dev/null | wc -l | tr -d ' ')"
 assert_eq "1" "$prov_count" "T1.20: provenance log written under logs/"
 
+# SP10 T-4 + SP11 T-1/T-2: CLAUDE.md spine + memory bootstrap templates ship
+assert_path_exists "$CH/templates/vault-claude-md-template.md" \
+  "T1.21: templates/vault-claude-md-template.md landed (SP10 T-4)"
+assert_path_exists "$CH/templates/claude-home-claude-md-template.md" \
+  "T1.22: templates/claude-home-claude-md-template.md landed (SP10 T-4)"
+assert_path_exists "$CH/templates/MEMORY.md.template" \
+  "T1.23: templates/MEMORY.md.template landed (SP11 T-1)"
+
+# SP10 T-4: $CLAUDE_HOME/CLAUDE.md seeded from template (identity placeholders OK
+# in fresh install — onboarder + post-install --force seed substitutes them)
+assert_path_exists "$CH/CLAUDE.md" \
+  "T1.24: \$CLAUDE_HOME/CLAUDE.md seeded from template (SP10 T-4)"
+
+# SP11 T-2: Auto Memory section reaches seeded CLAUDE.md
+assert_grep '## Auto Memory' "$CH/CLAUDE.md" \
+  "T1.25: seeded CLAUDE.md contains ## Auto Memory section (SP11 T-2)"
+assert_grep 'Memory Search Strategy' "$CH/CLAUDE.md" \
+  "T1.26: seeded CLAUDE.md contains Memory Search Strategy (SP11 T-2)"
+
+# SP11 T-1: MEMORY.md skeleton seeded under projects/<slug>/memory/
+mem_slug="$(printf '%s' "$CH" | tr '/' '-' | sed 's/^-//')"
+assert_path_exists "$CH/projects/$mem_slug/memory/MEMORY.md" \
+  "T1.27: \$CLAUDE_HOME/projects/<slug>/memory/MEMORY.md seeded (SP11 T-1)"
+mem_h2_count="$(grep -c '^## ' "$CH/projects/$mem_slug/memory/MEMORY.md" 2>/dev/null || echo 0)"
+assert_eq "4" "$mem_h2_count" "T1.28: seeded MEMORY.md has 4 H2 section headers (User/Feedback/Project/Reference)"
+
 # =====================================================================
 # T2 — LABEL_PREFIX preservation (G6)
 # =====================================================================

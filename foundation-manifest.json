@@ -21,8 +21,8 @@
     {
       "mode": "0755",
       "path": "hooks/auto-commit-surfaces.sh",
-      "sha256": "89c8bb42d213927542def10fd1c88ba4f3940c7cf8bbb76563ef385c50a55d47",
-      "size": 1744
+      "sha256": "ef96365ad3dddbb8e62bfb9fb7ecbbd280ee730f4800c97a28bdc8f50a20ee2e",
+      "size": 2305
     },
     {
       "mode": "0644",
@@ -80,6 +80,12 @@
     },
     {
       "mode": "0755",
+      "path": "hooks/lib/provenance-frontmatter.sh",
+      "sha256": "d41a43b33b9614973514047174739d945c5d29c839cdc60ab24cdfc0d47a16d0",
+      "size": 12341
+    },
+    {
+      "mode": "0755",
       "path": "hooks/lib/registry-op.sh",
       "sha256": "fb7b7dd836dc493e3fffc2ba689d2a036278fbaf67b775a7a8d9264e8d9a820e",
       "size": 3351
@@ -105,8 +111,8 @@
     {
       "mode": "0755",
       "path": "hooks/memory-consolidation-run.sh",
-      "sha256": "2b431d1df3dab4e1c63873ceedd134ad868f26764be4aa09d345f73a76cee870",
-      "size": 7996
+      "sha256": "4fb20f0d47668848644a8aad2b1ab6e9cac84c75b22e2a120eb6092e7894fa26",
+      "size": 8584
     },
     {
       "mode": "0755",
@@ -183,8 +189,8 @@
     {
       "mode": "0755",
       "path": "hooks/tasks-md-autosync.sh",
-      "sha256": "85dd8348838a5dbfb30f2a2234007712919e5bbf7665bae8f8361460e2cc866d",
-      "size": 3947
+      "sha256": "6f0fe1c5889071ebd9e3ff869b46250c2f361ede6f8589f3afd4b8cdba0f0c75",
+      "size": 4359
     },
     {
       "mode": "0755",
@@ -249,8 +255,8 @@
     {
       "mode": "0755",
       "path": "onboarding/bootstrap-schemas.sh",
-      "sha256": "4ca1807208d0d6dc5c51ebe8535ddb167c25be1806a3ba07625c04c6f10111a0",
-      "size": 25431
+      "sha256": "7281a764b312316ee97c501cef1b0067f8b59a40660fc0491a669528a367d96a",
+      "size": 34718
     },
     {
       "mode": "0755",
@@ -415,6 +421,12 @@
       "size": 19765
     },
     {
+      "mode": "0755",
+      "path": "onboarding/lib/three-step-gate.sh",
+      "sha256": "a7903d74239efa4efaaf9b7c1efb00c768d0f806b1fa3a84d7cf1515d0018673",
+      "size": 17151
+    },
+    {
       "mode": "0644",
       "path": "onboarding/onboarder-design.md",
       "sha256": "77ba6969b16efcee44e3aacfcbfb29601be1f309e12db4111c1f0877851f73f6",
@@ -489,8 +501,8 @@
     {
       "mode": "0644",
       "path": "onboarding/q-field-map.json",
-      "sha256": "76751183babd39f71e2aea06429e2e39234a94334a5e1b00a92253447b177f06",
-      "size": 18806
+      "sha256": "d334d0d25cf6d9828042efdf298662959879b71b06031741b32bc390097176bf",
+      "size": 19288
     },
     {
       "mode": "0755",
@@ -525,8 +537,8 @@
     {
       "mode": "0755",
       "path": "onboarding/ux/section-a.sh",
-      "sha256": "016d3139903737b6c855561d6551a1cf28cd9a1a7deae3a01841474ce44965cd",
-      "size": 18053
+      "sha256": "b26af60be2189c0ed28c9724375682330957cec5be861244daad6a0a0e9faeff",
+      "size": 21621
     },
     {
       "mode": "0755",
@@ -651,8 +663,8 @@
     {
       "mode": "0644",
       "path": "schemas/user-manifest-schema.json",
-      "sha256": "c3e9f6e1b77ab40c27eba7ea93becdbab46e3d302b6d18858b8b7b0a10d029a7",
-      "size": 15241
+      "sha256": "59a8c52ed575d1744b77cef9a5bea3d922161b766406dcff30944b80c344b06b",
+      "size": 15836
     },
     {
       "mode": "0644",
@@ -669,8 +681,8 @@
     {
       "mode": "0755",
       "path": "skills/adopt/adopt.sh",
-      "sha256": "02b45396e1789b00c1fde6b5584452591c4b9dcbd77cee59700a5b972d73130b",
-      "size": 14717
+      "sha256": "8cab31357a8f3a570437d412b946e505fcc2ee89d854f9745ee5eeb029ad46ea",
+      "size": 14745
     },
     {
       "mode": "0644",
@@ -699,14 +711,14 @@
     {
       "mode": "0644",
       "path": "skills/librarian/SKILL.md",
-      "sha256": "a2254987fbae744c62b33fd2acdf473ffdbf2ad21d7e3df8be68a68ac13ee1dd",
-      "size": 165231
+      "sha256": "101f8359044442f46d0e457dedb4a3286bb0528231b87a33a278d7d45f9c37e6",
+      "size": 165226
     },
     {
       "mode": "0755",
       "path": "skills/librarian/capabilities/architect-triage.sh",
-      "sha256": "ea7cf492f18fb62b05a63d8d6899ed8828b7d01f0cad56a21e5a2eca03c55b18",
-      "size": 10046
+      "sha256": "6c3bd531f776f55c338d06a4579ade3a987d34e0255c67ae7c9f30b77557c47d",
+      "size": 10110
     },
     {
       "mode": "0644",
@@ -825,8 +837,8 @@
     {
       "mode": "0755",
       "path": "skills/librarian/capabilities/rename-detect.sh",
-      "sha256": "75a3e62468fc13fcdd3d343368b3b2fc61d2e631bdc8a6e16d2f53e041aed875",
-      "size": 5107
+      "sha256": "319c73be0bb7d935d13af605386c6bc3445f1111654fa8bff83dcc6e467717d9",
+      "size": 5085
     },
     {
       "mode": "0755",
@@ -839,6 +851,12 @@
       "path": "skills/librarian/capabilities/sanctioned-schema-drift-detect.sh",
       "sha256": "304b1ea5d3c08d3d3fe0ce921d8cd3e1121acbae96b26471953dd978566750cc",
       "size": 2473
+    },
+    {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/session-close.sh",
+      "sha256": "36646e900cba28e36e337bc1fb208ff0b9c179a076810ccf7f96b9819f70b2df",
+      "size": 14886
     },
     {
       "mode": "0755",
@@ -979,10 +997,10 @@
       "size": 10459
     },
     {
-      "mode": "0644",
+      "mode": "0600",
       "path": "skills/librarian/capability-registry.json",
-      "sha256": "dcc9773409f3b7bf38057faaf01da7c3a0e6207aca7263248068638a74b7db16",
-      "size": 26012
+      "sha256": "f73bb9cec8ccddc4ec4ec5c8b931e1934646410674f324cdea99bb255cb33fb7",
+      "size": 27408
     },
     {
       "mode": "0644",
@@ -1040,9 +1058,21 @@
     },
     {
       "mode": "0644",
+      "path": "templates/MEMORY.md.template",
+      "sha256": "5ebda52d7a670b20dd031be5848dcdbd147b3fe3157a60456351a76a7154ae26",
+      "size": 63
+    },
+    {
+      "mode": "0644",
       "path": "templates/README.md",
       "sha256": "60940e23d4a4e82c7f2f264066d49a0dec409d3bd42248b96fbe7be4f137fd2f",
       "size": 3270
+    },
+    {
+      "mode": "0644",
+      "path": "templates/claude-home-claude-md-template.md",
+      "sha256": "c41aac07e3644a4985bd254051b975f395b7e20888e86714ca1176ea386af02f",
+      "size": 10693
     },
     {
       "mode": "0644",
@@ -1099,7 +1129,7 @@
       "size": 4073
     }
   ],
-  "generated_at": "2026-05-02T23:41:30Z",
-  "generator_sha256": "6663fda7b45539aeeb995555bab3b6aeb81105c4f26d0abefb7b21e33e708f81",
+  "generated_at": "2026-05-03T16:26:33Z",
+  "generator_sha256": "597c6eb9339c97848d1504ee6a213a0561b8392d79d15580fbed95089f38e910",
   "version": "v2.0.0-rc1"
 }

@@ -225,6 +225,213 @@ convert_path() {
     echo "${target}|${jp}|${arr}"
 }
 
+# --- seed_memories (Plan 71 SP11 T-3) ---
+# Routes Section A/C/D outputs from the populated user-manifest into 3-5
+# R-45-valid seed memory files under
+# ${CLAUDE_HOME:-$HOME/.claude}/projects/<slug>/memory/. Idempotent on SP12
+# coordination: if a seed file already exists with different content
+# (potentially SP12-authored enrichment), preserve it.
+#
+# Slug convention: matches install.sh Step 11.6 — $CLAUDE_HOME with / → -
+# and leading - stripped.
+#
+# Output contract:
+#   - 0-5 seed *.md files (skips when source field absent)
+#   - R-45 frontmatter (name, description, type, last_verified)
+#   - Index entries appended to MEMORY.md under appropriate H2 section
+#   - Advisory log at <memory_dir>/.r45-advisories.log on validation gaps
+#   - audit_event terminator with seed count + advisory count
+#
+# Failure mode: degrade-open. If memory dir cannot be created, log a
+# warning event and return 0; bootstrap proceeds.
+seed_memories() {
+    [ "$DRY_RUN" = "1" ] && { audit_event "seed_memories" "skipped under --dry-run"; return 0; }
+
+    local mem_base mem_slug mem_dir
+    mem_base="${CLAUDE_HOME:-$HOME/.claude}"
+    mem_slug="$(printf '%s' "$mem_base" | tr '/' '-' | sed 's/^-//')"
+    mem_dir="$mem_base/projects/$mem_slug/memory"
+
+    mkdir -p "$mem_dir" 2>/dev/null || {
+        audit_event "warning" "seed_memories: mkdir failed at $mem_dir; skipping"
+        return 0
+    }
+
+    # Pull identity / behavioral / vault fields from the populated user-manifest tmp
+    local name role org autonomy prior_seed vault_root vault_method
+    name="$(jq -r '.identity.name // empty' "$USER_TMP" 2>/dev/null)"
+    role="$(jq -r '.identity.role // empty' "$USER_TMP" 2>/dev/null)"
+    org="$(jq -r '.identity.organization // empty' "$USER_TMP" 2>/dev/null)"
+    autonomy="$(jq -r '.behavioral.autonomy // empty' "$USER_TMP" 2>/dev/null)"
+    prior_seed="$(jq -r '.architect.prior_seed // empty' "$USER_TMP" 2>/dev/null)"
+    vault_root="$(jq -r '.paths.vault_root // .vault.root // empty' "$USER_TMP" 2>/dev/null)"
+    vault_method="$(jq -r '.vault.organizational_method // empty' "$USER_TMP" 2>/dev/null)"
+
+    # No identity → no useful seeding
+    if [ -z "$name" ]; then
+        audit_event "seed_memories" "identity.name absent; no seeding performed"
+        return 0
+    fi
+
+    # Compute filename-safe slug for $name
+    local name_slug
+    name_slug="$(printf '%s' "$name" | tr 'A-Z' 'a-z' | tr ' ' '-' | tr -dc 'a-z0-9-' | sed -e 's/^-*//' -e 's/-*$//')"
+    [ -z "$name_slug" ] && name_slug="user"
+
+    local seeds_count=0
+    local r45_advisories=0
+    local advisory_log="$mem_dir/.r45-advisories.log"
+    local now_iso="$RUN_TS"
+    local now_date
+    now_date="$(printf '%s' "$now_iso" | cut -c1-10)"
+
+    # Helper: write seed file with R-45 frontmatter + append index entry
+    # $1=path $2=name $3=description $4=type $5=body
+    _write_seed() {
+        local fp="$1" nm="$2" desc="$3" tp="$4" body="$5"
+
+        # SP12 coordination: preserve existing seed (potentially SP12-authored)
+        if [ -f "$fp" ]; then
+            audit_event "seed_memories" "skip-existing $fp (SP12-coordination preserve)"
+            return 0
+        fi
+
+        # Write atomically: tmp → rename
+        local tmp="$fp.tmp.$$"
+        {
+            printf '%s\n' '---'
+            printf 'name: %s\n' "$nm"
+            printf 'description: %s\n' "$desc"
+            printf 'type: %s\n' "$tp"
+            printf 'last_verified: %s\n' "$now_date"
+            printf '%s\n\n' '---'
+            printf '%s\n' "$body"
+        } > "$tmp" || {
+            audit_event "warning" "seed_memories: write failed at $tmp"
+            rm -f "$tmp"
+            return 0
+        }
+
+        # R-45 advisory: verify all 4 required fields present in frontmatter
+        local fm_ok=1
+        for fld in name description type last_verified; do
+            grep -q "^${fld}: " "$tmp" 2>/dev/null || fm_ok=0
+        done
+        if [ "$fm_ok" = "0" ]; then
+            r45_advisories=$((r45_advisories + 1))
+            printf '%s\tR-45 advisory: missing required frontmatter field(s) at %s\n' \
+                "$now_iso" "$fp" >> "$advisory_log" 2>/dev/null || true
+        fi
+
+        mv "$tmp" "$fp" || {
+            audit_event "warning" "seed_memories: rename failed $tmp → $fp"
+            rm -f "$tmp"
+            return 0
+        }
+
+        seeds_count=$((seeds_count + 1))
+
+        # Append index entry to MEMORY.md if present
+        local idx="$mem_dir/MEMORY.md"
+        local section_h2=""
+        case "$tp" in
+            user)      section_h2="## User" ;;
+            feedback)  section_h2="## Feedback" ;;
+            project)   section_h2="## Project" ;;
+            reference) section_h2="## Reference" ;;
+        esac
+        if [ -f "$idx" ] && [ -n "$section_h2" ] && grep -q "^${section_h2}\$" "$idx"; then
+            local base="${fp##*/}"
+            local entry="- [$nm](memory/$base) — $desc"
+            awk -v hdr="$section_h2" -v ent="$entry" '
+                {print}
+                $0 == hdr { print ent }
+            ' "$idx" > "$idx.tmp" && mv "$idx.tmp" "$idx"
+        fi
+    }
+
+    # --- Seed 1: communication style (from .behavioral.autonomy) ---
+    if [ -n "$autonomy" ]; then
+        local cs_body
+        case "$autonomy" in
+            strict)
+                cs_body="Operates in **strict-autonomy** mode: confirm before non-trivial actions; prefer ask-then-act over act-then-report. Pause and check before destructive operations or shared-state changes."
+                ;;
+            balanced)
+                cs_body="Operates in **balanced-autonomy** mode: take small reversible actions freely; confirm before destructive operations, shared-state changes, or anything affecting infrastructure beyond the local environment."
+                ;;
+            permissive)
+                cs_body="Operates in **permissive-autonomy** mode: act-then-report. Only confirm before truly irreversible operations (force-push, hard reset, dropped tables, sent communications)."
+                ;;
+            *)
+                cs_body="Autonomy level captured during onboarding: $autonomy."
+                ;;
+        esac
+        _write_seed "$mem_dir/user_${name_slug}_communication_style.md" \
+            "${name} working style" \
+            "Working-style and autonomy preferences captured during onboarding (Section D)." \
+            "user" \
+            "$cs_body"
+    fi
+
+    # --- Seed 2: priorities (from .architect.prior_seed) ---
+    if [ -n "$prior_seed" ]; then
+        _write_seed "$mem_dir/user_${name_slug}_priorities.md" \
+            "${name} priorities" \
+            "Concerns and priorities surfaced during onboarding for architect prior-seeding." \
+            "user" \
+            "$prior_seed"
+    fi
+
+    # --- Seed 3: project / vault (from .paths.vault_root + .vault.organizational_method) ---
+    if [ -n "$vault_root" ]; then
+        local vault_name vault_body
+        vault_name="$(printf '%s' "$vault_root" | sed 's|/$||; s|.*/||' | tr 'A-Z' 'a-z' | tr ' ' '-' | tr -dc 'a-z0-9-' | sed -e 's/^-*//' -e 's/-*$//')"
+        [ -z "$vault_name" ] && vault_name="vault"
+        vault_body="Vault root: \`$vault_root\`"
+        if [ -n "$vault_method" ]; then
+            vault_body="${vault_body}
+
+Organizational method: $vault_method"
+        fi
+        _write_seed "$mem_dir/project_${vault_name}.md" \
+            "Vault: ${vault_name}" \
+            "Primary vault for ${name}; root path and organizational method captured during onboarding." \
+            "project" \
+            "$vault_body"
+    fi
+
+    # --- Seeds 4-5: feedback heuristics from Section B/C transcripts (cap at 2) ---
+    local feedback_added=0
+    local sec
+    for sec in B C; do
+        [ "$feedback_added" -ge 2 ] && break
+        local fixture_file="$INPUTS_DIR/extraction-output-${sec}.json"
+        [ -f "$fixture_file" ] || continue
+        local raw_transcript
+        raw_transcript="$(jq -r '.raw_transcript // empty' "$fixture_file" 2>/dev/null)"
+        [ -z "$raw_transcript" ] && continue
+        # Conservative regex: whole-word match for 1st-person + always|never|must
+        local first_match fb_topic
+        first_match="$(printf '%s' "$raw_transcript" | grep -ioE '\bI (always|never|must)[^.]{5,120}\.' | head -1)"
+        [ -z "$first_match" ] && continue
+        # Topic slug from first 40 chars of match
+        fb_topic="$(printf '%s' "$first_match" | tr 'A-Z' 'a-z' | tr ' ' '-' | tr -dc 'a-z0-9-' | head -c 40 | sed -e 's/^-*//' -e 's/-*$//')"
+        [ -z "$fb_topic" ] && continue
+        _write_seed "$mem_dir/feedback_${fb_topic}.md" \
+            "Heuristic feedback: ${fb_topic}" \
+            "Heuristic-extracted preference pattern from Section ${sec} transcript (operator review encouraged)." \
+            "feedback" \
+            "Captured pattern: $first_match
+
+Heuristic confidence. Verify against the source transcript and either confirm or remove."
+        feedback_added=$((feedback_added + 1))
+    done
+
+    audit_event "seed_memories" "wrote ${seeds_count} seed file(s); r45_advisories=${r45_advisories}; mem_dir=$mem_dir"
+    return 0
+}
+
 # --- skeletons ---
 # user-manifest skeleton (10 required sections, all required-keys present, schema_version locked).
 # 1.1.0 adds 3 optional top-level sections (hooks/schema/plans) — onboarder populates
@@ -567,6 +774,10 @@ if [ "$ANY_DIFFER" = "1" ]; then
     echo "BOOTSTRAP_DIFFER: rerun with --force to overwrite, or accept .new files manually" >&2
     exit 2
 fi
+
+# --- Plan 71 SP11 T-3: route Section A/C/D outputs into seed memory files ---
+# Runs after all 4 schema outputs commit; degrade-open on failure.
+seed_memories || true
 
 audit_event "BOOTSTRAP_COMPLETED" "run_id=$RUN_ID all 4 outputs written or skipped-identical"
 exit 0

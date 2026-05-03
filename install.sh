@@ -650,7 +650,7 @@ done
   cp $cp_clobber "$SOURCE_REPO/schemas/README.md" "$CLAUDE_HOME/schemas/" 2>/dev/null || true
 
 # Step 10: templates/ — settings.json + manifest skeletons + README + CLAUDE.md templates + launchd/*.tmpl + settings-fragments/
-for tmpl in settings.json librarian-manifest-skeleton.json README.md vault-claude-md-template.md claude-home-claude-md-template.md; do
+for tmpl in settings.json librarian-manifest-skeleton.json README.md vault-claude-md-template.md claude-home-claude-md-template.md MEMORY.md.template; do
   src="$SOURCE_REPO/templates/$tmpl"
   [ -e "$src" ] || continue
   cp $cp_clobber "$src" "$CLAUDE_HOME/templates/" 2>/dev/null || true
@@ -770,6 +770,48 @@ else
     fi
     info "claude-home CLAUDE.md seeded from template (identity name: $cm_name)"
   fi
+fi
+
+# Step 11.6: MEMORY.md skeleton seed (Plan 71 SP11 T-1)
+# Seeds $CLAUDE_HOME/projects/<slug>/memory/MEMORY.md from
+# templates/MEMORY.md.template. Skeleton has 4 H2 section headers (User /
+# Feedback / Project / Reference); per-topic memory files accumulate lazily
+# (SP11 T-3 seeds 3-5 from interview answers; SessionEnd consolidation
+# adds more over time).
+#
+# Slug convention: $CLAUDE_HOME path with / → - and leading - stripped.
+# Mirrors install-time install slug; runtime claude-mem may use a different
+# pwd-derived slug. Cross-slug reconciliation is out of SP11 scope.
+#
+# No-clobber: an existing MEMORY.md (whether template-shipped or
+# user-curated) is preserved unconditionally — no --force-install path
+# overwrites memory contents.
+template_memory="$CLAUDE_HOME/templates/MEMORY.md.template"
+mem_slug="$(printf '%s' "$CLAUDE_HOME" | tr '/' '-' | sed 's/^-//')"
+mem_dir="$CLAUDE_HOME/projects/$mem_slug/memory"
+mem_target="$mem_dir/MEMORY.md"
+
+if [ ! -f "$template_memory" ]; then
+  warn "MEMORY.md.template not present at $template_memory — skipping MEMORY.md seed"
+elif [ -f "$mem_target" ]; then
+  info "MEMORY.md exists at $mem_target — preserving (no clobber)"
+else
+  if ! mkdir -p "$mem_dir"; then
+    diag "MEMORY.md seed: mkdir failed: $mem_dir"
+    exit 11
+  fi
+  mem_tmp="$mem_target.tmp.$$"
+  if ! cp "$template_memory" "$mem_tmp"; then
+    diag "MEMORY.md seed: cp failed: $template_memory → $mem_tmp"
+    rm -f "$mem_tmp"
+    exit 11
+  fi
+  if ! mv -f "$mem_tmp" "$mem_target"; then
+    diag "MEMORY.md seed: atomic mv failed: $mem_target"
+    rm -f "$mem_tmp"
+    exit 11
+  fi
+  info "MEMORY.md seeded at $mem_target"
 fi
 
 # Step 12: settings.json atomic jq-merge with G7 silent-key-deletion gate

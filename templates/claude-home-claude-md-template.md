@@ -68,6 +68,51 @@ to user-owned filesystem locations:
 4. Skills without Output Contracts are incomplete and must not be marked as
    built.
 
+## Auto Memory
+
+Claude Code maintains a persistent file-based memory system at
+`$CLAUDE_HOME/projects/<slug>/memory/`. Memory accumulates across sessions
+and compounds over time — treat it as durable user context, not
+session-scoped scratch.
+
+### Memory Search Strategy
+
+When looking for prior context, search in this order:
+
+1. **MEMORY.md index** — always loaded; check first for curated,
+   high-signal context.
+2. **Memory files** — read the specific files referenced in `MEMORY.md`
+   for detail.
+3. **claude-mem search** — for broader recall (observations, tool usage,
+   session history); available when the `claude-mem` plugin is installed.
+4. **Session transcripts** — last resort; raw JSONL files, use targeted
+   `grep`.
+
+When the librarian runs `mem-promote`, knowledge flows UP this hierarchy:
+transcripts → claude-mem → (mem-promote filter) → auto-memory →
+`MEMORY.md` index. Each layer is progressively more curated and more
+readily available.
+
+### Writing Memory
+
+New memory files live at
+`$CLAUDE_HOME/projects/<slug>/memory/<type>_<slug>.md` where `<type>` is
+one of `user`, `feedback`, `project`, or `reference`. Every memory file
+MUST carry the four-field R-45 frontmatter contract:
+
+```yaml
+---
+name: <short title>
+description: <one-line summary used to decide future relevance>
+type: <user|feedback|project|reference>
+last_verified: <ISO 8601 date>
+---
+```
+
+The pre-write-guard hook validates this frontmatter on every memory write
+(R-45 advisory). Adding a new memory file should also append a one-line
+index entry under the appropriate H2 section in `MEMORY.md`.
+
 ## Plan Creation Conventions
 
 When creating a new plan in `~/.claude-plans/`:
