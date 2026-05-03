@@ -193,7 +193,7 @@ except ImportError:
                     data[k] = float(v)
                 except ValueError:
                     data[k] = v
-json.dump(data, sys.stdout)
+json.dump(data, sys.stdout, default=str)
 PY
 }
 

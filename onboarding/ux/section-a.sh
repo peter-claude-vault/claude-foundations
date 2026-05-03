@@ -195,6 +195,11 @@ V_EMAIL_CLIENT="$(probe_email_client)"
 V_TRANS="$(probe_transcription)"
 V_TASKS="$(probe_tasks)"
 V_DEV="$(probe_dev_env)"
+# SP12 T-14 (Q-ID A-CB-7): workflow archetype declaration. No discovery probe —
+# user-declared. Default null; surface-4-tag-prefixes (T-7) falls back to
+# LLM-compose when null. Allowed env override (tests + AUTO_ACCEPT path):
+# DISCOVERY_ARCHETYPE_OVERRIDE=<archetype-string>.
+V_ARCHETYPE="${DISCOVERY_ARCHETYPE_OVERRIDE:-}"
 
 # --- UX rendering ---
 
@@ -269,6 +274,14 @@ display_cost_transparency_and_confirm() {
   esac
 }
 
+fmt_archetype_or_empty() {
+  if [ -z "$V_ARCHETYPE" ]; then
+    printf '(undeclared — type "11" to set; defaults to LLM-compose at surface-4)'
+  else
+    printf '%s' "$V_ARCHETYPE"
+  fi
+}
+
 display_card() {
   printf '\n=== Section A — Welcome & Discovery Review ===\n\n'
   printf "Here's what we already know. Confirm or correct.\n\n"
@@ -283,7 +296,9 @@ display_card() {
   printf '  8. Transcription:  %s\n'  "$(fmt_or_empty "$V_TRANS")"
   printf '  9. Tasks:          %s\n'  "$(fmt_or_empty "$V_TASKS")"
   printf ' 10. Dev env:        %s\n'  "$(fmt_or_empty "$V_DEV")"
-  printf '\n[Enter] = accept all   1-10 = edit field   o = opt out   q = quit\n'
+  printf '\nWorkflow archetype (drives tag taxonomy at surface-4):\n\n'
+  printf ' 11. Archetype:      %s\n'  "$(fmt_archetype_or_empty)"
+  printf '\n[Enter] = accept all   1-11 = edit field   o = opt out   q = quit\n'
   printf '> '
 }
 
@@ -343,7 +358,12 @@ edit_field() {
         if [ "$v" = "none" ]; then V_DEV=""; note_correction "$n"
         elif [ -n "$v" ]; then V_DEV="$v"; note_correction "$n"
         fi ;;
-    *)  info "field $n out of range (1-10)" ;;
+    11) printf 'Workflow archetype (consultant|researcher|developer|educator|manager|custom|<freeform>; "none" = clear, blank = keep): '
+        read -r v
+        if [ "$v" = "none" ]; then V_ARCHETYPE=""; note_correction "$n"
+        elif [ -n "$v" ]; then V_ARCHETYPE="$v"; note_correction "$n"
+        fi ;;
+    *)  info "field $n out of range (1-11)" ;;
   esac
 }
 
@@ -394,6 +414,7 @@ emit_extraction_output() {
       --arg trans "$V_TRANS" \
       --arg tasks "$V_TASKS" \
       --arg dev "$V_DEV" \
+      --arg archetype "$V_ARCHETYPE" \
       '{
         section_id: "A",
         extraction_mode: "deterministic",
@@ -406,7 +427,8 @@ emit_extraction_output() {
           "U.tools.email":         (if $emc   == "" then null else $emc   end),
           "U.tools.transcription": (if $trans == "" then null else $trans end),
           "U.tools.tasks":         (if $tasks == "" then null else $tasks end),
-          "U.tools.dev_env":       (if $dev   == "" then null else $dev   end)
+          "U.tools.dev_env":       (if $dev   == "" then null else $dev   end),
+          "U.vault.tag_prefix_archetype": (if $archetype == "" then null else $archetype end)
         } | with_entries(select(.value != null))) + {
           "U.paths.vault_root": (if $vault == "" then null else $vault end),
           "U.vault.root":       (if $vault == "" then null else $vault end)
@@ -449,20 +471,22 @@ emit_audit_jsonl() {
         (if .emc         != "" then "U.tools.email"          else empty end),
         (if .trans       != "" then "U.tools.transcription"  else empty end),
         (if .tasks       != "" then "U.tools.tasks"          else empty end),
-        (if .dev         != "" then "U.tools.dev_env"        else empty end)
+        (if .dev         != "" then "U.tools.dev_env"        else empty end),
+        (if .archetype   != "" then "U.vault.tag_prefix_archetype" else empty end)
       ]
     ' <<EOF
 {
-  "name":  $(printf '%s' "$V_NAME"          | jq -Rs .),
-  "email": $(printf '%s' "$V_EMAIL"         | jq -Rs .),
-  "tz":    $(printf '%s' "$V_TZ"            | jq -Rs .),
-  "vault": $(printf '%s' "$V_VAULT"         | jq -Rs .),
-  "cal":   $(printf '%s' "$V_CAL"           | jq -Rs .),
-  "msg":   $(if [ -z "$V_MSG" ]; then printf '[]'; else printf '%s\n' "$V_MSG" | jq -R . | jq -s .; fi),
-  "emc":   $(printf '%s' "$V_EMAIL_CLIENT"  | jq -Rs .),
-  "trans": $(printf '%s' "$V_TRANS"         | jq -Rs .),
-  "tasks": $(printf '%s' "$V_TASKS"         | jq -Rs .),
-  "dev":   $(printf '%s' "$V_DEV"           | jq -Rs .)
+  "name":      $(printf '%s' "$V_NAME"          | jq -Rs .),
+  "email":     $(printf '%s' "$V_EMAIL"         | jq -Rs .),
+  "tz":        $(printf '%s' "$V_TZ"            | jq -Rs .),
+  "vault":     $(printf '%s' "$V_VAULT"         | jq -Rs .),
+  "cal":       $(printf '%s' "$V_CAL"           | jq -Rs .),
+  "msg":       $(if [ -z "$V_MSG" ]; then printf '[]'; else printf '%s\n' "$V_MSG" | jq -R . | jq -s .; fi),
+  "emc":       $(printf '%s' "$V_EMAIL_CLIENT"  | jq -Rs .),
+  "trans":     $(printf '%s' "$V_TRANS"         | jq -Rs .),
+  "tasks":     $(printf '%s' "$V_TASKS"         | jq -Rs .),
+  "dev":       $(printf '%s' "$V_DEV"           | jq -Rs .),
+  "archetype": $(printf '%s' "$V_ARCHETYPE"     | jq -Rs .)
 }
 EOF
 )"
@@ -545,7 +569,7 @@ while :; do
     o|O)          elect_opt_out_and_exit ;;
     q|Q)          info "Section A aborted at user request. Re-run /onboard to resume."
                   exit 130 ;;
-    [1-9]|10)     edit_field "$choice" ;;
-    *)            info "Invalid input: '$choice'. Press Enter, 1-10, o, or q." ;;
+    [1-9]|10|11)  edit_field "$choice" ;;
+    *)            info "Invalid input: '$choice'. Press Enter, 1-11, o, or q." ;;
   esac
 done
