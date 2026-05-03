@@ -28,7 +28,9 @@
 #
 # Scope exemptions:
 #   $VAULT_ROOT/.claude/, .obsidian/, .git/, .claude/projects/, _test*
-#   Engagements/*/CLAUDE.md (no frontmatter required)
+#   <projects_root>/*/CLAUDE.md (no frontmatter required; projects_root
+#       parameterized via FM_PROJECTS_ROOT_DIRNAME env / vault.projects_root_dirname
+#       manifest field; defaults to "Engagements" for backward compatibility)
 #   Logs/ideation-brief-*.md (load-bearing symlink-or-retrofit)
 #
 # Bash 3.2 clean per R-23.
@@ -84,6 +86,11 @@ export FM_PRE_WRITE_GUARD="$PRE_WRITE_GUARD"
 export FM_POST_WRITE_VERIFY="$POST_WRITE_VERIFY"
 export FM_DOC_DEPENDENCIES="$DOC_DEPENDENCIES"
 export FM_ENGAGEMENT_ALIASES_JSON="$(umr_get_object '.vault.engagement_aliases')"
+# SP12 T-9: parameterize projects-root directory name (closes A3-Gap #1).
+# Default "Engagements" preserves the SP10 install-convention default for
+# users who never declared the field.
+FM_PROJECTS_ROOT_DIRNAME_RAW="$(umr_get_string '.vault.projects_root_dirname' 2>/dev/null || true)"
+export FM_PROJECTS_ROOT_DIRNAME="${FM_PROJECTS_ROOT_DIRNAME_RAW:-Engagements}"
 export FM_VAULT_ROOT="$VAULT_ROOT"
 export FM_VAULT_LOGS="$VAULT_LOGS"
 
@@ -99,6 +106,13 @@ vault_scope, walk, mode, dry_run_s, logs_only_s, drift_out_path = sys.argv[1:7]
 dry_run = (dry_run_s == "true")
 logs_only = (logs_only_s == "true")
 fix_mode = (mode == "fix")
+
+# SP12 T-9: parameterize projects-root directory name (closes A3-Gap #1).
+# Read from FM_PROJECTS_ROOT_DIRNAME env (set from .vault.projects_root_dirname
+# via umr_get_string above). Fall back to "Engagements" if empty/unset for
+# backward compatibility with users who never declared the field.
+PROJ_DIR = (os.environ.get("FM_PROJECTS_ROOT_DIRNAME") or "").strip() or "Engagements"
+PD = re.escape(PROJ_DIR)
 findings_out = os.environ.get("FINDINGS_OUTPUT", "")
 vault_root = os.environ["FM_VAULT_ROOT"]
 vault_logs = os.environ["FM_VAULT_LOGS"]
@@ -188,27 +202,27 @@ def detect_type(rel, fm):
     # Path pattern inference
     if rel.startswith("Meetings/") and rel.endswith(".md"):
         return "meeting-note"
-    if re.match(r"^Engagements/[^/]+/People/[^/]+\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/People/[^/]+\.md$", rel):
         return "people"
-    if re.match(r"^Engagements/[^/]+/Projects/[^/]+/.+ - PRD\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/Projects/[^/]+/.+ - PRD\.md$", rel):
         return "prd"
-    if re.match(r"^Engagements/[^/]+/Projects/[^/]+/.+ - Updates\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/Projects/[^/]+/.+ - Updates\.md$", rel):
         return "updates"
-    if re.match(r"^Engagements/[^/]+/Projects/[^/]+/.+ - Context\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/Projects/[^/]+/.+ - Context\.md$", rel):
         return "context"
-    if re.match(r"^Engagements/[^/]+/Projects/[^/]+/[^/]+\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/Projects/[^/]+/[^/]+\.md$", rel):
         return "project"
-    if re.match(r"^Engagements/[^/]+/.+ - Overview\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/.+ - Overview\.md$", rel):
         return "overview"
-    if re.match(r"^Engagements/[^/]+/.+ - Updates\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/.+ - Updates\.md$", rel):
         return "updates"
-    if re.match(r"^Engagements/[^/]+/.+ - Reference\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/.+ - Reference\.md$", rel):
         return "reference"
-    if re.match(r"^Engagements/[^/]+/CLAUDE\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/CLAUDE\.md$", rel):
         return "navigation"
-    if re.match(r"^Engagements/[^/]+/Strategic/.+\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/Strategic/.+\.md$", rel):
         return "strategic"
-    if re.match(r"^Engagements/[^/]+/Planning/.+\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/Planning/.+\.md$", rel):
         return "planning"
     if rel.startswith("Daily/") and rel.endswith(" - Briefing.md"):
         return "briefing"
@@ -307,7 +321,7 @@ ENGAGEMENT_ALIASES = _load_engagement_aliases()
 
 def infer_tags(rel):
     inferred = []
-    m = re.match(r"^Engagements/([^/]+)/", rel)
+    m = re.match(rf"^{PD}/([^/]+)/", rel)
     if m:
         eng_dir = m.group(1)
         eng_lc = eng_dir.lower()

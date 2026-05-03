@@ -100,6 +100,18 @@
         "tag_prefix_archetype": {
           "type": ["string", "null"],
           "description": "User's declared workflow archetype that drives _tag_prefixes selection at surface-#4 auto-author time. Free-form string; well-known values consultant/researcher/developer/educator/manager map to archetype-keyed prefix tables; any other value triggers the LLM-compose path in surface-4-tag-prefixes.sh. Null when the user has not declared (defaults to LLM-compose). 1.5.x additive (no const bump), per Plan 71 SP12 T-14 (Q-ID A-CB-7)."
+        },
+        "projects_root_dirname": {
+          "type": ["string", "null"],
+          "description": "Top-level directory name where the user organizes structured projects (default 'Engagements'; user-declared alternatives like 'Clients', 'Projects', 'Workstreams' are common). Read by frontmatter-enforce.sh detect_type() via FM_PROJECTS_ROOT_DIRNAME env-var to parameterize the projects-root path patterns; closes A3-Gap #1. Null when user has not declared (consumer falls back to 'Engagements'). 1.5.x additive (no const bump), per Plan 71 SP12 T-9."
+        },
+        "required_fields_overrides": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "description": "Per-canonical-file-type required-frontmatter-fields override map. Keys = canonical type (matching vault-schema.json types[].name); values = array of field names that should be required ON TOP OF (not replacing) the type's schema-declared required set. Read by frontmatter-enforce.sh; consumed at validation time. Empty object {} = no overrides. 1.5.x additive (no const bump), per Plan 71 SP12 T-9."
         }
       }
     },
@@ -180,6 +192,11 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "Free-text concerns from Onboarder Q1. 1.4.0+ widens from string|null to string[] (breaking)."
+        },
+        "research_topics": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Industry-tuned search-prompt seeds consumed by /architect external-research mode. SP12 T-10 auto-authors these from declared identity.industry + interview architect-concerns. 1.5.x additive (no const bump), per Plan 71 SP12 T-10."
         },
         "archetype_research": {
           "type": "object",

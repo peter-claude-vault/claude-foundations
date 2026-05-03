@@ -3,6 +3,9 @@
 /dogfood-history/
 .image-digest
 *.log
+# Three-step gate audit log written at runtime by lib/three-step-gate.sh
+# (default path: onboarding/auto-author-log.jsonl) during fixture runs.
+/onboarding/auto-author-log.jsonl
 /.self-verify/
 /.e2e/
 /.e2e-scenario.sh
