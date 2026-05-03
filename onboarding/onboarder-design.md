@@ -510,7 +510,5 @@ exact same Q-IDs as keys; SP07's onboarder UX cannot introduce new IDs.
   inference.
 - `~/.claude/onboarding/archetype-keywords.json` — companion JSON
   consumed by T-7a's `archetype-inference.sh`.
-- `~/.claude-plans/71-claude-foundations-engine-v2/01-schemas-and-onboarder-contract/spec.md`
-  — SP01 spec; T-7 acceptance criteria.
-- `~/.claude-plans/71-claude-foundations-engine-v2/01-schemas-and-onboarder-contract/tasks.md`
-  — T-7 block (lines 313–330).
+- SP01 (`schemas-and-onboarder-contract`) spec — T-7 acceptance criteria.
+- SP01 tasks file — T-7 block (lines 313–330).
