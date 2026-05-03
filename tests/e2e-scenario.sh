@@ -11,7 +11,13 @@
 # Onboarder Section A-E flow is NOT exercised in T-7a — pre-stages
 # user-manifest.json fixture (Alex archetype) per the SP01 dogfood
 # pattern. Real onboarder via Claude Code in image is deferred to T-7b
-# CFF-S87-1.
+# CFF-S87-2 (v2.0.x patch — absorbed into T-9 30-day GA window).
+#
+# ROLLBACK_DRILL_MODE=1 (T-7b CFF-S87-1, AC8): stages a corrupted
+# user-manifest fixture (vault.is_fresh=false). adopt.sh's strict
+# `vault.is_fresh != true` check refuses adoption with exit 20 — a
+# deterministic, deliberate-failure injection point that exercises the
+# rollback orchestration path host-side.
 #
 # R-23 bash 3.2 compat.
 
@@ -23,6 +29,14 @@ CLAUDE_HOME=$TEST_HOME/.claude
 PLANS_HOME=$TEST_HOME/.claude-plans
 
 # --- Pre-stage user-manifest.json fixture (Alex archetype) ---
+# Drill-mode flips vault.is_fresh to false; adopt.sh exits 20.
+if [ "${ROLLBACK_DRILL_MODE:-0}" = '1' ]; then
+  IS_FRESH=false
+  echo "ROLLBACK_DRILL_MODE=1 — staging corrupted fixture (vault.is_fresh=false; adopt expected to exit 20)" >&2
+else
+  IS_FRESH=true
+fi
+
 mkdir -p "$CLAUDE_HOME"
 cat > "$CLAUDE_HOME/user-manifest.json" <<MANIFEST
 {
@@ -44,7 +58,7 @@ cat > "$CLAUDE_HOME/user-manifest.json" <<MANIFEST
   },
   "vault": {
     "root": "$TEST_HOME/vault",
-    "is_fresh": true,
+    "is_fresh": $IS_FRESH,
     "organizational_method": "engagement-based",
     "top_level_folder": "Engagements",
     "default_audience": "team",
@@ -175,6 +189,7 @@ cat > /results/phases.json <<JSON
 {
   "schema": "e2e-lima-dogfood-phases.v1",
   "completed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "drill_mode": ${ROLLBACK_DRILL_MODE:-0},
   "install_rc": ${INSTALL_RC:-null},
   "adopt_rc": ${ADOPT_RC:-null},
   "cron_boot_rc": ${CRON_BOOT_RC:-null},
