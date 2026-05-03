@@ -1,0 +1,9 @@
+{
+  "schema": "grep-audit-baseline.v1",
+  "layer4_baseline": 1,
+  "rationale": "Layer 4 (git log --all -p historical audit) carries a single hit from a vestigial test fixture in pre-v2 commit history. The hit is documented and accepted; the gate is `<= baseline` to allow the known state without permitting NEW historical leaks. Reduce to 0 if the historical commit is ever rewritten or filtered.",
+  "current_tree_layer_baseline": 0,
+  "current_tree_rationale": "Layers 1-3 are strict zero. Any leak in current-tree state fails CI. EXCLUDE_RE handles legitimate-by-design references in tests/grep-audit.sh — extend EXCLUDE_RE rather than bumping this baseline.",
+  "last_reviewed": "2026-05-02",
+  "review_cadence": "Every minor release (v2.x.0) — confirm Layer 4 baseline still reflects intended state."
+}
