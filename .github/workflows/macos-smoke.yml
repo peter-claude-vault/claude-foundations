@@ -45,13 +45,18 @@ jobs:
     name: install → render → bootstrap → uninstall (live launchd)
     runs-on: macos-14
     timeout-minutes: 15
-    env:
-      MACOS_SMOKE_OUTPUT_DIR: ${{ runner.temp }}/smoke-out
     steps:
       - name: Checkout (full history; grep-audit Layer 4 needs all commits)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set MACOS_SMOKE_OUTPUT_DIR (runner.temp not available in job env)
+        run: |
+          # `runner.*` context is unavailable at job-level `env:` block —
+          # GitHub Actions only exposes it inside `steps`. Set via GITHUB_ENV
+          # so all subsequent steps see it as a regular env var.
+          echo "MACOS_SMOKE_OUTPUT_DIR=${RUNNER_TEMP}/smoke-out" >> "$GITHUB_ENV"
 
       - name: Install brew prereqs (gettext for envsubst)
         run: |
