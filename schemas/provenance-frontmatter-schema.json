@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claude-foundations.local/schemas/provenance-frontmatter.json",
+  "title": "Provenance Frontmatter",
+  "description": "Frontmatter contract every artifact written by an auto-authoring surface MUST carry. Lets capabilities distinguish what's safe to regenerate vs what to preserve. Per Plan 71 SP12 T-2 (recalibration-decision-record §'Mandatory architectural guardrails' #2). The schema validates the YAML frontmatter block at the top of a generated artifact when parsed as an object — additionalProperties is true so artifacts may carry their own type-specific frontmatter alongside the provenance fields.",
+  "type": "object",
+  "required": [
+    "generated_by",
+    "generated_from",
+    "last_user_edit"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "generated_by": {
+      "type": "string",
+      "description": "Identifier for the surface generator + version that produced the artifact. Format: <surface-id>@<version> (e.g. 'onboarder@v2.0.0-pre', 'sp12-t5'). Lets downstream regen-decisions key on the generator that owns the file.",
+      "pattern": "^[a-z0-9][a-z0-9._@/-]*$",
+      "minLength": 2
+    },
+    "generated_from": {
+      "type": "string",
+      "description": "Source identifier the generator consumed: an interview Q-ID (e.g. 'A-CB-7'), a section ID ('section-a'), or a free-form provenance hint ('manual-template'). Allows re-generation flows to detect when the source has changed and propose a regen-diff.",
+      "minLength": 1
+    },
+    "last_user_edit": {
+      "type": ["string", "null"],
+      "description": "ISO-8601 UTC timestamp of the most recent user-driven edit to this artifact, OR null when no user edit has occurred since generation. Capabilities reading the artifact MUST preserve user edits when this timestamp is newer than the generator timestamp; downstream regen-prompts read this to decide whether a 'review-then-replace' or 'silent-replace' UX is appropriate.",
+      "format": "date-time"
+    },
+    "superseded_by": {
+      "type": "string",
+      "description": "Optional. Set when an earlier auto-authored artifact is upgraded in place by a later surface (e.g., SP11-T-3 seed upgraded by SP12-T-5). Points at the upgrading surface-id. Carries lineage forward without losing the original generator identity.",
+      "minLength": 2
+    },
+    "original_sha256": {
+      "type": "string",
+      "description": "Optional. SHA-256 of the original artifact bytes when an in-place upgrade preserves lineage. Lets a downstream auditor verify the upgrade replaced what it claimed to replace.",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "Optional. Version of THIS provenance schema (not the artifact-type schema) the generator targeted. Default: '1.0.0' when omitted.",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    }
+  },
+  "examples": [
+    {
+      "generated_by": "onboarder@v2.0.0-pre",
+      "generated_from": "section-a",
+      "last_user_edit": null
+    },
+    {
+      "generated_by": "sp12-t5",
+      "generated_from": "section-a-priorities",
+      "last_user_edit": "2026-05-04T13:22:08Z",
+      "superseded_by": "sp12-t5",
+      "original_sha256": "a7b43e5e4b0d6e3f5b31d6a0e29c8b8b4e9c5f3c2a1d8b7e6f5d4c3b2a1908f7"
+    }
+  ]
+}

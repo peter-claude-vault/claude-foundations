@@ -67,6 +67,7 @@ run_script() {
   SETTINGS_JSON="$hroot/.claude/settings.json" \
   DISCOVERY_TZ_OVERRIDE="America/New_York" \
   DISCOVERY_DEV_ENV_OVERRIDE="code" \
+  SKIP_COST_TRANSPARENCY=1 \
   "$SCRIPT" "$@"
 }
 

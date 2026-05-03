@@ -42,6 +42,10 @@
 #                               (default: $HOME/.claude/settings.json)
 #   DISCOVERY_TZ_OVERRIDE       Skip readlink /etc/localtime probe (tests)
 #   DISCOVERY_DEV_ENV_OVERRIDE  Skip `command -v` editor probe (tests)
+#   SKIP_COST_TRANSPARENCY=1    Skip SP12 T-3 cost-transparency block (tests +
+#                               dogfood + AUTO_* paths). Block is mandatory at
+#                               first user-facing entry; only suppress in
+#                               hermetic test invocations.
 #
 # Exit codes:
 #   0   success | opt-out #1 elected
@@ -75,6 +79,12 @@ AUDIT_LOG="${AUDIT_LOG:-${CLAUDE_HOME:-$HOME/.claude}/onboarding/audit/section-a
 SETTINGS_JSON="${SETTINGS_JSON:-$HOME/.claude/settings.json}"
 AUTO_ACCEPT="${AUTO_ACCEPT:-0}"
 AUTO_OPT_OUT="${AUTO_OPT_OUT:-0}"
+SKIP_COST_TRANSPARENCY="${SKIP_COST_TRANSPARENCY:-0}"
+
+# SP12 T-3: cost-transparency block copy. The range pulls from
+# docs/llm-cost-model.md; when pricing changes, update LLM_COST_RANGE_DISPLAY
+# below AND the underlying math in that doc.
+LLM_COST_RANGE_DISPLAY='$5-15 (with auto-authoring) | $1-3 (deterministic-only)'
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -210,6 +220,53 @@ fmt_vault_or_manual_hint() {
   else
     printf '%s' "$V_VAULT"
   fi
+}
+
+display_cost_transparency_and_confirm() {
+  # SP12 T-3 (Plan 71 SP12 Session 1): mandatory cost-transparency block at
+  # the start of /onboard. Lists the 7 Tier-1 auto-authoring surfaces with
+  # LLM-vs-deterministic markers, displays the cost range, and blocks until
+  # the user confirms. Skipped under AUTO_*, --auto-* flags, or
+  # SKIP_COST_TRANSPARENCY=1 (tests + dogfood).
+  if [ "$AUTO_ACCEPT" = "1" ] || [ "$AUTO_OPT_OUT" = "1" ] || [ "$SKIP_COST_TRANSPARENCY" = "1" ]; then
+    return 0
+  fi
+  printf '\n=== Auto-Authoring Cost Transparency ===\n\n'
+  printf "This onboarding flow auto-authors seven personalized config artifacts on your\n"
+  printf "behalf. Five of those surfaces invoke an LLM to compose prose from your\n"
+  printf "interview answers; two are deterministic template-fill passes.\n\n"
+  printf 'Surface inventory (Tier-1 — pre-GA):\n\n'
+  printf '  1. claude-home CLAUDE.md (composed prose)        [LLM]\n'
+  printf '  2. ~/.claude/projects/<user>/memory/ seeds       [LLM]\n'
+  printf '  3. Vault CLAUDE.md (RDT + tag taxonomy)          [LLM]\n'
+  printf '  4. _tag_prefixes[]                               [deterministic]\n'
+  printf '  5. doc-dependencies.json                         [deterministic]\n'
+  printf '  6. frontmatter-enforce per-capability config     [deterministic]\n'
+  printf '  9. Architect prior-seed concerns + research      [LLM]\n'
+  printf '\n'
+  printf 'Estimated cost range:  %s\n' "$LLM_COST_RANGE_DISPLAY"
+  printf 'Token-estimate methodology: docs/llm-cost-model.md\n\n'
+  printf 'Every LLM-composed artifact flows through a three-step gate (preview/edit/apply)\n'
+  printf 'before any write. You will not be surprised by what gets generated.\n\n'
+  printf 'Continue? [Y/n]: '
+  local cont=""
+  if ! IFS= read -r cont; then
+    # EOF on stdin = abort. Tests should set SKIP_COST_TRANSPARENCY=1 (or
+    # AUTO_*) rather than pipe EOF.
+    info "Cost-transparency confirm: stdin EOF; aborting."
+    exit 130
+  fi
+  case "$cont" in
+    ""|y|Y|yes|YES) printf '\n'; return 0 ;;
+    n|N|no|NO)
+      info "User declined cost-transparency confirm. Section A aborted; re-run /onboard to retry."
+      exit 130
+      ;;
+    *)
+      info "Invalid response '$cont'. Treating as decline; re-run /onboard to retry."
+      exit 130
+      ;;
+  esac
 }
 
 display_card() {
@@ -470,6 +527,10 @@ fi
 if [ "$AUTO_ACCEPT" = "1" ]; then
   emit_accepted_and_exit
 fi
+
+# SP12 T-3: cost-transparency block at flow start. Skipped under
+# AUTO_*/SKIP_COST_TRANSPARENCY paths via internal early-return.
+display_cost_transparency_and_confirm
 
 # Interactive loop.
 while :; do
