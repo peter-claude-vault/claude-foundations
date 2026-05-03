@@ -297,9 +297,17 @@ seed_memories() {
         fi
 
         # Write atomically: tmp → rename
+        # Frontmatter shape: provenance fields (SP12 T-2 contract) FIRST, then
+        # R-45 fields. Both schemas (provenance + R-45) declare
+        # additionalProperties:true so the combined block is valid against both.
+        # Provenance lets SP12 T-5 mirror collision contract route SP11 seeds
+        # through the UPGRADE path instead of ABORT (CFF-SP12-S2-1).
         local tmp="$fp.tmp.$$"
         {
             printf '%s\n' '---'
+            printf 'generated_by: %s\n' 'sp11-t3'
+            printf 'generated_from: %s\n' 'section-a-c-d-derivation'
+            printf 'last_user_edit: %s\n' 'null'
             printf 'name: %s\n' "$nm"
             printf 'description: %s\n' "$desc"
             printf 'type: %s\n' "$tp"
