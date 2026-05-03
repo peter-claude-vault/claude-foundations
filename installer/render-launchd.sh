@@ -160,8 +160,8 @@ USER_HOME="$HOME"
 LABEL_PREFIX="${LABEL_PREFIX:-com.claude-foundations}"
 
 # TIMEZONE: $TZ env wins, else parse /etc/localtime symlink (no privilege, no
-# command-execution overhead, launchd-context-safe). Final fallback per Peter's
-# EDT preference. systemsetup -gettimezone REQUIRES admin per man page even for
+# command-execution overhead, launchd-context-safe). Final fallback per author's
+# EDT default. systemsetup -gettimezone REQUIRES admin per man page even for
 # read-only — fails silently under launchd's restricted env.
 if [ -n "${TZ:-}" ]; then
   TIMEZONE="$TZ"

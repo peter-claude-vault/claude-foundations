@@ -282,9 +282,13 @@ if [ ! -f "$CLAUDE_MD" ]; then
   # Substitution. sed with delimiter | to avoid collision with substituted /
   # path content. Identity values may contain special regex chars; escape via
   # printf %s | sed for sed-safe escaping. For MVP, restrict identity strings
-  # to printable ASCII and rely on simple sed substitution.
+  # to printable ASCII and rely on simple sed substitution. Defensive `tr -d
+  # '\n'` strips embedded newlines (audit SP10 T-10 F3): a manifest field with
+  # an embedded literal newline would otherwise truncate the substituted token
+  # and corrupt the rendered CLAUDE.md. Belt-and-suspenders with the
+  # printable-ASCII hint at the section-a entry-point.
   sed_escape() {
-    printf '%s' "$1" | sed -e 's/[\&|]/\\&/g'
+    printf '%s' "$1" | tr -d '\n' | sed -e 's/[\&|]/\\&/g'
   }
 
   rendered=$(printf '%s' "$rendered" \

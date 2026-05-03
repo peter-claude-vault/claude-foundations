@@ -40,8 +40,8 @@ if [[ -n "$UNEXPECTED" ]]; then
     lsof +D "$PLANS_DIR_DEAD" 2>&1 | head -20
     echo "-- recent claude/node/bun/python/mcp processes:"
     ps -axo pid=,ppid=,etime=,command= 2>/dev/null | grep -E '(claude|node|bun|python|mcp)' | grep -v grep | head -30
-    echo "-- launchd jobs (peter / claude / cron / librarian / digest / meeting / plan-exec / backlog / architect):"
-    launchctl list 2>&1 | grep -E 'peter|claude|cron|librarian|digest|meeting|plan-exec|backlog|architect' | head -20
+    echo "-- launchd jobs (claude / cron / librarian / digest / meeting / plan-exec / backlog / architect):"
+    launchctl list 2>&1 | grep -E 'claude|cron|librarian|digest|meeting|plan-exec|backlog|architect' | head -20
     echo ""
   } >> "$FORENSICS"
   echo "$TS TRIPWIRE: $PLANS_DIR_DEAD has unexpected contents — see tripwire-forensics.log" >> "$LOG"

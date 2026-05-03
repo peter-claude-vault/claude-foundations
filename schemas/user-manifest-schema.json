@@ -326,6 +326,11 @@
             "row_format": { "type": ["string", "null"], "description": "Operator-facing row template; supports {plan_slug} interpolation." },
             "error_template": { "type": ["string", "null"], "description": "DENY-message template; supports {plan_slug} interpolation." }
           }
+        },
+        "master_initiative_whitelist": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Plan slugs exempt from the NN- prefix conformance audit emitted by librarian plan-index. Used for legacy master-initiative directories that predate the prefix convention. Empty by default — adopters typically don't have these. (1.5.x additive, SP10 T-14, replaces prior hardcoded set.)"
         }
       }
     },

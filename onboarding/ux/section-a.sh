@@ -315,7 +315,7 @@ note_correction() {
 edit_field() {
   local n="$1"
   case "$n" in
-    1)  printf 'New value for Name (blank = keep): '
+    1)  printf 'New value for Name (printable ASCII only, no newlines; blank = keep): '
         read -r v; [ -n "$v" ] && { V_NAME="$v"; note_correction "$n"; } ;;
     2)  printf 'New value for Email (blank = keep): '
         read -r v; [ -n "$v" ] && { V_EMAIL="$v"; note_correction "$n"; } ;;

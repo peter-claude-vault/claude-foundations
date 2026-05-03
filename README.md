@@ -96,7 +96,7 @@ The `release.yml` workflow gates the v2.0.0 (non-rc) tag-cut against this attest
 - **Repository:** https://github.com/peter-claude-vault/claude-foundations
 - **Predecessor:** Plan 38 (`38-claude-foundations-onboarding-engine`, commits up to `0adb10c`). Plan 71 (`71-claude-foundations-engine-v2`) supersedes Plan 38 after the April 13, 2026 incident. The `main` branch retains Plan 38 history at `0adb10c`; `v2-engine` is the active development branch.
 - **Memorial:** [docs/april-13-autopsy.md](docs/april-13-autopsy.md) — what happened, what we learned, what guards now exist.
-- **License:** MIT (see LICENSE; deferred to v2.0.x patch).
+- **License:** MIT — see [LICENSE](LICENSE).
 
 ---
 

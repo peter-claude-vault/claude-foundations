@@ -37,11 +37,18 @@ done
 INDEX_PATH="$PLANS_DIR/_index.md"
 TMP_PATH="${INDEX_PATH}.tmp.$$"
 
+# Operator-configurable whitelist of plan slugs exempt from the NN- prefix
+# conformance audit (legacy master-initiative directories that predate the
+# convention). Sourced from user-manifest at .plans.master_initiative_whitelist
+# with empty-array fallback. SP10 T-14: replaces the prior hardcoded
+# Peter-vault-specific set.
+USER_MANIFEST_PATH="${USER_MANIFEST_PATH:-$CLAUDE_HOME/user-manifest.json}"
+
 # The heavy lifting is a single Python invocation that walks $PLANS_DIR,
 # classifies each entry per the SKILL.md Process section, sorts, and emits
 # the target markdown. Keeping this monolithic reduces per-entry subprocess
 # overhead and makes the output deterministic (single sort pass, one clock).
-python3 - "$PLANS_DIR" "$INDEX_PATH" "$TMP_PATH" "$DRY_RUN" "$PARENT_FILTER" <<'PY'
+python3 - "$PLANS_DIR" "$INDEX_PATH" "$TMP_PATH" "$DRY_RUN" "$PARENT_FILTER" "$USER_MANIFEST_PATH" <<'PY'
 import json, os, re, sys, datetime, pathlib
 
 PLANS_DIR = pathlib.Path(sys.argv[1])
@@ -49,14 +56,20 @@ INDEX_PATH = pathlib.Path(sys.argv[2])
 TMP_PATH = pathlib.Path(sys.argv[3])
 DRY_RUN = sys.argv[4] == "true"
 PARENT_FILTER = sys.argv[5] or None
+USER_MANIFEST_PATH = pathlib.Path(sys.argv[6]) if len(sys.argv) > 6 else None
 
-# Master-initiative whitelist (Session 22 Module 22-I, TEMPORARY — removed
-# when spine-remediation sub-plan 24 Parent-Plan-Inheritance migration ships
-# these directories to NN- prefixed form).
-MASTER_INITIATIVE_WHITELIST = {
-    "57-spine-remediation",
-    "58-vault-workflow-restructure",
-}
+def _load_master_initiative_whitelist():
+    if not USER_MANIFEST_PATH or not USER_MANIFEST_PATH.is_file():
+        return set()
+    try:
+        with open(USER_MANIFEST_PATH) as f:
+            doc = json.load(f)
+    except Exception:
+        return set()
+    raw = (doc.get("plans") or {}).get("master_initiative_whitelist") or []
+    return {s for s in raw if isinstance(s, str)}
+
+MASTER_INITIATIVE_WHITELIST = _load_master_initiative_whitelist()
 
 # Exclude-from-walk entries at plan-root depth 1.
 EXCLUDE_SLUGS = {"_index.md", "ENFORCEMENT-MAP.md"}
