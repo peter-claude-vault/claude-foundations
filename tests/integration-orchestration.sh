@@ -39,7 +39,7 @@
 #       Closes CFF-S68-1 (mock list verb is no-op stdout) and CFF-S68-2
 #       (uninstall per-file walk preserves runtime-rendered plists).
 #   8. uninstall.sh
-#   9. assert zero residue (foundation dirs gone; no com.claude-foundations.*
+#   9. assert zero residue (foundation dirs gone; no com.claude-stem.*
 #      labels in mock state; no plist files in fake LaunchAgents)
 #
 # Per-fixture branching:
@@ -241,13 +241,13 @@ run_fixture_e2e() {
   else
     # ---- staging path (developer/writer) ----
     job_id=$(jq -r '.jobs[0].id' "$CH/orchestration.json")
-    expected_plist="$staging_dir/com.claude-foundations.${job_id}-$([ "$job_id" = "librarian" ] && echo scan || echo analysis).plist"
+    expected_plist="$staging_dir/com.claude-stem.${job_id}-$([ "$job_id" = "librarian" ] && echo scan || echo analysis).plist"
     # Resolve the actual label per render-launchd's mapping:
-    #   librarian → com.claude-foundations.librarian-scan
-    #   architect → com.claude-foundations.architect-analysis
+    #   librarian → com.claude-stem.librarian-scan
+    #   architect → com.claude-stem.architect-analysis
     case "$job_id" in
-      librarian) label="com.claude-foundations.librarian-scan" ;;
-      architect) label="com.claude-foundations.architect-analysis" ;;
+      librarian) label="com.claude-stem.librarian-scan" ;;
+      architect) label="com.claude-stem.architect-analysis" ;;
       *)         fail "${archetype}: unsupported jobs[0].id='$job_id'"; return ;;
     esac
     expected_plist="$staging_dir/${label}.plist"
@@ -451,23 +451,23 @@ run_fixture_e2e() {
   assert_path_absent "$CH/foundation-manifest.json" \
     "${archetype} S9.1 (AC#5): foundation-manifest.json removed"
 
-  # No com.claude-foundations.* plists left in fake LaunchAgents/staging
+  # No com.claude-stem.* plists left in fake LaunchAgents/staging
   for surface in "$staging_dir" "$agents_dir"; do
     leftover_count=0
     if [ -d "$surface" ]; then
-      leftover_count=$(ls -1 "$surface" 2>/dev/null | grep -c '^com\.claude-foundations\.' || true)
+      leftover_count=$(ls -1 "$surface" 2>/dev/null | grep -c '^com\.claude-stem\.' || true)
     fi
     assert_eq "0" "$leftover_count" \
-      "${archetype} S9.2 (AC#5): no com.claude-foundations.* plists in $(basename "$surface")/"
+      "${archetype} S9.2 (AC#5): no com.claude-stem.* plists in $(basename "$surface")/"
   done
 
   # mock-launchctl state dir: no labels remain bootstrapped (uninstall.sh's
-  # bootout walk should clear any com.claude-foundations.* state files).
+  # bootout walk should clear any com.claude-stem.* state files).
   state_dir="$trace_dir/launchctl-state"
   if [ -d "$state_dir" ]; then
-    label_count=$(ls -1 "$state_dir" 2>/dev/null | grep -c '^com\.claude-foundations\.' || true)
+    label_count=$(ls -1 "$state_dir" 2>/dev/null | grep -c '^com\.claude-stem\.' || true)
     assert_eq "0" "$label_count" \
-      "${archetype} S9.3 (AC#5): no com.claude-foundations.* labels remain in mock state"
+      "${archetype} S9.3 (AC#5): no com.claude-stem.* labels remain in mock state"
   else
     # State dir absent is fine (consultant opt-out path: no bootstrap ever
     # happened, so no state file ever created).

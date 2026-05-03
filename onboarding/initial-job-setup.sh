@@ -442,7 +442,7 @@ else
 fi
 
 # --- expected staged plist path (deterministic from job + LABEL_PREFIX) ---
-LABEL_PREFIX_LOCAL="${LABEL_PREFIX:-com.claude-foundations}"
+LABEL_PREFIX_LOCAL="${LABEL_PREFIX:-com.claude-stem}"
 case "$job_id" in
   librarian) label_full="${LABEL_PREFIX_LOCAL}.librarian-scan" ;;
   architect) label_full="${LABEL_PREFIX_LOCAL}.architect-analysis" ;;

@@ -4,14 +4,14 @@
 #
 # Validates:
 #   T1 (AC #1): render-launchd librarian → plutil-lint-clean plist with
-#     com.claude-foundations.librarian-scan label, in staging dir.
+#     com.claude-stem.librarian-scan label, in staging dir.
 #   T2 (AC #1): render-launchd architect → plutil-lint-clean plist with
 #     Weekday from schedule.dow[0].
 #   T3:        render-launchd production mode → bootout-before-bootstrap
 #              call ordering verified via stub trace.
 #   T4 (AC #3): bootout-launchd → bootout BEFORE rm. Stub launchctl records
 #     plist file existence at bootout time; file must be present.
-#   T5 (AC #4): bootout-launchd → only com.claude-foundations.* labels get
+#   T5 (AC #4): bootout-launchd → only com.claude-stem.* labels get
 #     bootout calls; non-foundation labels filtered.
 #   T6:        bootout-launchd G6 secondary → tampered plist (filename
 #              foundation-prefixed but in-plist Label drifted) preserved
@@ -81,12 +81,12 @@ STUB
   case "$list_mode" in
     foundation-only)
       cat >> "$stub_path" <<'STUB'
-    printf 'PID\tStatus\tLabel\n100\t0\tcom.claude-foundations.librarian-scan\n101\t0\tcom.claude-foundations.architect-analysis\n'
+    printf 'PID\tStatus\tLabel\n100\t0\tcom.claude-stem.librarian-scan\n101\t0\tcom.claude-stem.architect-analysis\n'
 STUB
       ;;
     mixed)
       cat >> "$stub_path" <<'STUB'
-    printf 'PID\tStatus\tLabel\n50\t0\tcom.apple.something\n51\t0\tcom.user.unrelated\n100\t0\tcom.claude-foundations.librarian-scan\n101\t0\tcom.claude-foundations.architect-analysis\n'
+    printf 'PID\tStatus\tLabel\n50\t0\tcom.apple.something\n51\t0\tcom.user.unrelated\n100\t0\tcom.claude-stem.librarian-scan\n101\t0\tcom.claude-stem.architect-analysis\n'
 STUB
       ;;
     empty)
@@ -96,7 +96,7 @@ STUB
       ;;
     two-jobs)
       cat >> "$stub_path" <<'STUB'
-    printf 'PID\tStatus\tLabel\n100\t0\tcom.claude-foundations.librarian-scan\n101\t0\tcom.claude-foundations.architect-analysis\n'
+    printf 'PID\tStatus\tLabel\n100\t0\tcom.claude-stem.librarian-scan\n101\t0\tcom.claude-stem.architect-analysis\n'
 STUB
       ;;
   esac
@@ -105,7 +105,7 @@ STUB
   bootout)
     # Record call. Also record plist-file existence AT TIME OF BOOTOUT
     # (T4 AC #3: bootout BEFORE rm — file must still be present here).
-    # $2 format is "gui/501/com.claude-foundations.librarian-scan";
+    # $2 format is "gui/501/com.claude-stem.librarian-scan";
     # ${2##*/} strips up to LAST slash → just the label.
     label_path="${2##*/}"
     plist_path="$LAUNCH_AGENTS/$label_path.plist"
@@ -158,7 +158,7 @@ test_render_librarian_lint_clean() {
     bash "$RENDER" --staging-dir "$staging" librarian >/dev/null 2>&1
   local rc=$?
 
-  local final="$staging/com.claude-foundations.librarian-scan.plist"
+  local final="$staging/com.claude-stem.librarian-scan.plist"
   if [ "$rc" -ne 0 ]; then
     fail "T1: render-launchd rc=$rc (expected 0)"
     return
@@ -190,7 +190,7 @@ test_render_architect_lint_clean() {
   HOME="$hroot" PATH="$hroot/bin:$PATH" LAUNCHCTL_TRACE="$trace" \
     bash "$RENDER" --staging-dir "$staging" architect >/dev/null 2>&1
   local rc=$?
-  local final="$staging/com.claude-foundations.architect-analysis.plist"
+  local final="$staging/com.claude-stem.architect-analysis.plist"
 
   if [ "$rc" -ne 0 ] || [ ! -f "$final" ]; then
     fail "T2: render-launchd architect rc=$rc, file present=$([ -f "$final" ] && echo yes || echo no)"
@@ -256,8 +256,8 @@ test_bootout_before_rm() {
   local trace="$hroot/launchctl-trace.log"
   : > "$trace"
 
-  write_plist "$hroot/Library/LaunchAgents/com.claude-foundations.librarian-scan.plist" "com.claude-foundations.librarian-scan"
-  write_plist "$hroot/Library/LaunchAgents/com.claude-foundations.architect-analysis.plist" "com.claude-foundations.architect-analysis"
+  write_plist "$hroot/Library/LaunchAgents/com.claude-stem.librarian-scan.plist" "com.claude-stem.librarian-scan"
+  write_plist "$hroot/Library/LaunchAgents/com.claude-stem.architect-analysis.plist" "com.claude-stem.architect-analysis"
 
   HOME="$hroot" PATH="$hroot/bin:$PATH" LAUNCHCTL_TRACE="$trace" \
     bash "$BOOTOUT" >/dev/null 2>&1
@@ -279,8 +279,8 @@ test_bootout_before_rm() {
     return
   fi
   # Files must be removed at end
-  if [ -f "$hroot/Library/LaunchAgents/com.claude-foundations.librarian-scan.plist" ] || \
-     [ -f "$hroot/Library/LaunchAgents/com.claude-foundations.architect-analysis.plist" ]; then
+  if [ -f "$hroot/Library/LaunchAgents/com.claude-stem.librarian-scan.plist" ] || \
+     [ -f "$hroot/Library/LaunchAgents/com.claude-stem.architect-analysis.plist" ]; then
     fail "T4: plist files not removed after successful uninstall"
     return
   fi
@@ -309,15 +309,15 @@ test_bootout_g6_filter() {
     return
   fi
   # Trace MUST contain bootout for both foundation labels
-  if ! grep -q 'bootout.*com\.claude-foundations\.librarian-scan' "$trace" 2>/dev/null; then
+  if ! grep -q 'bootout.*com\.claude-stem\.librarian-scan' "$trace" 2>/dev/null; then
     fail "T5: foundation label librarian-scan was NOT bootout-ed (trace: $(cat "$trace"))"
     return
   fi
-  if ! grep -q 'bootout.*com\.claude-foundations\.architect-analysis' "$trace" 2>/dev/null; then
+  if ! grep -q 'bootout.*com\.claude-stem\.architect-analysis' "$trace" 2>/dev/null; then
     fail "T5: foundation label architect-analysis was NOT bootout-ed (trace: $(cat "$trace"))"
     return
   fi
-  pass "T5 (AC #4): bootout-launchd refuses non-com.claude-foundations.* labels"
+  pass "T5 (AC #4): bootout-launchd refuses non-com.claude-stem.* labels"
 }
 
 # --- T6: G6 secondary refuses rm of tampered plist ---
@@ -329,7 +329,7 @@ test_bootout_g6_secondary() {
   : > "$trace"
 
   # Tampered: filename matches foundation prefix, Label inside drifted.
-  local tampered="$hroot/Library/LaunchAgents/com.claude-foundations.tampered.plist"
+  local tampered="$hroot/Library/LaunchAgents/com.claude-stem.tampered.plist"
   write_plist "$tampered" "com.evil.bar"
 
   HOME="$hroot" PATH="$hroot/bin:$PATH" LAUNCHCTL_TRACE="$trace" \

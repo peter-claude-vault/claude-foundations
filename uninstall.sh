@@ -15,9 +15,9 @@
 #     (G10 consume) and assert equality with env-supplied $CLAUDE_HOME
 #   - foundation-manifest.json read + parse + per-file fingerprint table   [S63]
 #   - .pre-uninstall-<ts>/ backup via cp -R (round-trip integrity)
-#   - launchctl bootout gui/$UID com.claude-foundations.* (LAUNCHCTL_BIN env
+#   - launchctl bootout gui/$UID com.claude-stem.* (LAUNCHCTL_BIN env
 #     override for MOCK_LAUNCHCTL=1 hermetic tests; defense-in-depth G6)
-#   - G6 namespace gate: refuse to bootout labels outside com.claude-foundations.*
+#   - G6 namespace gate: refuse to bootout labels outside com.claude-stem.*
 #     prefix; secondary guard catches impersonation labels (prefix as substring
 #     but not at position 1)
 #   - Per-file fingerprint walk inside foundation_known_entries directories:   [S63]
@@ -50,7 +50,7 @@
 #                       foundation-manifest.json missing without --force-remove;
 #                       foundation-manifest.json parse/extract failure)
 #   11  permission/write failure (backup mkdir, backup cp, or provenance write)
-#   56  G6 fired (label outside com.claude-foundations.* prefix encountered
+#   56  G6 fired (label outside com.claude-stem.* prefix encountered
 #                 during bootout discovery; foundation rm NOT performed;
 #                 backup retained for forensic review)
 #
@@ -230,8 +230,8 @@ done
 
 info "backup complete: $backup_count entries → $backup_dir"
 
-# --- launchctl bootout gui/$UID com.claude-foundations.* (G6-gated) ---
-PREFIX="com.claude-foundations"
+# --- launchctl bootout gui/$UID com.claude-stem.* (G6-gated) ---
+PREFIX="com.claude-stem"
 uid="$(id -u)"
 domain="gui/$uid"
 
@@ -244,7 +244,7 @@ labels=""
 labels="$("$LAUNCHCTL_BIN" list 2>/dev/null | awk -v p="$PREFIX." 'NR > 1 && $3 != "" && index($3, p) == 1 {print $3}')" || true
 
 # Secondary G6 (impersonation defense): scan for labels containing the prefix
-# substring but NOT at position 1 (e.g., `evil.com.claude-foundations.fake`).
+# substring but NOT at position 1 (e.g., `evil.com.claude-stem.fake`).
 # This catches impersonation that the primary index==1 filter excludes.
 foreign=""
 foreign="$("$LAUNCHCTL_BIN" list 2>/dev/null | awk -v p="$PREFIX" 'NR > 1 && $3 != "" && index($3, p) > 0 && index($3, p) != 1 {print $3}')" || true
@@ -293,13 +293,13 @@ info "bootout complete: $boot_count labels"
 # completion (wrapper script under $CLAUDE_HOME is gone — fire produces stderr
 # noise but no destructive action; UX-confusing).
 #
-# Symmetric with G6 awk-filter: only com.claude-foundations.*.plist files are
+# Symmetric with G6 awk-filter: only com.claude-stem.*.plist files are
 # removed; foreign plists in the same directory are preserved. Glob iteration
 # uses [ -e ] guard for the empty-glob case (Bash 3.2 compat).
 LA_DIR="${HOME:-/}/Library/LaunchAgents"
 plist_rm_count=0
 if [ -d "$LA_DIR" ]; then
-  for plist in "$LA_DIR"/com.claude-foundations.*.plist; do
+  for plist in "$LA_DIR"/com.claude-stem.*.plist; do
     [ -e "$plist" ] || continue
     if rm -f "$plist" 2>/dev/null; then
       info "rm $(basename "$plist") from $LA_DIR"
@@ -459,7 +459,7 @@ fi
       printf '  - %s\n' "$p"
     done < "$user_edited_paths_log"
   fi
-  printf 'slice_scope: G1-pre symmetric + provenance-log-driven CLAUDE_HOME confirm + foundation-manifest.json read + .pre-uninstall-<ts>/ backup + launchctl bootout (LAUNCHCTL_BIN-overridable, G6-gated, com.claude-foundations.* only) + foundation plist rm at $HOME/Library/LaunchAgents/ (CFF-S71-1; G6-symmetric prefix filter) + per-file fingerprint walk inside foundation directories + basename rm for foundation root files + logs/ + non-foundation top-level preservation + --force-rm-edited / --force-remove\n'
+  printf 'slice_scope: G1-pre symmetric + provenance-log-driven CLAUDE_HOME confirm + foundation-manifest.json read + .pre-uninstall-<ts>/ backup + launchctl bootout (LAUNCHCTL_BIN-overridable, G6-gated, com.claude-stem.* only) + foundation plist rm at $HOME/Library/LaunchAgents/ (CFF-S71-1; G6-symmetric prefix filter) + per-file fingerprint walk inside foundation directories + basename rm for foundation root files + logs/ + non-foundation top-level preservation + --force-rm-edited / --force-remove\n'
   printf 'deferred: 10s/plist timeout wrapper around launchctl bootout; settings.json baseline jq-reverse unmerge (G7-symmetric); --selective/--full/--dry-run/--keep-backup flag matrix; SP00 runner-shell negative rehearsal; provenance-log freshness validation\n'
 } > "$log_path" || { diag "uninstall provenance log write failed"; rm -f "$manifest_records_tmp" "$user_edited_paths_log"; exit 11; }
 

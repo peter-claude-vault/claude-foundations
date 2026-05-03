@@ -6,10 +6,10 @@
 # ~/.claude-plans/71-claude-foundations-engine-v2/07-onboarder-ux/tasks.md L200-208:
 #
 #   T1 (AC #1, #2, #3): default librarian → dry-run preview + plist staged at
-#       $STAGING_DIR/com.claude-foundations.librarian-scan.plist; never at
+#       $STAGING_DIR/com.claude-stem.librarian-scan.plist; never at
 #       ~/Library/LaunchAgents/.
 #   T2 (AC #1, #2, #3): architect alt → plist staged with weekday-aware
-#       schedule under com.claude-foundations.architect-analysis.plist.
+#       schedule under com.claude-stem.architect-analysis.plist.
 #   T3 (AC #7):         opt-out #9 (jobs:[]) → no plist written, no render
 #       invocation, exit 0 cleanly.
 #   T4 (AC #4):         post-onboard prompt directs user to
@@ -125,7 +125,7 @@ setup_fake_home "$T1_HOME" "$T1_ORCH"
 T1_OUT="$TEST_ROOT/t1.out"
 run_script "$T1_HOME" > "$T1_OUT" 2>&1
 T1_RC=$?
-T1_PLIST="$T1_HOME/.claude/Library/LaunchAgents.staging/com.claude-foundations.librarian-scan.plist"
+T1_PLIST="$T1_HOME/.claude/Library/LaunchAgents.staging/com.claude-stem.librarian-scan.plist"
 if [ "$T1_RC" -eq 0 ] && [ -f "$T1_PLIST" ] && plutil -lint -s "$T1_PLIST" >/dev/null 2>&1; then
   pass "T1 librarian default → plist staged + plutil-lint clean"
 else
@@ -155,7 +155,7 @@ setup_fake_home "$T2_HOME" "$T2_ORCH"
 T2_OUT="$TEST_ROOT/t2.out"
 run_script "$T2_HOME" > "$T2_OUT" 2>&1
 T2_RC=$?
-T2_PLIST="$T2_HOME/.claude/Library/LaunchAgents.staging/com.claude-foundations.architect-analysis.plist"
+T2_PLIST="$T2_HOME/.claude/Library/LaunchAgents.staging/com.claude-stem.architect-analysis.plist"
 if [ "$T2_RC" -eq 0 ] && [ -f "$T2_PLIST" ] && plutil -lint -s "$T2_PLIST" >/dev/null 2>&1; then
   pass "T2 architect alt → plist staged + plutil-lint clean"
 else
@@ -276,7 +276,7 @@ T9_ID=$(jq -r '.jobs[0].id' "$T9_HOME/orchestration.json")
 T9_BUDGET=$(jq -r '.jobs[0].budget_usd' "$T9_HOME/orchestration.json")
 T9_MODEL=$(jq -r '.jobs[0].model' "$T9_HOME/orchestration.json")
 T9_DOW=$(jq -r '.jobs[0].schedule.dow[0]' "$T9_HOME/orchestration.json")
-T9_PLIST="$T9_HOME/.claude/Library/LaunchAgents.staging/com.claude-foundations.architect-analysis.plist"
+T9_PLIST="$T9_HOME/.claude/Library/LaunchAgents.staging/com.claude-stem.architect-analysis.plist"
 if [ "$T9_RC" -eq 0 ] \
    && [ "$T9_ID" = "architect" ] \
    && [ "$T9_BUDGET" = "10" ] \

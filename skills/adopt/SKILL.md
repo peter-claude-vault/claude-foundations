@@ -65,7 +65,7 @@ Per spec §`/adopt` fresh-vault flow (MVP), the scaffolding script executes:
    - `<vault_root>/.coordination/`
    - `<vault_root>/Plans` symlinked via `ln -sfn` to `$PLANS_HOME`
 6. **CLAUDE.md seed.** If `<vault_root>/CLAUDE.md` does not exist, render
-   `~/Code/claude-foundations-v2/templates/vault-claude-md-template.md` (or the
+   `~/Code/claude-stem/templates/vault-claude-md-template.md` (or the
    runtime-installed copy at `$CLAUDE_HOME/templates/...`) with substitution of:
    - `{{IDENTITY_NAME}}` ← `identity.name`
    - `{{IDENTITY_ROLE}}` ← `identity.role`
@@ -104,7 +104,7 @@ written, schema type, pre-write validation steps, and failure mode.
 
 | Path | Schema type | Cardinality | Lifecycle |
 |---|---|---|---|
-| `<vault_root>/CLAUDE.md` | Substituted instance of `~/Code/claude-foundations-v2/templates/vault-claude-md-template.md`; identity placeholders all replaced | Single | Seeded once on first `/adopt`; preserved on re-run |
+| `<vault_root>/CLAUDE.md` | Substituted instance of `~/Code/claude-stem/templates/vault-claude-md-template.md`; identity placeholders all replaced | Single | Seeded once on first `/adopt`; preserved on re-run |
 | `<vault_root>/System Backlog.md` | Markdown index with `type: index` frontmatter (validated against `vault-schema.json` `index` type) | Single | Seeded once; preserved on re-run; populated by `/backlog-triage` over time |
 | `<vault_root>/.coordination/canonical-file-types.json` | Skeleton JSON `{schema_version, phase, file_types[]}`; validates against future v2.1 vault-canonical-file-types-schema (deferred) | Single | Seeded once as MVP stub; v2.1 populates |
 | `<vault_root>/Inbox/` | Directory only | Single | Capture surface; populated by daily reconcile |
@@ -112,7 +112,7 @@ written, schema type, pre-write validation steps, and failure mode.
 | `<vault_root>/Logs/backlog-progress/` | Directory only | Single | Per-backlog-item satellite logs (R-29/R-30/R-31) |
 | `<vault_root>/.coordination/` | Directory only | Single | Multi-session shared state (Plan 42 R-42) |
 | `<vault_root>/Plans` | Symlink to `$PLANS_HOME` | Single | Read-only navigation surface |
-| `$CLAUDE_HOME/user-manifest.json` | In-place update of `vault.canonical_file_types` field (null → `[]`); validates against `~/Code/claude-foundations-v2/schemas/user-manifest-schema.json` v1.5.0 | Single existing | Atomic update via jq + tmp+rename; preserved if already populated |
+| `$CLAUDE_HOME/user-manifest.json` | In-place update of `vault.canonical_file_types` field (null → `[]`); validates against `~/Code/claude-stem/schemas/user-manifest-schema.json` v1.5.0 | Single existing | Atomic update via jq + tmp+rename; preserved if already populated |
 
 ### Pre-write validation
 
@@ -208,10 +208,10 @@ failure manually (re-run `/onboard --section a` to fix `vault.root`, etc.).
 | Spec §`/adopt` prerequisites (F-13) | spec.md L303-305 |
 | Spec §T-6 path rebase (Cross-cutting A9) | spec.md L314-316 |
 | T-6 acceptance criteria (7 ACs) | tasks.md L196-203 |
-| user-manifest-schema (1.5.0) | `~/Code/claude-foundations-v2/schemas/user-manifest-schema.json` |
-| vault-schema (1.0.0) | `~/Code/claude-foundations-v2/schemas/vault-schema.json` |
-| Template | `~/Code/claude-foundations-v2/templates/vault-claude-md-template.md` |
-| Scaffolding script | `~/Code/claude-foundations-v2/skills/adopt/adopt.sh` |
-| Test harness | `~/Code/claude-foundations-v2/tests/sp08/adopt-unit-test.sh` |
+| user-manifest-schema (1.5.0) | `~/Code/claude-stem/schemas/user-manifest-schema.json` |
+| vault-schema (1.0.0) | `~/Code/claude-stem/schemas/vault-schema.json` |
+| Template | `~/Code/claude-stem/templates/vault-claude-md-template.md` |
+| Scaffolding script | `~/Code/claude-stem/skills/adopt/adopt.sh` |
+| Test harness | `~/Code/claude-stem/tests/sp08/adopt-unit-test.sh` |
 | R-37 single-deliverable rationale | CLAUDE.md (Plan 71 working agreement) |
 | R-55 live-mutation containment | CLAUDE.md (foundation-repo target enforced) |

@@ -233,7 +233,7 @@ AUTO_CONFIRM=1 \
 RENDER_LAUNCHD="$CLAUDE_HOME/installer/render-launchd.sh" \
 STAGING_DIR="$CLAUDE_HOME/Library/LaunchAgents.staging" \
 AUDIT_LOG="$CLAUDE_HOME/onboarding/audit/initial-job-setup.jsonl" \
-LABEL_PREFIX="com.claude-foundations" \
+LABEL_PREFIX="com.claude-stem" \
   bash "$REPO_ROOT/onboarding/initial-job-setup.sh" </dev/null >> "$LOG" 2>&1 \
   && log "[initial-job-setup] rc=0" \
   || log "[initial-job-setup] rc=$?"

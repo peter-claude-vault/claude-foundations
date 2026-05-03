@@ -8,9 +8,9 @@
 #
 # Symmetric command-side companion to enable-daemon (render-launchd.sh +
 # launchctl bootstrap). Disables (bootout + plist rm) one or more launchd
-# jobs in the com.claude-foundations.* namespace.
+# jobs in the com.claude-stem.* namespace.
 #
-# G6 namespace gate: refuses to act on labels outside com.claude-foundations.*
+# G6 namespace gate: refuses to act on labels outside com.claude-stem.*
 # (mirrors install.sh + uninstall.sh + bootout-launchd.sh).
 #
 # Plist removal scope:
@@ -26,7 +26,7 @@
 #   2   missing dependency (launchctl, plutil, awk)
 #   3   usage error (no args, conflicting flags, etc.)
 #   56  G6 violation — Label inside foundation-prefixed plist file does NOT
-#       match com.claude-foundations.* (refuses rm; mirrors install.sh G6 +
+#       match com.claude-stem.* (refuses rm; mirrors install.sh G6 +
 #       bootout-launchd.sh exit 56)
 #   64  non-foundation label argument (G6 namespace gate refusal at argv)
 #
@@ -39,7 +39,7 @@
 
 set -u
 
-PREFIX="com.claude-foundations"
+PREFIX="com.claude-stem"
 
 diag() { printf 'disable-daemon FAIL: %s\n' "$1" >&2; }
 warn() { printf 'disable-daemon WARN: %s\n' "$1" >&2; }
@@ -52,7 +52,7 @@ Usage:
   disable-daemon.sh --all      disable all foundation labels
   disable-daemon.sh --help     this help
 
-Labels must match the com.claude-foundations.* namespace (G6 gate).
+Labels must match the com.claude-stem.* namespace (G6 gate).
 USAGE
 }
 

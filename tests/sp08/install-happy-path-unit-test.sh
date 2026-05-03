@@ -3,7 +3,7 @@
 #
 # Synthetic unit test for SP08 T-1 slice (S59):
 #   - 14-asset write-sequence lands all expected paths under hermetic CLAUDE_HOME
-#   - LABEL_PREFIX=com.claude-foundations preserved through cp -R installer/
+#   - LABEL_PREFIX=com.claude-stem preserved through cp -R installer/
 #   - settings.json atomic jq-merge happy-path
 #   - settings.json G7 silent-key-deletion red-team → exit 57
 #   - CLAUDE_HOME unset → exit 10
@@ -149,15 +149,15 @@ assert_eq "4" "$mem_h2_count" "T1.28: seeded MEMORY.md has 4 H2 section headers 
 # =====================================================================
 # T2 — LABEL_PREFIX preservation (G6)
 # =====================================================================
-printf 'T2: LABEL_PREFIX=com.claude-foundations preserved through cp -R installer/\n'
+printf 'T2: LABEL_PREFIX=com.claude-stem preserved through cp -R installer/\n'
 
-assert_grep 'LABEL_PREFIX:-com.claude-foundations' \
+assert_grep 'LABEL_PREFIX:-com.claude-stem' \
   "$CH/installer/render-launchd.sh" \
-  "T2.1: render-launchd.sh ships com.claude-foundations LABEL_PREFIX default"
+  "T2.1: render-launchd.sh ships com.claude-stem LABEL_PREFIX default"
 
-assert_grep 'com.claude-foundations' \
+assert_grep 'com.claude-stem' \
   "$CH/installer/bootout-launchd.sh" \
-  "T2.2: bootout-launchd.sh enforces com.claude-foundations namespace"
+  "T2.2: bootout-launchd.sh enforces com.claude-stem namespace"
 
 # =====================================================================
 # T3 — settings.json fresh install equals template

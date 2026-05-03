@@ -21,7 +21,7 @@
 # orchestration.json must contain a jobs[] entry with `id == <job>` using the
 # StartCalendarInterval schedule branch (hour/minute, optional dow[0]).
 #
-# LABEL_PREFIX defaults to `com.claude-foundations` (matches SP08 G6 namespace
+# LABEL_PREFIX defaults to `com.claude-stem` (matches SP08 G6 namespace
 # isolation — labels outside this prefix are refused by uninstall.sh).
 #
 # Exit codes:
@@ -157,7 +157,7 @@ weekday=$(printf '%s' "$job_json" | jq -r '.schedule.dow[0] // empty' 2>/dev/nul
 # --- compose render-time env vars ---
 USER_HOME="$HOME"
 # CLAUDE_HOME + CLAUDE_LOG_DIR sourced via paths.sh.
-LABEL_PREFIX="${LABEL_PREFIX:-com.claude-foundations}"
+LABEL_PREFIX="${LABEL_PREFIX:-com.claude-stem}"
 
 # TIMEZONE: $TZ env wins, else parse /etc/localtime symlink (no privilege, no
 # command-execution overhead, launchd-context-safe). Final fallback per author's

@@ -89,7 +89,7 @@ The default dry-run path is the safe entry point. It emits a JSON document on st
 | G3    | backup proof-of-life          | Destructive op pending without a writable, round-trip-verified backup directory.                 |
 | G4    | vault-symlink reachable       | A symlink under `$CLAUDE_HOME/...` resolves into a vault directory tree. Hard-refuses.           |
 | G5    | $PLANS_HOME plans present     | `$PLANS_HOME` contains `NN-*/` plan directories without `--retrofit-existing`.                   |
-| G6    | namespace gate                | Foundation-prefixed launchd Label drifts outside `com.claude-foundations.*`. (Activation-time enforcement at `installer/render-launchd.sh` + `installer/bootout-launchd.sh`.)|
+| G6    | namespace gate                | Foundation-prefixed launchd Label drifts outside `com.claude-stem.*`. (Activation-time enforcement at `installer/render-launchd.sh` + `installer/bootout-launchd.sh`.)|
 | G7    | settings.json silent-delete   | Pre-merge jq diff shows the merge would silently drop user-defined keys.                         |
 | G8    | UID 0                         | `id -u` returns 0. Hard-refuses unconditionally.                                                 |
 | G9    | dry-run posture               | Reserved — `--apply` is required to leave dry-run; G9 fires only on tamper detection.            |
@@ -105,7 +105,7 @@ Every successful invocation writes one line per asset to `$CLAUDE_HOME/logs/inst
 
 ```text
 CLAUDE_HOME: /home/example/.claude
-SOURCE_REPO: /tmp/claude-foundations-v2
+SOURCE_REPO: /tmp/claude-stem
 TIMESTAMP: 2026-05-03T18:42:15Z
 APPLY_MODE: 1
 hooks/pre-write-guard.sh sha256:abcd... bytes:8421

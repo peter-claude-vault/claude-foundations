@@ -38,7 +38,7 @@
 #   - G10 provenance-write failure → exit 11 (audit/tick — already      [S65]
 #     enforced at log_path write site; counted live as of S65).
 #   - 14-asset write-sequence (audit F-01..F-05)
-#   - LABEL_PREFIX=com.claude-foundations preserved via cp -R installer/ +
+#   - LABEL_PREFIX=com.claude-stem preserved via cp -R installer/ +
 #     templates/launchd/ (G6 namespace isolation, transitively)
 #   - settings.json atomic jq-merge with G7 silent-key-deletion gate
 #   - foundation-manifest.json baseline copy (T-5 generator output;       [S62]
@@ -631,7 +631,7 @@ fi
 
 # Step 8: installer/ → $CLAUDE_HOME/installer/
 # Preserves render-launchd.sh + bootout-launchd.sh with their G6 LABEL_PREFIX
-# default (com.claude-foundations); install.sh does NOT override this default.
+# default (com.claude-stem); install.sh does NOT override this default.
 if [ -d "$SOURCE_REPO/installer" ]; then
   cp -R $cp_clobber "$SOURCE_REPO/installer"/. "$CLAUDE_HOME/installer/" 2>/dev/null || true
 fi

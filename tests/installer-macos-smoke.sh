@@ -75,7 +75,7 @@ DOGFOOD_ROOT="${DOGFOOD_ROOT:-${RUNNER_TEMP:-$(mktemp -d -t macos-smoke.XXXXXX)}
 mkdir -p "$DOGFOOD_ROOT"
 
 CLAUDE_HOME_RUNTIME="$DOGFOOD_ROOT/.claude"
-LABEL="com.claude-foundations.librarian-scan"
+LABEL="com.claude-stem.librarian-scan"
 UID_REAL=$(id -u)
 DOMAIN="gui/$UID_REAL"
 
@@ -184,7 +184,7 @@ fi
 
 # --- Step 5: uninstall.sh (G6 walks live launchd list) --------------
 # uninstall.sh discovers the loaded foundation label via `launchctl list |
-# awk '... index($3, "com.claude-foundations.") == 1'`, runs G6 substring
+# awk '... index($3, "com.claude-stem.") == 1'`, runs G6 substring
 # defense, then bootouts. With LAUNCHCTL_BIN unset (default), uses real
 # launchctl from PATH. This exercises the G6 fire-path under live launchd.
 printf '== Step 5: uninstall.sh (G6 walks live launchd) ==\n'

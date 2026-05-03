@@ -306,7 +306,7 @@ fi
 #
 # Regex anchors `\.claude` followed by `($|[^A-Za-z0-9_-])` to distinguish the
 # canonical CLAUDE_HOME path from `\.claude-plans` (PLANS_HOME),
-# `\.claude-foundations` (label prefix), `\.claude-mem` (plugin), etc. A
+# `\.claude-stem` (label prefix), `\.claude-mem` (plugin), etc. A
 # generic `\W` end-anchor includes `-` and would still match those — the
 # explicit character class excludes `-` to reject them while accepting
 # `/`, `"`, `'`, whitespace, end-of-line.

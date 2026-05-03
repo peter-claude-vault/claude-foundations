@@ -27,7 +27,7 @@
 
 set -u
 
-FOUNDATION_REPO="${FOUNDATION_REPO:-$HOME/Code/claude-foundations-v2}"
+FOUNDATION_REPO="${FOUNDATION_REPO:-$HOME/Code/claude-stem}"
 SCHEMAS_DIR="$FOUNDATION_REPO/schemas"
 ONBOARDING_DIR="$FOUNDATION_REPO/onboarding"
 USER_MANIFEST="$SCHEMAS_DIR/user-manifest-schema.json"

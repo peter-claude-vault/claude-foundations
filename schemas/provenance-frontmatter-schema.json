@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://claude-foundations.local/schemas/provenance-frontmatter.json",
+  "$id": "https://claude-stem.local/schemas/provenance-frontmatter.json",
   "title": "Provenance Frontmatter",
   "description": "Frontmatter contract every artifact written by an auto-authoring surface MUST carry. Lets capabilities distinguish what's safe to regenerate vs what to preserve. Per Plan 71 SP12 T-2 (recalibration-decision-record §'Mandatory architectural guardrails' #2). The schema validates the YAML frontmatter block at the top of a generated artifact when parsed as an object — additionalProperties is true so artifacts may carry their own type-specific frontmatter alongside the provenance fields.",
   "type": "object",

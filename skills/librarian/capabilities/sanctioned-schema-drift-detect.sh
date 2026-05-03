@@ -10,7 +10,7 @@
 # Usage: sanctioned-schema-drift-detect.sh [--json]
 #
 # Env overrides (test-only; production resolves both via the install layout):
-#   FOUNDATION_REPO   default: $HOME/Code/claude-foundations-v2
+#   FOUNDATION_REPO   default: $HOME/Code/claude-stem
 #   LIVE_SCHEMAS      default: $HOME/.claude/schemas
 #
 # Exit 0: no drift detected (all sanctioned schemas byte-identical to source)
@@ -19,7 +19,7 @@
 
 set -euo pipefail
 
-FOUNDATION_REPO="${FOUNDATION_REPO:-$HOME/Code/claude-foundations-v2}"
+FOUNDATION_REPO="${FOUNDATION_REPO:-$HOME/Code/claude-stem}"
 LIVE_SCHEMAS="${LIVE_SCHEMAS:-$HOME/.claude/schemas}"
 
 SANCTIONED=(vault-schema plans-schema plan-manifest-schema)

@@ -1,4 +1,4 @@
-# Release Checklist — claude-foundations v2.0.0
+# Release Checklist — Claude Stem v2.0.0
 
 This checklist gates `v2.0.0-rc1` and `v2.0.0` tag-cuts. Run through it BEFORE pushing any `v*` or `v*-rc*` tag. The `release.yml` four-stage gate (Sigstore signature verify + JSON field-gate; see Plan 71 SP08 spec §release-attestation) catches CI-side problems automatically; this checklist catches the out-of-band prerequisites that automation cannot verify.
 
@@ -12,7 +12,7 @@ Before committing to a `v2.0.0-rc1` tag identity, verify the L1 + L2 + L3 chain 
 
 ```bash
 gh workflow run macos-smoke.yml \
-  --repo peter-claude-vault/claude-foundations \
+  --repo peter-claude-vault/claude-stem \
   --ref main
 ```
 
@@ -66,7 +66,7 @@ Rotation alone leaves the old key exploitable until it expires; revocation via A
 Only when Steps 1-4 are all checked:
 
 ```bash
-cd ~/Code/claude-foundations-v2
+cd ~/Code/claude-stem
 git checkout main
 git pull --ff-only
 git tag -a v2.0.0-rc1 -m "v2.0.0-rc1 — Plan 71 supersedes Plan 38 (711cf6a); April-13 autopsy at docs/april-13-autopsy.md"

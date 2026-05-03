@@ -290,7 +290,7 @@ HOME="$T3_TMP" bash "$RENDER" --staging-dir "$T3_STAGING" librarian \
 T3_RC=$?
 assert_eq "0" "$T3_RC" "T3.1: render-launchd --staging-dir librarian exits 0"
 
-T3_PLIST="$T3_STAGING/com.claude-foundations.librarian-scan.plist"
+T3_PLIST="$T3_STAGING/com.claude-stem.librarian-scan.plist"
 assert_path_exists "$T3_PLIST" "T3.2: rendered plist landed in staging dir"
 
 if [ -f "$T3_PLIST" ]; then
@@ -377,7 +377,7 @@ T5_INSTALL_RC=$?
 assert_eq "0" "$T5_INSTALL_RC" "T5.1: pre-uninstall install.sh --apply exits 0"
 
 # Uninstaller needs LAUNCHCTL_BIN env override since it'll launchctl bootout
-# any com.claude-foundations.* labels. Point at mock to keep host launchd
+# any com.claude-stem.* labels. Point at mock to keep host launchd
 # untouched even if a label happened to be loaded for any reason.
 T5_PATHDIR="$T5_TMP/.path"
 make_launchctl_path_dir "$T5_PATHDIR"
@@ -574,7 +574,7 @@ cat > "$T7_CH/orchestration.json" <<'EOF'
 EOF
 
 # Render production mode under PATH-injected mock-launchctl → writes plist
-# to $T7_TMP/Library/LaunchAgents/com.claude-foundations.librarian-scan.plist;
+# to $T7_TMP/Library/LaunchAgents/com.claude-stem.librarian-scan.plist;
 # mock intercepts launchctl bootstrap so host launchd is untouched.
 T7_PATHDIR="$T7_TMP/.path"
 make_launchctl_path_dir "$T7_PATHDIR"
@@ -591,12 +591,12 @@ HOME="$T7_TMP" CLAUDE_HOME="$T7_CH" \
 T7_RENDER_RC=$?
 assert_eq "0" "$T7_RENDER_RC" "T7.2: render-launchd production rc=0 under mock"
 
-T7_FOUNDATION_PLIST="$T7_TMP/Library/LaunchAgents/com.claude-foundations.librarian-scan.plist"
+T7_FOUNDATION_PLIST="$T7_TMP/Library/LaunchAgents/com.claude-stem.librarian-scan.plist"
 assert_path_exists "$T7_FOUNDATION_PLIST" \
   "T7.3: foundation plist landed at \$HOME/Library/LaunchAgents/ post-render"
 
 # Plant a foreign plist alongside the foundation one. G6-symmetric: the
-# uninstall plist-cleanup loop should rm only com.claude-foundations.* plists
+# uninstall plist-cleanup loop should rm only com.claude-stem.* plists
 # and preserve foreign plists. Foreign-plist content is a minimal valid plist
 # (plutil-lint not strictly required for survival assertion, but use a real
 # plist shape so any plutil-touching codepath doesn't reject it).
@@ -632,7 +632,7 @@ assert_path_absent "$T7_FOUNDATION_PLIST" \
 
 # Foreign plist preserved (G6-symmetric namespace filter)
 assert_path_exists "$T7_FOREIGN_PLIST" \
-  "T7.7: foreign plist preserved (G6-symmetric: only com.claude-foundations.* removed)"
+  "T7.7: foreign plist preserved (G6-symmetric: only com.claude-stem.* removed)"
 
 # Provenance log records plist_rm_count = 1
 T7_PROV_LOG=$(ls -1 "$T7_CH/logs"/uninstall-*.log 2>/dev/null | head -1)

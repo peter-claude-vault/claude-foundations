@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-CAPABILITY="$HOME/Code/claude-foundations-v2/skills/librarian/capabilities/sanctioned-schema-drift-detect.sh"
+CAPABILITY="$HOME/Code/claude-stem/skills/librarian/capabilities/sanctioned-schema-drift-detect.sh"
 
 PASS=0
 FAIL=0

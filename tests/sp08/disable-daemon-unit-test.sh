@@ -163,7 +163,7 @@ echo "=== T1: single-label happy path ==="
 T1_HOME="$(mk_tmp)"
 T1_LA="$T1_HOME/Library/LaunchAgents"
 mkdir -p "$T1_LA"
-write_plist "$T1_LA/com.claude-foundations.librarian.plist" "com.claude-foundations.librarian"
+write_plist "$T1_LA/com.claude-stem.librarian.plist" "com.claude-stem.librarian"
 T1_MOCK="$T1_HOME/mock-launchctl"
 write_mock_launchctl "$T1_MOCK"
 T1_BOOTOUT_LOG="$T1_HOME/bootout.log"
@@ -173,11 +173,11 @@ T1_RC=0
 HOME="$T1_HOME" \
   LAUNCHCTL_BIN="$T1_MOCK" \
   MOCK_LAUNCHCTL_BOOTOUT_LOG="$T1_BOOTOUT_LOG" \
-  bash "$DISABLE_DAEMON_SH" com.claude-foundations.librarian >/dev/null 2>&1 || T1_RC=$?
+  bash "$DISABLE_DAEMON_SH" com.claude-stem.librarian >/dev/null 2>&1 || T1_RC=$?
 
 assert_eq 0 "$T1_RC" "T1.1 rc=0"
-assert_file_contains "com.claude-foundations.librarian" "$T1_BOOTOUT_LOG" "T1.2 bootout invoked"
-assert_path_absent "$T1_LA/com.claude-foundations.librarian.plist" "T1.3 plist removed"
+assert_file_contains "com.claude-stem.librarian" "$T1_BOOTOUT_LOG" "T1.2 bootout invoked"
+assert_path_absent "$T1_LA/com.claude-stem.librarian.plist" "T1.3 plist removed"
 
 # ============================================================================
 # T2: --all happy path
@@ -186,8 +186,8 @@ echo "=== T2: --all happy path ==="
 T2_HOME="$(mk_tmp)"
 T2_LA="$T2_HOME/Library/LaunchAgents"
 mkdir -p "$T2_LA"
-write_plist "$T2_LA/com.claude-foundations.librarian.plist" "com.claude-foundations.librarian"
-write_plist "$T2_LA/com.claude-foundations.architect.plist" "com.claude-foundations.architect"
+write_plist "$T2_LA/com.claude-stem.librarian.plist" "com.claude-stem.librarian"
+write_plist "$T2_LA/com.claude-stem.architect.plist" "com.claude-stem.architect"
 # Sentinel: non-foundation plist that must NOT be removed
 write_plist "$T2_LA/com.user.unrelated.plist" "com.user.unrelated"
 T2_MOCK="$T2_HOME/mock-launchctl"
@@ -198,17 +198,17 @@ T2_BOOTOUT_LOG="$T2_HOME/bootout.log"
 T2_RC=0
 HOME="$T2_HOME" \
   LAUNCHCTL_BIN="$T2_MOCK" \
-  MOCK_LAUNCHCTL_LABELS="com.claude-foundations.librarian com.claude-foundations.architect com.user.unrelated" \
+  MOCK_LAUNCHCTL_LABELS="com.claude-stem.librarian com.claude-stem.architect com.user.unrelated" \
   MOCK_LAUNCHCTL_BOOTOUT_LOG="$T2_BOOTOUT_LOG" \
   bash "$DISABLE_DAEMON_SH" --all >/dev/null 2>&1 || T2_RC=$?
 
 assert_eq 0 "$T2_RC" "T2.1 rc=0"
-assert_file_contains "com.claude-foundations.librarian" "$T2_BOOTOUT_LOG" "T2.2 librarian bootout invoked"
-assert_file_contains "com.claude-foundations.architect" "$T2_BOOTOUT_LOG" "T2.3 architect bootout invoked"
+assert_file_contains "com.claude-stem.librarian" "$T2_BOOTOUT_LOG" "T2.2 librarian bootout invoked"
+assert_file_contains "com.claude-stem.architect" "$T2_BOOTOUT_LOG" "T2.3 architect bootout invoked"
 T2_BOOT_COUNT=$(wc -l <"$T2_BOOTOUT_LOG" | tr -d ' ')
 assert_eq 2 "$T2_BOOT_COUNT" "T2.4 only 2 foundation labels boot-out (G6 awk filter)"
-assert_path_absent "$T2_LA/com.claude-foundations.librarian.plist" "T2.5 librarian plist removed"
-assert_path_absent "$T2_LA/com.claude-foundations.architect.plist" "T2.6 architect plist removed"
+assert_path_absent "$T2_LA/com.claude-stem.librarian.plist" "T2.5 librarian plist removed"
+assert_path_absent "$T2_LA/com.claude-stem.architect.plist" "T2.6 architect plist removed"
 assert_path_exists "$T2_LA/com.user.unrelated.plist" "T2.7 non-foundation plist preserved"
 
 # ============================================================================
@@ -245,8 +245,8 @@ write_mock_launchctl "$T4_MOCK"
 T4_RC=0
 HOME="$T4_HOME" \
   LAUNCHCTL_BIN="$T4_MOCK" \
-  MOCK_LAUNCHCTL_RC113_LABELS="com.claude-foundations.librarian" \
-  bash "$DISABLE_DAEMON_SH" com.claude-foundations.librarian >/dev/null 2>&1 || T4_RC=$?
+  MOCK_LAUNCHCTL_RC113_LABELS="com.claude-stem.librarian" \
+  bash "$DISABLE_DAEMON_SH" com.claude-stem.librarian >/dev/null 2>&1 || T4_RC=$?
 assert_eq 0 "$T4_RC" "T4.1 idempotent rc=113 → exit 0"
 
 # ============================================================================
@@ -263,7 +263,7 @@ write_mock_launchctl "$T5_MOCK"
 T5_RC=0
 HOME="$T5_HOME" \
   LAUNCHCTL_BIN="$T5_MOCK" \
-  bash "$DISABLE_DAEMON_SH" com.claude-foundations.librarian >/dev/null 2>&1 || T5_RC=$?
+  bash "$DISABLE_DAEMON_SH" com.claude-stem.librarian >/dev/null 2>&1 || T5_RC=$?
 assert_eq 0 "$T5_RC" "T5.1 missing-plist rc=0"
 
 # ============================================================================
@@ -275,7 +275,7 @@ T6_CH="$(mk_tmp)"
 T6_LA_HOME="$T6_HOME/Library/LaunchAgents"
 T6_LA_CH="$T6_CH/Library/LaunchAgents"
 mkdir -p "$T6_LA_HOME" "$T6_LA_CH"
-write_plist "$T6_LA_CH/com.claude-foundations.librarian.plist" "com.claude-foundations.librarian"
+write_plist "$T6_LA_CH/com.claude-stem.librarian.plist" "com.claude-stem.librarian"
 T6_MOCK="$T6_HOME/mock-launchctl"
 write_mock_launchctl "$T6_MOCK"
 
@@ -283,9 +283,9 @@ T6_RC=0
 HOME="$T6_HOME" \
   CLAUDE_HOME="$T6_CH" \
   LAUNCHCTL_BIN="$T6_MOCK" \
-  bash "$DISABLE_DAEMON_SH" com.claude-foundations.librarian >/dev/null 2>&1 || T6_RC=$?
+  bash "$DISABLE_DAEMON_SH" com.claude-stem.librarian >/dev/null 2>&1 || T6_RC=$?
 assert_eq 0 "$T6_RC" "T6.1 dogfood-root rc=0"
-assert_path_absent "$T6_LA_CH/com.claude-foundations.librarian.plist" "T6.2 dogfood plist removed"
+assert_path_absent "$T6_LA_CH/com.claude-stem.librarian.plist" "T6.2 dogfood plist removed"
 
 # ============================================================================
 # T7: G6 secondary — tampered plist (foundation filename, foreign Label) → 56
@@ -295,7 +295,7 @@ T7_HOME="$(mk_tmp)"
 T7_LA="$T7_HOME/Library/LaunchAgents"
 mkdir -p "$T7_LA"
 # Filename matches foundation prefix but in-plist Label is foreign → G6 refuse
-write_plist "$T7_LA/com.claude-foundations.tampered.plist" "com.evil.attacker"
+write_plist "$T7_LA/com.claude-stem.tampered.plist" "com.evil.attacker"
 T7_MOCK="$T7_HOME/mock-launchctl"
 write_mock_launchctl "$T7_MOCK"
 
@@ -304,7 +304,7 @@ HOME="$T7_HOME" \
   LAUNCHCTL_BIN="$T7_MOCK" \
   bash "$DISABLE_DAEMON_SH" --all >/dev/null 2>&1 || T7_RC=$?
 assert_eq 56 "$T7_RC" "T7.1 G6 tampered plist rc=56"
-assert_path_exists "$T7_LA/com.claude-foundations.tampered.plist" "T7.2 tampered plist preserved (refused rm)"
+assert_path_exists "$T7_LA/com.claude-stem.tampered.plist" "T7.2 tampered plist preserved (refused rm)"
 
 # ============================================================================
 # T8: --all on empty launchctl list = no-op exit 0
@@ -339,7 +339,7 @@ bash "$DISABLE_DAEMON_SH" --bogus >/dev/null 2>&1 || T9c_RC=$?
 assert_eq 3 "$T9c_RC" "T9.3 unknown flag → rc=3"
 
 T9d_RC=0
-bash "$DISABLE_DAEMON_SH" com.claude-foundations.foo extra-arg >/dev/null 2>&1 || T9d_RC=$?
+bash "$DISABLE_DAEMON_SH" com.claude-stem.foo extra-arg >/dev/null 2>&1 || T9d_RC=$?
 assert_eq 3 "$T9d_RC" "T9.4 extra args → rc=3"
 
 # ============================================================================

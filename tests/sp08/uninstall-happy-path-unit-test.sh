@@ -242,7 +242,7 @@ HOME="$CH3" CLAUDE_HOME="$CH3" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
 
 # Pre-seed mock with impersonation label (contains prefix substring at non-1 position)
 rc=0
-MOCK_LAUNCHCTL_LABELS="evil.com.claude-foundations.fake" \
+MOCK_LAUNCHCTL_LABELS="evil.com.claude-stem.fake" \
   CLAUDE_HOME="$CH3" LAUNCHCTL_BIN="$MOCK_DIR3/mock-launchctl" \
   bash "$UNINSTALL_SH" >"$CH3/.uninstall-stdout" 2>"$CH3/.uninstall-stderr" || rc=$?
 

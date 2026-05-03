@@ -3,7 +3,7 @@
 #
 # Usage: bootout-launchd.sh
 #
-# Iterates `launchctl list` filtered for `com.claude-foundations.*` labels
+# Iterates `launchctl list` filtered for `com.claude-stem.*` labels
 # (SP08 G6 namespace isolation), `launchctl bootout`s each (rc-tolerant —
 # surfaces failures to stderr but continues iteration to other labels),
 # then removes matching plist files from ~/Library/LaunchAgents/.
@@ -23,7 +23,7 @@
 #   1   one or more bootout calls returned non-zero (rm still attempted)
 #   2   dependency missing
 #   56  G6 violation — Label inside a foundation-prefixed plist file does
-#       NOT match com.claude-foundations.* (refuses rm; mirrors SP08 G6
+#       NOT match com.claude-stem.* (refuses rm; mirrors SP08 G6
 #       installer exit code 56)
 #
 # Dependencies: launchctl, plutil, awk.
@@ -36,7 +36,7 @@ diag() { printf 'bootout-launchd FAIL: %s\n' "$1" >&2; }
 warn() { printf 'bootout-launchd WARN: %s\n' "$1" >&2; }
 info() { printf 'bootout-launchd: %s\n' "$1"; }
 
-PREFIX="com.claude-foundations"
+PREFIX="com.claude-stem"
 
 # --- source paths.sh ---
 PATHS_SH="${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/paths.sh"
@@ -105,7 +105,7 @@ removed_count=0
 g6_violation=0
 # Bash-3.2-safe glob: literal pattern remains as-is when no match; gate
 # with [ -e ] to skip non-existent. Use ?* to require at least one char
-# after the prefix-dot (avoid matching "com.claude-foundations..plist").
+# after the prefix-dot (avoid matching "com.claude-stem..plist").
 for plist in "$LAUNCH_AGENTS/$PREFIX".?*.plist; do
   [ -e "$plist" ] || continue
   # Extract Label; defense against tampered file where filename matches

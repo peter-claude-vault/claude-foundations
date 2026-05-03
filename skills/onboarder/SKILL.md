@@ -28,12 +28,12 @@ This skill is a UX shell over SP01's locked design. The following assets are inh
 
 | Asset | Path (foundation-repo source) | Purpose |
 |---|---|---|
-| Onboarder design doc (prompt cards live in §3–§7) | `~/Code/claude-foundations-v2/onboarding/onboarder-design.md` | Per-section prompt cards (Section A: §3, B: §4, C: §5, D: §6, E: §7) |
-| Per-section extraction prompts | `~/Code/claude-foundations-v2/onboarding/extraction-prompts/section-{A..E}.md` | LLM extraction templates run against transcripts (A is deterministic stub; B/C/D/E run extraction) |
-| 3 archetype fixtures | `~/Code/claude-foundations-v2/onboarding/fixtures/{consultant,developer,writer}.json` | Round-trip dogfood / opt-out audit reference shapes |
-| Q-ID → schema-field map | `~/Code/claude-foundations-v2/onboarding/q-field-map.json` | 17 direct Qs + 6 checkboxes + 3 binary toggles. Iterate this map's keys; never enumerate Q-IDs in code |
-| Archetype-inference heuristic | `~/Code/claude-foundations-v2/onboarding/archetype-inference.sh` (SP01 T-7a) | Keyword-scored deterministic pass on B+C transcripts; emits archetype label + confidence |
-| Schema bootstrap | `~/Code/claude-foundations-v2/onboarding/bootstrap-schemas.sh` (SP01 T-10) | Atomic schema writer; per-target validator (ajv preferred, jq fallback); idempotent; block-and-log on validation failure |
+| Onboarder design doc (prompt cards live in §3–§7) | `~/Code/claude-stem/onboarding/onboarder-design.md` | Per-section prompt cards (Section A: §3, B: §4, C: §5, D: §6, E: §7) |
+| Per-section extraction prompts | `~/Code/claude-stem/onboarding/extraction-prompts/section-{A..E}.md` | LLM extraction templates run against transcripts (A is deterministic stub; B/C/D/E run extraction) |
+| 3 archetype fixtures | `~/Code/claude-stem/onboarding/fixtures/{consultant,developer,writer}.json` | Round-trip dogfood / opt-out audit reference shapes |
+| Q-ID → schema-field map | `~/Code/claude-stem/onboarding/q-field-map.json` | 17 direct Qs + 6 checkboxes + 3 binary toggles. Iterate this map's keys; never enumerate Q-IDs in code |
+| Archetype-inference heuristic | `~/Code/claude-stem/onboarding/archetype-inference.sh` (SP01 T-7a) | Keyword-scored deterministic pass on B+C transcripts; emits archetype label + confidence |
+| Schema bootstrap | `~/Code/claude-stem/onboarding/bootstrap-schemas.sh` (SP01 T-10) | Atomic schema writer; per-target validator (ajv preferred, jq fallback); idempotent; block-and-log on validation failure |
 
 The keyword tables for `archetype-inference.sh` are loaded at runtime from `$CLAUDE_HOME/onboarding/archetype-keywords.json` (override via `KEYWORDS_FILE` env var for testing). The `prompt-cards/` directory referenced in older drafts was struck per audit F-01; prompt-card content is anchor-parsed from `onboarder-design.md` §3–§7.
 
@@ -111,10 +111,10 @@ After Section D's schema fragment commits and IF opt-out #9 was NOT elected, `in
 
 1. Read `orchestration.jobs[0].id` from Section D output (`librarian` | `architect`; default applied per `q-field-map.json`)
 2. Apply per-job defaults (schedule, log_path, idle_watchdog_sec, budget_usd, model, skip_weekends) per the `defaults_applied` table in `q-field-map.json`
-3. The 8-question customization sub-flow (per `~/Code/claude-foundations-v2/onboarding/initial-job-setup-flow.md`, SP03 T-12 contract) surfaces these defaults as user-facing overrides; no new Q-IDs are introduced
+3. The 8-question customization sub-flow (per `~/Code/claude-stem/onboarding/initial-job-setup-flow.md`, SP03 T-12 contract) surfaces these defaults as user-facing overrides; no new Q-IDs are introduced
 4. Show dry-run preview: pretty-printed launchd plist + human-readable schedule
-5. On user confirmation, invoke `$CLAUDE_HOME/installer/render-launchd.sh <job>` (foundation-repo source: `~/Code/claude-foundations-v2/installer/render-launchd.sh`)
-6. **Write the rendered plist to `$CLAUDE_HOME/Library/LaunchAgents.staging/com.claude-foundations.<Label>.plist`** — staging directory only. The `Label` is derived from the rendered plist via `plutil -extract Label raw` (e.g. `com.claude-foundations.librarian-scan.plist`). This filename form is locked per CFF-S55-3
+5. On user confirmation, invoke `$CLAUDE_HOME/installer/render-launchd.sh <job>` (foundation-repo source: `~/Code/claude-stem/installer/render-launchd.sh`)
+6. **Write the rendered plist to `$CLAUDE_HOME/Library/LaunchAgents.staging/com.claude-stem.<Label>.plist`** — staging directory only. The `Label` is derived from the rendered plist via `plutil -extract Label raw` (e.g. `com.claude-stem.librarian-scan.plist`). This filename form is locked per CFF-S55-3
 7. Append `$CLAUDE_HOME/onboarding/audit/initial-job-setup.jsonl` entry
 8. Emit terminal prompt: "Onboarding complete. Run `claude system enable-daemon` to activate the staged launchd job."
 
@@ -141,9 +141,9 @@ Per CLAUDE.md skill-creation rules: every vault-writing skill declares files wri
 
 | Path | Schema type | Cardinality | Lifecycle |
 |---|---|---|---|
-| `$CLAUDE_HOME/user-manifest.json` | Populated instance of `~/Code/claude-foundations-v2/schemas/user-manifest-schema.json` (v1.2.0; runtime path `$CLAUDE_HOME/schemas/user-manifest-schema.json`) | Single | Pre-existing skeleton at install (SP08 T-1 `cp -n` from `~/Code/claude-foundations-v2/templates/user-manifest-skeleton.json`); SP07 populates via merge-into-existing semantics |
-| `$CLAUDE_HOME/orchestration.json` | Populated instance of `~/Code/claude-foundations-v2/schemas/orchestration-schema.json` | Single | Pre-existing skeleton at install; SP07 populates `jobs[]` from Section D |
-| `$CLAUDE_HOME/Library/LaunchAgents.staging/com.claude-foundations.<Label>.plist` | launchd plist (XML; `plutil -lint`-validated) | Per scheduled job | Staging only — **never** moved to `~/Library/LaunchAgents/` by this skill. `<Label>` derived via `plutil -extract Label raw`. Form locked per CFF-S55-3 |
+| `$CLAUDE_HOME/user-manifest.json` | Populated instance of `~/Code/claude-stem/schemas/user-manifest-schema.json` (v1.2.0; runtime path `$CLAUDE_HOME/schemas/user-manifest-schema.json`) | Single | Pre-existing skeleton at install (SP08 T-1 `cp -n` from `~/Code/claude-stem/templates/user-manifest-skeleton.json`); SP07 populates via merge-into-existing semantics |
+| `$CLAUDE_HOME/orchestration.json` | Populated instance of `~/Code/claude-stem/schemas/orchestration-schema.json` | Single | Pre-existing skeleton at install; SP07 populates `jobs[]` from Section D |
+| `$CLAUDE_HOME/Library/LaunchAgents.staging/com.claude-stem.<Label>.plist` | launchd plist (XML; `plutil -lint`-validated) | Per scheduled job | Staging only — **never** moved to `~/Library/LaunchAgents/` by this skill. `<Label>` derived via `plutil -extract Label raw`. Form locked per CFF-S55-3 |
 | `$CLAUDE_HOME/onboarding/audit/section-{a,b,c,d,e}.jsonl` | JSONL audit (per-line: `section_id`, `run_id`, `ts`, `opt_outs[]`, `confidence_map`, `source_spans`, `corrections[]`, `follow_ups[]`, `manifest_paths_written[]`) | One file per section | Append-only |
 | `$CLAUDE_HOME/onboarding/audit/initial-job-setup.jsonl` | JSONL audit | One file | Append-only; emitted by `initial-job-setup.sh` after staged plist write |
 | `$CLAUDE_HOME/onboarding/transcripts/section-{a..e}.txt` | Raw text | One per recorded section | Auto-deleted after extraction unless retention checkbox set |

@@ -34,13 +34,13 @@ done
 export LAUNCHCTL_TRACE_DIR="${DOGFOOD_ROOT}/results"
 TRACE="${LAUNCHCTL_TRACE_DIR}/launchctl-trace.ndjson"
 
-VALID_PLIST="${DOGFOOD_ROOT}/com.claude-foundations.test.plist"
+VALID_PLIST="${DOGFOOD_ROOT}/com.claude-stem.test.plist"
 cat > "$VALID_PLIST" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>Label</key><string>com.claude-foundations.test</string>
+    <key>Label</key><string>com.claude-stem.test</string>
     <key>ProgramArguments</key><array><string>/usr/bin/true</string></array>
 </dict>
 </plist>
@@ -72,7 +72,7 @@ assert_exit 'AC1 bootstrap-valid' 0 "$MOCK" bootstrap gui/1000 "$VALID_PLIST"
 assert_exit 'AC2 double-bootstrap' 4 "$MOCK" bootstrap gui/1000 "$VALID_PLIST"
 
 # AC2b — bootout clears state; subsequent bootstrap succeeds
-assert_exit 'AC2b bootout-pair'   0 "$MOCK" bootout gui/1000/com.claude-foundations.test
+assert_exit 'AC2b bootout-pair'   0 "$MOCK" bootout gui/1000/com.claude-stem.test
 assert_exit 'AC2c rebootstrap'    0 "$MOCK" bootstrap gui/1000 "$VALID_PLIST"
 
 # AC3 — unknown verb
@@ -108,7 +108,7 @@ fi
 
 # AC4b — append-only: a second bootout should APPEND a line, not truncate.
 prev=$(wc -l < "$TRACE" | tr -d ' ')
-"$MOCK" bootout gui/1000/com.claude-foundations.test </dev/null >/dev/null 2>&1
+"$MOCK" bootout gui/1000/com.claude-stem.test </dev/null >/dev/null 2>&1
 after=$(wc -l < "$TRACE" | tr -d ' ')
 if [ "$after" -gt "$prev" ]; then
   pass "AC4b append-only (prev=${prev} after=${after})"

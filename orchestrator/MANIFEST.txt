@@ -97,7 +97,7 @@ L032-L044 (lockf re-exec block):
   L33: # Re-exec self under `lockf -k -t 0` so the whole script runs while holding
   L40:   /usr/bin/lockf -k -t 0 "$LOCK_FILE" "$0" "$@"
   L43:     echo "$(date -Iseconds) librarian-cron skip: lockf contention on $LOCK_FILE" >> "$LOG_DIR/librarian-cron-skip.log"
-  RESULT: PRESENT — extracted to ~/Code/claude-foundations-v2/lib/lockf.sh
+  RESULT: PRESENT — extracted to ~/Code/claude-stem/lib/lockf.sh
           under T-1 (top-level lib/ per A4 amendment, sibling of paths.sh).
 
 Audit summary

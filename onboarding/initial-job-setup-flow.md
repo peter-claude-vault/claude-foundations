@@ -16,7 +16,7 @@ The orchestration sub-flow that customizes a single launchd job at first install
 
 ## 1. Scope and relationship to SP01
 
-This is a **sub-flow of SP01 D-2** ("First scheduled job choice"), not a new Q-ID block. The 8 questions are user-facing surfacings of D-2's `defaults_applied` table (`~/Code/claude-foundations-v2/onboarding/q-field-map.json` D-2 entry). They do not introduce new Q-IDs into the §10 namespace lock at `onboarder-design.md`.
+This is a **sub-flow of SP01 D-2** ("First scheduled job choice"), not a new Q-ID block. The 8 questions are user-facing surfacings of D-2's `defaults_applied` table (`~/Code/claude-stem/onboarding/q-field-map.json` D-2 entry). They do not introduce new Q-IDs into the §10 namespace lock at `onboarder-design.md`.
 
 Two manifest fields surfaced for the first time — `jobs[].budget_usd` and `jobs[].model` — are added to D-2's `defaults_applied` block via additive amendment per the SP02-T-0 precedent (foundation-repo `f9e096a`). No SP01 T-8 reopening required.
 
@@ -239,14 +239,14 @@ $CLAUDE_HOME/installer/render-launchd.sh \
   --staging-dir $CLAUDE_HOME/Library/LaunchAgents.staging/ \
   <job-id>
   ↓
-plist staged at $CLAUDE_HOME/Library/LaunchAgents.staging/com.claude-foundations.<label>.plist
+plist staged at $CLAUDE_HOME/Library/LaunchAgents.staging/com.claude-stem.<label>.plist
   ↓
 terminal prompt: "Onboarding complete. Run `claude system enable-daemon` to activate."
   ↓
 [user-initiated, separate invocation; SP08-owned]
   ↓
 claude system enable-daemon
-  ├─ G1–G10 installer-tree validation (G6 enforces com.claude-foundations.* prefix)
+  ├─ G1–G10 installer-tree validation (G6 enforces com.claude-stem.* prefix)
   ├─ mv staged plist → ~/Library/LaunchAgents/<Label>.plist
   └─ launchctl bootout (idempotent) + launchctl bootstrap gui/$UID
 ```
@@ -312,11 +312,11 @@ Full macOS-specific instructions (MDM caveats, signed-binary inheritance, sandbo
 - SP07 (onboarder-ux) spec L86-102 — production-vs-test isolation
 - SP07 (onboarder-ux) tasks L184-207 — SP07 T-9 absorbs this flow
 - SP08 (distribution-installer-adopt) spec L80, L69-105 — G6 + G1-G10 guards
-- `~/Code/claude-foundations-v2/installer/render-launchd.sh` L162-203 — TZ + envsubst allowlist (S55 commit `48cee95`)
-- `~/Code/claude-foundations-v2/templates/launchd/librarian.plist.tmpl` — daily plist (no Weekday key)
-- `~/Code/claude-foundations-v2/templates/launchd/architect.plist.tmpl` — weekly plist (single Weekday)
-- `~/Code/claude-foundations-v2/orchestrator/cron-wrappers/librarian-cron.sh` L53-57 — weekend-skip gate (post-S56: SKIP_WEEKENDS env)
-- `~/Code/claude-foundations-v2/orchestrator/cron-wrappers/architect-cron.sh` L83-90 — model + budget defaults
-- `~/Code/claude-foundations-v2/schemas/orchestration-schema.json` L19-86 — jobs[] schema
-- `~/Code/claude-foundations-v2/onboarding/q-field-map.json` D-2 entry — `defaults_applied` table
-- `~/Code/claude-foundations-v2/onboarding/onboarder-design.md` §6 + §10 — Section D + Q-ID enumeration
+- `~/Code/claude-stem/installer/render-launchd.sh` L162-203 — TZ + envsubst allowlist (S55 commit `48cee95`)
+- `~/Code/claude-stem/templates/launchd/librarian.plist.tmpl` — daily plist (no Weekday key)
+- `~/Code/claude-stem/templates/launchd/architect.plist.tmpl` — weekly plist (single Weekday)
+- `~/Code/claude-stem/orchestrator/cron-wrappers/librarian-cron.sh` L53-57 — weekend-skip gate (post-S56: SKIP_WEEKENDS env)
+- `~/Code/claude-stem/orchestrator/cron-wrappers/architect-cron.sh` L83-90 — model + budget defaults
+- `~/Code/claude-stem/schemas/orchestration-schema.json` L19-86 — jobs[] schema
+- `~/Code/claude-stem/onboarding/q-field-map.json` D-2 entry — `defaults_applied` table
+- `~/Code/claude-stem/onboarding/onboarder-design.md` §6 + §10 — Section D + Q-ID enumeration

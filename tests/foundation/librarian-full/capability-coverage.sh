@@ -61,7 +61,7 @@
 
 set -u
 
-FOUNDATION_REPO="${FOUNDATION_REPO:-$HOME/Code/claude-foundations-v2}"
+FOUNDATION_REPO="${FOUNDATION_REPO:-$HOME/Code/claude-stem}"
 TEST_DIR="$FOUNDATION_REPO/tests/foundation"
 FIXTURE_VAULT="$TEST_DIR/fixtures/vault-minimal"
 FIXTURE_CLAUDE_HOME="$TEST_DIR/fixtures/claude-home"

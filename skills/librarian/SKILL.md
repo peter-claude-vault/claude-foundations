@@ -2270,7 +2270,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/sanctioned-schema-drift-detect.s
 |------------|---------|---------|
 | `--json` | Emit findings as a single JSON object (`{"drift_count":N,"findings":[...]}`) | text |
 | `-h` / `--help` | Usage | — |
-| `FOUNDATION_REPO` | Foundation-repo root (test override) | `$HOME/Code/claude-foundations-v2` |
+| `FOUNDATION_REPO` | Foundation-repo root (test override) | `$HOME/Code/claude-stem` |
 | `LIVE_SCHEMAS` | Live schemas directory (test override) | `$HOME/.claude/schemas` |
 
 **Sanctioned schemas (post-SP09 T-10):**

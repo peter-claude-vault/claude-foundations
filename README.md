@@ -1,10 +1,10 @@
-# claude-foundations
+# Claude Stem
 
 Personalization engine for [Claude Code](https://www.anthropic.com/claude-code).
 
 `/onboard` interviews you once, generates a user-manifest describing your role, vault, and preferences, and bootstraps a personalized `~/.claude/` directory: hooks, skills, schemas, daily-cron jobs, and an Obsidian vault scaffold. Generic skills then read the manifest at runtime — no per-user template forks.
 
-> **Status:** v2.0.0-rc1. macOS only. Single-user. Designed for cold-start adopters who have never run Claude Code before.
+> **Status:** v2.0.0. macOS only. Single-user. Designed for cold-start adopters who have never run Claude Code before.
 
 ---
 
@@ -26,8 +26,8 @@ Personalization engine for [Claude Code](https://www.anthropic.com/claude-code).
 
 ```bash
 # 1. Clone
-git clone https://github.com/peter-claude-vault/claude-foundations.git
-cd claude-foundations
+git clone https://github.com/peter-claude-vault/claude-stem.git
+cd claude-stem
 
 # 2. Inspect what install.sh will do (dry-run posture is the default)
 ./install.sh
@@ -63,13 +63,11 @@ The foundation is a **manifest-driven generic-skills runtime**: one set of skill
 
 ---
 
-## What's NOT in v2.0.0-rc1
+## What's NOT in v2.0.0
 
 - **Linux / Windows support.** macOS-only by design (launchd as the cron substrate). Linux port is post-v2.1 territory.
 - **`--retrofit-existing` for `/adopt`.** Existing-vault retrofit is deferred to v2.1.
 - **Real-onboarder dogfood (Section A–E inside container).** rc1 ships with fixture-staged manifests for the test harness; real-onboarder execution is absorbed into the 30-day GA observation window.
-- **`docs/installer.md` + `docs/adopt.md`.** Adopter-grade reference docs are deferred to v2.0.x patch releases.
-
 See `~/.claude-plans/71-claude-foundations-engine-v2/` (private, not in this repo) for the master plan and sub-plan tracking.
 
 ---
@@ -93,10 +91,10 @@ The `release.yml` workflow gates the v2.0.0 (non-rc) tag-cut against this attest
 
 ## Provenance
 
-- **Repository:** https://github.com/peter-claude-vault/claude-foundations
-- **Predecessor:** Plan 38 (`38-claude-foundations-onboarding-engine`, commits up to `0adb10c`). Plan 71 (`71-claude-foundations-engine-v2`) supersedes Plan 38 after the April 13, 2026 incident. The `main` branch retains Plan 38 history at `0adb10c`; `v2-engine` is the active development branch.
+- **Repository:** https://github.com/peter-claude-vault/claude-stem
+- **Predecessor:** Plan 38 (`38-claude-foundations-onboarding-engine`, commits up to `0adb10c`) — the engine that became Claude Stem. Plan 71 (`71-claude-foundations-engine-v2`) supersedes Plan 38 after the April 13, 2026 incident, and produced this v2.0.0 release under the Claude Stem name. The `main` branch retains Plan 38 history at `0adb10c`; `v2-engine` is the active development branch.
 - **Memorial:** [docs/april-13-autopsy.md](docs/april-13-autopsy.md) — what happened, what we learned, what guards now exist.
-- **License:** MIT — see [LICENSE](LICENSE).
+- **License:** Apache-2.0 — see [LICENSE](LICENSE).
 
 ---
 

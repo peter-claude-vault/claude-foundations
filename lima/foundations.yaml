@@ -1,4 +1,4 @@
-# Claude Foundations Engine v2 — Sub-plan 00 Isolation Harness VM
+# Claude Stem — Sub-plan 00 Isolation Harness VM
 #
 # Wave α-0 kernel-boundary isolation. Every downstream sub-plan (SP01..SP08)
 # runs its test harness (tests/runner-shell.sh) inside this VM by direct

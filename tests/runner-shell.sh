@@ -2,7 +2,7 @@
 # tests/runner-shell.sh
 #
 # SP00 Primitive — Universal test entrypoint for every sub-plan. Every test
-# case in the Claude Foundations Engine v2 dogfood pipeline is expected to
+# case in the Claude Stem dogfood pipeline is expected to
 # be invoked via this script; direct `nerdctl run ... bash` / `docker run
 # ... bash` shells bypassing runner-shell are out-of-contract and T-12
 # adds a grep-audit rule catching them.

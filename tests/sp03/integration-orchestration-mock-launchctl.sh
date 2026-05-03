@@ -171,7 +171,7 @@ test_plist_lint_accepts_render_output() {
   HOME="$hroot" \
     bash "$RENDER" --staging-dir "$staging" librarian </dev/null >/dev/null 2>&1
   rc=$?
-  plist="$staging/com.claude-foundations.librarian-scan.plist"
+  plist="$staging/com.claude-stem.librarian-scan.plist"
 
   if [ "$rc" -ne 0 ] || [ ! -f "$plist" ]; then
     file_present=no
@@ -196,7 +196,7 @@ test_mock_known_verbs() {
 
   for v in bootout print list kickstart; do
     LAUNCHCTL_TRACE_DIR="$trace_dir" LAUNCHCTL_PLIST_LINT="$LINT" \
-      bash "$MOCK" "$v" gui/501/com.claude-foundations.librarian-scan </dev/null >/dev/null 2>&1
+      bash "$MOCK" "$v" gui/501/com.claude-stem.librarian-scan </dev/null >/dev/null 2>&1
     rc=$?
     if [ "$rc" -ne 0 ]; then
       fail "IT3: mock verb=$v expected rc=0, got rc=$rc"

@@ -5,8 +5,8 @@ Re-fork date:           2026-04-28
 Source repo:            ~/.claude/ (live)
 Source HEAD at fork:    b04e6f8e716e20ebf5a518f348e14e3b4f3c2327
 Source path:            ~/.claude/onboarding/
-Destination repo:       ~/Code/claude-foundations-v2/ (foundation-repo)
-Destination path:       ~/Code/claude-foundations-v2/onboarding/
+Destination repo:       ~/Code/claude-stem/ (foundation-repo)
+Destination path:       ~/Code/claude-stem/onboarding/
 Files re-forked:        33 (README.md from SP09 T-7.7 preserved; not part of re-fork)
 Subtree size:           ~252KB
 
