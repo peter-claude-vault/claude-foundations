@@ -1,4 +1,6 @@
-# burner-keys.registry — claude-foundations v2.0
+# burner-keys.registry — Claude Stem v2.0
+#
+# (Project renamed claude-foundations → Claude Stem at S99 pre-GA, 2026-05-03.)
 #
 # This registry tracks every burner ANTHROPIC_API_KEY ever issued during
 # Plan 71 dogfood / smoke runs. Each entry records: key id, created_at,
@@ -7,15 +9,15 @@
 # RELEASE_CHECKLIST.md Step 4 (burner-key revocation audit) requires that
 # every entry in this file return 410 Gone or 403 Unauthorized when probed
 # via the Anthropic console API. A single live (200) historical key blocks
-# v2.0.0-rc1 release per spec L245.
+# v2.0.0 release per spec L245.
 #
 # Format: TSV, one key per line:
 #   key_id<TAB>created_at_iso<TAB>last_known_status<TAB>revocation_verified_at<TAB>scope
 #
 # ---------------------------------------------------------------------------
-# v2.0.0-rc1 cycle entries
+# v2.0.0-rc1 + v2.0.0 GA cycle entries
 # ---------------------------------------------------------------------------
-# (none — no burner keys were issued during the rc1 cycle)
+# (none — no burner keys were issued during the rc1 OR GA cycles)
 #
 # Rationale: SP08 T-7a (Lima E2E dogfood) used fixture-staged
 # user-manifest.json + orchestration.json instead of executing the real
@@ -24,7 +26,12 @@
 # real-onboarder run — was disposed STANDALONE for v2.0.x patch (absorbed
 # into T-9 30-day GA observation window).
 #
-# Result: rc1 ships with zero burner-key exposure surface. Step 4
-# revocation audit is a documented no-op for the rc1 cycle.
+# v2.0.0 GA close (S99, 2026-05-03) was a rebrand + relicense + paperwork
+# session — zero new burner keys issued, zero API calls to Anthropic
+# beyond GitHub workflows (which use GHA-internal OIDC, not API keys).
+#
+# Result: v2.0.0 (rc1 + GA) ships with zero burner-key exposure surface.
+# RELEASE_CHECKLIST.md Step 4 revocation audit is a documented NO-OP for
+# both the rc1 and the GA cycles.
 #
 # v2.0.x patch / v2.1+ cycles must populate this file as keys are issued.
