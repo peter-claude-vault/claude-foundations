@@ -93,7 +93,7 @@ fi
 USER_MANIFEST="$CLAUDE_HOME/user-manifest.json"
 if [ ! -f "$USER_MANIFEST" ]; then
   log_err "user-manifest.json missing at $USER_MANIFEST"
-  log_err "Run /onboard-foundation (SP07) BEFORE /adopt."
+  log_err "Run /onboard (SP07) BEFORE /adopt."
   exit 10
 fi
 

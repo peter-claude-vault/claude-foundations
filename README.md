@@ -2,7 +2,7 @@
 
 Personalization engine for [Claude Code](https://www.anthropic.com/claude-code).
 
-`/onboard-foundation` interviews you once, generates a user-manifest describing your role, vault, and preferences, and bootstraps a personalized `~/.claude/` directory: hooks, skills, schemas, daily-cron jobs, and an Obsidian vault scaffold. Generic skills then read the manifest at runtime — no per-user template forks.
+`/onboard` interviews you once, generates a user-manifest describing your role, vault, and preferences, and bootstraps a personalized `~/.claude/` directory: hooks, skills, schemas, daily-cron jobs, and an Obsidian vault scaffold. Generic skills then read the manifest at runtime — no per-user template forks.
 
 > **Status:** v2.0.0-rc1. macOS only. Single-user. Designed for cold-start adopters who have never run Claude Code before.
 
@@ -11,7 +11,7 @@ Personalization engine for [Claude Code](https://www.anthropic.com/claude-code).
 ## What's in the box
 
 - **`install.sh`** — copies foundation assets to `$CLAUDE_HOME` (default `~/.claude/`), bootstraps schemas, stages daily-cron job templates without enabling them.
-- **`/onboard-foundation` skill** — interactive interview (Sections A–E: identity → vault → working style → daily jobs → confirmation) producing a complete user-manifest.
+- **`/onboard` skill** — interactive interview (Sections A–E: identity → vault → working style → daily jobs → confirmation) producing a complete user-manifest.
 - **`/adopt` skill** — scaffolds a fresh Obsidian vault from the manifest's identity. Refuses adoption when `vault.is_fresh != true` (use `--retrofit-existing`, deferred to v2.1).
 - **`uninstall.sh --full`** — clean removal. Foundation files only; user data (logs, journals, vault) preserved as uninstall provenance.
 - **Daily crons** (off by default) — `librarian` (vault hygiene scan) and `architect` (system-evolution recommendations). Enable via `$CLAUDE_HOME/orchestration.json`.
@@ -37,7 +37,7 @@ cd claude-foundations
 
 # 4. Onboard inside Claude Code
 claude
-> /onboard-foundation
+> /onboard
 
 # 5. Adopt — scaffold the vault from the manifest
 > /adopt
@@ -59,7 +59,7 @@ bash tests/e2e-lima-dogfood.sh
 
 ## Architecture in one paragraph
 
-The foundation is a **manifest-driven generic-skills runtime**: one set of skills + hooks + schemas, parameterized at runtime by a single user-manifest written during `/onboard-foundation`. Skills read identity/vault/preferences from `$CLAUDE_HOME/user-manifest.json` rather than carrying user-specific content. Daily crons are launchd plists rendered from `$CLAUDE_HOME/orchestration.json` at install time, gated behind explicit user opt-in. The vault is a separate concern owned by `/adopt`, which scaffolds an Obsidian directory tree from the manifest's identity fields and seeds a small set of canonical files (CLAUDE.md, System Backlog.md, .coordination/canonical-file-types.json). Everything below `~/.claude/` is foundation-owned and uninstall-removable; everything in the vault is user-owned and uninstall-preserved.
+The foundation is a **manifest-driven generic-skills runtime**: one set of skills + hooks + schemas, parameterized at runtime by a single user-manifest written during `/onboard`. Skills read identity/vault/preferences from `$CLAUDE_HOME/user-manifest.json` rather than carrying user-specific content. Daily crons are launchd plists rendered from `$CLAUDE_HOME/orchestration.json` at install time, gated behind explicit user opt-in. The vault is a separate concern owned by `/adopt`, which scaffolds an Obsidian directory tree from the manifest's identity fields and seeds a small set of canonical files (CLAUDE.md, System Backlog.md, .coordination/canonical-file-types.json). Everything below `~/.claude/` is foundation-owned and uninstall-removable; everything in the vault is user-owned and uninstall-preserved.
 
 ---
 

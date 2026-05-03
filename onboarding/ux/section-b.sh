@@ -446,9 +446,12 @@ fi
 # Pass 2: process extraction → confidence gate → opt-outs → fragment + audit.
 process_extraction "$EXTRACTION_IN" || exit 3
 
-# T-6 handoff stub (deferred): the inline-edit summary screen consumes
+# Pass 2 complete: section fragment + audit committed. The next step is the
+# inline-edit summary screen (render-summary.sh), which consumes
 # extraction-output-B.json + audit follow_ups[] to render per-field disposition.
+# onboard.sh runs render-summary automatically; LLM-driven /onboard or harness
+# scripts read the HANDOFF emit below to know what to invoke next.
 info "Section B fragment committed at $EXTRACTION_OUT"
 info "JSONL audit entry appended at $AUDIT_LOG"
-info "TODO(T-6): hand off to inline-edit summary screen (render-summary.sh)"
+info "# HANDOFF: render-summary --section B"
 exit 0

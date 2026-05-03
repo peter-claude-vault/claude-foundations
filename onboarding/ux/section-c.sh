@@ -632,10 +632,13 @@ fi
 # archetype-inference + audit.
 process_extraction "$EXTRACTION_IN" || exit 3
 
-# T-6 handoff stub (deferred): the inline-edit summary screen consumes
+# Pass 2 complete: section fragment + audit committed. The next step is the
+# inline-edit summary screen (render-summary.sh), which consumes
 # extraction-output-C.json + audit follow_ups[] to render per-field disposition.
+# onboard.sh runs render-summary automatically; LLM-driven /onboard or harness
+# scripts read the HANDOFF emit below to know what to invoke next.
 info "Section C fragment committed at $EXTRACTION_OUT"
 info "JSONL audit entry appended at $AUDIT_LOG"
 info "Archetype-inference audit appended at $ARCHETYPE_AUDIT_LOG"
-info "TODO(T-6): hand off to inline-edit summary screen (render-summary.sh)"
+info "# HANDOFF: render-summary --section C"
 exit 0

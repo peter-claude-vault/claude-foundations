@@ -65,6 +65,12 @@ For each transcript-mode section, in this order:
 
 Section A is a deterministic confirmation screen — no transcript, no extraction, no confidence gates. Section E is three deterministic binary toggles (all default OFF).
 
+## Top-Level Runner
+
+`skills/onboarder/onboard.sh` chains the deterministic glue end-to-end (sections A and E, `render-summary.sh` invocations after sections B/C/D Pass 2, `bootstrap-schemas.sh` finalize). Sections B/C/D are inherently two-pass with an LLM extraction in the middle: Pass 1 records the transcript and compiles the prompt card; Pass 2 consumes the LLM-produced extraction stub via `EXTRACTION_OUTPUT_OVERRIDE`. The runner yields between passes via a structured `# HANDOFF: extract-section-X` emit and exits rc=5; the LLM driving `/onboard` (or a harness in test mode) does the extraction and re-invokes with `--resume --section X --extraction-stub PATH`. Hermetic test fixtures bypass the LLM via `--test-fixture-dir DIR` (used by SP07 T-11 Alex dogfood and SP08 T-7 Lima E2E).
+
+Both the runner-driven and the LLM-driven invocation paths read the same handoff signals: section-{b,c,d}.sh emit `# HANDOFF: render-summary --section X` after Pass 2; the runner emits `# HANDOFF: extract-section-X` between passes. There is one canonical chain documented in `## Per-Section Pipeline (B/C/D)` below; the runner is its mechanical execution.
+
 ## Confidence Gates
 
 Applied per extracted field per section:

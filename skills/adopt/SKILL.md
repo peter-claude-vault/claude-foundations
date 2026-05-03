@@ -8,7 +8,7 @@ argument-hint: "[--force-install] [--dry-run] [--verbose] [--retrofit-existing(v
 # /adopt — Fresh-Vault MVP
 
 User-facing entry for `/adopt`. Wraps `skills/adopt/adopt.sh` (deterministic
-bash scaffolding) in a slash-command surface. Runs AFTER `/onboard-foundation`
+bash scaffolding) in a slash-command surface. Runs AFTER `/onboard`
 (SP07) has populated `$CLAUDE_HOME/user-manifest.json` and the user has chosen
 to bring up a fresh vault. Hands the user a vault skeleton ready for daily
 capture — Inbox, Logs, System Backlog, CLAUDE.md, Plans symlink — in <2 min on
@@ -34,7 +34,7 @@ is set AND the directory does not yet exist as a populated vault. The
 
 Per spec §`/adopt` prerequisites (audit F-13):
 
-1. `/onboard-foundation` (SP07) must have run to completion (or to Section A
+1. `/onboard` (SP07) must have run to completion (or to Section A
    minimum) and populated `$CLAUDE_HOME/user-manifest.json` with at least
    `identity.name`, `vault.root`, and `vault.is_fresh = true`.
 2. `install.sh` (SP08 T-1) must have completed cleanly — `$CLAUDE_HOME/foundation-manifest.json`
@@ -192,7 +192,7 @@ failure manually (re-run `/onboard --section a` to fix `vault.root`, etc.).
 
 ## Related Skills
 
-- `/onboard-foundation` (SP07) — produces `user-manifest.json`; runs BEFORE `/adopt`
+- `/onboard` (SP07) — produces `user-manifest.json`; runs BEFORE `/adopt`
 - `/onboard --section a` — re-record Section A (vault root, identity) if user
   needs to fix manifest before re-running `/adopt`
 - `/backlog-triage` — first user of the seeded `System Backlog.md`
