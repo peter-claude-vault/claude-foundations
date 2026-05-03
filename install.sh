@@ -562,6 +562,7 @@ if [ "$APPLY_MODE" != "1" ]; then
     {"step": 9, "op": "cp", "target": "$CLAUDE_HOME/schemas/", "source": "$SOURCE_REPO/schemas/{6 named}.json", "rationale": "ship 6 named schemas + README"},
     {"step": 10, "op": "cp", "target": "$CLAUDE_HOME/templates/", "source": "$SOURCE_REPO/templates/{settings,librarian-manifest-skeleton,README}+{launchd,settings-fragments}/", "rationale": "ship templates + launchd tmpl + settings-fragments"},
     {"step": 11, "op": "cp", "target": "$CLAUDE_HOME/plugins/claude-mem/", "source": "$SOURCE_REPO/plugins/claude-mem/v*/", "rationale": "ship claude-mem bundle if present (T-1.5 deferred; absence informational)"},
+    {"step": 11.5, "op": "seed", "target": "$CLAUDE_HOME/CLAUDE.md", "source": "$CLAUDE_HOME/templates/claude-home-claude-md-template.md", "rationale": "seed claude-home CLAUDE.md with identity substitution from user-manifest.json (no clobber without --force-install + sentinel; SP10 T-4)"},
     {"step": 12, "op": "jq-merge", "target": "$CLAUDE_HOME/settings.json", "source": "$CLAUDE_HOME/templates/settings.json", "rationale": "atomic deep-merge with G7 silent-key-deletion gate"},
     {"step": 13, "op": "validate", "target": "$CLAUDE_HOME/schemas/*.json", "rationale": "post-install schema parse validation"},
     {"step": 14, "op": "cp", "target": "$CLAUDE_HOME/foundation-manifest.json", "source": "$SOURCE_REPO/foundation-manifest.json", "rationale": "ship T-5 baseline (slice tolerates absence with warn)"},
@@ -648,8 +649,8 @@ done
 [ -f "$SOURCE_REPO/schemas/README.md" ] && \
   cp $cp_clobber "$SOURCE_REPO/schemas/README.md" "$CLAUDE_HOME/schemas/" 2>/dev/null || true
 
-# Step 10: templates/ — settings.json + manifest skeletons + launchd/*.tmpl + settings-fragments/
-for tmpl in settings.json librarian-manifest-skeleton.json README.md; do
+# Step 10: templates/ — settings.json + manifest skeletons + README + CLAUDE.md templates + launchd/*.tmpl + settings-fragments/
+for tmpl in settings.json librarian-manifest-skeleton.json README.md vault-claude-md-template.md claude-home-claude-md-template.md; do
   src="$SOURCE_REPO/templates/$tmpl"
   [ -e "$src" ] || continue
   cp $cp_clobber "$src" "$CLAUDE_HOME/templates/" 2>/dev/null || true
@@ -689,6 +690,86 @@ if [ -d "$SOURCE_REPO/plugins/claude-mem" ]; then
 fi
 if [ "$claude_mem_copied" = "0" ]; then
   info "claude-mem bundle not present in foundation-repo (T-1.5 deferred); skipping"
+fi
+
+# Step 11.5: claude-home CLAUDE.md seed (Plan 71 SP10 T-4)
+# Seeds $CLAUDE_HOME/CLAUDE.md from templates/claude-home-claude-md-template.md
+# with {{IDENTITY_NAME}} / {{IDENTITY_ROLE}} / {{IDENTITY_ORGANIZATION}} substituted
+# from $CLAUDE_HOME/user-manifest.json. Identity values fall back to literal
+# placeholder tokens if user-manifest.json is absent (pre-onboarding install) —
+# the template's "What install.sh did" section instructs a re-run after /onboard.
+#
+# Clobber-protection (G-rule symmetry with G1-main + G2): existing CLAUDE.md is
+# preserved unless --force-install AND I-UNDERSTAND-APRIL-13 sentinel verified.
+# If --force-install was passed but no upstream gate (G1-main / G2) prompted for
+# the sentinel, we prompt explicitly here. EOF / mismatch on the prompt
+# preserves the existing file (fail-closed; no silent clobber).
+template_claude_md="$CLAUDE_HOME/templates/claude-home-claude-md-template.md"
+target_claude_md="$CLAUDE_HOME/CLAUDE.md"
+
+if [ ! -f "$template_claude_md" ]; then
+  warn "claude-home-claude-md-template.md not present at $template_claude_md — skipping CLAUDE.md seed"
+else
+  # sed-escape identity values: backslash, sed delimiter, ampersand. Strip newlines (F3 hardening).
+  sed_escape() {
+    printf '%s' "$1" | LC_ALL=C sed -e 's/[\\&|]/\\&/g' | tr -d '\n\r'
+  }
+
+  cm_name="{{IDENTITY_NAME}}"
+  cm_role="{{IDENTITY_ROLE}}"
+  cm_org="{{IDENTITY_ORGANIZATION}}"
+  user_manifest="$CLAUDE_HOME/user-manifest.json"
+  if [ -f "$user_manifest" ]; then
+    _cm_name="$(jq -r '.identity.name // ""' "$user_manifest" 2>/dev/null)"
+    _cm_role="$(jq -r '.identity.role // ""' "$user_manifest" 2>/dev/null)"
+    _cm_org="$(jq -r '.identity.organization // ""' "$user_manifest" 2>/dev/null)"
+    [ -n "$_cm_name" ] && [ "$_cm_name" != "null" ] && cm_name="$_cm_name"
+    [ -n "$_cm_role" ] && [ "$_cm_role" != "null" ] && cm_role="$_cm_role"
+    [ -n "$_cm_org" ] && [ "$_cm_org" != "null" ] && cm_org="$_cm_org"
+  fi
+
+  proceed_with_seed=1
+  if [ -f "$target_claude_md" ]; then
+    if [ "$FORCE_INSTALL" != "1" ]; then
+      info "claude-home CLAUDE.md exists at $target_claude_md — preserving (re-run with --force-install + I-UNDERSTAND-APRIL-13 sentinel to re-seed)"
+      proceed_with_seed=0
+    elif [ "$sentinel_verified" != "1" ]; then
+      printf 'install: type I-UNDERSTAND-APRIL-13 to confirm CLAUDE.md re-seed: ' >&2
+      cm_sentinel=""
+      if ! IFS= read -r cm_sentinel; then
+        info "claude-home CLAUDE.md re-seed: sentinel not provided (stdin EOF) — preserving existing"
+        proceed_with_seed=0
+      elif [ "$cm_sentinel" != "I-UNDERSTAND-APRIL-13" ]; then
+        info "claude-home CLAUDE.md re-seed: sentinel mismatch — preserving existing"
+        proceed_with_seed=0
+      else
+        sentinel_verified=1
+        info "CLAUDE.md re-seed sentinel verified"
+      fi
+    fi
+  fi
+
+  if [ "$proceed_with_seed" = "1" ]; then
+    cm_name_esc="$(sed_escape "$cm_name")"
+    cm_role_esc="$(sed_escape "$cm_role")"
+    cm_org_esc="$(sed_escape "$cm_org")"
+    cm_tmp="$target_claude_md.tmp.$$"
+    if ! sed \
+        -e "s|{{IDENTITY_NAME}}|$cm_name_esc|g" \
+        -e "s|{{IDENTITY_ROLE}}|$cm_role_esc|g" \
+        -e "s|{{IDENTITY_ORGANIZATION}}|$cm_org_esc|g" \
+        "$template_claude_md" > "$cm_tmp"; then
+      diag "CLAUDE.md seed: sed substitution failed"
+      rm -f "$cm_tmp"
+      exit 11
+    fi
+    if ! mv -f "$cm_tmp" "$target_claude_md"; then
+      diag "CLAUDE.md seed: atomic mv failed: $target_claude_md"
+      rm -f "$cm_tmp"
+      exit 11
+    fi
+    info "claude-home CLAUDE.md seeded from template (identity name: $cm_name)"
+  fi
 fi
 
 # Step 12: settings.json atomic jq-merge with G7 silent-key-deletion gate

@@ -11,7 +11,7 @@
 # Never blocks. Silent on no-op. Errors to hook-audit log.
 set -uo pipefail
 
-source "$HOME/.claude/hooks/lib/paths.sh"
+source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/paths.sh"
 
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
@@ -23,9 +23,18 @@ fi
 
 [[ ! -f "$FILE_PATH" ]] && exit 0
 
-LOG_FILE="$HOME/.claude/hooks/state/tasks-md-autosync.log"
+LOG_FILE="$HOOKS_STATE/tasks-md-autosync.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 TS=$(date -Iseconds)
+
+# Section E-3-adjacent toggle (Plan 71 SP10 T-5): short-circuit when user opted
+# out via /onboard. Default-enabled; opt-out is explicit `false`. Audit log
+# entry written before exit.
+hook_enabled="$(_manifest_get .behavioral.hook_preferences.tasks_autosync_enabled 2>/dev/null || true)"
+if [ "$hook_enabled" = "false" ]; then
+  echo "$TS | skip | manifest-disabled | $FILE_PATH" >> "$LOG_FILE"
+  exit 0
+fi
 
 # Resolve parent plan dir via frontmatter
 PARENT_PLAN=$(awk '/^---$/{c++; next} c==1 && /^parent_plan:/{sub(/^parent_plan:[[:space:]]*/,""); print; exit}' "$FILE_PATH")

@@ -10,12 +10,22 @@
 
 set -uo pipefail
 
-source "$HOME/.claude/hooks/lib/paths.sh"
+source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/paths.sh"
 
 LOG_FILE="$HOOKS_STATE/auto-commit.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 
 log() { echo "$(date -Iseconds) $*" >> "$LOG_FILE"; }
+
+# Section E-1 toggle (Plan 71 SP10 T-5): short-circuit when user opted out via
+# /onboard. Default-enabled when manifest field missing, null, or true; opt-out
+# is explicit `false`. Reading uses lib/paths.sh::_manifest_get; no jq error
+# noise on missing/malformed manifest (graceful-degrade).
+hook_enabled="$(_manifest_get .behavioral.hook_preferences.auto_commit_enabled 2>/dev/null || true)"
+if [ "$hook_enabled" = "false" ]; then
+  log "auto-commit-surfaces skipped — user-manifest hook_preferences.auto_commit_enabled=false"
+  exit 0
+fi
 
 log "auto-commit-surfaces start session=${CLAUDE_SESSION_ID:-unknown} pid=$$"
 

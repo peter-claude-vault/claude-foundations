@@ -12,6 +12,17 @@ LOCK_FILE="$MEMORY_DIR/.consolidation.lock"
 LOG_FILE="$MEMORY_DIR/.consolidation-log.md"
 INDEX_FILE="$MEMORY_DIR/MEMORY.md"
 
+# Section E-2 toggle (Plan 71 SP10 T-5): short-circuit when user opted out via
+# /onboard. Default-enabled; opt-out is explicit `false`. Audit log entry
+# written to $LOG_FILE before exit so absence-of-runs is observable.
+hook_enabled="$(_manifest_get .behavioral.hook_preferences.memory_consolidation_enabled 2>/dev/null || true)"
+if [ "$hook_enabled" = "false" ]; then
+  mkdir -p "$MEMORY_DIR"
+  printf '\n## Skipped — %s\n- Reason: user-manifest hook_preferences.memory_consolidation_enabled=false\n' \
+    "$(date +"%Y-%m-%d %H:%M")" >> "$LOG_FILE" 2>/dev/null || true
+  exit 0
+fi
+
 START_TIME=$(date +%s)
 NOW_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 TODAY=$(date +%Y-%m-%d)
