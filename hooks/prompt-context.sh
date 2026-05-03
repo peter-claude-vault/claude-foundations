@@ -17,6 +17,31 @@ CHECKPOINT_FILE="$STATE_DIR/checkpoint.md"
 # UserPromptSubmit until the clearing condition is met.
 CLEARING_WINDOW_SEC=600
 
+# --- SP12 T-13 (G3): manifest-driven thresholds for hooks.context_pressure ---
+# Reads warn_pct/mandate_pct/hard_pct from $CLAUDE_HOME/user-manifest.json with
+# sane defaults (45/48/80) when fields are absent or null. hard_pct is read
+# for parity with the schema and downstream consumers (stop-checkpoint-check.sh
+# at 48-80%); this hook itself only enforces warn+mandate in-band.
+USER_MANIFEST="${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json"
+WARN_PCT=45
+MANDATE_PCT=48
+HARD_PCT=80
+if [[ -f "$USER_MANIFEST" ]] && command -v jq >/dev/null 2>&1; then
+  _ctxp_read() {
+    local jq_path="$1" default="$2"
+    local val
+    val=$(jq -r "${jq_path} // empty" "$USER_MANIFEST" 2>/dev/null)
+    if [[ -n "$val" && "$val" != "null" ]]; then
+      printf '%s' "$val"
+    else
+      printf '%s' "$default"
+    fi
+  }
+  WARN_PCT=$(_ctxp_read '.hooks.context_pressure.warn_pct' 45)
+  MANDATE_PCT=$(_ctxp_read '.hooks.context_pressure.mandate_pct' 48)
+  HARD_PCT=$(_ctxp_read '.hooks.context_pressure.hard_pct' 80)
+fi
+
 pressure_context=""
 if [[ -f "$PRESSURE_FILE" ]]; then
   pct=$(jq -r '.pct // 0' "$PRESSURE_FILE" 2>/dev/null || echo 0)
@@ -35,18 +60,18 @@ if [[ -f "$PRESSURE_FILE" ]]; then
     checkpoint_fresh=true
   fi
 
-  if (( pct_int >= 48 )); then
+  if (( pct_int >= MANDATE_PCT )); then
     if ! $checkpoint_fresh; then
-      # 48% immediate-action mandate — re-fires every prompt until cleared
+      # mandate% immediate-action mandate — re-fires every prompt until cleared
       pressure_context="CONTEXT PRESSURE ${pct}% — IMMEDIATE ACTION REQUIRED.
 Before responding to the user's prompt, invoke /session-checkpoint.
 Do not take any other tool action until checkpoint is written to ~/.claude/hooks/state/checkpoint.md.
 This is a blocking mandate enforced by the Stop hook (R-26).
 Clearing condition: checkpoint.md mtime < 10 min old."
     fi
-  elif (( pct_int >= 45 )); then
+  elif (( pct_int >= WARN_PCT )); then
     if ! $checkpoint_fresh; then
-      # 45% at-next-break mandate — re-fires every prompt until cleared
+      # warn% at-next-break mandate — re-fires every prompt until cleared
       pressure_context="CONTEXT PRESSURE ${pct}%. At the next natural task boundary (current tool chain complete), invoke /session-checkpoint to write ~/.claude/hooks/state/checkpoint.md with the Session Continuity Block.
 Do not begin new multi-step work until checkpoint is written.
 Clearing condition: checkpoint.md mtime < 10 min old (R-26)."

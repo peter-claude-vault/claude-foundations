@@ -501,4 +501,6 @@ info ""
 info "Plist staged at: $expected_plist"
 info ""
 info "Onboarding complete. Run \`claude system enable-daemon\` to activate librarian+architect launchd jobs."
+info ""
+info "What just happened, and why? See docs/personalization-model.md for the universal/combined/personal classification of every artifact onboarding wrote, plus instructions for auditing any generated file via its provenance frontmatter."
 exit 0

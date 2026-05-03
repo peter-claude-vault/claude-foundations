@@ -62,6 +62,39 @@ For multi-engagement vaults: nested `<engagement>/CLAUDE.md` files act as
 navigation guides scoped to that engagement; they describe the engagement's
 specific conventions, key files, and active workstreams.
 
+## Index Files
+
+The vault uses two complementary index conventions for routing surfaces and
+file enumeration:
+
+- **`_index.md`** — folder-level routing surface. One per engagement /
+  project / topic root (whichever organizational method you adopted).
+  Frontmatter typically declares `provides:` (the section names this index
+  enumerates — e.g., `provides: [Projects, People, Strategic]`). Body holds
+  Markdown tables or bulleted lists routing to the children. The `librarian`
+  capability `placement-validate.sh` whitelists `_index.md` files, so they
+  are exempt from the per-type frontmatter contract that applies to
+  enumerated content.
+
+- **`File-Index.md`** — flat enumeration of every authoritative file under
+  a folder (or vault-wide). Used when a folder accumulates many files of
+  heterogeneous types and a single routing index is not granular enough.
+  Common locations: vault-root `File-Index.md`, `Reference/File-Index.md`.
+  Treated as `index` type by `frontmatter-enforce` (required: `type`,
+  `updated`).
+
+**When to use which.** Use `_index.md` when you need *typed routing* —
+"projects under this engagement live here, people under this engagement
+live there." Use `File-Index.md` when you need *flat enumeration* — every
+file in this folder, classified by topic. Most users will only need
+`_index.md`; `File-Index.md` is the answer when graph view shows hub-spoke
+density warnings on a folder root.
+
+Generation of `_index.md` scaffolds at onboarding time is **deferred to
+v2.1** (Tier 2 — `_index.md` autogeneration capability). v2.0.0 ships the
+convention; you author the index files yourself as the vault grows. Once
+they exist, `librarian placement-validate` keeps them honest.
+
 ## What `/adopt` did
 
 This file was seeded by `/adopt` at adoption time. Identity fields above were
