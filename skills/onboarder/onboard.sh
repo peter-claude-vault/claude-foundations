@@ -90,6 +90,7 @@ RESUME=0
 ONLY_SECTION=""
 EXTRACTION_STUB=""
 DRY_RUN=0
+SEED_CONTENT=""
 
 usage() {
   sed -n '2,50p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -118,6 +119,11 @@ while [ $# -gt 0 ]; do
       ;;
     --dry-run)
       DRY_RUN=1
+      ;;
+    --seed-content)
+      shift
+      [ $# -gt 0 ] || { echo "onboard.sh: --seed-content requires <path-or-paste>" >&2; exit 2; }
+      SEED_CONTENT="$1"
       ;;
     -h|--help)
       usage
@@ -234,6 +240,22 @@ run_finalize() {
 # -----------------------------------------------------------------------------
 # Main control flow.
 # -----------------------------------------------------------------------------
+
+# Stage 1 INGEST — seed content intake (SP13 T-1). Fires before interview-Q
+# surface so seeded content acts as discovery input alongside interview answers.
+if [ -n "$SEED_CONTENT" ]; then
+  intake_sh="$ONBOARDING_ROOT/seed-content/intake.sh"
+  if [ ! -f "$intake_sh" ]; then
+    printf 'onboard.sh: --seed-content requires %s\n' "$intake_sh" >&2
+    exit 2
+  fi
+  log "Stage 1 INGEST — seed content intake"
+  seed_dir="$INPUTS_DIR/seed-content"
+  mkdir -p "$seed_dir"
+  bash "$intake_sh" --source "$SEED_CONTENT" --manifest "$seed_dir/intake-manifest.jsonl"
+  seed_count=$(wc -l < "$seed_dir/intake-manifest.jsonl" | tr -d ' ')
+  printf 'seed content detected: %s items\n' "$seed_count"
+fi
 
 # Single-section mode.
 if [ -n "$ONLY_SECTION" ]; then
