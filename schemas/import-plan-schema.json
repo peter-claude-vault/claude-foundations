@@ -1,0 +1,243 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claude-foundations-v2/schemas/import-plan-schema.json",
+  "title": "Import Plan (SP13 T-6)",
+  "description": "Authoritative shape of the user-reviewable import-plan.md emitted by skills/infer-vault-structure/import-plan.sh. The on-disk format is markdown with a YAML frontmatter wrapper, inline per-candidate ```yaml blocks, a routing-table markdown table, and a refinements ```yaml block. T-7 (User review/edit gate) reassembles this wrapper from the markdown to validate user-edited plans round-trip; the schema is intentionally permissive on user-editable fields (proposed_path, type, metadata) so that an in-place edit does not break validation. Bumps on breaking shape changes; T-7 review-gate.sh checks schema_version before consuming.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "input_propose_taxonomy_schema_version",
+    "generated_at",
+    "header",
+    "unclassified_callout",
+    "vault_tree",
+    "project_metadata_blocks",
+    "routing_table",
+    "non_project_dispositions",
+    "refinements"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "sp13-t6/1",
+      "description": "Schema version anchor for this import plan. Bump on breaking shape changes; T-7 validates this before consuming a user-edited plan."
+    },
+    "input_propose_taxonomy_schema_version": {
+      "type": "string",
+      "const": "sp13-t5/1",
+      "description": "Echoed schema_version of the propose-taxonomy-output.json this plan was generated from. T-6 import-plan.sh refuses to run if its input is not sp13-t5/1; this field records that contract for downstream verification."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC timestamp at which the plan was rendered."
+    },
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "n_records",
+        "n_clusters",
+        "n_passes",
+        "items_mapped_pct",
+        "llm_mode",
+        "embedding_mode_input"
+      ],
+      "description": "Corpus stats header — top-of-file summary echoed from upstream T-4/T-5 outputs.",
+      "properties": {
+        "n_records": {"type": "integer", "minimum": 0, "description": "Total IR records in the source corpus (echoed from propose-taxonomy.n_records)."},
+        "n_clusters": {"type": "integer", "minimum": 0, "description": "Cluster count from upstream T-4 (excludes the unclassified bucket)."},
+        "n_passes": {"type": "integer", "minimum": 2, "maximum": 3, "description": "Number of LLM passes T-5 actually ran. Pass-3 fired when items_mapped_pct < threshold."},
+        "items_mapped_pct": {"type": "number", "minimum": 0.0, "maximum": 1.0, "description": "Fraction of n_records mapped to a non-unclassified candidate after the final pass."},
+        "llm_mode": {"type": "string", "enum": ["stub", "live"], "description": "Whether T-5 ran against the live Anthropic Messages API or against the deterministic stub."},
+        "embedding_mode_input": {"type": "string", "enum": ["stub", "voyage"], "description": "Whether T-4 used the live Voyage embedding API or the deterministic stub. Echoed from propose-taxonomy.embedding_mode_input."},
+        "warnings": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Non-fatal warnings echoed from T-5 (e.g., pass-3 trigger). Surfaced to user so a low-mapped run is not silent."
+        }
+      }
+    },
+    "unclassified_callout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["present", "count"],
+      "description": "PROMINENT call-out at the top of the rendered markdown when the unclassified pile carries items. Silent skip (rendered as a blank line, no call-out) when count = 0. Per spec L199 + T-15 UX validation criterion.",
+      "properties": {
+        "present": {"type": "boolean", "description": "True when count > 0; false when the unclassified pile is empty."},
+        "count": {"type": "integer", "minimum": 0, "description": "Number of items in the unclassified candidate's source_items[]."},
+        "copy": {
+          "type": "string",
+          "description": "User-facing copy rendered into the top call-out. Welcoming + options-first + 'no item silently dropped' reassurance per T-15 UX criterion. Empty string when present = false."
+        }
+      }
+    },
+    "vault_tree": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Proposed vault folder hierarchy. Top-level folders are folder names (Engagements, References, Meetings, Inbox); each maps to a list of subfolder names (project labels) or to an empty object for leaf folders (Inbox carries no pre-listed children). User can add/remove top-level folders or subfolders by editing this block; schema is permissive (additionalProperties: true) so reasonable user customization does not break validation.",
+      "properties": {
+        "Engagements": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Project subfolders under Engagements/ — one per project candidate."
+        },
+        "References": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Subfolders under References/ — one per reference candidate."
+        },
+        "Meetings": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Subfolders under Meetings/ — one per meeting candidate."
+        },
+        "Inbox": {
+          "type": "object",
+          "description": "Inbox/ is the disposition target for unclassified items; rendered as a leaf folder."
+        }
+      }
+    },
+    "project_metadata_blocks": {
+      "type": "array",
+      "minItems": 0,
+      "description": "One entry per type=project candidate. Each renders as an inline ```yaml block under its H3 heading in the markdown body. User edits the YAML in place; T-7 reassembles this array by walking the H3 sections.",
+      "items": {"$ref": "#/definitions/candidate_block"}
+    },
+    "routing_table": {
+      "type": "array",
+      "minItems": 0,
+      "description": "Per-source-item routing decisions. Row count MUST equal header.n_records (every IR record routes to exactly one candidate). Renders as a markdown table in the body; user can edit cells in place to re-route an item.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_path",
+          "source_hash",
+          "candidate_id",
+          "destination",
+          "type",
+          "confidence",
+          "low_confidence"
+        ],
+        "properties": {
+          "source_path": {"type": "string", "description": "Absolute path of the source IR record."},
+          "source_hash": {"type": "string", "minLength": 8, "description": "Stable hash of the source content; round-trips through user edits."},
+          "candidate_id": {"type": "string", "description": "ID of the candidate this item routes to (project p0001..p9999 or 'unclassified'). User can edit to re-route."},
+          "destination": {"type": "string", "description": "Vault-relative destination path (echoes candidate.proposed_path; user can override for a single item without changing the whole candidate)."},
+          "type": {"type": "string", "enum": ["project", "reference", "meeting", "unclassified"], "description": "Disposition type. Free-edit at T-7."},
+          "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0, "description": "Echoed from candidate.confidence at generation time. T-7 does not recompute on user edit."},
+          "low_confidence": {"type": "boolean", "description": "True when confidence < 0.5. Surfaced visibly per row in the rendered table so flagged items are not buried."}
+        }
+      }
+    },
+    "non_project_dispositions": {
+      "type": "array",
+      "minItems": 0,
+      "description": "One entry per non-project candidate (type in [reference, meeting, unclassified]). Same shape as project_metadata_blocks; renders under the 'Doesn’t fit any project — disposition' H2 section.",
+      "items": {"$ref": "#/definitions/candidate_block"}
+    },
+    "refinements": {
+      "type": "array",
+      "minItems": 0,
+      "description": "Pass-2 + optional pass-3 merge/split/promote/demote operations surfaced from T-5. NOT auto-applied — surfaced for user review at T-7 review gate. Renders as a single ```yaml block at the bottom of the markdown.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["op"],
+        "properties": {
+          "op": {"type": "string", "enum": ["merge", "split", "promote", "demote"]},
+          "from": {
+            "oneOf": [
+              {"type": "string"},
+              {"type": "array", "items": {"type": "string"}}
+            ],
+            "description": "Source candidate id(s). String for single-source ops (split, demote); array for multi-source ops (merge). Renderer surfaces BOTH shapes faithfully."
+          },
+          "into": {
+            "oneOf": [
+              {"type": "string"},
+              {"type": "array", "items": {"type": "string"}}
+            ],
+            "description": "Destination candidate id(s). String for single-target ops (merge, promote); array for multi-target ops (split). Renderer surfaces BOTH shapes faithfully."
+          },
+          "rationale": {"type": "string"}
+        }
+      }
+    }
+  },
+  "definitions": {
+    "candidate_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "label",
+        "type",
+        "proposed_path",
+        "metadata",
+        "source_items",
+        "confidence",
+        "low_confidence"
+      ],
+      "description": "One candidate's full record. Used inline as ```yaml under each H3 in the markdown body. User edits any field in place; T-7 round-trip preserves source_hash + candidate_id as stable anchors.",
+      "properties": {
+        "candidate_id": {
+          "type": "string",
+          "pattern": "^(p[0-9]{4}|unclassified)$",
+          "description": "Stable candidate id from T-5. p0001..p9999 for typed candidates; the literal 'unclassified' for the terminal pile."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Short human-readable label. Used as the H3 heading. User can edit."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["project", "reference", "meeting", "unclassified"],
+          "description": "Candidate type. User can re-classify (e.g., promote a reference into a project) by editing this field; T-7 honors the edit when reassembling the wrapper."
+        },
+        "proposed_path": {
+          "type": "string",
+          "description": "Vault-relative path for the candidate. Empty string for unclassified. User can edit to re-place."
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Free-form per-candidate metadata. T-8 (PRD/Context/Updates generator) consumes for project candidates.",
+          "properties": {
+            "summary": {"type": "string"},
+            "tags": {"type": "array", "items": {"type": "string"}},
+            "engagement": {"type": "string"},
+            "rationale": {"type": "string"}
+          }
+        },
+        "source_items": {
+          "type": "array",
+          "minItems": 0,
+          "description": "IR records routed to this candidate. Echoed from propose-taxonomy candidate.source_items.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "source_hash"],
+            "properties": {
+              "path": {"type": "string"},
+              "source_hash": {"type": "string", "minLength": 8}
+            }
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Heuristic dominant-origin-cluster fraction from T-5. Surfaced visibly; not hidden behind a fold."
+        },
+        "low_confidence": {
+          "type": "boolean",
+          "description": "True when confidence < 0.5. Renderer surfaces this as a visible flag in the H3 heading (e.g., '⚠️ low confidence') so flagged candidates are not buried."
+        }
+      }
+    }
+  }
+}

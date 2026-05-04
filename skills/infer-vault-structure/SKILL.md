@@ -1,13 +1,13 @@
 ---
 name: infer-vault-structure
-description: SP13 Stage 2 INFER pipeline. Consumes Stage 1 IR (seed-content-ir-schema.json), clusters records by semantic similarity with explicit unclassified bucket (T-4), proposes a per-cluster taxonomy with TnT-LLM iterative refinement (T-5), and (in T-6) emits a user-reviewable import-plan.md. cluster.sh + propose-taxonomy.sh share stdlib-Python helpers; no numpy / requests / sklearn / pydantic.
+description: SP13 Stage 2 INFER pipeline. Consumes Stage 1 IR (seed-content-ir-schema.json), clusters records by semantic similarity with explicit unclassified bucket (T-4), proposes a per-cluster taxonomy with TnT-LLM iterative refinement (T-5), and renders a user-reviewable import-plan.md (T-6). cluster.sh + propose-taxonomy.sh + import-plan.sh share stdlib-Python helpers; no numpy / requests / sklearn / pydantic / pyyaml.
 disable-model-invocation: true
-argument-hint: "cluster [--ir <ir.jsonl>] [...] | propose-taxonomy --cluster-output <path> --ir <ir.jsonl> [--llm-mode {stub|live|auto}]"
+argument-hint: "cluster [--ir <ir.jsonl>] [...] | propose-taxonomy --cluster-output <path> --ir <ir.jsonl> [--llm-mode {stub|live|auto}] | import-plan [--propose-taxonomy <path>] [--out <path>]"
 ---
 
 # infer-vault-structure
 
-Stage 2 of the SP13 content-seeding pipeline. Stage 1 (`onboarding/seed-content/`) produces a unified IR; this skill turns that IR into a cluster map and (downstream) a proposed vault taxonomy. T-4 ships the clustering entry only — T-5 layers the LLM-proposed taxonomy with TnT-LLM iterative refinement; T-6 layers the import-plan markdown generator; T-7 wires the SP12 3-step gate for user review/edit.
+Stage 2 of the SP13 content-seeding pipeline. Stage 1 (`onboarding/seed-content/`) produces a unified IR; this skill turns that IR into a cluster map, a proposed vault taxonomy, and a user-reviewable import plan markdown file. T-4 ships the clustering entry; T-5 layers the LLM-proposed taxonomy with TnT-LLM iterative refinement; T-6 layers the import-plan markdown generator (Copilot-Workspace plan-then-code pattern); T-7 wires the SP12 3-step gate for user review/edit.
 
 ## Personalization tier
 
@@ -17,6 +17,7 @@ This is a **Universal capability** per `docs/personalization-model.md` §1 — t
 
 `/infer-vault-structure cluster --ir <ir.jsonl> [...]` — calls `cluster.sh` (T-4).
 `/infer-vault-structure propose-taxonomy --cluster-output <path> --ir <ir.jsonl> [...]` — calls `propose-taxonomy.sh` (T-5).
+`/infer-vault-structure import-plan [--propose-taxonomy <path>] [--out <path>]` — calls `import-plan.sh` (T-6).
 
 Direct script invocation:
 
@@ -26,6 +27,8 @@ Direct script invocation:
 ./propose-taxonomy.sh --cluster-output onboarding/seed-content/state/cluster-output.json \
                      --ir /tmp/sp13-fixture/ir.jsonl
 # → onboarding/seed-content/state/propose-taxonomy-output.json
+./import-plan.sh --propose-taxonomy onboarding/seed-content/state/propose-taxonomy-output.json
+# → onboarding/seed-content/state/import-plan.md
 ```
 
 ### `cluster.sh` flags (T-4)
@@ -50,6 +53,14 @@ Direct script invocation:
 | `--model-pass2 <model-id>` | `claude-sonnet-4-6` | Model for pass-2 outlier re-pass + merge/split |
 | `--max-passes {2|3}` | `3` | Cap on TnT-LLM passes; pass-3 only fires when `items_mapped_pct < threshold` |
 | `--low-mapped-threshold F` | `0.80` | Items-mapped-fraction below which pass-3 is triggered |
+
+### `import-plan.sh` flags (T-6)
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--propose-taxonomy <path>` | `onboarding/seed-content/state/propose-taxonomy-output.json` | T-5 propose-taxonomy output (`schema_version: sp13-t5/1`); validated before consumption |
+| `--out <path>` | `onboarding/seed-content/state/import-plan.md` | Output import-plan markdown (`schema_version: sp13-t6/1` declared in YAML frontmatter) |
+| `--generated-at <ISO-8601>` | current UTC | Override timestamp; useful for reproducible test runs |
 
 ## Architecture decisions (T-4)
 
@@ -116,6 +127,53 @@ Per spec L169: candidate `type` is one of `project | reference | meeting | uncla
 - `reference` → reference doc folder
 - `meeting` → meeting note folder
 - `unclassified` → vault `Inbox/` with `disposition: unclassified` frontmatter (T-10)
+
+## Architecture decisions (T-6)
+
+### Renderer split — bash 3.2 wrapper + pure-stdlib python3 helper
+
+`import-plan.sh` is a thin arg-parsing wrapper (R-23 bash 3.2 compliant); `import-plan.py` does the markdown rendering. Mirrors T-4 (cluster.sh + cluster.py) and T-5 (propose-taxonomy.sh + propose-taxonomy.py). Markdown table joining and nested YAML emission are awkward in jq; python is cleaner. No `pyyaml` / `markdown` / `jinja2` deps — pure stdlib only.
+
+### Output format — markdown with YAML frontmatter + inline per-candidate ```yaml blocks
+
+The on-disk import plan is a single markdown file structured as:
+
+1. **YAML frontmatter** (between `---` lines) carries the lightweight wrapper fields: `schema_version`, `input_propose_taxonomy_schema_version`, `generated_at`, `header` (corpus stats), `unclassified_callout`, `vault_tree`. Heavy fields (project_metadata_blocks[], routing_table[], non_project_dispositions[], refinements[]) render in the body.
+2. **Top call-out** (above `# Import plan` H1) when the unclassified pile carries items: a fenced markdown blockquote with welcoming + options-first copy. Silent skip (no call-out at all) when `count = 0`.
+3. **`# Import plan — review and edit`** intro paragraph explaining the user's three options (approve as-is / edit inline / abort).
+4. **`## Corpus stats`** bullet list — the same data as `header` in frontmatter, surfaced for human reading. Pass-3 trigger warnings render as bullets here.
+5. **`## Proposed vault tree`** nested bullet list (Engagements/<x>, References/<y>, Meetings/<z>, Inbox/). Chosen over ASCII box-drawing for portability across Obsidian + plain-text editors.
+6. **`## Project candidates`** — H3 per project candidate, each with an inline ```yaml block carrying the full structured form (candidate_id, label, type, proposed_path, metadata, source_items, confidence, low_confidence). Below the YAML, a prose summary + rationale render for browsing.
+7. **`## Per-source-item routing`** — markdown table with one row per source item (row count = `header.n_records`). Columns: source path, candidate_id, destination, type, confidence, ⚠️ flag for low-confidence. User can edit individual cells to re-route a single item without changing the candidate.
+8. **`## Doesn’t fit any project — disposition`** — same H3 + ```yaml pattern as Project candidates, but for non-project types (reference, meeting, unclassified).
+9. **`## Refinements (pass-2 merge/split)`** — a single ```yaml block with all merge/split/promote/demote ops surfaced from T-5's pass-2 (and pass-3 if triggered). Renders BOTH `from`/`into` shapes (string or array, per T-5 schema oneOf) faithfully — no normalization.
+
+T-7 reassembles the wrapper from the markdown by parsing frontmatter + walking H3 sections + parsing the routing table + parsing the refinements block. Schema is permissive on user-editable fields (`proposed_path`, `type`, `metadata`) so an in-place edit does not break round-trip validation.
+
+### Schema is authoritative for T-7 round-trip
+
+`sp13-t6/1` declared formally as JSON Schema Draft-07 at `schemas/import-plan-schema.json`. T-7 review-gate.sh MUST validate the user-edited plan against this schema before consuming. Schema describes the LOGICAL wrapper that T-7 reassembles from the markdown — not the markdown layout itself.
+
+Validation properties that matter for round-trip:
+- `schema_version` and `input_propose_taxonomy_schema_version` are `const` fields — bumping requires a coordinated T-7 update.
+- `routing_table` row count MUST equal `header.n_records` — every IR record routes to exactly one candidate; T-6 enforces this at render time (exits 1 if upstream candidates do not cover all records).
+- `vault_tree` uses `additionalProperties: true` so a user can add a top-level folder (e.g., `Personal/`) without breaking validation.
+- `metadata` on candidate_block uses `additionalProperties: true` so users can add free-form fields the LLM did not produce.
+- `refinements[].from` and `refinements[].into` use `oneOf` (string OR array of strings) — both shapes round-trip without normalization.
+
+### Unclassified call-out copy — welcoming, options-first
+
+Per T-15 UX criterion, the call-out copy is welcoming + explanatory + options-first, NOT jargon-heavy. The user reads three concrete actions per unclassified item: route to Inbox/ (default — handed off to the standing inbox processor for later), merge into an existing candidate (edit candidate_id), or remove from the plan entirely. The phrase "no item is silently dropped" reassures the user that no data loss is possible at the gate.
+
+Silent skip when `count = 0`: no top call-out fenced block at all. Frontmatter `unclassified_callout.present` is `false`; the body's "Doesn’t fit any project — disposition" section renders with empty-state copy explaining no non-project candidates were detected.
+
+### YAML emitter — defensive quoting; Unicode preserved
+
+The hand-rolled YAML dumper covers the limited shapes this plan emits (scalars + lists + nested dicts + empty containers). Defensive quoting policies:
+- Strings starting with a digit (e.g., timestamps `2026-05-04T17:30:00Z`) are double-quoted to avoid YAML 1.1's implicit timestamp parsing — a known footgun across pyyaml + go-yaml + ruamel.
+- Strings matching reserved YAML words (`true`, `false`, `null`, `yes`, `no`, `on`, `off`, `~`) are double-quoted.
+- Strings containing reserved leading characters (`!&*{}[],#?|>'%@\`-:`) are double-quoted.
+- Unicode characters (em-dashes, smart quotes, etc.) are preserved literally for human readability via `json.dumps(..., ensure_ascii=False)` — the output round-trips through any YAML 1.1/1.2 parser.
 
 ## Output schema (`schema_version: sp13-t4/1`)
 
@@ -195,39 +253,108 @@ T-5 emits a formal JSON Schema Draft-07 document at `schemas/propose-taxonomy-sc
 
 T-5 declares this schema as the authoritative contract for downstream T-6 import-plan generator consumption. T-6 MUST validate `schema_version: sp13-t5/1` before reading; mismatched versions short-circuit with a hard error.
 
+## Output schema (`schema_version: sp13-t6/1`)
+
+T-6 emits a markdown file (`import-plan.md`); the LOGICAL wrapper validates against `schemas/import-plan-schema.json` (Draft-07). T-7 review-gate.sh reassembles the wrapper from the on-disk markdown for round-trip validation. Top-level shape:
+
+```yaml
+schema_version: sp13-t6/1
+input_propose_taxonomy_schema_version: sp13-t5/1
+generated_at: "2026-05-04T17:30:00Z"
+header:
+  n_records: 50
+  n_clusters: 8
+  n_passes: 3
+  items_mapped_pct: 0.68
+  llm_mode: stub
+  embedding_mode_input: stub
+  warnings:
+    - "items_mapped_pct 0.68 < threshold 0.80 — pass-3 triggered (focused on residual unclassified pile)"
+unclassified_callout:
+  present: true
+  count: 16
+  copy: "16 items did not fit any cluster. ..."
+vault_tree:
+  Engagements: ["alpha", "beta", "gamma"]
+  References: ["policy"]
+  Meetings: ["q2-syncs"]
+  Inbox: {}
+project_metadata_blocks:
+  - candidate_id: p0001
+    label: alpha
+    type: project
+    proposed_path: Engagements/alpha
+    metadata: {summary: "...", tags: ["#project/alpha"], rationale: "..."}
+    source_items: [{path: "/abs/path", source_hash: "1234567890abcdef"}]
+    confidence: 1.0
+    low_confidence: false
+routing_table:
+  - source_path: "/abs/path"
+    source_hash: "1234567890abcdef"
+    candidate_id: p0001
+    destination: Engagements/alpha
+    type: project
+    confidence: 1.0
+    low_confidence: false
+non_project_dispositions:
+  - candidate_id: p0007
+    label: policy
+    type: reference
+    proposed_path: References/policy
+    metadata: {...}
+    source_items: [...]
+    confidence: 1.0
+    low_confidence: false
+refinements:
+  - op: merge
+    from: ["p0005", "p0006"]
+    into: p0005
+    rationale: "..."
+  - op: split
+    from: p0004
+    into: ["p0004"]
+    rationale: "..."
+```
+
+T-6 declares this schema as the authoritative contract for downstream T-7 review-gate.sh consumption. T-7 MUST validate `schema_version: sp13-t6/1` before reading the user-edited plan. Schema is permissive on user-editable fields (`proposed_path`, `type`, `metadata`, `vault_tree.*`) so an in-place user edit at T-7 does not break round-trip validation.
+
 ## Output Contract (R-43)
 
 - **Files written:**
   - T-4: `onboarding/seed-content/state/cluster-output.json`
   - T-5: `onboarding/seed-content/state/propose-taxonomy-output.json`
+  - T-6: `onboarding/seed-content/state/import-plan.md`
 
-  Both paths gitignored at the foundation-repo `/state/` rule (added 2026-05-03 by SP10 T-13) and the SP13-specific `/onboarding/seed-content/state/` rule (T-4 close 2026-05-04). No live `~/.claude/` writes; no foundation-library mods.
+  All paths gitignored at the foundation-repo `/state/` rule (added 2026-05-03 by SP10 T-13) and the SP13-specific `/onboarding/seed-content/state/` rule (T-4 close 2026-05-04). No live `~/.claude/` writes; no foundation-library mods.
 - **Schema types:**
   - `sp13-t4/1` declared inline in this doc.
   - `sp13-t5/1` declared formally at `schemas/propose-taxonomy-schema.json` (Draft-07). T-6 import-plan.sh MUST validate schema_version before consuming.
-- **Pre-write validation:** `bash -n` on `cluster.sh` + `propose-taxonomy.sh`; Python `ast.parse` on `cluster.py` + `propose-taxonomy.py`; `jq -e .` on every emitted JSON file before downstream consumers read.
+  - `sp13-t6/1` declared formally at `schemas/import-plan-schema.json` (Draft-07). T-7 review-gate.sh MUST validate schema_version before consuming the user-edited plan.
+- **Pre-write validation:** `bash -n` on `cluster.sh` + `propose-taxonomy.sh` + `import-plan.sh`; Python `ast.parse` on `cluster.py` + `propose-taxonomy.py` + `import-plan.py`; `jq -e .` on every emitted JSON file before downstream consumers read; on T-6, the renderer enforces `routing_table` row count = `header.n_records` and exits 1 if upstream candidates do not cover every IR record.
 - **Failure mode:** Block and log.
   - T-4: Missing IR → exit 2 with stderr line. Voyage API error → exit 3 (caller decides to fall back to stub or fail). Empty output → exit 1.
   - T-5: Missing cluster-output OR IR → exit 2. Cluster-output schema_version mismatch → exit 2 with structured stderr. Anthropic API error in live mode → exit 3 (caller decides). Empty output → exit 1.
+  - T-6: Missing propose-taxonomy input → exit 2 with stderr line. Input schema_version != sp13-t5/1 → exit 2 with structured stderr. Routing table row count != n_records (upstream coverage gap) → exit 1. Empty rendered markdown → exit 1.
 
 ## Dependencies
 
 - **Stage 1 IR** (`onboarding/seed-content/ir-builder.sh` output) — required input for both T-4 and T-5.
 - **T-4 cluster-output** — required input for T-5 (`schema_version: sp13-t4/1`).
+- **T-5 propose-taxonomy-output** — required input for T-6 (`schema_version: sp13-t5/1`).
 - **`python3`** on PATH (stdlib only — no pip installs).
 - **Voyage AI account** for production embeddings — T-4 only (`VOYAGE_API_KEY` env var); optional — stub fallback covers test + smaller-corpus mode.
 - **Anthropic API account** for live taxonomy proposal — T-5 only (`ANTHROPIC_API_KEY` env var); optional — stub fallback covers test + adopters without API access. Credential management runbook at `docs/burner-key-runbook.md`.
-- **`jq`** — used in `cluster.sh` + `propose-taxonomy.sh` for post-run summary lines; non-blocking if absent (JSON output is produced by the Python helpers).
+- **`jq`** — used in `cluster.sh` + `propose-taxonomy.sh` + `import-plan.sh` for post-run summary lines; non-blocking if absent (JSON / markdown output is produced by the Python helpers).
 
 ## Downstream consumers
 
 | Task | Consumes | Notes |
 |---|---|---|
 | **T-5** propose-taxonomy.sh | `cluster-output.json` (sp13-t4/1) | SHIPPED 2026-05-04. LLM proposes per-cluster project candidate + folder placement; iterates with TnT-LLM (≥2 LLM passes; merge/split surfaced over outliers + unclassified pile, NOT auto-applied — T-7 user gate is where refinements are accepted). |
-| **T-6** import-plan.sh | T-5 `propose-taxonomy-output.json` (sp13-t5/1) | Emits user-reviewable `import-plan.md` (Copilot-Workspace plan-then-code pattern). MUST validate `schema_version: sp13-t5/1` before consuming. |
-| **T-7** review-gate.sh | T-6 import-plan.md | Wires SP12's 3-step gate (`lib/three-step-gate.sh`) for user generate / preview / apply. Pass-2 merge/split ops surface here for explicit user accept/reject. |
-| **T-15** UX validation | `cluster-output.json` (unclassified bucket) | Verifies the "review unclassified pile" gate fires correctly across high / low / zero unclassified-density fixtures |
+| **T-6** import-plan.sh | T-5 `propose-taxonomy-output.json` (sp13-t5/1) | SHIPPED 2026-05-04. Emits user-reviewable `import-plan.md` (Copilot-Workspace plan-then-code pattern). Validates `schema_version: sp13-t5/1` on input; emits `sp13-t6/1` wrapper as YAML frontmatter + per-candidate ```yaml blocks + routing-table markdown table + refinements ```yaml block. |
+| **T-7** review-gate.sh | T-6 `import-plan.md` (sp13-t6/1) | Wires SP12's 3-step gate (`lib/three-step-gate.sh`) for user generate / preview / apply. Reassembles the wrapper from the on-disk markdown; validates against `schemas/import-plan-schema.json` before consuming. Pass-2 merge/split ops surface here for explicit user accept/reject. |
+| **T-15** UX validation | `cluster-output.json` (unclassified bucket); T-6 unclassified call-out copy | Verifies the "review unclassified pile" gate fires correctly across high / low / zero unclassified-density fixtures; T-6 already exercises silent-skip (zero unclassified) and prominent-call-out (with unclassified) at fixture level — T-15 adds end-to-end UX-quality validation. |
 
 ## R-55 isolation
 
-T-4 + T-5 produce no `~/.claude/` writes. Output targets (`onboarding/seed-content/state/`) are foundation-repo internal; gitignored at the `/state/` rule. The hermetic tests (`tests/sp13-cluster-test.sh` + `tests/sp13-propose-taxonomy-test.sh`) provision everything under `$TMPDIR/sp13-{t4,t5}-test-XXXXXX` per `feedback_test_isolation_for_hooks_state`; both unset their respective API keys (`VOYAGE_API_KEY`, `ANTHROPIC_API_KEY`) before running. G1 should never fire on a T-4 or T-5 invocation.
+T-4 + T-5 + T-6 produce no `~/.claude/` writes. Output targets (`onboarding/seed-content/state/`) are foundation-repo internal; gitignored at the `/state/` rule. The hermetic tests (`tests/sp13-cluster-test.sh` + `tests/sp13-propose-taxonomy-test.sh` + `tests/sp13-import-plan-test.sh`) provision everything under `$TMPDIR/sp13-{t4,t5,t6}-test-XXXXXX` per `feedback_test_isolation_for_hooks_state`; all unset their respective API keys (`VOYAGE_API_KEY`, `ANTHROPIC_API_KEY`) before running. G1 should never fire on a T-4, T-5, or T-6 invocation.
