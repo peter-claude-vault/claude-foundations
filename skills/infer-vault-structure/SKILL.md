@@ -2,12 +2,12 @@
 name: infer-vault-structure
 description: SP13 Stage 2 INFER pipeline. Consumes Stage 1 IR (seed-content-ir-schema.json), clusters records by semantic similarity with explicit unclassified bucket (T-4), proposes a per-cluster taxonomy with TnT-LLM iterative refinement (T-5), and renders a user-reviewable import-plan.md (T-6). cluster.sh + propose-taxonomy.sh + import-plan.sh share stdlib-Python helpers; no numpy / requests / sklearn / pydantic / pyyaml.
 disable-model-invocation: true
-argument-hint: "cluster [--ir <ir.jsonl>] [...] | propose-taxonomy --cluster-output <path> --ir <ir.jsonl> [--llm-mode {stub|live|auto}] | import-plan [--propose-taxonomy <path>] [--out <path>]"
+argument-hint: "cluster [--ir <ir.jsonl>] [...] | propose-taxonomy --cluster-output <path> --ir <ir.jsonl> [--llm-mode {stub|live|auto}] | import-plan [--propose-taxonomy <path>] [--out <path>] | review-gate [--import-plan <path>] [--approved-out <path>]"
 ---
 
 # infer-vault-structure
 
-Stage 2 of the SP13 content-seeding pipeline. Stage 1 (`onboarding/seed-content/`) produces a unified IR; this skill turns that IR into a cluster map, a proposed vault taxonomy, and a user-reviewable import plan markdown file. T-4 ships the clustering entry; T-5 layers the LLM-proposed taxonomy with TnT-LLM iterative refinement; T-6 layers the import-plan markdown generator (Copilot-Workspace plan-then-code pattern); T-7 wires the SP12 3-step gate for user review/edit.
+Stage 2 of the SP13 content-seeding pipeline. Stage 1 (`onboarding/seed-content/`) produces a unified IR; this skill turns that IR into a cluster map, a proposed vault taxonomy, a user-reviewable import plan markdown file, and a user-approved plan ready for Stage 3 consumption. T-4 ships the clustering entry; T-5 layers the LLM-proposed taxonomy with TnT-LLM iterative refinement; T-6 layers the import-plan markdown generator (Copilot-Workspace plan-then-code pattern); T-7 wires the SP12 3-step gate for user apply / edit / skip / abort and writes the approved plan.
 
 ## Personalization tier
 
@@ -18,6 +18,7 @@ This is a **Universal capability** per `docs/personalization-model.md` §1 — t
 `/infer-vault-structure cluster --ir <ir.jsonl> [...]` — calls `cluster.sh` (T-4).
 `/infer-vault-structure propose-taxonomy --cluster-output <path> --ir <ir.jsonl> [...]` — calls `propose-taxonomy.sh` (T-5).
 `/infer-vault-structure import-plan [--propose-taxonomy <path>] [--out <path>]` — calls `import-plan.sh` (T-6).
+`/infer-vault-structure review-gate [--import-plan <path>] [--approved-out <path>]` — calls `review-gate.sh` (T-7).
 
 Direct script invocation:
 
@@ -29,6 +30,10 @@ Direct script invocation:
 # → onboarding/seed-content/state/propose-taxonomy-output.json
 ./import-plan.sh --propose-taxonomy onboarding/seed-content/state/propose-taxonomy-output.json
 # → onboarding/seed-content/state/import-plan.md
+./review-gate.sh --import-plan onboarding/seed-content/state/import-plan.md \
+                 --approved-out onboarding/seed-content/state/approved-import-plan.md
+# → onboarding/seed-content/state/approved-import-plan.md (on user 'apply')
+# → audit log entries appended at onboarding/auto-author-log.jsonl (SP12 stream)
 ```
 
 ### `cluster.sh` flags (T-4)
@@ -61,6 +66,16 @@ Direct script invocation:
 | `--propose-taxonomy <path>` | `onboarding/seed-content/state/propose-taxonomy-output.json` | T-5 propose-taxonomy output (`schema_version: sp13-t5/1`); validated before consumption |
 | `--out <path>` | `onboarding/seed-content/state/import-plan.md` | Output import-plan markdown (`schema_version: sp13-t6/1` declared in YAML frontmatter) |
 | `--generated-at <ISO-8601>` | current UTC | Override timestamp; useful for reproducible test runs |
+
+### `review-gate.sh` flags (T-7)
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--import-plan <path>` | `onboarding/seed-content/state/import-plan.md` | T-6 import plan input (`schema_version: sp13-t6/1`); validated before consumption |
+| `--approved-out <path>` | `onboarding/seed-content/state/approved-import-plan.md` | Output approved plan written on user `apply`; consumed by Stage 3 (T-8) |
+| `--gate-lib <path>` | `onboarding/lib/three-step-gate.sh` | SP12 T-1 gate library; sourced — never forked or re-implemented |
+| `--plan-tree <path>` | `~/.claude-plans/71-claude-foundations-engine-v2` | Plan tree root used to detect dev-mode (looks for SP12 T-1 done-marker). Production adopters have no plan tree → SP12 check is a no-op |
+| `--accept-on-eof` | off | Treat stdin EOF as default `apply` (smoke-test convenience; never default-on for interactive runs) |
 
 ## Architecture decisions (T-4)
 
@@ -174,6 +189,39 @@ The hand-rolled YAML dumper covers the limited shapes this plan emits (scalars +
 - Strings matching reserved YAML words (`true`, `false`, `null`, `yes`, `no`, `on`, `off`, `~`) are double-quoted.
 - Strings containing reserved leading characters (`!&*{}[],#?|>'%@\`-:`) are double-quoted.
 - Unicode characters (em-dashes, smart quotes, etc.) are preserved literally for human readability via `json.dumps(..., ensure_ascii=False)` — the output round-trips through any YAML 1.1/1.2 parser.
+
+## Architecture decisions (T-7)
+
+### Gate library — SOURCED, not forked
+
+`review-gate.sh` is a thin shell wrapper that **sources** SP12's `onboarding/lib/three-step-gate.sh` via `. "$GATE_LIB"`. Per spec L120 + `feedback_no_skill_code_generation`, T-7 NEVER forks or re-implements the gate library — any extension request files a SP12 follow-up, not a SP13 internal fork. The library exposes `gate_generate / gate_preview / gate_apply / gate_set_dry_run` which T-7 composes; the library owns audit-log shape, atomic write semantics, and the inner `[a/e/s/b]` prompt loop. T-7 owns the orchestration around it (input validation, "what happens next" UX, post-edit schema-version validation, edit-diff-against-original UX surface).
+
+### Action handling — apply / edit / skip / abort
+
+T-7's outer loop reads the user's choice, then:
+- **apply (`a`/`A`/empty)** — validate the staged content's `schema_version: sp13-t6/1` anchor still intact. On pass: pipe `'a'` to `gate_apply --skip-preview --accept-on-empty-stdin`, which writes `state/approved-import-plan.md` atomically (cp + mv) and audits `apply`. On fail: surface `STAGED PLAN VALIDATION FAILED` + re-prompt (do NOT proceed to apply).
+- **edit (`e`/`E`)** — invoke `${EDITOR:-vi}` (with vi/nano/vim fallback chain) on the staged file in place. After editor returns, re-loop back to `gate_preview` so the user sees their post-edit diff before committing.
+- **skip (`s`/`S`)** — pipe `'s'` to `gate_apply --skip-preview --accept-on-empty-stdin`; library audits `skip` and returns rc=0 without writing the target.
+- **abort (`b`/`B`/`q`/`Q`)** — pipe `'b'` to `gate_apply`; library audits `abort` and returns rc=1.
+- **EOF on stdin without `--accept-on-eof`** — abort path (rc=1, audit `abort` with note `stdin-eof`).
+
+### Edit-diff UX — "what *I* changed" surface (carry-forward from T-6 Session 4)
+
+`gate_preview` shows the diff between the **target** and the **staged** content — useful for "what's about to be written" but not for "what *I* changed across edits." T-7 snapshots the original gate-generated content to `${STAGE}.orig` BEFORE the loop fires and renders a **second** diff after every loop iteration showing `diff -u $ORIG_STAGE $STAGE` whenever the staged content differs from the original. Users see two distinct diffs at preview surface: (a) target-vs-proposed (gate_preview, framed "what's about to be written") and (b) original-vs-edited (T-7, framed "your edits"). The double-diff covers the carry-forward from the Session 103 close-out — split-flagged candidates can be visibly accepted/rejected via the "your edits" diff, not just buried in the larger gate diff.
+
+The `${STAGE}.orig` snapshot is cleaned up via `trap cleanup_orig EXIT` so it does not leak into Stage 3.
+
+### Audit-log shape — REUSE SP12's stream; differentiation by surface_id + action
+
+T-7 uses the same `auto-author-log.jsonl` stream that SP12's gate library writes to (default: `<foundation-repo>/onboarding/auto-author-log.jsonl`; overridable via `AUTO_AUTHOR_LOG`). Single audit stream is the user-facing surface; differentiation comes from the gate's existing `surface_id` field (`"seed-import-plan"` for T-7) + the `action` field (`generate / preview / apply / skip / abort / error`). No separate `state/review-gate-audit.jsonl` — adopters reading the audit log get one chronological view of every auto-authoring event, including the T-7 review surface. Records carry `{ts, surface_id, action, target_path, sha_before, sha_after, note}`. SP12's library is the schema authority; T-7 does not extend it.
+
+### Post-edit schema-version validation — block the round-trip
+
+After every edit cycle (and before invoking `gate_apply` for an `apply` action), T-7 greps the staged file for the literal line `schema_version: sp13-t6/1`. Missing-or-different → re-prompt with `STAGED PLAN VALIDATION FAILED`. This is the round-trip contract anchor — Stage 3 (T-8) reads `approved-import-plan.md` expecting `sp13-t6/1`; T-7 refuses to write a target that breaks the contract. Full Draft-07 validation of the reassembled wrapper (against `schemas/import-plan-schema.json`) is deferred to a post-T-7 follow-on: it requires reassembling the markdown into the JSON wrapper (frontmatter parse + walking H3 sections + parsing the routing-table markdown table + parsing the refinements ```yaml block), which is out of scope for T-7's $6 cap. The schema-version anchor is the *minimum viable contract*; downstream T-8 may add deeper validation when it consumes the approved plan.
+
+### Dev-mode SP12 done-marker check vs production no-op
+
+T-7 checks for `~/.claude-plans/71-claude-foundations-engine-v2/12-auto-authored-personalization/state/T-1.done` ONLY when the plan-tree directory exists. Production adopters of the foundation-repo have no plan tree → the check is automatically a no-op. This keeps the "dev session safety net" (R-55 lifecycle until v2.0.0 GA + 30 days) out of the way of end-user runs, where SP12 T-1 is provided structurally by the foundation-repo's `onboarding/lib/three-step-gate.sh` itself (its presence on disk is the production signal that "SP12 T-1 has been distributed").
 
 ## Output schema (`schema_version: sp13-t4/1`)
 
@@ -324,27 +372,33 @@ T-6 declares this schema as the authoritative contract for downstream T-7 review
   - T-4: `onboarding/seed-content/state/cluster-output.json`
   - T-5: `onboarding/seed-content/state/propose-taxonomy-output.json`
   - T-6: `onboarding/seed-content/state/import-plan.md`
+  - T-7: `onboarding/seed-content/state/approved-import-plan.md` (only on user `apply`); audit log entries appended to SP12's `onboarding/auto-author-log.jsonl` stream (one per gate event — generate / preview / apply / skip / abort).
 
   All paths gitignored at the foundation-repo `/state/` rule (added 2026-05-03 by SP10 T-13) and the SP13-specific `/onboarding/seed-content/state/` rule (T-4 close 2026-05-04). No live `~/.claude/` writes; no foundation-library mods.
 - **Schema types:**
   - `sp13-t4/1` declared inline in this doc.
   - `sp13-t5/1` declared formally at `schemas/propose-taxonomy-schema.json` (Draft-07). T-6 import-plan.sh MUST validate schema_version before consuming.
-  - `sp13-t6/1` declared formally at `schemas/import-plan-schema.json` (Draft-07). T-7 review-gate.sh MUST validate schema_version before consuming the user-edited plan.
-- **Pre-write validation:** `bash -n` on `cluster.sh` + `propose-taxonomy.sh` + `import-plan.sh`; Python `ast.parse` on `cluster.py` + `propose-taxonomy.py` + `import-plan.py`; `jq -e .` on every emitted JSON file before downstream consumers read; on T-6, the renderer enforces `routing_table` row count = `header.n_records` and exits 1 if upstream candidates do not cover every IR record.
+  - `sp13-t6/1` declared formally at `schemas/import-plan-schema.json` (Draft-07). T-7 review-gate.sh validates the schema_version anchor (literal line `schema_version: sp13-t6/1`) on input AND after every edit cycle BEFORE writing the approved plan; full Draft-07 wrapper-reassembly validation deferred to a post-T-7 follow-on.
+  - `sp13-t7/1` audit-log records reuse SP12's existing JSONL shape — `{ts, surface_id, action, target_path, sha_before, sha_after, note}`. Differentiation comes from `surface_id="seed-import-plan"` + `action` enum (`generate / preview / apply / skip / abort / error`). No separate audit stream.
+- **Pre-write validation:** `bash -n` on `cluster.sh` + `propose-taxonomy.sh` + `import-plan.sh` + `review-gate.sh`; Python `ast.parse` on `cluster.py` + `propose-taxonomy.py` + `import-plan.py`; `jq -e .` on every emitted JSON file before downstream consumers read; on T-6, the renderer enforces `routing_table` row count = `header.n_records` and exits 1 if upstream candidates do not cover every IR record; on T-7, the schema_version anchor is grep-validated on input AND after each edit cycle BEFORE invoking `gate_apply` for an `apply` action.
 - **Failure mode:** Block and log.
   - T-4: Missing IR → exit 2 with stderr line. Voyage API error → exit 3 (caller decides to fall back to stub or fail). Empty output → exit 1.
   - T-5: Missing cluster-output OR IR → exit 2. Cluster-output schema_version mismatch → exit 2 with structured stderr. Anthropic API error in live mode → exit 3 (caller decides). Empty output → exit 1.
   - T-6: Missing propose-taxonomy input → exit 2 with stderr line. Input schema_version != sp13-t5/1 → exit 2 with structured stderr. Routing table row count != n_records (upstream coverage gap) → exit 1. Empty rendered markdown → exit 1.
+  - T-7: SP12 T-1 done-marker absent in dev-mode → exit 2. Missing input plan → exit 2. Input schema_version != sp13-t6/1 → exit 2. Missing gate library → exit 2. User abort → exit 1 (audit `abort`). User skip → exit 0 (audit `skip`; no target write). Post-edit schema_version drift → re-prompt (block silent apply) and audit nothing extra; subsequent EOF without `--accept-on-eof` halts with rc=1.
 
 ## Dependencies
 
 - **Stage 1 IR** (`onboarding/seed-content/ir-builder.sh` output) — required input for both T-4 and T-5.
 - **T-4 cluster-output** — required input for T-5 (`schema_version: sp13-t4/1`).
 - **T-5 propose-taxonomy-output** — required input for T-6 (`schema_version: sp13-t5/1`).
+- **T-6 import-plan.md** — required input for T-7 (`schema_version: sp13-t6/1`).
+- **SP12 `onboarding/lib/three-step-gate.sh`** — required for T-7 (sourced; never forked). SP12 T-1 done-marker presence detected in dev-mode only; production adopters get the library directly via the foundation-repo distribution.
 - **`python3`** on PATH (stdlib only — no pip installs).
 - **Voyage AI account** for production embeddings — T-4 only (`VOYAGE_API_KEY` env var); optional — stub fallback covers test + smaller-corpus mode.
 - **Anthropic API account** for live taxonomy proposal — T-5 only (`ANTHROPIC_API_KEY` env var); optional — stub fallback covers test + adopters without API access. Credential management runbook at `docs/burner-key-runbook.md`.
-- **`jq`** — used in `cluster.sh` + `propose-taxonomy.sh` + `import-plan.sh` for post-run summary lines; non-blocking if absent (JSON / markdown output is produced by the Python helpers).
+- **`jq`** — used in `cluster.sh` + `propose-taxonomy.sh` + `import-plan.sh` for post-run summary lines; required by `lib/three-step-gate.sh` (and therefore by T-7) for audit-log JSONL emission; library hard-fails if `jq` is absent.
+- **Editor** — T-7 reads `${EDITOR:-vi}` for the edit action; falls back through `vi → nano → vim` if the resolved editor is not callable. No editor available → re-prompts without invoking edit (does not crash).
 
 ## Downstream consumers
 
@@ -352,9 +406,10 @@ T-6 declares this schema as the authoritative contract for downstream T-7 review
 |---|---|---|
 | **T-5** propose-taxonomy.sh | `cluster-output.json` (sp13-t4/1) | SHIPPED 2026-05-04. LLM proposes per-cluster project candidate + folder placement; iterates with TnT-LLM (≥2 LLM passes; merge/split surfaced over outliers + unclassified pile, NOT auto-applied — T-7 user gate is where refinements are accepted). |
 | **T-6** import-plan.sh | T-5 `propose-taxonomy-output.json` (sp13-t5/1) | SHIPPED 2026-05-04. Emits user-reviewable `import-plan.md` (Copilot-Workspace plan-then-code pattern). Validates `schema_version: sp13-t5/1` on input; emits `sp13-t6/1` wrapper as YAML frontmatter + per-candidate ```yaml blocks + routing-table markdown table + refinements ```yaml block. |
-| **T-7** review-gate.sh | T-6 `import-plan.md` (sp13-t6/1) | Wires SP12's 3-step gate (`lib/three-step-gate.sh`) for user generate / preview / apply. Reassembles the wrapper from the on-disk markdown; validates against `schemas/import-plan-schema.json` before consuming. Pass-2 merge/split ops surface here for explicit user accept/reject. |
+| **T-7** review-gate.sh | T-6 `import-plan.md` (sp13-t6/1) | SHIPPED 2026-05-04. Wires SP12's 3-step gate (`onboarding/lib/three-step-gate.sh`) — sourced, not forked. Surfaces 4 user actions (apply / edit / skip / abort) at the preview prompt with a "what happens next" UX block per R1 §6 risk #3. Validates the `schema_version: sp13-t6/1` anchor on input AND after every edit cycle before writing the approved plan. Audit log entries land in SP12's `auto-author-log.jsonl` stream with `surface_id="seed-import-plan"`. Approved plan written atomically via library's cp+mv to `state/approved-import-plan.md` for Stage 3 (T-8) consumption. |
+| **T-8** seed-projects.sh | T-7 `approved-import-plan.md` (sp13-t6/1) | NEXT. Consumes the user-approved plan; for each `type: project` candidate, scaffolds the directory + renders PRD/Context/Updates triads with SP12 provenance frontmatter. Each Stage 3 write flows through `lib/three-step-gate.sh` for batched preview/apply. |
 | **T-15** UX validation | `cluster-output.json` (unclassified bucket); T-6 unclassified call-out copy | Verifies the "review unclassified pile" gate fires correctly across high / low / zero unclassified-density fixtures; T-6 already exercises silent-skip (zero unclassified) and prominent-call-out (with unclassified) at fixture level — T-15 adds end-to-end UX-quality validation. |
 
 ## R-55 isolation
 
-T-4 + T-5 + T-6 produce no `~/.claude/` writes. Output targets (`onboarding/seed-content/state/`) are foundation-repo internal; gitignored at the `/state/` rule. The hermetic tests (`tests/sp13-cluster-test.sh` + `tests/sp13-propose-taxonomy-test.sh` + `tests/sp13-import-plan-test.sh`) provision everything under `$TMPDIR/sp13-{t4,t5,t6}-test-XXXXXX` per `feedback_test_isolation_for_hooks_state`; all unset their respective API keys (`VOYAGE_API_KEY`, `ANTHROPIC_API_KEY`) before running. G1 should never fire on a T-4, T-5, or T-6 invocation.
+T-4 + T-5 + T-6 + T-7 produce no `~/.claude/` writes. Output targets (`onboarding/seed-content/state/`) are foundation-repo internal; gitignored at the `/state/` rule. The hermetic tests (`tests/sp13-cluster-test.sh` + `tests/sp13-propose-taxonomy-test.sh` + `tests/sp13-import-plan-test.sh` + `tests/sp13-review-gate-test.sh`) provision everything under `$TMPDIR/sp13-{t4,t5,t6,t7}-test-XXXXXX` per `feedback_test_isolation_for_hooks_state`; all unset their respective API keys (`VOYAGE_API_KEY`, `ANTHROPIC_API_KEY`) before running, and T-7's test forces `AUTO_AUTHOR_LOG` + `TG_STAGE_DIR` into the tmpdir so the foundation-repo's real auto-author-log.jsonl + global staging are untouched. G1 should never fire on a T-4, T-5, T-6, or T-7 invocation.
