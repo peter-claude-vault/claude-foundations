@@ -1,0 +1,35 @@
+# .seedignore — exclude paths from /onboard --seed-content ingest.
+#
+# Syntax (subset of gitignore):
+#   - blank lines and # comments are ignored
+#   - patterns ending with / match any path component (directory match)
+#   - other patterns are shell globs matched against basename and relative path
+#
+# Copy this file to your seed-content root as `.seedignore` and edit.
+
+# VCS + dependency caches
+.git/
+.svn/
+node_modules/
+__pycache__/
+.venv/
+venv/
+
+# Credentials and secrets — keep these OUT of LLM analysis
+*.key
+*.pem
+*.pfx
+.env
+.env.*
+secrets/
+credentials/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+target/
+out/

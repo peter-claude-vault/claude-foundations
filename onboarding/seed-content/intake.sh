@@ -59,11 +59,21 @@ emit_record() {
     '{path: $path, size_bytes: $size, source_type: $st}' >> "$MANIFEST"
 }
 
+SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+FILTER="$SELF_DIR/seedignore-filter.sh"
+
 if [ -d "$SOURCE" ]; then
-  find "$SOURCE" -type f -print | while IFS= read -r f; do
-    sz=$(wc -c < "$f" | tr -d ' ')
-    emit_record "$f" "$sz" "file"
-  done
+  if [ -f "$FILTER" ]; then
+    find "$SOURCE" -type f -print | bash "$FILTER" --root "$SOURCE" | while IFS= read -r f; do
+      sz=$(wc -c < "$f" | tr -d ' ')
+      emit_record "$f" "$sz" "file"
+    done
+  else
+    find "$SOURCE" -type f -print | while IFS= read -r f; do
+      sz=$(wc -c < "$f" | tr -d ' ')
+      emit_record "$f" "$sz" "file"
+    done
+  fi
 elif [ -f "$SOURCE" ]; then
   sz=$(wc -c < "$SOURCE" | tr -d ' ')
   emit_record "$SOURCE" "$sz" "file"
