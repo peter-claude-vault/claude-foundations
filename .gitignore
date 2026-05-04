@@ -12,3 +12,6 @@
 # Per-task evidence is plan-tree scope (~/.claude-plans/71-*/<sub>/state/),
 # not foundation-repo scope. SP10 T-13 (audit MEDIUM #1) — 2026-05-03.
 /state/
+# SP13 T-4 (Stage 2 INFER) cluster output is a runtime artifact, not source.
+# Default --out for skills/infer-vault-structure/cluster.sh writes here.
+/onboarding/seed-content/state/
