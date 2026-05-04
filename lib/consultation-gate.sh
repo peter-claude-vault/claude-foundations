@@ -71,6 +71,19 @@
 #   CG_ALLOWLIST_PATH   Override allowlist file path (default:
 #                       $_cg_repo_root/lib/consultation-gate.allowlist).
 #                       Test-isolation knob; production callers leave unset.
+#   CG_RATIONALE_SHA    EXPORTED by consultation_propose accept-path before
+#                       invoking gate_generate; cleared once gate_apply
+#                       returns. Generator functions read this and pass it
+#                       to `pf_emit --response-hash` so the artifact's
+#                       provenance frontmatter records the rationale digest
+#                       the user signed off on (SP15 T-4 contract). DO NOT
+#                       set externally.
+#   CG_CONSULTED_AT     EXPORTED alongside CG_RATIONALE_SHA. ISO-8601 UTC
+#                       timestamp; same string as the audit-log accept
+#                       record's `ts` field (single source of truth).
+#                       Generator functions read this and pass it to
+#                       `pf_emit --consulted-at` (SP15 T-4 contract).
+#                       Cleared once gate_apply returns. DO NOT set externally.
 #   AUTO_AUTHOR_LOG     Inherited from three-step-gate.sh (audit log path).
 #   TG_STAGE_DIR        Inherited (per-call staging dir for proposed artifacts).
 #   EDITOR              Editor invoked at [e]dit (default: vi).
@@ -91,7 +104,7 @@
 # (consent fatigue, Boehm cost-of-change, status-quo bias) lives as an inline
 # comment block at the top of the allowlist file.
 #
-# Author: Claude Opus 4.7 (1M context) — Plan 71 SP15 Sessions 1 (T-1) + 2 (T-2)
+# Author: Claude Opus 4.7 (1M context) — Plan 71 SP15 Sessions 1 (T-1) + 2 (T-2) + 4 (T-4)
 
 set -u
 
@@ -135,7 +148,12 @@ _cg_sha_of() {
 }
 
 _cg_audit_log() {
-  # $1=surface_id $2=rationale_sha $3=response $4=response_text(optional)
+  # $1=surface_id $2=rationale_sha $3=response $4=response_text(optional) $5=ts(optional)
+  # SP15 T-4: $5 is an optional pre-captured ISO-8601 UTC timestamp. The
+  # accept-path passes the same `consulted_at` value it exports as
+  # CG_CONSULTED_AT, so the audit record's ts and the env var byte-match
+  # (single source of truth). Reject/edit paths omit $5 → fall back to a
+  # fresh `date -u` (preserves pre-T-4 byte-for-byte behavior).
   _cg_require || return 2
   local log
   log="$(gate_audit_path)" || return 2
@@ -145,8 +163,9 @@ _cg_audit_log() {
     printf 'consultation-gate FAIL: cannot create audit log dir: %s\n' "$log_dir" >&2
     return 2
   }
+  local _ts="${5:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
   jq -nc \
-    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg ts "$_ts" \
     --arg surface_id "$1" \
     --arg action "consult" \
     --arg rationale_sha "$2" \
@@ -279,7 +298,7 @@ consultation_propose() {
     return 2
   fi
 
-  local choice rationale_sha rc stage_path
+  local choice rationale_sha consulted_at rc stage_path
   while :; do
     _cg_render_rationale "$rationale_buf"
     printf '\nAccept this proposal? [a]ccept (default) / [r]eject / [e]dit-rationale: ' >&2
@@ -290,8 +309,13 @@ consultation_propose() {
     fi
     case "$choice" in
       ""|a|A)
+        # SP15 T-4: capture consulted_at ONCE, then thread the same value
+        # through (a) the audit-log accept record's ts and (b) the
+        # CG_CONSULTED_AT env var the generator reads. Single source of
+        # truth — env var byte-matches audit record on disk.
         rationale_sha="$(_cg_sha_of "$rationale_buf")"
-        if ! _cg_audit_log "$surface_id" "$rationale_sha" "accept" ""; then
+        consulted_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        if ! _cg_audit_log "$surface_id" "$rationale_sha" "accept" "" "$consulted_at"; then
           rm -f "$rationale_buf" 2>/dev/null
           return 2
         fi
@@ -300,16 +324,26 @@ consultation_propose() {
           rm -f "$rationale_buf" 2>/dev/null
           return 2
         fi
+        # Export consultation values for the generator. gen_<surface>()
+        # functions read these and pass to `pf_emit --consulted-at +
+        # --response-hash` so the output frontmatter records the
+        # consultation event (SP15 T-3 schema fields). Always unset
+        # on return so values do not leak to the parent shell.
+        export CG_RATIONALE_SHA="$rationale_sha"
+        export CG_CONSULTED_AT="$consulted_at"
         if ! stage_path="$(gate_generate "$surface_id" "$generator_fn" "$@")"; then
+          unset CG_RATIONALE_SHA CG_CONSULTED_AT
           rm -f "$rationale_buf" 2>/dev/null
           return 2
         fi
         if ! gate_preview "$stage_path" "$CG_TARGET_PATH"; then
+          unset CG_RATIONALE_SHA CG_CONSULTED_AT
           rm -f "$rationale_buf" 2>/dev/null
           return 2
         fi
         gate_apply "$stage_path" "$CG_TARGET_PATH" --skip-preview
         rc=$?
+        unset CG_RATIONALE_SHA CG_CONSULTED_AT
         rm -f "$rationale_buf" 2>/dev/null
         return $rc
         ;;
@@ -484,8 +518,67 @@ ALLOWLIST
           echo "FAIL: consult-blocked record missing field '$field': $_last_record" >&2; exit 1; }
       done
 
+      # --- Sub-test 6: env-var threading (T-4) ---
+      # CG_RATIONALE_SHA + CG_CONSULTED_AT must be visible inside generator_fn
+      # during accept-path orchestration, MUST byte-match the audit-log
+      # accept record's rationale_sha + ts (single source of truth), and
+      # MUST be cleared after consultation_propose returns (no leakage to
+      # parent shell).
+      rm -f "$CG_TARGET_PATH"
+      printf '0\n' > "$_gen_count_file"
+      _seen_sha_file="$_CG_TEST_DIR/seen-sha"
+      _seen_at_file="$_CG_TEST_DIR/seen-at"
+      : > "$_seen_sha_file"
+      : > "$_seen_at_file"
+      mock_generator_thread() {
+        local n
+        n=$(cat "$_gen_count_file")
+        echo $((n + 1)) > "$_gen_count_file"
+        printf '%s' "${CG_RATIONALE_SHA:-}" > "$_seen_sha_file"
+        printf '%s' "${CG_CONSULTED_AT:-}" > "$_seen_at_file"
+        printf 'mock-generator-output-thread\n'
+      }
+      unset CG_RATIONALE_SHA CG_CONSULTED_AT
+      printf 'a\na\n' | consultation_propose self-test mock_rationale mock_generator_thread || {
+        echo "FAIL: env-thread accept rc=$? (expected 0)" >&2; exit 1; }
+      seen_sha="$(cat "$_seen_sha_file")"
+      seen_at="$(cat "$_seen_at_file")"
+      [ -n "$seen_sha" ] || {
+        echo "FAIL: CG_RATIONALE_SHA empty inside generator [T-4 BREACH]" >&2; exit 1; }
+      [ -n "$seen_at" ] || {
+        echo "FAIL: CG_CONSULTED_AT empty inside generator [T-4 BREACH]" >&2; exit 1; }
+      printf '%s\n' "$seen_sha" | grep -Eq '^[a-f0-9]{64}$' || {
+        echo "FAIL: CG_RATIONALE_SHA not sha256-hex (got '$seen_sha')" >&2; exit 1; }
+      printf '%s\n' "$seen_at" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' || {
+        echo "FAIL: CG_CONSULTED_AT not ISO-8601 UTC (got '$seen_at')" >&2; exit 1; }
+      # Cleared after return:
+      [ -z "${CG_RATIONALE_SHA:-}" ] || {
+        echo "FAIL: CG_RATIONALE_SHA leaked to parent shell after return [T-4 BREACH]" >&2; exit 1; }
+      [ -z "${CG_CONSULTED_AT:-}" ] || {
+        echo "FAIL: CG_CONSULTED_AT leaked to parent shell after return [T-4 BREACH]" >&2; exit 1; }
+      # Byte-match against audit log (single source of truth):
+      _last_accept_sha="$(grep '"action":"consult"' "$AUTO_AUTHOR_LOG" | grep '"response":"accept"' | tail -n 1 | jq -r '.rationale_sha')"
+      [ "$seen_sha" = "$_last_accept_sha" ] || {
+        echo "FAIL: CG_RATIONALE_SHA env mismatch with audit ts: env=$seen_sha audit=$_last_accept_sha" >&2; exit 1; }
+      _last_accept_ts="$(grep '"action":"consult"' "$AUTO_AUTHOR_LOG" | grep '"response":"accept"' | tail -n 1 | jq -r '.ts')"
+      [ "$seen_at" = "$_last_accept_ts" ] || {
+        echo "FAIL: CG_CONSULTED_AT env mismatch with audit ts: env=$seen_at audit=$_last_accept_ts" >&2; exit 1; }
+      # Reject path MUST NOT export the env vars:
+      rm -f "$CG_TARGET_PATH"
+      printf '0\n' > "$_gen_count_file"
+      : > "$_seen_sha_file"
+      : > "$_seen_at_file"
+      printf 'r\n' | consultation_propose self-test mock_rationale mock_generator_thread
+      _rc6_reject=$?
+      [ "$_rc6_reject" = "1" ] || {
+        echo "FAIL: env-thread reject rc=$_rc6_reject (expected 1)" >&2; exit 1; }
+      [ -z "${CG_RATIONALE_SHA:-}" ] || {
+        echo "FAIL: CG_RATIONALE_SHA set on reject path [T-4 BREACH]" >&2; exit 1; }
+      [ -z "${CG_CONSULTED_AT:-}" ] || {
+        echo "FAIL: CG_CONSULTED_AT set on reject path [T-4 BREACH]" >&2; exit 1; }
+
       records="$(wc -l < "$AUTO_AUTHOR_LOG" | tr -d ' ')"
-      printf 'self-test PASS: 5/5 sub-tests green; audit_log=%s records=%s\n' \
+      printf 'self-test PASS: 6/6 sub-tests green; audit_log=%s records=%s\n' \
         "$AUTO_AUTHOR_LOG" "$records"
       rm -rf "$_CG_TEST_DIR"
       exit 0

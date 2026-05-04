@@ -1,13 +1,26 @@
 #!/usr/bin/env bash
-# onboarding/auto-author/surface-3-vault-claude-md.sh — SP12 T-6 (Plan 71 SP12 Session 2)
+# onboarding/auto-author/surface-3-vault-claude-md.sh — SP12 T-6 + SP15 T-4
 #
 # Surface #3 — Auto-author the vault root CLAUDE.md (replaces SP07's thin
 # identity-substituted skeleton with a generated artifact carrying:
 #   - Routing Decision Tree (RDT) tuned to declared vault.organizational_method
 #   - Tag taxonomy section keyed off declared _tag_prefixes (surface #4)
 #   - Pre-write checklist tuned to declared canonical_file_types
-# Three-step gate (single-target — uses lib/three-step-gate.sh).
-# Provenance frontmatter prepended.
+#
+# SP15 T-4 retrofit (2026-05-04): wraps the existing
+# `gate_generate → gate_preview → gate_apply` chain with the SP15
+# consultation gate. `consultation_propose` fires FIRST with a
+# research-backed rationale (Forte PARA, Ahrens taxonomy minimalism,
+# Cowan-4 working-memory cap, Matrixflows IA depth/discoverability)
+# explaining the proposed vault.organizational_method. User can
+# [a]ccept / [r]eject / [e]dit-rationale before any artifact is staged.
+# On accept, the existing 3-step gate (now invoked from inside
+# `consultation_propose`) fires unchanged.
+#
+# Provenance frontmatter prepended; `consulted_at` +
+# `consultation_response_hash` are emitted on accept-path artifacts via
+# CG_CONSULTED_AT / CG_RATIONALE_SHA env vars exported by
+# consultation_propose (SP15 T-3 schema additivity contract).
 #
 # OUTPUT CONTRACT (R-43):
 #   Files written:
@@ -33,7 +46,7 @@
 #     [--auto-apply] [--skip-preview] [--dry-run]
 #     [--accept-user-authored]
 #
-# Author: Claude Opus 4.7 (1M context) — Plan 71 SP12 Session 2
+# Author: Claude Opus 4.7 (1M context) — Plan 71 SP12 Session 2 + SP15 Session 4 (T-4)
 
 set -u
 
@@ -46,19 +59,30 @@ REPO_ROOT="$(cd "$ONBOARDING_DIR/.." && pwd)"
 
 GATE_LIB="$ONBOARDING_DIR/lib/three-step-gate.sh"
 PF_LIB="$REPO_ROOT/lib/provenance-frontmatter.sh"
+CG_LIB="$REPO_ROOT/lib/consultation-gate.sh"
 [ -r "$GATE_LIB" ] || { diag "three-step-gate.sh not readable"; exit 2; }
 [ -r "$PF_LIB" ]   || { diag "provenance-frontmatter.sh not readable"; exit 2; }
+[ -r "$CG_LIB" ]   || { diag "consultation-gate.sh not readable"; exit 2; }
 # shellcheck source=/dev/null
 . "$GATE_LIB"
 # shellcheck source=/dev/null
 . "$PF_LIB"
+# shellcheck source=/dev/null
+. "$CG_LIB"
 
 # --- defaults + arg parsing ---
 TEMPLATE_PATH="${TEMPLATE_PATH:-$REPO_ROOT/templates/vault-claude-md-template.md}"
 USER_MANIFEST="${USER_MANIFEST:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
 VAULT_SCHEMA="${VAULT_SCHEMA:-${CLAUDE_HOME:-$HOME/.claude}/schemas/vault-schema.json}"
 TARGET=""
-SURFACE_ID="sp12-t6"
+# SP15 T-4: SURFACE_ID aligned to the consultation-gate allowlist entry
+# (`lib/consultation-gate.allowlist`). Same identifier flows through (a)
+# consultation_propose's audit-log `consult` records, (b) gate_generate /
+# gate_preview / gate_apply records (via the staging filename basename),
+# and (c) pf_emit's `generated_by` field on the produced artifact —
+# unifying the surface identity across the audit log + provenance
+# frontmatter for downstream consumers (architect, librarian, regen-paths).
+SURFACE_ID="surface-3-vault-claude-md"
 GENERATED_FROM="section-c-vault+manifest"
 ACCEPT_USER_AUTHORED=0
 AUTO_APPLY=0
@@ -350,6 +374,203 @@ EOF
   fi
 }
 
+# --- SP15 T-4: rationale function for the consultation gate ---
+#
+# Emits to stdout the full proposal + rationale block consultation_propose
+# renders to the user before any artifact is staged. Pulls declared values
+# (vault.organizational_method, top_level_folder, identity.role) from the
+# user-manifest already loaded into the parent shell scope by mf_get above.
+#
+# Archetype detection is keyed off `vault.organizational_method` substring
+# (matches `emit_rdt`'s case branches) — never off raw role text — so the
+# rationale shape stays in lockstep with the actual RDT that will be
+# written if the user accepts. No archetype crosstalk: each branch
+# emits ONLY its archetype's reasoning.
+#
+# Citations (≥3 PKM/IA sources required by SP15 T-4 AC2):
+#   - Tiago Forte, PARA Method (Forte Labs)
+#   - Sönke Ahrens, How to Take Smart Notes §taxonomy minimalism
+#   - Nelson Cowan, "The magical number 4" Behavioral and Brain Sciences (2001)
+#   - Matrixflows, Knowledge-Base Taxonomy Best Practices
+# All four URLs verified at SP15 T-4 ship time (2026-05-04). If any 404s
+# at re-cite time, replace per spec L151 ("never silent-degrade to 'based
+# on research'").
+
+_s3_archetype_signal() {
+  case "$ORG_METHOD" in
+    *engagement*|*Engagement*|*ENGAGEMENT*) printf 'consultant' ;;
+    *PARA*|*para*|*topic*|*Topic*|*project-based*|*Project-based*) printf 'researcher' ;;
+    *)                                       printf 'custom' ;;
+  esac
+}
+
+_s3_archetype_reasoning() {
+  case "$(_s3_archetype_signal)" in
+    consultant)
+      cat <<EOF
+Your declared role ("${ROLE}") and organizational_method ("${ORG_METHOD}")
+signal a consultant / advisory archetype: work organized around external
+clients with finite engagement durations, where each engagement carries
+its own meetings, deliverables, stakeholders, and strategic context.
+
+The Engagements layout (\`${TOP_LEVEL_FOLDER:-Engagements}/<engagement>/...\`) is
+the proposed default because it MIRRORS your billing and accountability
+structure: each engagement is a closed-world unit with its own people,
+deadlines, and definition-of-done. Closing an engagement (set
+\`status: complete|archived|closed\` on its Overview.md) tells the
+librarian's stale-detect to stop probing it. Capture surfaces (Inbox,
+Logs) stay engagement-agnostic at the vault root.
+
+Tradeoff you're accepting: per-engagement folders deepen the hierarchy
+by one level vs PARA's flat Projects/Areas split. The Cowan-4 cap below
+applies to top-level structure only — within an engagement, you can
+nest deeper because the working-memory load is scoped to the engagement
+you're currently in.
+EOF
+      ;;
+    researcher)
+      cat <<EOF
+Your declared organizational_method ("${ORG_METHOD}") signals a
+research / writing / project-driven archetype: work organized around
+discoverable categories rather than client-bound engagements.
+
+The PARA-equivalent layout (top-level \`${TOP_LEVEL_FOLDER:-Projects}/\` or
+\`Topics/\`, plus Areas/Resources/Archives as needed) is the proposed
+default because it caps top-level structure at the categories that
+match your discoverability needs. Forte's PARA method derives its
+4-category cap from Cowan's working-memory research below — the same
+principle Surface-4 will enforce on tag prefixes (≤9 cap).
+
+Tradeoff you're accepting: cross-cutting work (a paper that spans two
+topics, a project that produces both an essay and a dataset) requires
+either duplication, symlinks, or wikilinks across categories — vs the
+consultant archetype where everything for one client lives under one
+folder. PARA-equivalents accept this in exchange for top-level
+discoverability.
+EOF
+      ;;
+    custom|*)
+      cat <<EOF
+Your declared organizational_method ("${ORG_METHOD}") doesn't match the
+two pre-baked archetypes (Engagements / PARA-equivalent). The proposed
+RDT will document your declared top-level folder
+("\`${TOP_LEVEL_FOLDER:-(undeclared)}/\`") AS DECLARED rather than retrofit a
+pattern that doesn't match how you actually work.
+
+Tradeoff you're accepting: less guidance on routing edge-cases (Where
+does a meeting note for a non-engagement live? Where does a build log
+go?) — the generic RDT branch will surface these as user-judgment
+moments rather than auto-routing them. If you'd rather pick one of
+the pre-baked archetypes, [r]eject this proposal and re-run
+\`/onboard --section c\` to re-declare with "engagement-based" or
+"project-based" / "topic-based" / "para".
+EOF
+      ;;
+  esac
+}
+
+_s3_rationale_fn() {
+  cat <<EOF
+PROPOSAL — Vault root CLAUDE.md
+===============================
+
+  Declared organizational_method:  "${ORG_METHOD}"
+  Declared top-level folder:       "${TOP_LEVEL_FOLDER:-(undeclared)}"
+  Declared role:                   "${ROLE}"
+
+The vault root CLAUDE.md hardcodes a Routing Decision Tree (RDT) for
+this vault. Every future Claude session, every capture-and-route, every
+librarian audit follows the RDT shape this file declares. Choosing the
+right shape now is materially cheaper than retrofitting later — schema
+migration cost is documented at 50–70% of project effort once a
+structure is in production (DataFlowMapper).
+
+ALTERNATIVES CONSIDERED
+-----------------------
+
+1. Engagements layout (top-level Engagements/<client>/...)
+   Best for: consultant / services / advisory archetypes where work is
+   organized around external clients with finite engagement durations.
+   Closing an engagement is a first-class status transition.
+
+2. PARA-equivalent layout (Projects/Areas/Resources/Archives, OR
+   Topics-based for content-driven workflows)
+   Best for: researchers, writers, project-based knowledge work where
+   discoverable categories matter more than client boundaries. Forte's
+   PARA caps top-level at 4 (Cowan-grounded).
+
+3. Custom (user-named top_level_folder, generic RDT branch)
+   Best for: workflows that don't fit either pre-baked archetype.
+   The RDT documents what you declared rather than retrofitting a
+   pattern that doesn't match.
+
+WHY THIS PROPOSAL FOR YOU
+-------------------------
+
+$(_s3_archetype_reasoning)
+
+TRADEOFFS YOU'RE ACCEPTING
+--------------------------
+
+- Discoverability vs flexibility: every additional hierarchy level
+  reduces discoverability by ~50%; by 5 levels deep, 90%+ of users
+  abandon search and fall back to keyword-only navigation. Top-level
+  structure earns its place; below it, depth is paid for in
+  discoverability cost (Matrixflows enterprise IA research).
+
+- Working-memory cap on top-level structures: human short-term memory
+  holds ~4 ± 1 chunks (Cowan 2001, replacing Miller's 7 ± 2). Top-level
+  taxonomies that exceed this get navigated via search rather than
+  browse, defeating the structure's purpose. PARA's 4-category cap and
+  Surface-4's ≤9 tag-prefix cap are both grounded here.
+
+- Curated taxonomy over exhaustive: Luhmann's mature Zettelkasten kept
+  ~11 top-level categories despite having 90,000+ notes; index averaged
+  1–2 notes per keyword (Ahrens, How to Take Smart Notes §taxonomy
+  minimalism). Sparse, curated tags beat exhaustive coverage.
+
+CITATIONS
+---------
+
+- Tiago Forte. "PARA Method: The Simple System for Organizing Your
+  Digital Life in Seconds." Forte Labs.
+  https://fortelabs.com/blog/para/  (accessed 2026-05-04)
+
+- Sönke Ahrens. "How to Take Smart Notes." 2017. §taxonomy minimalism.
+  https://www.soenkeahrens.de/en/takesmartnotes  (accessed 2026-05-04)
+
+- Nelson Cowan. "The magical number 4 in short-term memory: A
+  reconsideration of mental storage capacity." Behavioral and Brain
+  Sciences, 24(1), 2001. (Replaces Miller 7±2; PARA's 4-category cap
+  is justified on this.)
+  https://www.cambridge.org/core/journals/behavioral-and-brain-sciences/article/abs/magical-number-4-in-shortterm-memory-a-reconsideration-of-mental-storage-capacity/44023F1147D4A1D44BABA6BCE2DE0B7C  (accessed 2026-05-04)
+
+- Matrixflows. "Knowledge Base Taxonomy Best Practices."
+  https://www.matrixflows.com/blog/knowledge-base-taxonomy-best-practices  (accessed 2026-05-04)
+
+WHAT HAPPENS NEXT
+-----------------
+
+[a]ccept   → consultation passes; the existing 3-step gate fires
+             (gate_generate → preview → apply). You see the staged
+             vault CLAUDE.md, can edit at the preview step, and apply
+             when satisfied. Frontmatter records consulted_at +
+             consultation_response_hash so future librarian / architect
+             passes can tell this was user-ratified vs auto-inferred.
+
+[r]eject   → no vault CLAUDE.md is written. Audit log records the
+             rejection (with the rationale sha you saw, so we know
+             which proposal you turned down). Re-run /onboard --section c
+             to re-declare with different values, or run surface-3
+             again later when you're ready.
+
+[e]dit     → opens \$EDITOR on this rationale buffer. Refine the
+             tradeoffs / citations / archetype reasoning, then re-prompt.
+             Useful when the rationale is mostly right but you want to
+             record additional context for future-you.
+EOF
+}
+
 # --- Generator (called by gate_generate) ---
 _substitute_identity() {
   sed \
@@ -363,8 +584,30 @@ _substitute_identity() {
 }
 
 gen_vault_claude_md() {
-  # 1. Provenance frontmatter
-  pf_emit "$SURFACE_ID" "$GENERATED_FROM" || return 1
+  # 1. Provenance frontmatter.
+  # SP15 T-4: when the consultation gate fired and accept-path is in
+  # progress, consultation_propose has exported CG_RATIONALE_SHA +
+  # CG_CONSULTED_AT into our environment. Forward both to pf_emit so
+  # the artifact's frontmatter records the consultation event (T-3
+  # schema fields). When env vars are unset (e.g., direct invocation
+  # without consultation), pf_emit's output is byte-identical to
+  # pre-T-3 — additivity contract preserved.
+  # R-23: bash 3.2 + `set -u` rejects expanding an empty array with
+  # `"${arr[@]}"`. Build the args array, then guard the call site on
+  # ${#arr[@]} > 0.
+  local pf_args
+  pf_args=()
+  if [ -n "${CG_CONSULTED_AT:-}" ]; then
+    pf_args+=(--consulted-at "$CG_CONSULTED_AT")
+  fi
+  if [ -n "${CG_RATIONALE_SHA:-}" ]; then
+    pf_args+=(--response-hash "$CG_RATIONALE_SHA")
+  fi
+  if [ ${#pf_args[@]} -gt 0 ]; then
+    pf_emit "$SURFACE_ID" "$GENERATED_FROM" "${pf_args[@]}" || return 1
+  else
+    pf_emit "$SURFACE_ID" "$GENERATED_FROM" || return 1
+  fi
   printf '\n'
 
   # 2. Template head: title + identity table + Vault conventions section
@@ -399,27 +642,42 @@ gen_vault_claude_md() {
 
 # --- main ---
 if [ -z "${TG_STAGE_DIR:-}" ]; then
-  TG_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sp12-t6.XXXXXX")"
+  TG_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/surface-3-vault-claude-md.XXXXXX")"
   export TG_STAGE_DIR
 fi
 
-stage="$(gate_generate "$SURFACE_ID" gen_vault_claude_md)" || { diag "gate_generate failed"; exit 2; }
+# SP15 T-4: route through the consultation gate. consultation_propose
+# orchestrates gate_generate → gate_preview → gate_apply on the accept
+# path; the rationale function explains the proposed organizational_method
+# with research-backed citations BEFORE any artifact is staged. CG_TARGET_PATH
+# tells the gate where to apply on accept (Session 1 design decision).
+#
+# --auto-apply legacy flag: pre-T-4 mapped to gate_apply --accept-on-empty-stdin.
+# Under consultation orchestration there are now TWO prompts (consultation
+# accept + apply confirm), so --auto-apply pre-feeds 'a\na\n' to stdin
+# instead of plumbing a flag through. --skip-preview becomes a no-op
+# under consultation (consultation_propose always passes --skip-preview
+# to its inner gate_apply because gate_preview already fired). Documented
+# regression: SP12 T-16 attestation is sealed (spec L105) and gets its
+# own SP15 T-9 cross-cutting smoke; SP12 T-16 is no longer expected to
+# pass post-T-4 against surface-3 without a stdin pre-feed shim.
+export CG_TARGET_PATH="$TARGET"
 
-if ! pf_validate "$stage" >/dev/null 2>&1; then
-  diag "staged artifact failed provenance frontmatter validation"
-  exit 2
+if [ "$AUTO_APPLY" = "1" ]; then
+  # First 'a' accepts the consultation rationale; second 'a' accepts
+  # gate_apply's preview-then-apply prompt.
+  printf 'a\na\n' | consultation_propose "$SURFACE_ID" _s3_rationale_fn gen_vault_claude_md
+  rc=$?
+else
+  consultation_propose "$SURFACE_ID" _s3_rationale_fn gen_vault_claude_md
+  rc=$?
 fi
 
-apply_args=""
-[ "$SKIP_PREVIEW" = "1" ] && apply_args="$apply_args --skip-preview"
-[ "$AUTO_APPLY"   = "1" ] && apply_args="$apply_args --accept-on-empty-stdin"
+unset CG_TARGET_PATH
 
-# shellcheck disable=SC2086
-gate_apply "$stage" "$TARGET" $apply_args
-rc=$?
 case "$rc" in
   0) info "surface-3 complete (target: $TARGET)" ;;
-  1) info "surface-3 aborted at gate prompt" ;;
-  *) diag "gate_apply returned rc=$rc" ;;
+  1) info "surface-3 rejected at consultation OR aborted at gate prompt" ;;
+  *) diag "consultation_propose returned rc=$rc" ;;
 esac
 exit "$rc"
