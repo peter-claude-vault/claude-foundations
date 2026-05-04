@@ -390,6 +390,62 @@ else
   log_info "user-manifest.json: vault.canonical_file_types already populated; preserving"
 fi
 
+# ---- seed-projects auto-invocation (SP13 T-8) -------------------------------
+#
+# When `/onboard --seed-content` was used, T-7 review-gate.sh writes a
+# user-approved plan to `onboarding/seed-content/state/approved-import-plan.md`.
+# Its presence is the trigger for `/adopt` to layer Stage 3 PRD/Context/
+# Updates triads on top of the bare scaffold above. Per build-decision
+# record at ~/.claude-plans/71-claude-foundations-engine-v2/13-content-
+# seeding-pipeline/state/T-8-build-decision.md (Decision 2): the file IS
+# the contract — no shadow flag in user-manifest.json.
+#
+# Detection: prefer $CLAUDE_HOME-relative path (post-install runtime),
+# then foundation-repo path (test harness).
+
+APPROVED_PLAN=""
+for cand in \
+  "$CLAUDE_HOME/onboarding/seed-content/state/approved-import-plan.md" \
+  "$SCRIPT_DIR/../../onboarding/seed-content/state/approved-import-plan.md"
+do
+  if [ -f "$cand" ]; then
+    APPROVED_PLAN="$cand"
+    break
+  fi
+done
+
+# Resolve seed-projects skill dispatch script (same search order).
+SEED_SH=""
+for cand in \
+  "$CLAUDE_HOME/skills/seed-projects/seed.sh" \
+  "$SCRIPT_DIR/../seed-projects/seed.sh"
+do
+  if [ -f "$cand" ]; then
+    SEED_SH="$cand"
+    break
+  fi
+done
+
+SEEDED_PROJECTS_RESULT=""
+if [ -n "$APPROVED_PLAN" ] && [ -n "$SEED_SH" ] && [ "${ADOPT_SKIP_SEED_PROJECTS:-0}" != "1" ]; then
+  log_info "approved import plan detected at $APPROVED_PLAN — invoking /seed-projects"
+  if "$SEED_SH" --vault-root "$VAULT_ROOT" --approved-plan "$APPROVED_PLAN"; then
+    SEEDED_PROJECTS_RESULT="seed-projects ran successfully (see preceding output for batched-gate disposition)"
+  else
+    seed_rc=$?
+    case "$seed_rc" in
+      0) SEEDED_PROJECTS_RESULT="seed-projects ran (rc=0)" ;;
+      1) SEEDED_PROJECTS_RESULT="seed-projects: user aborted (rc=1) — no project triads written" ;;
+      2) SEEDED_PROJECTS_RESULT="seed-projects: pre-flight failure (rc=2) — bare scaffold succeeded; re-run /seed-projects after fixing pre-flight" ;;
+      3) SEEDED_PROJECTS_RESULT="seed-projects: apply-time copy error (rc=3) — partial state possible; re-run /seed-projects after fixing the error" ;;
+      *) SEEDED_PROJECTS_RESULT="seed-projects: unexpected rc=$seed_rc" ;;
+    esac
+  fi
+elif [ -n "$APPROVED_PLAN" ] && [ -z "$SEED_SH" ]; then
+  log_info "approved import plan detected at $APPROVED_PLAN BUT seed-projects skill not found — skipping"
+  SEEDED_PROJECTS_RESULT="seed-projects skill missing; bare scaffold complete; install seed-projects then re-run /seed-projects"
+fi
+
 # ---- success summary --------------------------------------------------------
 
 cat <<EOF
@@ -397,6 +453,13 @@ adopt: vault scaffolded at $VAULT_ROOT
   directories:  Inbox/ Logs/ Logs/backlog-progress/ .coordination/ Plans -> $PLANS_HOME_RESOLVED
   seeded:       CLAUDE.md, System Backlog.md, .coordination/canonical-file-types.json
   identity:     $IDENT_NAME ($IDENT_ROLE @ $IDENT_ORG)
+EOF
+
+if [ -n "$SEEDED_PROJECTS_RESULT" ]; then
+  printf 'adopt:   seed-projects: %s\n' "$SEEDED_PROJECTS_RESULT"
+fi
+
+cat <<EOF
 
 Next steps:
   - Open $VAULT_ROOT/CLAUDE.md and review vault conventions
