@@ -17,17 +17,36 @@
 #                  pf_validate returns non-zero on schema violation.
 #
 # API:
-#   pf_emit <surface-id> <generated-from> [last-user-edit-iso|--null]
+#   pf_emit <surface-id> <generated-from> [last-user-edit-iso|--null] \
+#           [--consulted-at <ISO-ts>] [--response-hash <sha256-hex>]
 #     Emit a YAML frontmatter block (between '---' fences) carrying the
 #     three required provenance fields. Default last_user_edit is null
-#     (no user edit yet). Pass --null explicitly OR omit the third arg.
-#     Pass an ISO-8601 timestamp to lock in last_user_edit.
+#     (no user edit yet). Pass --null explicitly OR omit the third
+#     positional. Pass an ISO-8601 timestamp to lock in last_user_edit.
 #
-#     Output (stdout):
+#     SP15 T-3 additivity contract: the optional flags --consulted-at
+#     and --response-hash emit the SP15 consultation-gate fields
+#     `consulted_at` + `consultation_response_hash` ONLY when supplied.
+#     When omitted, neither field is emitted (absent ≠ null) — the
+#     output is byte-identical to pre-SP15 callers, so SP12 surfaces
+#     that don't go through a consultation gate continue to produce
+#     identical artifacts. Flags may appear in any order alongside the
+#     three positionals.
+#
+#     Output (stdout, no consultation flags):
 #       ---
 #       generated_by: <surface-id>
 #       generated_from: <generated-from>
 #       last_user_edit: null
+#       ---
+#
+#     Output (stdout, with consultation flags):
+#       ---
+#       generated_by: <surface-id>
+#       generated_from: <generated-from>
+#       last_user_edit: null
+#       consulted_at: "<ISO-ts>"
+#       consultation_response_hash: <sha256-hex>
 #       ---
 #
 #   pf_emit_with_lineage <surface-id> <generated-from> <superseded-by> <original-sha256>
@@ -84,13 +103,52 @@ _pf_schema_path() {
 # --- public API ---
 
 pf_emit() {
-  # $1=surface_id $2=generated_from [$3=last_user_edit | --null]
-  local sid="${1:-}"
-  local gfrom="${2:-}"
-  local lue="${3:---null}"
+  # Positional: $1=surface_id $2=generated_from [$3=last_user_edit | --null]
+  # Optional flags (SP15 T-3, additive — emitted ONLY when supplied):
+  #   --consulted-at <ISO-ts>
+  #   --response-hash <sha256-hex>
+  local sid="" gfrom="" lue=""
+  local consulted_at="" response_hash=""
+  local got_lue=0 pos=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --consulted-at)
+        if [ $# -lt 2 ]; then
+          printf 'pf_emit FAIL: --consulted-at requires a value\n' >&2
+          return 2
+        fi
+        consulted_at="$2"
+        shift 2
+        ;;
+      --response-hash)
+        if [ $# -lt 2 ]; then
+          printf 'pf_emit FAIL: --response-hash requires a value\n' >&2
+          return 2
+        fi
+        response_hash="$2"
+        shift 2
+        ;;
+      *)
+        pos=$((pos + 1))
+        case "$pos" in
+          1) sid="$1" ;;
+          2) gfrom="$1" ;;
+          3) lue="$1"; got_lue=1 ;;
+          *)
+            printf 'pf_emit FAIL: unexpected positional arg #%s: %s\n' "$pos" "$1" >&2
+            return 2
+            ;;
+        esac
+        shift
+        ;;
+    esac
+  done
   if [ -z "$sid" ] || [ -z "$gfrom" ]; then
     printf 'pf_emit FAIL: surface_id + generated_from required\n' >&2
     return 2
+  fi
+  if [ "$got_lue" = "0" ]; then
+    lue="--null"
   fi
   printf -- '---\n'
   printf 'generated_by: %s\n' "$sid"
@@ -100,6 +158,12 @@ pf_emit() {
   else
     # Quote ISO timestamps for YAML safety.
     printf 'last_user_edit: "%s"\n' "$lue"
+  fi
+  if [ -n "$consulted_at" ]; then
+    printf 'consulted_at: "%s"\n' "$consulted_at"
+  fi
+  if [ -n "$response_hash" ]; then
+    printf 'consultation_response_hash: %s\n' "$response_hash"
   fi
   printf -- '---\n'
   return 0

@@ -41,6 +41,16 @@
       "type": "string",
       "description": "Optional. Version of THIS provenance schema (not the artifact-type schema) the generator targeted. Default: '1.0.0' when omitted.",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "consulted_at": {
+      "type": ["string", "null"],
+      "description": "Optional. ISO-8601 UTC timestamp recording when the SP15 consultation gate fired against the rationale that produced this artifact, or null when consultation was offered but no positive sign-off captured. Field is omitted entirely when the surface did not invoke the consultation gate (additivity contract — absent ≠ null).",
+      "format": "date-time"
+    },
+    "consultation_response_hash": {
+      "type": ["string", "null"],
+      "description": "Optional. SHA-256 hex of the user's consultation-gate response payload (rationale text + accept/reject/edit + any rationale edit body). Pairs with consulted_at to lineage the consent record. Null when consultation_at is recorded but the response payload is absent (e.g., legacy migration). Field is omitted entirely when the surface did not invoke the consultation gate.",
+      "pattern": "^[a-f0-9]{64}$"
     }
   },
   "examples": [
