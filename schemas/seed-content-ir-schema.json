@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claude-foundations-v2/schemas/seed-content-ir-schema.json",
+  "title": "Seed-Content Intermediate Representation (IR)",
+  "description": "Per-record IR schema emitted by SP13 Stage 1 ir-builder.sh. Consumed by Stage 2 INFER (T-4 cluster + T-5 taxonomy).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "path",
+    "format",
+    "detected_at",
+    "raw_bytes",
+    "normalized_text",
+    "metadata",
+    "source_hash"
+  ],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Absolute path of the source file (or paste tmp file)."
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "markdown",
+        "plaintext",
+        "word",
+        "pdf",
+        "otter-vtt",
+        "zoom-transcript",
+        "llm-export",
+        "unsupported"
+      ],
+      "description": "Detected format. `unsupported` carries a 'format not supported' marker rather than dropping the record on the floor."
+    },
+    "detected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 / ISO 8601 timestamp when the format was detected (UTC)."
+    },
+    "raw_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Source file size in bytes."
+    },
+    "normalized_text": {
+      "type": "string",
+      "description": "Parser output. For binaries without an available extractor, contains a '[binary content not extracted: ...]' marker. For unsupported formats, contains a '[format not supported: ...]' marker."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Format-specific metadata (e.g., frontmatter fields, transcript participants). T-3 ships an empty {}; downstream parsers populate."
+    },
+    "source_hash": {
+      "type": "string",
+      "minLength": 8,
+      "description": "SHA-256 prefix (16 chars) of the source file content. Used by Stage 2 for de-duplication and by retrofit (T-13) for idempotency."
+    }
+  }
+}

@@ -91,6 +91,7 @@ ONLY_SECTION=""
 EXTRACTION_STUB=""
 DRY_RUN=0
 SEED_CONTENT=""
+SEED_BATCH_CAP=100
 
 usage() {
   sed -n '2,50p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -124,6 +125,11 @@ while [ $# -gt 0 ]; do
       shift
       [ $# -gt 0 ] || { echo "onboard.sh: --seed-content requires <path-or-paste>" >&2; exit 2; }
       SEED_CONTENT="$1"
+      ;;
+    --seed-batch-cap)
+      shift
+      [ $# -gt 0 ] || { echo "onboard.sh: --seed-batch-cap requires N" >&2; exit 2; }
+      SEED_BATCH_CAP="$1"
       ;;
     -h|--help)
       usage
@@ -255,6 +261,15 @@ if [ -n "$SEED_CONTENT" ]; then
   bash "$intake_sh" --source "$SEED_CONTENT" --manifest "$seed_dir/intake-manifest.jsonl"
   seed_count=$(wc -l < "$seed_dir/intake-manifest.jsonl" | tr -d ' ')
   printf 'seed content detected: %s items\n' "$seed_count"
+
+  ir_builder_sh="$ONBOARDING_ROOT/seed-content/ir-builder.sh"
+  if [ -f "$ir_builder_sh" ] && [ "$seed_count" -gt 0 ]; then
+    log "Stage 1 INGEST — IR build (batch cap=$SEED_BATCH_CAP)"
+    bash "$ir_builder_sh" \
+      --manifest "$seed_dir/intake-manifest.jsonl" \
+      --ir "$seed_dir/ir.jsonl" \
+      --batch-cap "$SEED_BATCH_CAP"
+  fi
 fi
 
 # Single-section mode.
