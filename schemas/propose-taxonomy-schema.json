@@ -1,0 +1,211 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claude-foundations-v2/schemas/propose-taxonomy-schema.json",
+  "title": "Propose-Taxonomy Output (SP13 T-5)",
+  "description": "Output of skills/infer-vault-structure/propose-taxonomy.sh. Consumes T-4 cluster-output (sp13-t4/1) plus the Stage 1 IR; emits per-cluster candidate proposals with explicit type enumeration (project | reference | meeting | unclassified) and pass-orchestration metadata. Consumed by SP13 T-6 import-plan.sh. Resolves spec L165 carry-forward (per-candidate schema declared explicitly before T-6 consumes).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "llm_mode",
+    "embedding_mode_input",
+    "n_records",
+    "n_clusters_input",
+    "passes",
+    "n_passes",
+    "items_mapped_pct",
+    "candidates"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "sp13-t5/1",
+      "description": "Schema version anchor. Bump on breaking shape changes; T-6 import-plan.sh checks this before consuming."
+    },
+    "llm_mode": {
+      "type": "string",
+      "enum": ["stub", "live"],
+      "description": "Whether the LLM passes ran against the live Anthropic Messages API or against the deterministic stub. Hermetic tests force stub; runtime defaults to auto (live when ANTHROPIC_API_KEY set)."
+    },
+    "embedding_mode_input": {
+      "type": "string",
+      "enum": ["stub", "voyage"],
+      "description": "Echoed from the input cluster-output.json so downstream stages know whether the upstream embedding was high-quality or stub."
+    },
+    "n_records": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total IR records considered (echoed from cluster-output.n_records)."
+    },
+    "n_clusters_input": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Cluster count from upstream cluster-output (excludes the unclassified bucket)."
+    },
+    "passes": {
+      "type": "array",
+      "minItems": 2,
+      "description": "Per-pass orchestration log. At minimum 2 entries (pass 1 initial; pass 2 outlier re-pass with merge/split). Optional pass 3 fires only if items_mapped_pct < 0.80 after pass 2.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "pass",
+          "model",
+          "n_candidates_proposed",
+          "n_items_mapped",
+          "duration_ms"
+        ],
+        "properties": {
+          "pass": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "model": {
+            "type": "string",
+            "description": "Anthropic model id used for this pass (e.g., claude-haiku-4-5-20251001 for pass 1, claude-sonnet-4-6 for pass 2). 'stub' when running in stub mode."
+          },
+          "n_candidates_proposed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "n_items_mapped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "merge_split_ops": {
+            "type": "array",
+            "description": "Pass 2+ only. Surface merge/split decisions for downstream T-7 review-gate explanation.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["op"],
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": ["merge", "split", "promote", "demote"]
+                },
+                "from": {
+                  "oneOf": [
+                    {"type": "string"},
+                    {"type": "array", "items": {"type": "string"}}
+                  ]
+                },
+                "into": {
+                  "oneOf": [
+                    {"type": "string"},
+                    {"type": "array", "items": {"type": "string"}}
+                  ]
+                },
+                "rationale": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "n_passes": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 3,
+      "description": "Number of LLM passes actually run. Minimum 2 enforced by spec L162."
+    },
+    "items_mapped_pct": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Fraction of n_records mapped to a non-unclassified candidate after the final pass. Drives optional pass-3 trigger (< 0.80)."
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 0,
+      "description": "Per-candidate taxonomy proposals. Every IR record routes to exactly one candidate (a candidate of type 'unclassified' is the terminal disposition for items the LLM cannot place).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "label",
+          "type",
+          "proposed_path",
+          "metadata",
+          "source_items",
+          "confidence",
+          "low_confidence"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "pattern": "^(p[0-9]{4}|unclassified)$",
+            "description": "Stable candidate id. p0001..p9999 for typed candidates; the literal 'unclassified' for the terminal pile."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short human-readable label proposed by the LLM (or derived from cluster keywords in stub mode). Used as the heading in T-6 import-plan.md."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["project", "reference", "meeting", "unclassified"],
+            "description": "Candidate type. Non-project types are explicitly enumerated per spec L169 — never silently dropped. Drives Stage 3 routing: project → PRD/Context/Updates triad; reference → reference doc; meeting → meeting note; unclassified → Inbox/."
+          },
+          "proposed_path": {
+            "type": "string",
+            "description": "Vault-relative path for the candidate (e.g., 'Engagements/X', 'References/policies', 'Meetings/2026-Q2'). Empty string for unclassified."
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Per-candidate metadata. Free-form by type; T-6 import-plan generator renders into YAML blocks. T-8 PRD/Context/Updates generator consumes for project candidates.",
+            "properties": {
+              "summary": {"type": "string"},
+              "tags": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "engagement": {"type": "string"},
+              "rationale": {"type": "string"}
+            }
+          },
+          "source_items": {
+            "type": "array",
+            "minItems": 0,
+            "description": "IR records routed to this candidate. Echoed from cluster-output members; preserves path + source_hash for downstream idempotency.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "source_hash"],
+              "properties": {
+                "path": {"type": "string"},
+                "source_hash": {"type": "string", "minLength": 8}
+              }
+            }
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Heuristic confidence: fraction of source_items whose origin cluster fully mapped to this candidate (vs. cross-cluster spillover). NOT LLM self-reported. Untrusted self-report rejected per spec L170 design question 4."
+          },
+          "low_confidence": {
+            "type": "boolean",
+            "description": "True when confidence < 0.5. Surfaces for downstream T-7 user merge/split."
+          }
+        }
+      }
+    },
+    "small_corpus_input": {
+      "type": "boolean",
+      "description": "Echoed from cluster-output. True when upstream short-circuited to single-cluster small-corpus mode."
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Non-fatal warnings surfaced during pass orchestration (e.g., pass 3 triggered, low cumulative mapping)."
+    }
+  }
+}
