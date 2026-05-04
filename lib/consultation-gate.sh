@@ -1,0 +1,380 @@
+#!/usr/bin/env bash
+# lib/consultation-gate.sh — SP15 T-1 (Plan 71 SP15 Session 1)
+#
+# Consultation gate UX library: propose-with-rationale -> discuss -> generate.
+# Wraps SP12's three-step gate (generate -> preview -> apply) for foundational
+# decisions where users deserve research-backed rationale before sign-off.
+#
+# Pattern: composition. Never forks lib/three-step-gate.sh; sources it and
+# orchestrates an upstream rationale gate ahead of the existing 3-step chain.
+#
+# OUTPUT CONTRACT (R-43):
+#   Files written:
+#     - $AUTO_AUTHOR_LOG (delegated to onboarding/lib/three-step-gate.sh; the
+#       new "consult" action records appended alongside existing
+#       generate/preview/apply/skip/abort/dry-run/error records)
+#     - target artifact path (only when consultation accepts AND gate_apply
+#       succeeds — same as the underlying 3-step gate)
+#   Schema-types:
+#     - audit log line for "consult" action: {ts, surface_id, action,
+#       rationale_sha, response, response_text}
+#   Pre-write validation:
+#     - rationale_fn + generator_fn callable in current shell
+#     - rationale_fn produces stdout to a buffer file
+#     - CG_TARGET_PATH env var set when accept-path orchestrates the 3-step gate
+#   Failure mode: BLOCK AND LOG. IO errors return non-zero; an error to the
+#     audit log is appended on the underlying gate's error contract.
+#
+# API (sourceable):
+#
+#   consultation_propose <surface-id> <rationale-fn> <generator-fn> [generator-args...]
+#     1. Invokes <rationale-fn> with no args; captures stdout to a rationale
+#        buffer (mktemp file).
+#     2. Renders the buffer to stderr (formatted block with header/footer).
+#     3. Captures user disposition from stdin: [a]ccept (default) / [r]eject /
+#        [e]dit-rationale.
+#     4. On accept: appends consult/accept audit record (rationale_sha = sha256
+#        of buffer at acceptance), then orchestrates the 3-step gate:
+#           gate_generate <surface-id> <generator-fn> [generator-args...]
+#           gate_preview  <stage> $CG_TARGET_PATH
+#           gate_apply    <stage> $CG_TARGET_PATH --skip-preview
+#        Requires CG_TARGET_PATH env var. Generator-fn invocation count = 1.
+#     5. On reject: appends consult/reject audit record; rc=1; gate_generate
+#        is NOT invoked (mock-generator-fn invocation count stays 0 — AC4).
+#     6. On edit: opens ${EDITOR:-vi} on the rationale buffer; appends a
+#        consult/edit audit record (rationale_sha re-hashed post-edit); loops
+#        back to step 2. Edit may repeat until user accepts or rejects.
+#
+#     Returns:
+#       0  consultation accepted; full gate chain succeeded (or gate_apply [s]kip)
+#       1  consultation rejected OR gate_apply aborted
+#       2  IO/lib error (rationale_fn failed, missing CG_TARGET_PATH on accept,
+#          missing tool, etc.)
+#
+# Audit-log shape for new "consult" action (one JSONL record per state):
+#   {
+#     "ts":             ISO-8601 UTC timestamp
+#     "surface_id":     surface identifier (e.g., "surface-3-vault-claude-md")
+#     "action":         literal "consult"
+#     "rationale_sha":  sha256 of rationale buffer at the moment of action
+#     "response":       "accept" | "reject" | "edit"
+#     "response_text":  optional free-text comment ("" when none)
+#   }
+# Heterogeneous JSONL: lib/three-step-gate.sh records carry different fields
+# (target_path, sha_before, sha_after, note). Both shapes coexist in the same
+# log file; the action field discriminates. Consumers select by action.
+#
+# Env knobs:
+#   CG_TARGET_PATH    Required for accept-path orchestration (target artifact
+#                     path passed to gate_preview + gate_apply). NOT required
+#                     for reject-only paths.
+#   AUTO_AUTHOR_LOG   Inherited from three-step-gate.sh (audit log path).
+#   TG_STAGE_DIR      Inherited (per-call staging dir for proposed artifacts).
+#   EDITOR            Editor invoked at [e]dit (default: vi).
+#
+# CONSTRAINTS (R-23): bash 3.2 — no `declare -A`, no `mapfile`, no `${var,,}`.
+# `jq` REQUIRED on PATH (also a three-step-gate.sh dep). `shasum` or
+# `sha256sum` REQUIRED for rationale hashing.
+#
+# Allowlist: T-2 will extend consultation_propose with a foundational-decision
+# allowlist check (rc=2 + audit consult-blocked entry on non-allowlisted
+# surface). T-1 deliberately ships without the allowlist — keep T-1 narrow per
+# CLAUDE.md "Don't add what wasn't asked for"; T-2 is the structural extension.
+#
+# Author: Claude Opus 4.7 (1M context) — Plan 71 SP15 Session 1
+
+set -u
+
+# --- guard against re-source ---
+if [ -n "${CG_LOADED:-}" ]; then return 0 2>/dev/null || exit 0; fi
+CG_LOADED=1
+
+# --- locate + source three-step-gate.sh (composition, never fork) ---
+_cg_script_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+_cg_repo_root="$(cd "$_cg_script_dir/.." 2>/dev/null && pwd)"
+_cg_gate_lib="$_cg_repo_root/onboarding/lib/three-step-gate.sh"
+if [ ! -r "$_cg_gate_lib" ]; then
+  printf 'consultation-gate FAIL: three-step-gate.sh not readable at %s\n' "$_cg_gate_lib" >&2
+  return 2 2>/dev/null || exit 2
+fi
+# shellcheck source=/dev/null
+. "$_cg_gate_lib"
+
+# --- private helpers ---
+
+_cg_require() {
+  command -v jq >/dev/null 2>&1 || {
+    printf 'consultation-gate FAIL: jq required on PATH\n' >&2
+    return 2
+  }
+  if ! command -v shasum >/dev/null 2>&1 && ! command -v sha256sum >/dev/null 2>&1; then
+    printf 'consultation-gate FAIL: shasum or sha256sum required\n' >&2
+    return 2
+  fi
+  return 0
+}
+
+_cg_sha_of() {
+  local f="$1"
+  [ -f "$f" ] || { printf ''; return 0; }
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$f" 2>/dev/null | awk '{print $1}'
+  else
+    sha256sum "$f" 2>/dev/null | awk '{print $1}'
+  fi
+}
+
+_cg_audit_log() {
+  # $1=surface_id $2=rationale_sha $3=response $4=response_text(optional)
+  _cg_require || return 2
+  local log
+  log="$(gate_audit_path)" || return 2
+  local log_dir
+  log_dir="$(dirname "$log")"
+  mkdir -p "$log_dir" 2>/dev/null || {
+    printf 'consultation-gate FAIL: cannot create audit log dir: %s\n' "$log_dir" >&2
+    return 2
+  }
+  jq -nc \
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg surface_id "$1" \
+    --arg action "consult" \
+    --arg rationale_sha "$2" \
+    --arg response "$3" \
+    --arg response_text "${4:-}" \
+    '{ts:$ts, surface_id:$surface_id, action:$action, rationale_sha:$rationale_sha, response:$response, response_text:$response_text}' \
+    >> "$log" || {
+      printf 'consultation-gate FAIL: audit append failed at %s\n' "$log" >&2
+      return 2
+    }
+  return 0
+}
+
+_cg_render_rationale() {
+  # $1=rationale_buf
+  printf '\n=== consultation gate: PROPOSAL + RATIONALE ===\n' >&2
+  cat "$1" >&2
+  printf '\n=== end PROPOSAL ===\n' >&2
+}
+
+_cg_run_editor() {
+  local buf="$1"
+  local ed="${EDITOR:-vi}"
+  if ! command -v "$ed" >/dev/null 2>&1; then
+    for cand in vi nano vim; do
+      if command -v "$cand" >/dev/null 2>&1; then ed="$cand"; break; fi
+    done
+  fi
+  if ! command -v "$ed" >/dev/null 2>&1; then
+    printf 'consultation-gate FAIL: no editor found (tried $EDITOR, vi, nano, vim)\n' >&2
+    return 2
+  fi
+  "$ed" "$buf"
+  return $?
+}
+
+# --- public API ---
+
+consultation_propose() {
+  # $1=surface_id $2=rationale_fn $3=generator_fn [generator-args...]
+  _cg_require || return 2
+  local surface_id="${1:-}"
+  local rationale_fn="${2:-}"
+  local generator_fn="${3:-}"
+  if [ -z "$surface_id" ] || [ -z "$rationale_fn" ] || [ -z "$generator_fn" ]; then
+    printf 'consultation_propose FAIL: surface_id + rationale_fn + generator_fn required\n' >&2
+    return 2
+  fi
+  shift 3
+  if ! command -v "$rationale_fn" >/dev/null 2>&1 && ! type "$rationale_fn" >/dev/null 2>&1; then
+    printf 'consultation_propose FAIL: rationale_fn not callable: %s\n' "$rationale_fn" >&2
+    return 2
+  fi
+  if ! command -v "$generator_fn" >/dev/null 2>&1 && ! type "$generator_fn" >/dev/null 2>&1; then
+    printf 'consultation_propose FAIL: generator_fn not callable: %s\n' "$generator_fn" >&2
+    return 2
+  fi
+
+  # Rationale buffer. Re-evaluated at every [e]dit (sha changes).
+  local rationale_buf
+  rationale_buf="$(mktemp "${TMPDIR:-/tmp}/consultation-gate-rationale.XXXXXX")" || {
+    printf 'consultation_propose FAIL: mktemp rationale buffer\n' >&2
+    return 2
+  }
+  if ! "$rationale_fn" > "$rationale_buf"; then
+    printf 'consultation_propose FAIL: rationale_fn returned non-zero\n' >&2
+    rm -f "$rationale_buf" 2>/dev/null
+    return 2
+  fi
+
+  local choice rationale_sha rc stage_path
+  while :; do
+    _cg_render_rationale "$rationale_buf"
+    printf '\nAccept this proposal? [a]ccept (default) / [r]eject / [e]dit-rationale: ' >&2
+    if ! IFS= read -r choice; then
+      # stdin EOF — treat as reject (conservative; never silently accept)
+      printf 'consultation-gate: stdin EOF; treating as reject\n' >&2
+      choice="r"
+    fi
+    case "$choice" in
+      ""|a|A)
+        rationale_sha="$(_cg_sha_of "$rationale_buf")"
+        if ! _cg_audit_log "$surface_id" "$rationale_sha" "accept" ""; then
+          rm -f "$rationale_buf" 2>/dev/null
+          return 2
+        fi
+        if [ -z "${CG_TARGET_PATH:-}" ]; then
+          printf 'consultation_propose FAIL: CG_TARGET_PATH env var must be set for accept-path orchestration\n' >&2
+          rm -f "$rationale_buf" 2>/dev/null
+          return 2
+        fi
+        if ! stage_path="$(gate_generate "$surface_id" "$generator_fn" "$@")"; then
+          rm -f "$rationale_buf" 2>/dev/null
+          return 2
+        fi
+        if ! gate_preview "$stage_path" "$CG_TARGET_PATH"; then
+          rm -f "$rationale_buf" 2>/dev/null
+          return 2
+        fi
+        gate_apply "$stage_path" "$CG_TARGET_PATH" --skip-preview
+        rc=$?
+        rm -f "$rationale_buf" 2>/dev/null
+        return $rc
+        ;;
+      r|R)
+        rationale_sha="$(_cg_sha_of "$rationale_buf")"
+        if ! _cg_audit_log "$surface_id" "$rationale_sha" "reject" ""; then
+          rm -f "$rationale_buf" 2>/dev/null
+          return 2
+        fi
+        rm -f "$rationale_buf" 2>/dev/null
+        return 1
+        ;;
+      e|E)
+        if ! _cg_run_editor "$rationale_buf"; then
+          printf 'consultation-gate: editor returned non-zero; re-prompting\n' >&2
+        fi
+        rationale_sha="$(_cg_sha_of "$rationale_buf")"
+        if ! _cg_audit_log "$surface_id" "$rationale_sha" "edit" ""; then
+          rm -f "$rationale_buf" 2>/dev/null
+          return 2
+        fi
+        # Loop back to render + prompt with the (possibly edited) buffer.
+        continue
+        ;;
+      *)
+        printf 'consultation-gate: invalid choice "%s"; press a, r, or e\n' "$choice" >&2
+        # Loop again without re-rendering (keep prompt context tight).
+        ;;
+    esac
+  done
+}
+
+# --- self-test entrypoint ---
+# `bash consultation-gate.sh --self-test` runs accept/reject/edit-then-accept
+# paths against a hermetic tmpdir with mock rationale_fn + mock generator_fn.
+# Verifies AC2 (callable; paths work), AC3 (audit log shape), AC4 (no
+# gate_generate on reject), AC6 (self-test passes).
+if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
+  case "${1:-}" in
+    --self-test)
+      shift
+      _CG_TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/consultation-gate-self.XXXXXX")"
+      export AUTO_AUTHOR_LOG="$_CG_TEST_DIR/audit.jsonl"
+      export TG_STAGE_DIR="$_CG_TEST_DIR/stage"
+      mkdir -p "$TG_STAGE_DIR"
+      export CG_TARGET_PATH="$_CG_TEST_DIR/target.txt"
+      # Hermetic editor: no-op (preserves buffer contents). Tests the [e]dit
+      # control-flow path, not editor UX.
+      export EDITOR=":"
+
+      # Mock rationale_fn: emits canned proposal + citation block on stdout.
+      mock_rationale() {
+        printf 'PROPOSAL: tag prefixes = engagement, project, scope (3 prefixes)\n'
+        printf 'RATIONALE: Cowan (2001) working memory cap 4 +/- 1 supports keeping\n'
+        printf '           top-level taxonomy at single digits.\n'
+        printf 'CITATION: Cowan, N. (2001). The magical number 4 in short-term memory.\n'
+      }
+
+      # Mock generator_fn: increments a count file each time it fires + emits
+      # canned content on stdout. Count file lets us verify AC4 (no fire on
+      # reject) and AC2 (does fire on accept).
+      _gen_count_file="$_CG_TEST_DIR/gen-count"
+      printf '0\n' > "$_gen_count_file"
+      mock_generator() {
+        local n
+        n=$(cat "$_gen_count_file")
+        echo $((n + 1)) > "$_gen_count_file"
+        printf 'mock-generator-output\n'
+      }
+      get_gen_count() { cat "$_gen_count_file"; }
+
+      # --- Sub-test 1: accept path ---
+      # Stdin feed: first 'a' -> consultation_propose accepts rationale;
+      # second 'a' -> gate_apply accepts the staged artifact.
+      printf 'a\na\n' | consultation_propose self-test mock_rationale mock_generator || {
+        echo "FAIL: accept path rc=$? (expected 0)" >&2; exit 1; }
+      [ -f "$CG_TARGET_PATH" ] || { echo "FAIL: target not written on accept" >&2; exit 1; }
+      grep -q 'mock-generator-output' "$CG_TARGET_PATH" || {
+        echo "FAIL: target content mismatch" >&2; exit 1; }
+      [ "$(get_gen_count)" = "1" ] || {
+        echo "FAIL: generator count after accept != 1 (got $(get_gen_count))" >&2; exit 1; }
+
+      # --- Sub-test 2: reject path ---
+      rm -f "$CG_TARGET_PATH"
+      printf '0\n' > "$_gen_count_file"
+      if printf 'r\n' | consultation_propose self-test mock_rationale mock_generator; then
+        echo "FAIL: reject path returned rc=0 (expected 1)" >&2; exit 1
+      fi
+      [ ! -f "$CG_TARGET_PATH" ] || {
+        echo "FAIL: reject path wrote target" >&2; exit 1; }
+      [ "$(get_gen_count)" = "0" ] || {
+        echo "FAIL: generator count after reject != 0 (got $(get_gen_count)) [AC4 BREACH]" >&2; exit 1; }
+
+      # --- Sub-test 3: edit-then-accept path (EDITOR=':' no-ops the file) ---
+      rm -f "$CG_TARGET_PATH"
+      printf '0\n' > "$_gen_count_file"
+      printf 'e\na\na\n' | consultation_propose self-test mock_rationale mock_generator || {
+        echo "FAIL: edit-then-accept rc=$? (expected 0)" >&2; exit 1; }
+      [ -f "$CG_TARGET_PATH" ] || {
+        echo "FAIL: edit-accept did not write target" >&2; exit 1; }
+      [ "$(get_gen_count)" = "1" ] || {
+        echo "FAIL: edit-accept generator count != 1 (got $(get_gen_count))" >&2; exit 1; }
+
+      # --- Sub-test 4: audit log shape (AC3) ---
+      records="$(wc -l < "$AUTO_AUTHOR_LOG" | tr -d ' ')"
+      [ "$records" -ge 6 ] || {
+        echo "FAIL: audit log <6 records (got $records)" >&2; exit 1; }
+
+      # Verify at least one consult record per response type.
+      grep -q '"action":"consult"' "$AUTO_AUTHOR_LOG" || {
+        echo "FAIL: no consult action in audit log" >&2; exit 1; }
+      grep -q '"response":"accept"' "$AUTO_AUTHOR_LOG" || {
+        echo "FAIL: no consult/accept record" >&2; exit 1; }
+      grep -q '"response":"reject"' "$AUTO_AUTHOR_LOG" || {
+        echo "FAIL: no consult/reject record" >&2; exit 1; }
+      grep -q '"response":"edit"' "$AUTO_AUTHOR_LOG" || {
+        echo "FAIL: no consult/edit record" >&2; exit 1; }
+
+      # Verify rationale_sha is non-empty on every consult record.
+      if grep '"action":"consult"' "$AUTO_AUTHOR_LOG" | grep -q '"rationale_sha":""'; then
+        echo "FAIL: a consult record has empty rationale_sha" >&2; exit 1
+      fi
+
+      # Verify the consult record carries all expected fields (per spec
+      # action shape: ts, surface_id, action, rationale_sha, response, response_text).
+      sample="$(grep -m1 '"action":"consult"' "$AUTO_AUTHOR_LOG")"
+      for field in ts surface_id action rationale_sha response response_text; do
+        printf '%s' "$sample" | grep -q "\"$field\":" || {
+          echo "FAIL: consult record missing field '$field': $sample" >&2; exit 1; }
+      done
+
+      printf 'self-test PASS: 4/4 sub-tests green; audit_log=%s records=%s\n' \
+        "$AUTO_AUTHOR_LOG" "$records"
+      rm -rf "$_CG_TEST_DIR"
+      exit 0
+      ;;
+    "") : ;;
+    *) printf 'consultation-gate: unknown direct invocation arg: %s\n' "$1" >&2; exit 2 ;;
+  esac
+fi
