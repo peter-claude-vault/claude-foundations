@@ -65,23 +65,33 @@
 # log file; the action field discriminates. Consumers select by action.
 #
 # Env knobs:
-#   CG_TARGET_PATH    Required for accept-path orchestration (target artifact
-#                     path passed to gate_preview + gate_apply). NOT required
-#                     for reject-only paths.
-#   AUTO_AUTHOR_LOG   Inherited from three-step-gate.sh (audit log path).
-#   TG_STAGE_DIR      Inherited (per-call staging dir for proposed artifacts).
-#   EDITOR            Editor invoked at [e]dit (default: vi).
+#   CG_TARGET_PATH      Required for accept-path orchestration (target artifact
+#                       path passed to gate_preview + gate_apply). NOT required
+#                       for reject-only paths.
+#   CG_ALLOWLIST_PATH   Override allowlist file path (default:
+#                       $_cg_repo_root/lib/consultation-gate.allowlist).
+#                       Test-isolation knob; production callers leave unset.
+#   AUTO_AUTHOR_LOG     Inherited from three-step-gate.sh (audit log path).
+#   TG_STAGE_DIR        Inherited (per-call staging dir for proposed artifacts).
+#   EDITOR              Editor invoked at [e]dit (default: vi).
 #
 # CONSTRAINTS (R-23): bash 3.2 — no `declare -A`, no `mapfile`, no `${var,,}`.
 # `jq` REQUIRED on PATH (also a three-step-gate.sh dep). `shasum` or
 # `sha256sum` REQUIRED for rationale hashing.
 #
-# Allowlist: T-2 will extend consultation_propose with a foundational-decision
-# allowlist check (rc=2 + audit consult-blocked entry on non-allowlisted
-# surface). T-1 deliberately ships without the allowlist — keep T-1 narrow per
-# CLAUDE.md "Don't add what wasn't asked for"; T-2 is the structural extension.
+# Allowlist (SP15 T-2): consultation_propose checks the foundational-decision
+# allowlist FIRST — before _cg_require, before rationale_fn invocation. Non-
+# allowlisted surface-id returns rc=2 + an audit-log {action:"consult-blocked",
+# reason:"not-allowlisted"} record (sibling to the consult-action shape; see
+# _cg_audit_log_blocked). Default allowlist file:
+#   $_cg_repo_root/lib/consultation-gate.allowlist
+# Override via env $CG_ALLOWLIST_PATH (intended for self-test isolation only —
+# production callers must let the default resolve). Modifying the allowlist
+# file requires peter_diff_review on the modifying task. Rationale grounding
+# (consent fatigue, Boehm cost-of-change, status-quo bias) lives as an inline
+# comment block at the top of the allowlist file.
 #
-# Author: Claude Opus 4.7 (1M context) — Plan 71 SP15 Session 1
+# Author: Claude Opus 4.7 (1M context) — Plan 71 SP15 Sessions 1 (T-1) + 2 (T-2)
 
 set -u
 
@@ -157,6 +167,57 @@ _cg_render_rationale() {
   printf '\n=== end PROPOSAL ===\n' >&2
 }
 
+# Resolve allowlist path with $CG_ALLOWLIST_PATH override, fallback to
+# $_cg_repo_root/lib/consultation-gate.allowlist.
+_cg_allowlist_path() {
+  printf '%s\n' "${CG_ALLOWLIST_PATH:-$_cg_repo_root/lib/consultation-gate.allowlist}"
+}
+
+# Return 0 if surface-id appears as an exact-match line in the allowlist
+# (after stripping `#`-prefixed comments and blank lines). Return 1 on miss
+# OR when the allowlist file is unreadable (fail-closed: missing allowlist
+# means nothing is allowlisted).
+_cg_check_allowlist() {
+  local surface_id="$1"
+  local allowlist
+  allowlist="$(_cg_allowlist_path)"
+  if [ ! -r "$allowlist" ]; then
+    printf 'consultation-gate FAIL: allowlist not readable at %s\n' "$allowlist" >&2
+    return 1
+  fi
+  # Strip comments + blank lines + leading/trailing whitespace, then exact-match.
+  # `grep -Fxq` = fixed-string, full-line, quiet.
+  sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e '/^#/d' -e '/^$/d' "$allowlist" \
+    | grep -Fxq "$surface_id"
+}
+
+_cg_audit_log_blocked() {
+  # $1=surface_id $2=reason
+  # Sibling of _cg_audit_log carrying a different schema:
+  #   {ts, surface_id, action:"consult-blocked", reason}
+  # No rationale_sha / response fields — block fires before rationale_fn runs.
+  _cg_require || return 2
+  local log
+  log="$(gate_audit_path)" || return 2
+  local log_dir
+  log_dir="$(dirname "$log")"
+  mkdir -p "$log_dir" 2>/dev/null || {
+    printf 'consultation-gate FAIL: cannot create audit log dir: %s\n' "$log_dir" >&2
+    return 2
+  }
+  jq -nc \
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg surface_id "$1" \
+    --arg action "consult-blocked" \
+    --arg reason "$2" \
+    '{ts:$ts, surface_id:$surface_id, action:$action, reason:$reason}' \
+    >> "$log" || {
+      printf 'consultation-gate FAIL: audit append failed at %s\n' "$log" >&2
+      return 2
+    }
+  return 0
+}
+
 _cg_run_editor() {
   local buf="$1"
   local ed="${EDITOR:-vi}"
@@ -177,7 +238,6 @@ _cg_run_editor() {
 
 consultation_propose() {
   # $1=surface_id $2=rationale_fn $3=generator_fn [generator-args...]
-  _cg_require || return 2
   local surface_id="${1:-}"
   local rationale_fn="${2:-}"
   local generator_fn="${3:-}"
@@ -186,6 +246,18 @@ consultation_propose() {
     return 2
   fi
   shift 3
+
+  # Allowlist check FIRST (T-2): non-allowlisted surface returns rc=2 + audit
+  # consult-blocked entry. Fires before _cg_require + before rationale_fn so
+  # gate-creep attempts cost nothing beyond a log line.
+  if ! _cg_check_allowlist "$surface_id"; then
+    _cg_audit_log_blocked "$surface_id" "not-allowlisted" || :
+    printf 'consultation_propose BLOCKED: surface_id "%s" not on allowlist (%s)\n' \
+      "$surface_id" "$(_cg_allowlist_path)" >&2
+    return 2
+  fi
+
+  _cg_require || return 2
   if ! command -v "$rationale_fn" >/dev/null 2>&1 && ! type "$rationale_fn" >/dev/null 2>&1; then
     printf 'consultation_propose FAIL: rationale_fn not callable: %s\n' "$rationale_fn" >&2
     return 2
@@ -288,6 +360,19 @@ if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
       # control-flow path, not editor UX.
       export EDITOR=":"
 
+      # Hermetic allowlist (T-2): "self-test" surface for sub-tests 1-3 +
+      # the 4 production entries. Keeps the production allowlist out of the
+      # test environment per feedback_test_isolation_for_hooks_state.
+      export CG_ALLOWLIST_PATH="$_CG_TEST_DIR/allowlist"
+      cat > "$CG_ALLOWLIST_PATH" <<'ALLOWLIST'
+# self-test allowlist
+self-test
+surface-3-vault-claude-md
+surface-4-tag-prefixes
+surface-6-frontmatter-enforce
+sp13-stage-2-5-import-plan
+ALLOWLIST
+
       # Mock rationale_fn: emits canned proposal + citation block on stdout.
       mock_rationale() {
         printf 'PROPOSAL: tag prefixes = engagement, project, scope (3 prefixes)\n'
@@ -369,7 +454,38 @@ if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
           echo "FAIL: consult record missing field '$field': $sample" >&2; exit 1; }
       done
 
-      printf 'self-test PASS: 4/4 sub-tests green; audit_log=%s records=%s\n' \
+      # --- Sub-test 5: allowlist enforcement (T-2) ---
+      # Non-allowlisted surface-id "not-on-allowlist" must return rc=2 and
+      # write a {action:"consult-blocked", reason:"not-allowlisted"} audit
+      # record. mock_generator must NOT fire (gate-block precedes orchestration).
+      rm -f "$CG_TARGET_PATH"
+      printf '0\n' > "$_gen_count_file"
+      _records_before_5="$(wc -l < "$AUTO_AUTHOR_LOG" | tr -d ' ')"
+      consultation_propose not-on-allowlist mock_rationale mock_generator
+      _rc5=$?
+      [ "$_rc5" = "2" ] || {
+        echo "FAIL: non-allowlisted surface rc=$_rc5 (expected 2)" >&2; exit 1; }
+      [ "$(get_gen_count)" = "0" ] || {
+        echo "FAIL: gate-blocked surface fired generator (count=$(get_gen_count))" >&2; exit 1; }
+      [ ! -f "$CG_TARGET_PATH" ] || {
+        echo "FAIL: gate-blocked surface wrote target" >&2; exit 1; }
+      _records_after_5="$(wc -l < "$AUTO_AUTHOR_LOG" | tr -d ' ')"
+      [ "$_records_after_5" = "$((_records_before_5 + 1))" ] || {
+        echo "FAIL: gate-block did not append exactly 1 audit record (before=$_records_before_5 after=$_records_after_5)" >&2; exit 1; }
+      _last_record="$(tail -n 1 "$AUTO_AUTHOR_LOG")"
+      printf '%s' "$_last_record" | grep -q '"action":"consult-blocked"' || {
+        echo "FAIL: last record missing action=consult-blocked: $_last_record" >&2; exit 1; }
+      printf '%s' "$_last_record" | grep -q '"reason":"not-allowlisted"' || {
+        echo "FAIL: last record missing reason=not-allowlisted: $_last_record" >&2; exit 1; }
+      printf '%s' "$_last_record" | grep -q '"surface_id":"not-on-allowlist"' || {
+        echo "FAIL: last record surface_id mismatch: $_last_record" >&2; exit 1; }
+      for field in ts surface_id action reason; do
+        printf '%s' "$_last_record" | grep -q "\"$field\":" || {
+          echo "FAIL: consult-blocked record missing field '$field': $_last_record" >&2; exit 1; }
+      done
+
+      records="$(wc -l < "$AUTO_AUTHOR_LOG" | tr -d ' ')"
+      printf 'self-test PASS: 5/5 sub-tests green; audit_log=%s records=%s\n' \
         "$AUTO_AUTHOR_LOG" "$records"
       rm -rf "$_CG_TEST_DIR"
       exit 0

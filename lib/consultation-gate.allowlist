@@ -1,0 +1,58 @@
+# lib/consultation-gate.allowlist — SP15 T-2 (Plan 71 SP15)
+#
+# Foundational-decision surface allowlist for consultation_propose.
+#
+# Surfaces NOT listed here that invoke consultation_propose return rc=2 and
+# emit a {action: "consult-blocked", reason: "not-allowlisted"} audit-log
+# entry. Prevents per-action gate creep — consultation fires only at
+# foundational/structural decisions; per-artifact preview stays on the
+# existing 3-step gate.
+#
+# Modifying this file requires peter_diff_review on the modifying task
+# (SP15 spec L53; tasks.md T-2 AC4).
+#
+# RATIONALE
+# ---------
+# Consent fatigue (Q4 finding): repeated approval prompts degrade meaningful
+#   sign-off. When gates fire on every action users habituate and rubber-stamp
+#   them, hollowing out the very approval signal the gate was built to capture.
+#   Implication: gate only at structural/foundational decisions; never per-
+#   artifact. Sources:
+#     Secure Privacy — understanding consent fatigue and best practices
+#       https://secureprivacy.ai/blog/understanding-consent-fatigue-and-best-practices
+#     CHI 2024 dark-patterns survey — override fatigue in approval UX
+#       https://arxiv.org/html/2405.07378v1
+#
+# Boehm cost-of-change + schema-migration cost: structural decisions retrofitted
+#   late consume 50-70% of migration project effort. Late-fixed defects cost up
+#   to 100x per Boehm's 1981 curve; modern reanalysis flattens but does not
+#   zero the asymmetry. Implication: foundational decisions earn an upfront
+#   consultation step precisely because their late-correction cost is
+#   asymmetric vs. early sign-off. Sources:
+#     Boehm cost-of-change curve (1981)
+#       https://www.researchgate.net/figure/Historical-cost-to-fix-curve-Adapted-from-Boehm-1981-p-40_fig11_308264787
+#     DataFlowMapper — data-migration cost analysis (50-70% pre-migration share)
+#       https://dataflowmapper.com/blog/data-migration-costs-quantitative-analysis
+#
+# Status-quo bias: users develop documented preference for the existing state
+#   over change, even when the existing state is suboptimal — gates therefore
+#   earn their place at decisions where post-hoc edits are expensive AND the
+#   bias against later fixes is documented. This is the SP15 selection
+#   criterion for what enters this allowlist. Source:
+#     CHI 2024 PMC review — status-quo bias in HCI
+#       https://pmc.ncbi.nlm.nih.gov/articles/PMC11375477/
+#
+# Audit lineage:
+#   spec.md L53 (T-2 description) +
+#   _audit-2026-05-03/11-sp15-spawn-decision.md §"Consent fatigue / override
+#   fatigue", §"Boehm cost-of-change", §"Status-quo bias", §"Mandatory
+#   architectural constraints" item 2.
+#
+# FORMAT: one surface-id per line; exact match (no globs); blank lines and
+# `#`-prefixed comments ignored.
+#
+# ALLOWLIST
+surface-3-vault-claude-md
+surface-4-tag-prefixes
+surface-6-frontmatter-enforce
+sp13-stage-2-5-import-plan
