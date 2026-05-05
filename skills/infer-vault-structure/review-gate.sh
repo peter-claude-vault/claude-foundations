@@ -32,9 +32,9 @@
 #       per session-prompt design recommendation; differentiation comes
 #       from surface_id="seed-import-plan" + the action field)
 #   Schema-types:
-#     - Input: T-6 import-plan.md MUST carry `schema_version: sp13-t6/1`
+#     - Input: T-6 import-plan.md MUST carry `schema_version: import-plan/1`
 #       in YAML frontmatter; T-7 refuses to consume non-conformant plans.
-#     - Output: same schema (sp13-t6/1) round-trips through user edits.
+#     - Output: same schema (import-plan/1) round-trips through user edits.
 #       Validation enforces the schema_version anchor stays intact post-
 #       edit; full Draft-07 re-validation against
 #       schemas/import-plan-schema.json is deferred (would require
@@ -43,7 +43,7 @@
 #   Pre-write validation:
 #     - SP12 T-1 done-marker present (dev-mode only — production adopters
 #       have no plan tree, check is no-op)
-#     - Input plan exists + carries sp13-t6/1 schema_version
+#     - Input plan exists + carries import-plan/1 schema_version
 #     - Gate library exists at the expected location + sources cleanly
 #     - Post-edit: schema_version line still intact in staged content
 #       BEFORE invoking gate_apply
@@ -139,16 +139,16 @@ EOF
   exit 2
 fi
 
-# ----- pre-flight 2: input plan exists + schema_version sp13-t6/1 -----
+# ----- pre-flight 2: input plan exists + schema_version import-plan/1 -----
 
 if [ ! -f "$INPUT_PLAN" ]; then
   printf 'review-gate.sh: input plan not found: %s\n' "$INPUT_PLAN" >&2
   printf '  Run T-6 import-plan.sh first to generate it.\n' >&2
   exit 2
 fi
-if ! grep -q '^schema_version: sp13-t6/1$' "$INPUT_PLAN"; then
+if ! grep -q '^schema_version: import-plan/1$' "$INPUT_PLAN"; then
   cat <<EOF >&2
-review-gate.sh: input plan schema_version mismatch (expected 'sp13-t6/1').
+review-gate.sh: input plan schema_version mismatch (expected 'import-plan/1').
   Path: $INPUT_PLAN
 This file does not appear to be a valid T-6 import plan. T-7 refuses to
 consume non-conformant plans. Re-run T-6 import-plan.sh first to
@@ -234,11 +234,11 @@ show_user_edit_diff() {
 }
 
 validate_stage_schema_version() {
-  if ! grep -q '^schema_version: sp13-t6/1$' "$STAGE"; then
+  if ! grep -q '^schema_version: import-plan/1$' "$STAGE"; then
     cat <<MSG >&2
 
 review-gate.sh: STAGED PLAN VALIDATION FAILED.
-  Expected:  schema_version: sp13-t6/1   (in YAML frontmatter)
+  Expected:  schema_version: import-plan/1   (in YAML frontmatter)
   Got:       (line missing or value differs)
 
 User edits must preserve the schema_version anchor — it is the

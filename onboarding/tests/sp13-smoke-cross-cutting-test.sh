@@ -278,7 +278,7 @@ _assert_grep "AC2.11 import-plan section: doesnt-fit"            'oesn'\''t fit|
 _assert_grep "AC2.12 import-plan section: unclassified pile"     'eview the unclassified|nclassified pile' "$IMPORT_PLAN"
 
 # Validate schema_version anchor for downstream T-7.
-_assert_grep "AC2.13 import-plan schema_version anchor" '^schema_version: sp13-t6/1$' "$IMPORT_PLAN"
+_assert_grep "AC2.13 import-plan schema_version anchor" '^schema_version: import-plan/1$' "$IMPORT_PLAN"
 
 # ============================================================================
 # Stage 2 → Stage 3 hand-off: review-gate (T-7) auto-applies the plan.
@@ -304,7 +304,7 @@ else
 fi
 
 _assert_file_exists "AC4.2 approved-import-plan.md exists" "$APPROVED_PLAN"
-_assert_grep "AC4.3 approved-plan preserves schema_version" '^schema_version: sp13-t6/1$' "$APPROVED_PLAN"
+_assert_grep "AC4.3 approved-plan preserves schema_version" '^schema_version: import-plan/1$' "$APPROVED_PLAN"
 
 # ============================================================================
 # AC3 — Stage 3 GENERATE-WITH-GATE: ≥3 dirs, PRD/Context/Updates per project,
@@ -551,7 +551,7 @@ fi
 _assert_grep "AC7.2 retrofit dry-run rendered Collision matrix H2" \
   '^## Collision matrix' "$RETROFIT_OUT"
 _assert_grep "AC7.3 retrofit dry-run preserves T-6 schema_version anchor" \
-  '^schema_version: sp13-t6/1$' "$RETROFIT_OUT"
+  '^schema_version: import-plan/1$' "$RETROFIT_OUT"
 
 # Pagination support probe. retrofit-collision-matrix.py emits the table
 # header `| # | existing_path | proposed_action | target | candidate_id |

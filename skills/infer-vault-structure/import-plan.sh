@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # import-plan.sh — SP13 T-6 Stage 2: thin shell wrapper over import-plan.py.
-# Consumes T-5 propose-taxonomy-output.json (sp13-t5/1); produces a
-# user-reviewable import-plan.md (sp13-t6/1) for the T-7 review gate.
+# Consumes T-5 propose-taxonomy-output.json (propose-taxonomy/1); produces a
+# user-reviewable import-plan.md (import-plan/1) for the T-7 review gate.
 #
 # Usage:
 #   import-plan.sh [--propose-taxonomy <path>] [--out <path>]
@@ -12,7 +12,7 @@
 #   --out                onboarding/seed-content/state/import-plan.md
 #   --generated-at       (current UTC; helper auto-fills)
 #
-# Output schema (sp13-t6/1) declared at schemas/import-plan-schema.json.
+# Output schema (import-plan/1) declared at schemas/import-plan-schema.json.
 # Bash 3.2 compatible (R-23). Pure stdlib python3 helper (no requests /
 # numpy / pyyaml / markdown deps).
 

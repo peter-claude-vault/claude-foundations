@@ -295,7 +295,7 @@ _assert_grep "AC3.4 variant-c plan still renders project candidates section" \
 _assert_grep "AC3.5 variant-c plan still renders proposed vault tree" \
   'roposed vault tree' "$PLAN_C"
 _assert_grep "AC3.6 variant-c plan still renders schema_version anchor" \
-  '^schema_version: sp13-t6/1$' "$PLAN_C"
+  '^schema_version: import-plan/1$' "$PLAN_C"
 
 # Confirm 0 unclassified items in propose-taxonomy.
 n_unc_c=$(jq '[.candidates[] | select(.candidate_id=="unclassified") | .source_items[]] | length' \

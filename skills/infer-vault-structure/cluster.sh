@@ -16,9 +16,9 @@
 #   --eps                 0.45 (cosine-distance neighborhood radius)
 #   --embedding-mode      auto (voyage when VOYAGE_API_KEY set; stub otherwise)
 #
-# Output cluster-output.json schema (sp13-t4/1):
+# Output cluster-output.json schema (cluster-output/1):
 #   {
-#     "schema_version": "sp13-t4/1",
+#     "schema_version": "cluster-output/1",
 #     "embedding_mode": "stub" | "voyage",
 #     "n_records": <int>,
 #     "n_clusters": <int>,                 # excludes unclassified

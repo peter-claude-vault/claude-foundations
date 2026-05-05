@@ -3,9 +3,9 @@
 propose-taxonomy.py — SP13 T-5 Stage 2: LLM-proposed taxonomy with TnT-LLM
 iterative refinement.
 
-Consumes a T-4 cluster-output.json (sp13-t4/1) plus its source Stage 1 IR
+Consumes a T-4 cluster-output.json (cluster-output/1) plus its source Stage 1 IR
 JSONL; emits a propose-taxonomy-output.json validating against
-schemas/propose-taxonomy-schema.json (sp13-t5/1).
+schemas/propose-taxonomy-schema.json (propose-taxonomy/1).
 
 Pass orchestration (TnT-LLM, spec L162):
   Pass 1  (haiku 4.5, default): initial taxonomy proposal — one candidate
@@ -31,7 +31,7 @@ Confidence calibration (spec L170 design question 4):
   Self-reported LLM confidence is untrusted per literature consensus.
 
 R-23: stdlib only. No requests, numpy, pydantic. Bash 3.2 not relevant
-(Python). Output is JSON Schema Draft-07 conformant (sp13-t5/1).
+(Python). Output is JSON Schema Draft-07 conformant (propose-taxonomy/1).
 """
 
 import argparse
@@ -51,7 +51,7 @@ DEFAULT_MODEL_PASS1 = "claude-haiku-4-5-20251001"
 DEFAULT_MODEL_PASS2 = "claude-sonnet-4-6"
 DEFAULT_LOW_MAPPED_THRESHOLD = 0.80
 
-SCHEMA_VERSION = "sp13-t5/1"
+SCHEMA_VERSION = "propose-taxonomy/1"
 
 # Keyword heuristics for stub-mode type classification. Order matters —
 # meeting/reference checks fire before project default, so a cluster about
@@ -72,10 +72,10 @@ REFERENCE_KEYWORDS = {
 def load_cluster_output(path):
     with open(path, "r", encoding="utf-8") as fh:
         data = json.load(fh)
-    if data.get("schema_version") != "sp13-t4/1":
+    if data.get("schema_version") != "cluster-output/1":
         print(
             "propose-taxonomy.py: cluster-output schema_version mismatch: "
-            "expected sp13-t4/1, got %r" % data.get("schema_version"),
+            "expected cluster-output/1, got %r" % data.get("schema_version"),
             file=sys.stderr,
         )
         sys.exit(2)
@@ -171,7 +171,7 @@ def stub_pass1(cluster_output):
             "summary": "items the upstream cluster step could not bucket; "
                        "the review gate surfaces these for user disposition",
             "tags": ["#unclassified"],
-            "rationale": "noise bucket from sp13-t4/1 cluster output",
+            "rationale": "noise bucket from cluster-output/1 cluster output",
         },
         "source_items": unclassified_items,
         "_origin_clusters": ["unclassified"] * len(unclassified_items),
@@ -395,7 +395,7 @@ def live_pass1(cluster_output, ir_by_hash, api_key, model):
             "summary": "items the upstream cluster step could not bucket; "
                        "the review gate surfaces these for user disposition",
             "tags": ["#unclassified"],
-            "rationale": "noise bucket from sp13-t4/1 cluster output",
+            "rationale": "noise bucket from cluster-output/1 cluster output",
         },
         "source_items": unclassified_items,
         "_origin_clusters": ["unclassified"] * len(unclassified_items),
@@ -519,7 +519,7 @@ def main():
                     "with TnT-LLM iterative refinement"
     )
     ap.add_argument("--cluster-output", required=True,
-                    help="Path to T-4 cluster-output.json (sp13-t4/1)")
+                    help="Path to T-4 cluster-output.json (cluster-output/1)")
     ap.add_argument("--ir", required=True,
                     help="Path to Stage 1 IR JSONL (used for sample text in "
                          "live LLM prompts; required even in stub mode for "

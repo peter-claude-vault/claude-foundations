@@ -112,13 +112,13 @@ done
 
 # ---------- shared fixture: synthesize 5-project propose-taxonomy ----------
 # Hand-crafted (not via T-5) so the test is independent of T-5 stub
-# behavior. Shape matches sp13-t5/1; T-6 import-plan.sh consumes it
+# behavior. Shape matches propose-taxonomy/1; T-6 import-plan.sh consumes it
 # directly.
 
 FIXTURE_PROPOSE="$TMPROOT/propose-taxonomy.json"
 cat > "$FIXTURE_PROPOSE" <<'JSON'
 {
-  "schema_version": "sp13-t5/1",
+  "schema_version": "propose-taxonomy/1",
   "llm_mode": "stub",
   "embedding_mode_input": "stub",
   "n_records": 15,
@@ -231,7 +231,7 @@ cat > "$FIXTURE_PROPOSE" <<'JSON'
 }
 JSON
 
-# Render the import-plan via T-6 (the real generator — gives us a valid sp13-t6/1 plan).
+# Render the import-plan via T-6 (the real generator — gives us a valid import-plan/1 plan).
 APPROVED_PLAN="$TMPROOT/approved-import-plan.md"
 "$IMPORT_SH" \
   --propose-taxonomy "$FIXTURE_PROPOSE" \
@@ -243,8 +243,8 @@ if [ ! -f "$APPROVED_PLAN" ]; then
   echo "TEST FIXTURE FAILURE: import-plan.sh did not produce $APPROVED_PLAN" >&2
   exit 1
 fi
-if ! grep -q '^schema_version: sp13-t6/1$' "$APPROVED_PLAN"; then
-  echo "TEST FIXTURE FAILURE: rendered plan missing sp13-t6/1 anchor" >&2
+if ! grep -q '^schema_version: import-plan/1$' "$APPROVED_PLAN"; then
+  echo "TEST FIXTURE FAILURE: rendered plan missing import-plan/1 anchor" >&2
   exit 1
 fi
 

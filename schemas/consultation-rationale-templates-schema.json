@@ -9,7 +9,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "sp15-t7/1",
+      "const": "consultation-rationale-templates/1",
       "description": "Schema version anchor. Bump on breaking shape changes."
     },
     "templates": {

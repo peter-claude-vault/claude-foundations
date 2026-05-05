@@ -131,7 +131,7 @@ fi
 FIXTURE_PROPOSE="$TMPROOT/propose-taxonomy.json"
 cat > "$FIXTURE_PROPOSE" <<'JSON'
 {
-  "schema_version": "sp13-t5/1",
+  "schema_version": "propose-taxonomy/1",
   "llm_mode": "stub",
   "embedding_mode_input": "stub",
   "n_records": 11,
@@ -298,7 +298,7 @@ cat > "$FIXTURE_PROPOSE" <<'JSON'
 }
 JSON
 
-# Render through real T-6 import-plan.sh to produce a sp13-t6/1 plan.
+# Render through real T-6 import-plan.sh to produce a import-plan/1 plan.
 APPROVED_PLAN="$TMPROOT/approved-import-plan.md"
 if ! "$IMPORT_SH" \
   --propose-taxonomy "$FIXTURE_PROPOSE" \
@@ -345,7 +345,7 @@ BAD_SCHEMA_STDERR="$TMPROOT/bad-schema.stderr"
   >/dev/null 2>"$BAD_SCHEMA_STDERR"
 rc_bad_schema=$?
 assert_eq "wrong schema_version → rc=2" "2" "$rc_bad_schema"
-assert_grep "bad-schema stderr names sp13-t6/1" 'sp13-t6/1' "$BAD_SCHEMA_STDERR"
+assert_grep "bad-schema stderr names import-plan/1" 'import-plan/1' "$BAD_SCHEMA_STDERR"
 
 # ---------- AC3 — h3_walker direct ----------
 echo "AC3 — h3_walker direct invocation"
@@ -593,7 +593,7 @@ echo "AC9 — empty non-project section"
 EMPTY_FIXTURE="$TMPROOT/empty-nonproj.json"
 cat > "$EMPTY_FIXTURE" <<'JSON'
 {
-  "schema_version": "sp13-t5/1",
+  "schema_version": "propose-taxonomy/1",
   "llm_mode": "stub",
   "embedding_mode_input": "stub",
   "n_records": 3,

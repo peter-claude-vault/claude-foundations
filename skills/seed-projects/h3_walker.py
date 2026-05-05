@@ -9,7 +9,7 @@ section walker into a third file at T-13 (retrofit), we lift them once
 here and let consumers import.
 
 Public API:
-    SCHEMA_VERSION_EXPECTED        — constant ("sp13-t6/1").
+    SCHEMA_VERSION_EXPECTED        — constant ("import-plan/1").
     CANDIDATE_REQUIRED_FIELDS      — 8-tuple every parsed candidate carries.
 
     split_frontmatter(text)        — (fm_text, body) split on '---' fences.
@@ -41,7 +41,7 @@ import re
 import sys
 
 
-SCHEMA_VERSION_EXPECTED = "sp13-t6/1"
+SCHEMA_VERSION_EXPECTED = "import-plan/1"
 
 CANDIDATE_REQUIRED_FIELDS = (
     "candidate_id", "label", "type", "proposed_path",
@@ -272,7 +272,7 @@ def walk_h3_section(plan_path, section_pattern, allowed_types=None,
     candidate dicts (each H3 + inline ```yaml block).
 
     plan_path        — path to approved-import-plan.md (validated for
-                       schema_version: sp13-t6/1).
+                       schema_version: import-plan/1).
     section_pattern  — string OR compiled re.Pattern. The H2 heading line
                        to find. Use raw strings for Unicode-bearing
                        headings ("## Doesn’t fit any project — disposition").

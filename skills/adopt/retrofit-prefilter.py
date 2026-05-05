@@ -2,10 +2,10 @@
 """
 retrofit-prefilter.py — SP13 T-13 retrofit prefilter.
 
-Consumes a propose-taxonomy-output.json (sp13-t5/1) plus the source IR JSONL
+Consumes a propose-taxonomy-output.json (propose-taxonomy/1) plus the source IR JSONL
 plus the vault root, and emits two artifacts:
 
-  1. retrofit-filtered-taxonomy.json (sp13-t5/1; valid input for import-plan.sh)
+  1. retrofit-filtered-taxonomy.json (propose-taxonomy/1; valid input for import-plan.sh)
        Candidates whose proposed_path is already a scaffolded vault directory
        (i.e., contains PRD.md / Context.md / Updates.md) are DROPPED — Stage 3
        must not re-scaffold these. The dropped candidates surface in the matrix
@@ -40,7 +40,7 @@ Stdlib only — no pyyaml / requests / numpy.
 R-43 Output Contract:
   - Files written: retrofit-filtered-taxonomy.json + retrofit-matrix.json
     at $stage_dir.
-  - Schema-types: filtered-taxonomy is sp13-t5/1 (drop-only filter; same
+  - Schema-types: filtered-taxonomy is propose-taxonomy/1 (drop-only filter; same
     shape); matrix is sp13-t13/1 (declared inline in this file's emission).
   - Pre-write validation: input schema_version anchor on propose-taxonomy
     + IR; vault-root must be a directory.
@@ -56,7 +56,7 @@ import sys
 from collections import Counter
 
 
-SCHEMA_VERSION_TAXONOMY_INPUT = "sp13-t5/1"
+SCHEMA_VERSION_TAXONOMY_INPUT = "propose-taxonomy/1"
 SCHEMA_VERSION_MATRIX_OUTPUT = "sp13-t13/1"
 RETROFIT_VERSION = "v2.1.0"
 DEFAULT_KEEP_THRESHOLD = 0.8
@@ -239,14 +239,14 @@ def main():
                     "retrofit-action metadata for matrix rendering.",
     )
     ap.add_argument("--propose-taxonomy", required=True,
-                    help="Path to T-5 propose-taxonomy-output.json (sp13-t5/1).")
+                    help="Path to T-5 propose-taxonomy-output.json (propose-taxonomy/1).")
     ap.add_argument("--ir", required=True,
                     help="Path to T-3 IR JSONL.")
     ap.add_argument("--vault-root", required=True,
                     help="Vault root (existing files live under here).")
     ap.add_argument("--filtered-taxonomy-out", required=True,
                     help="Output path for filtered taxonomy "
-                         "(sp13-t5/1; consumed by import-plan.sh).")
+                         "(propose-taxonomy/1; consumed by import-plan.sh).")
     ap.add_argument("--matrix-out", required=True,
                     help="Output path for retrofit matrix metadata "
                          "(sp13-t13/1; consumed by retrofit-collision-matrix).")
@@ -324,8 +324,8 @@ def main():
 
     filtered_taxonomy = dict(taxonomy)  # shallow copy
     filtered_taxonomy["candidates"] = filtered_candidates
-    # Preserve schema_version anchor (sp13-t5/1) — filtered output is still a
-    # valid sp13-t5/1 instance (we only dropped items from a list with
+    # Preserve schema_version anchor (propose-taxonomy/1) — filtered output is still a
+    # valid propose-taxonomy/1 instance (we only dropped items from a list with
     # minItems 0).
 
     # Build per-IR-record matrix rows. Every IR record is one matrix row.

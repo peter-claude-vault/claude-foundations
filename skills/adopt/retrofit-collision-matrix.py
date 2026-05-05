@@ -3,11 +3,11 @@
 retrofit-collision-matrix.py — SP13 T-13 collision matrix renderer.
 
 Consumes a retrofit-matrix.json (sp13-t13/1; produced by retrofit-prefilter.py)
-plus a target import-plan.md (sp13-t6/1; produced by import-plan.sh) and
+plus a target import-plan.md (import-plan/1; produced by import-plan.sh) and
 APPENDS a `## Collision matrix` section to the import-plan.md.
 
 The append is additive — the existing T-6 schema_version anchor
-(`schema_version: sp13-t6/1` in YAML frontmatter) is preserved unchanged so
+(`schema_version: import-plan/1` in YAML frontmatter) is preserved unchanged so
 review-gate.sh's pre-flight schema-version grep still passes.
 
 Pagination contract (Refinement #4 from design review): when matrix has
@@ -30,7 +30,7 @@ Stdlib only — no pyyaml / requests.
 
 R-43 Output Contract:
   - Files written: import-plan.md is overwritten in place via tmp+rename.
-  - Schema-types: input matrix is sp13-t13/1; input/output plan is sp13-t6/1.
+  - Schema-types: input matrix is sp13-t13/1; input/output plan is import-plan/1.
   - Pre-write validation: schema_version anchors on both inputs; matrix
     schema_version anchor; appended section does not remove existing content.
   - Failure mode: BLOCK AND LOG. Bad input → exit 2. No partial writes.
@@ -45,7 +45,7 @@ import sys
 
 
 SCHEMA_VERSION_MATRIX_INPUT = "sp13-t13/1"
-SCHEMA_VERSION_PLAN_INPUT = "sp13-t6/1"
+SCHEMA_VERSION_PLAN_INPUT = "import-plan/1"
 ROWS_PER_PAGE = 50
 
 
@@ -178,7 +178,7 @@ def main():
     ap.add_argument("--matrix", required=True,
                     help="Path to retrofit-matrix.json (sp13-t13/1).")
     ap.add_argument("--import-plan", required=True,
-                    help="Path to import-plan.md (sp13-t6/1; appended in place).")
+                    help="Path to import-plan.md (import-plan/1; appended in place).")
     args = ap.parse_args()
 
     if not os.path.isfile(args.matrix):
@@ -198,8 +198,8 @@ def main():
     with open(args.import_plan, "r", encoding="utf-8") as fh:
         plan_text = fh.read()
 
-    # Validate the plan carries the sp13-t6/1 anchor in YAML frontmatter.
-    # Permissive grep — match any line "schema_version: sp13-t6/1" anywhere
+    # Validate the plan carries the import-plan/1 anchor in YAML frontmatter.
+    # Permissive grep — match any line "schema_version: import-plan/1" anywhere
     # in the first 50 lines (frontmatter region).
     head = "\n".join(plan_text.splitlines()[:50])
     if SCHEMA_VERSION_PLAN_INPUT not in head:

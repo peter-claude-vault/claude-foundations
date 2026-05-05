@@ -71,7 +71,7 @@ Flags: `--min-cluster-size N` (default 3), `--eps F` (cosine-distance neighborho
 
 The `auto` mode uses the Voyage AI embeddings API when `VOYAGE_API_KEY` is set and falls back to a deterministic stub when it isn't. The stub produces stable, reproducible clusters from token-overlap heuristics — useful for tests and for trying the pipeline without an API key.
 
-Output: `onboarding/seed-content/state/cluster-output.json` (`schema_version: sp13-t4/1`).
+Output: `onboarding/seed-content/state/cluster-output.json` (`schema_version: cluster-output/1`).
 
 ---
 
@@ -91,7 +91,7 @@ The `auto` mode uses the Anthropic Messages API when `ANTHROPIC_API_KEY` is set;
 
 **Crucially, an explicit unclassified bucket exists.** Records that don't fit any cluster's proposed label are routed to an "unclassified" pile rather than silently dropped. You see them in the import plan and can decide where they go.
 
-Output: `onboarding/seed-content/state/propose-taxonomy-output.json` (`schema_version: sp13-t5/1`; logical schema at `schemas/propose-taxonomy-schema.json`).
+Output: `onboarding/seed-content/state/propose-taxonomy-output.json` (`schema_version: propose-taxonomy/1`; logical schema at `schemas/propose-taxonomy-schema.json`).
 
 ---
 
@@ -99,7 +99,7 @@ Output: `onboarding/seed-content/state/propose-taxonomy-output.json` (`schema_ve
 
 `skills/infer-vault-structure/import-plan.sh` renders the taxonomy proposal as a markdown plan you can read top-to-bottom: every cluster, every record, every routing decision, every confidence score, every unclassified residual.
 
-Output: `onboarding/seed-content/state/import-plan.md` (`schema_version: sp13-t6/1`; logical schema at `schemas/import-plan-schema.json`).
+Output: `onboarding/seed-content/state/import-plan.md` (`schema_version: import-plan/1`; logical schema at `schemas/import-plan-schema.json`).
 
 ---
 
@@ -120,7 +120,7 @@ Output (only on apply): `onboarding/seed-content/state/approved-import-plan.md`.
 
 ## Schema versions
 
-The four state files carry `schema_version` fields (`sp13-t4/1`, `sp13-t5/1`, `sp13-t6/1`). These are wire-format identifiers: stages downstream of a producer check the version and refuse to run on an unrecognized schema. Bumping a schema is a breaking change for downstream consumers; the stages run as a chain so a coordinated bump is the standard upgrade path.
+The four state files carry `schema_version` fields (`cluster-output/1`, `propose-taxonomy/1`, `import-plan/1`). These are wire-format identifiers: stages downstream of a producer check the version and refuse to run on an unrecognized schema. Bumping a schema is a breaking change for downstream consumers; the stages run as a chain so a coordinated bump is the standard upgrade path.
 
 ---
 

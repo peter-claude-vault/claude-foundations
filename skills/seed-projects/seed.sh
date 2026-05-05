@@ -2,7 +2,7 @@
 # seed.sh — SP13 T-8 Stage 3 GENERATE-WITH-GATE: scaffold PRD/Context/Updates
 # triads from a user-approved import plan.
 #
-# Consumes T-7 output (state/approved-import-plan.md; sp13-t6/1). For each
+# Consumes T-7 output (state/approved-import-plan.md; import-plan/1). For each
 # project candidate, stages a folder + PRD.md + Context.md + Updates.md
 # under a staging dir; renders a SINGLE batched preview of all 15 staged
 # files diffed against any pre-existing target files; surfaces ONE user
@@ -29,14 +29,14 @@
 #     - audit log entries appended to SP12's auto-author-log.jsonl stream
 #       (or $AUTO_AUTHOR_LOG override)
 #   Schema-types:
-#     - Input: T-7 approved-import-plan.md (`schema_version: sp13-t6/1`)
+#     - Input: T-7 approved-import-plan.md (`schema_version: import-plan/1`)
 #       — validated by seed.py before staging
 #     - Per-file output: SP12 provenance frontmatter (validated against
 #       schemas/provenance-frontmatter-schema.json via pf_validate)
 #   Pre-write validation:
 #     - SP12 T-2 done-marker present (dev-mode only — production adopters
 #       have no plan tree, check is no-op)
-#     - approved-import-plan.md exists + carries sp13-t6/1
+#     - approved-import-plan.md exists + carries import-plan/1
 #     - Templates exist (prd / context / updates)
 #     - lib/provenance-frontmatter.sh exists + sourceable
 #     - lib/three-step-gate.sh exists + sourceable
@@ -171,16 +171,16 @@ EOF
   exit 2
 fi
 
-# ----- pre-flight: input plan exists + sp13-t6/1 anchor -----
+# ----- pre-flight: input plan exists + import-plan/1 anchor -----
 
 if [ ! -f "$APPROVED_PLAN" ]; then
   printf 'seed.sh: approved plan not found: %s\n' "$APPROVED_PLAN" >&2
   printf '  Run T-7 review-gate.sh first to generate it.\n' >&2
   exit 2
 fi
-if ! grep -q '^schema_version: sp13-t6/1$' "$APPROVED_PLAN"; then
+if ! grep -q '^schema_version: import-plan/1$' "$APPROVED_PLAN"; then
   cat <<EOF >&2
-seed.sh: approved plan schema_version mismatch (expected 'sp13-t6/1').
+seed.sh: approved plan schema_version mismatch (expected 'import-plan/1').
   Path: $APPROVED_PLAN
 This file does not appear to be a T-7 approved plan. Re-run review-gate.sh
 to regenerate, or fix the schema_version anchor in the YAML frontmatter.

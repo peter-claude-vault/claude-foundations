@@ -41,11 +41,11 @@ else
   fail "approved-import-plan.md missing or empty"
 fi
 
-# Schema-version round-trip preserved (sp13-t6/1).
-if grep -q '^schema_version: sp13-t6/1$' "$INFERRED_DIR/approved-import-plan.md" 2>/dev/null; then
-  pass "approved plan preserves schema_version: sp13-t6/1"
+# Schema-version round-trip preserved (import-plan/1).
+if grep -q '^schema_version: import-plan/1$' "$INFERRED_DIR/approved-import-plan.md" 2>/dev/null; then
+  pass "approved plan preserves schema_version: import-plan/1"
 else
-  fail "approved plan missing schema_version: sp13-t6/1"
+  fail "approved plan missing schema_version: import-plan/1"
 fi
 
 # review-gate.done marker written, review-pending.flag absent.

@@ -20,13 +20,13 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "sp13-t6/1",
+      "const": "import-plan/1",
       "description": "Schema version anchor for this import plan. Bump on breaking shape changes; T-7 validates this before consuming a user-edited plan."
     },
     "input_propose_taxonomy_schema_version": {
       "type": "string",
-      "const": "sp13-t5/1",
-      "description": "Echoed schema_version of the propose-taxonomy-output.json this plan was generated from. T-6 import-plan.sh refuses to run if its input is not sp13-t5/1; this field records that contract for downstream verification."
+      "const": "propose-taxonomy/1",
+      "description": "Echoed schema_version of the propose-taxonomy-output.json this plan was generated from. T-6 import-plan.sh refuses to run if its input is not propose-taxonomy/1; this field records that contract for downstream verification."
     },
     "generated_at": {
       "type": "string",

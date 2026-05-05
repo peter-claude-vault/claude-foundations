@@ -3,7 +3,7 @@
 inbox-disposition.py — SP13 T-10 Stage 3 GENERATE-WITH-GATE: route non-project
 candidates from a user-approved import plan to vault Inbox/.
 
-Consumes the same approved-import-plan.md (sp13-t6/1) that T-8 (seed.py)
+Consumes the same approved-import-plan.md (import-plan/1) that T-8 (seed.py)
 consumes; walks the "## Doesn’t fit any project — disposition" H2 section
 via the shared h3_walker module; for each non-project candidate (type in
 {reference, meeting, unclassified}) iterates its source_items and stages
@@ -35,7 +35,7 @@ R-43 Output Contract:
   - Files written: N staged files (one per source_item across all
     non-project candidates) under $STAGE_DIR/seed-projects/Inbox/;
     manifest JSON to stdout.
-  - Schema-types: input is sp13-t6/1; output staged files carry SP12
+  - Schema-types: input is import-plan/1; output staged files carry SP12
     provenance frontmatter (validated by pf_validate post-stage).
   - Pre-write validation: schema_version anchor on input;
     h3_walker enforces every candidate has the 8 required fields;
@@ -277,7 +277,7 @@ def main():
                     "from non-project candidates in an approved import plan",
     )
     ap.add_argument("--approved-plan", required=True,
-                    help="Path to T-7 approved-import-plan.md (sp13-t6/1).")
+                    help="Path to T-7 approved-import-plan.md (import-plan/1).")
     ap.add_argument("--vault-root", required=True,
                     help="Vault root path (Inbox files target <vault>/Inbox/).")
     ap.add_argument("--stage-dir", required=True,

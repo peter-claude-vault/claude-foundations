@@ -217,7 +217,7 @@ assert_not_grep "anchored block omits #research explainer (absent in stage)" \
 FIXTURE_PROPOSE="$TMPROOT/propose-taxonomy.json"
 cat > "$FIXTURE_PROPOSE" <<'JSON'
 {
-  "schema_version": "sp13-t5/1",
+  "schema_version": "propose-taxonomy/1",
   "llm_mode": "stub",
   "embedding_mode_input": "stub",
   "n_records": 6,
@@ -272,7 +272,7 @@ cat > "$FIXTURE_PROPOSE" <<'JSON'
 }
 JSON
 
-# Render through real T-6 import-plan.sh to produce a sp13-t6/1 plan.
+# Render through real T-6 import-plan.sh to produce a import-plan/1 plan.
 APPROVED_PLAN="$TMPROOT/approved-import-plan.md"
 if ! "$IMPORT_SH" \
   --propose-taxonomy "$FIXTURE_PROPOSE" \

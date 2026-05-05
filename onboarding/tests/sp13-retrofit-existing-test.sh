@@ -337,7 +337,7 @@ fi
 _assert_grep "AC3.2 dry-run output has Collision matrix H2" \
   '^## Collision matrix' "$DRY_OUT"
 _assert_grep "AC3.3 dry-run output preserves T-6 schema_version anchor" \
-  '^schema_version: sp13-t6/1$' "$DRY_OUT"
+  '^schema_version: import-plan/1$' "$DRY_OUT"
 _assert_grep "AC3.4 dry-run output has action legend" \
   'Action legend' "$DRY_OUT"
 _assert_grep "AC3.5 dry-run output has summary stats" \
@@ -484,7 +484,7 @@ cat > "$SYNTH_IR" <<EOF
 EOF
 cat > "$SYNTH_PROPOSE" <<EOF
 {
-  "schema_version": "sp13-t5/1",
+  "schema_version": "propose-taxonomy/1",
   "llm_mode": "stub",
   "embedding_mode_input": "stub",
   "n_records": 3,

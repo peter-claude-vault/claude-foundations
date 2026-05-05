@@ -4,7 +4,7 @@
 # Covers Stage 2 import-plan markdown generator acceptance criteria:
 #   AC1  schemas/import-plan-schema.json + import-plan.sh + import-plan.py
 #        all exist; bash -n / ast.parse / jq clean
-#   AC2  schema is JSON Schema Draft-07 with sp13-t6/1 const, 4-value type
+#   AC2  schema is JSON Schema Draft-07 with import-plan/1 const, 4-value type
 #        enum on candidate_block, oneOf on refinements from/into
 #   AC3  fixture A (50 items, 6 project + 1 ref + 1 meeting + 16
 #        unclassified) → import-plan.md non-empty; pipeline exits 0
@@ -15,8 +15,8 @@
 #        (d) per-source-item routing table (## Per-source-item routing)
 #        (e) "doesn't fit" disposition section
 #        (f) "review the unclassified pile" prominent call-out at top
-#   AC5  frontmatter schema_version is sp13-t6/1; input_propose_taxonomy_
-#        schema_version is sp13-t5/1; required header fields populated
+#   AC5  frontmatter schema_version is import-plan/1; input_propose_taxonomy_
+#        schema_version is propose-taxonomy/1; required header fields populated
 #   AC6  per-source-item routing table row count = header.n_records (50)
 #   AC7  unclassified call-out fires when count > 0 (fixture A; copy
 #        contains "16 items" + welcoming "no item is silently dropped")
@@ -101,14 +101,14 @@ else
   record_fail "import-plan-schema.json" "ok" "missing-or-jq-fail"
 fi
 
-# ---------- AC2 — schema is Draft-07 with sp13-t6/1 const + 4-value type enum ----------
-echo "AC2 — schema is Draft-07 with sp13-t6/1 const"
+# ---------- AC2 — schema is Draft-07 with import-plan/1 const + 4-value type enum ----------
+echo "AC2 — schema is Draft-07 with import-plan/1 const"
 schema_dollar=$(jq -r '."$schema"' "$SCHEMA")
 assert_eq "schema \$schema is draft-07" "http://json-schema.org/draft-07/schema#" "$schema_dollar"
 ver_const=$(jq -r '.properties.schema_version.const' "$SCHEMA")
-assert_eq "schema_version const is sp13-t6/1" "sp13-t6/1" "$ver_const"
+assert_eq "schema_version const is import-plan/1" "import-plan/1" "$ver_const"
 input_const=$(jq -r '.properties.input_propose_taxonomy_schema_version.const' "$SCHEMA")
-assert_eq "input version const is sp13-t5/1" "sp13-t5/1" "$input_const"
+assert_eq "input version const is propose-taxonomy/1" "propose-taxonomy/1" "$input_const"
 type_enum_count=$(jq -r '.definitions.candidate_block.properties.type.enum | length' "$SCHEMA")
 assert_eq "candidate_block type enum has 4 values" "4" "$type_enum_count"
 oneof_from=$(jq -r '.properties.refinements.items.properties.from.oneOf | length' "$SCHEMA")
@@ -197,7 +197,7 @@ n_records = sum(len(c["members"]) for c in clusters)
 n_clusters = sum(1 for c in clusters if c["cluster_id"] != "unclassified")
 
 cluster_output = {
-    "schema_version": "sp13-t4/1", "embedding_mode": "stub",
+    "schema_version": "cluster-output/1", "embedding_mode": "stub",
     "n_records": n_records, "n_clusters": n_clusters,
     "min_cluster_size": 3, "small_corpus": False,
     "small_corpus_message": None, "clusters": clusters,
@@ -248,8 +248,8 @@ assert_grep "(f) unclassified call-out at top" "^> ⚠️ \*\*Review the unclass
 
 # ---------- AC5 — frontmatter shape ----------
 echo "AC5 — frontmatter schema_version + input version + header fields"
-assert_grep "frontmatter schema_version sp13-t6/1" "^schema_version: sp13-t6/1$" "$IMPORT_A"
-assert_grep "frontmatter input version sp13-t5/1" "^input_propose_taxonomy_schema_version: sp13-t5/1$" "$IMPORT_A"
+assert_grep "frontmatter schema_version import-plan/1" "^schema_version: import-plan/1$" "$IMPORT_A"
+assert_grep "frontmatter input version propose-taxonomy/1" "^input_propose_taxonomy_schema_version: propose-taxonomy/1$" "$IMPORT_A"
 assert_grep "frontmatter generated_at field (quoted YAML string)" "^generated_at: \"2026-05-04T17:30:00Z\"$" "$IMPORT_A"
 assert_grep "frontmatter header.n_records" "^  n_records: 50$" "$IMPORT_A"
 assert_grep "frontmatter header.n_clusters" "^  n_clusters: 8$" "$IMPORT_A"
@@ -340,7 +340,7 @@ n_records = sum(len(c["members"]) for c in clusters)
 n_clusters = sum(1 for c in clusters if c["cluster_id"] != "unclassified")
 
 cluster_output = {
-    "schema_version": "sp13-t4/1", "embedding_mode": "stub",
+    "schema_version": "cluster-output/1", "embedding_mode": "stub",
     "n_records": n_records, "n_clusters": n_clusters,
     "min_cluster_size": 3, "small_corpus": False,
     "small_corpus_message": None, "clusters": clusters,

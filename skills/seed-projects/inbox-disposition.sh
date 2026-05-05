@@ -16,10 +16,10 @@
 #       seed.sh's apply path copies them in).
 #     - manifest JSON on stdout (sp13-t10/1).
 #   Schema-types:
-#     - Input: sp13-t6/1 (validated by h3_walker via inbox-disposition.py).
+#     - Input: import-plan/1 (validated by h3_walker via inbox-disposition.py).
 #     - Output staged files carry SP12 provenance frontmatter.
 #   Pre-write validation:
-#     - approved-import-plan.md exists + carries sp13-t6/1.
+#     - approved-import-plan.md exists + carries import-plan/1.
 #     - lib/provenance-frontmatter.sh exists + sourceable.
 #     - Vault root exists (caller's responsibility).
 #   Failure mode: BLOCK AND LOG.
@@ -97,8 +97,8 @@ if [ ! -f "$APPROVED_PLAN" ]; then
   printf 'inbox-disposition.sh: approved plan not found: %s\n' "$APPROVED_PLAN" >&2
   exit 2
 fi
-if ! grep -q '^schema_version: sp13-t6/1$' "$APPROVED_PLAN"; then
-  printf 'inbox-disposition.sh: approved plan schema_version mismatch (expected sp13-t6/1)\n' >&2
+if ! grep -q '^schema_version: import-plan/1$' "$APPROVED_PLAN"; then
+  printf 'inbox-disposition.sh: approved plan schema_version mismatch (expected import-plan/1)\n' >&2
   exit 2
 fi
 if [ ! -f "$PF_LIB" ]; then

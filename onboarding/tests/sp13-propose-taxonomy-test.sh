@@ -6,10 +6,10 @@
 #   AC1  schemas/propose-taxonomy-schema.json + propose-taxonomy.sh +
 #        propose-taxonomy.py all exist; bash -n / ast.parse / jq clean
 #   AC2  propose-taxonomy-schema.json is JSON Schema Draft-07 (has
-#        $schema, type, required, sp13-t5/1 const)
+#        $schema, type, required, propose-taxonomy/1 const)
 #   AC3  synthetic 50-item post-T-4 cluster-output fixture (6 project
 #        clusters + 1 reference + 1 meeting + unclassified) → taxonomy
-#        validates against sp13-t5/1 (schema_version, candidates shape,
+#        validates against propose-taxonomy/1 (schema_version, candidates shape,
 #        passes shape, items_mapped_pct in [0,1])
 #   AC4  ≥1 project candidate per 5-10 ingested items: 50 items → ≥5
 #        project candidates (spec L174 verbatim)
@@ -82,12 +82,12 @@ else
   record_fail "propose-taxonomy-schema.json" "ok" "missing-or-jq-fail"
 fi
 
-# ---------- AC2 — schema is Draft-07 with sp13-t5/1 const ----------
-echo "AC2 — schema is Draft-07 with sp13-t5/1 const"
+# ---------- AC2 — schema is Draft-07 with propose-taxonomy/1 const ----------
+echo "AC2 — schema is Draft-07 with propose-taxonomy/1 const"
 schema_dollar=$(jq -r '."$schema"' "$SCHEMA")
 assert_eq "schema \$schema field is draft-07" "http://json-schema.org/draft-07/schema#" "$schema_dollar"
 ver_const=$(jq -r '.properties.schema_version.const' "$SCHEMA")
-assert_eq "schema_version const is sp13-t5/1" "sp13-t5/1" "$ver_const"
+assert_eq "schema_version const is propose-taxonomy/1" "propose-taxonomy/1" "$ver_const"
 type_enum_count=$(jq -r '.properties.candidates.items.properties.type.enum | length' "$SCHEMA")
 assert_eq "candidate type enum has 4 values" "4" "$type_enum_count"
 
@@ -204,7 +204,7 @@ n_records = sum(len(c["members"]) for c in clusters)
 n_clusters = sum(1 for c in clusters if c["cluster_id"] != "unclassified")
 
 cluster_output = {
-    "schema_version": "sp13-t4/1",
+    "schema_version": "cluster-output/1",
     "embedding_mode": "stub",
     "n_records": n_records,
     "n_clusters": n_clusters,
@@ -241,7 +241,7 @@ record_pass "propose-taxonomy.sh exited 0"
 # ---------- AC3 — output validates against schema-shape probes ----------
 echo "AC3 — output schema-shape probes"
 sv=$(jq -r '.schema_version' "$PROPOSE_OUT")
-assert_eq "schema_version" "sp13-t5/1" "$sv"
+assert_eq "schema_version" "propose-taxonomy/1" "$sv"
 mode=$(jq -r '.llm_mode' "$PROPOSE_OUT")
 assert_eq "llm_mode" "stub" "$mode"
 emb_in=$(jq -r '.embedding_mode_input' "$PROPOSE_OUT")

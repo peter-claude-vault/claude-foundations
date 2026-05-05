@@ -3,7 +3,7 @@
 seed.py — SP13 T-8 Stage 3 GENERATE-WITH-GATE: stage PRD/Context/Updates triads.
 
 Consumes a T-7 user-approved import plan (state/approved-import-plan.md;
-schema_version: sp13-t6/1) and stages a tree of project-folder triads under
+schema_version: import-plan/1) and stages a tree of project-folder triads under
 $STAGE_DIR/seed-projects/<project-label>/{PRD.md, Context.md, Updates.md}.
 
 The bash wrapper (seed.sh) then:
@@ -21,7 +21,7 @@ Stdlib only — no pyyaml / jinja2 / requests / numpy / pydantic.
 R-23 not relevant (Python). R-43 Output Contract:
   - Files written: 15 staged files (5 projects × {PRD/Context/Updates})
     under --stage-dir; manifest JSON to stdout.
-  - Schema-types: input is sp13-t6/1; output staged files carry SP12
+  - Schema-types: input is import-plan/1; output staged files carry SP12
     provenance frontmatter (validated by pf_validate post-stage).
   - Pre-write validation: schema_version anchor on input;
     every parsed candidate carries the 8 required fields per
@@ -283,7 +283,7 @@ def main():
                     "from an approved import plan",
     )
     ap.add_argument("--approved-plan", required=True,
-                    help="Path to T-7 approved-import-plan.md (sp13-t6/1).")
+                    help="Path to T-7 approved-import-plan.md (import-plan/1).")
     ap.add_argument("--vault-root", required=True,
                     help="Vault root path (project folders land under here).")
     ap.add_argument("--stage-dir", required=True,

@@ -2,7 +2,7 @@
 """
 import-plan.py — SP13 T-6 Stage 2: render the user-reviewable import plan.
 
-Consumes a T-5 propose-taxonomy-output.json (sp13-t5/1); emits a markdown
+Consumes a T-5 propose-taxonomy-output.json (propose-taxonomy/1); emits a markdown
 file (import-plan.md) carrying the 6 required sections per spec L196-200:
   (a) corpus stats header (frontmatter)
   (b) proposed vault tree (nested bullet list)
@@ -14,7 +14,7 @@ file (import-plan.md) carrying the 6 required sections per spec L196-200:
       unclassified items exist; silent skip when zero (per T-15 UX criterion)
 
 The on-disk markdown is the surface; the LOGICAL wrapper validates against
-schemas/import-plan-schema.json (sp13-t6/1). Downstream T-7 review-gate.sh
+schemas/import-plan-schema.json (import-plan/1). Downstream T-7 review-gate.sh
 parses the markdown back into the wrapper for validation + user edits;
 schema is permissive on user-editable fields (proposed_path, type,
 metadata) so an in-place edit does not break round-trip validation.
@@ -38,8 +38,8 @@ import re
 import sys
 
 
-SCHEMA_VERSION = "sp13-t6/1"
-EXPECTED_INPUT_SCHEMA = "sp13-t5/1"
+SCHEMA_VERSION = "import-plan/1"
+EXPECTED_INPUT_SCHEMA = "propose-taxonomy/1"
 
 
 YAML_SAFE_BARE = re.compile(r"^[A-Za-z_][A-Za-z0-9_./@#-]*$")
@@ -564,7 +564,7 @@ def main():
                     "import-plan.md from T-5 propose-taxonomy output"
     )
     ap.add_argument("--propose-taxonomy", required=True,
-                    help="Path to T-5 propose-taxonomy-output.json (sp13-t5/1)")
+                    help="Path to T-5 propose-taxonomy-output.json (propose-taxonomy/1)")
     ap.add_argument("--out", required=True,
                     help="Output path for import-plan.md")
     ap.add_argument("--generated-at", default=None,

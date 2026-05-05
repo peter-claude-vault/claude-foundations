@@ -7,7 +7,7 @@ Consumes a Stage 1 IR JSONL file (schemas/seed-content-ir-schema.json) and
 emits a cluster-output JSON document of shape:
 
     {
-      "schema_version": "sp13-t4/1",
+      "schema_version": "cluster-output/1",
       "embedding_mode": "voyage" | "stub",
       "n_records": <int>,
       "n_clusters": <int>,
@@ -251,7 +251,7 @@ def main():
 
     if n == 0:
         out = {
-            "schema_version": "sp13-t4/1",
+            "schema_version": "cluster-output/1",
             "embedding_mode": mode,
             "n_records": 0,
             "n_clusters": 0,
@@ -303,7 +303,7 @@ def main():
             }
         ]
         out = {
-            "schema_version": "sp13-t4/1",
+            "schema_version": "cluster-output/1",
             "embedding_mode": mode,
             "n_records": n,
             "n_clusters": 1,
@@ -358,7 +358,7 @@ def main():
         })
 
     out = {
-        "schema_version": "sp13-t4/1",
+        "schema_version": "cluster-output/1",
         "embedding_mode": mode,
         "n_records": n,
         "n_clusters": sum(1 for c in clusters if c["cluster_id"] != "unclassified"),

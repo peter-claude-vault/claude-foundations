@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://claude-foundations-v2/schemas/propose-taxonomy-schema.json",
   "title": "Propose-Taxonomy Output (SP13 T-5)",
-  "description": "Output of skills/infer-vault-structure/propose-taxonomy.sh. Consumes T-4 cluster-output (sp13-t4/1) plus the Stage 1 IR; emits per-cluster candidate proposals with explicit type enumeration (project | reference | meeting | unclassified) and pass-orchestration metadata. Consumed by SP13 T-6 import-plan.sh. Resolves spec L165 carry-forward (per-candidate schema declared explicitly before T-6 consumes).",
+  "description": "Output of skills/infer-vault-structure/propose-taxonomy.sh. Consumes T-4 cluster-output (cluster-output/1) plus the Stage 1 IR; emits per-cluster candidate proposals with explicit type enumeration (project | reference | meeting | unclassified) and pass-orchestration metadata. Consumed by SP13 T-6 import-plan.sh. Resolves spec L165 carry-forward (per-candidate schema declared explicitly before T-6 consumes).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -19,7 +19,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "sp13-t5/1",
+      "const": "propose-taxonomy/1",
       "description": "Schema version anchor. Bump on breaking shape changes; T-6 import-plan.sh checks this before consuming."
     },
     "llm_mode": {

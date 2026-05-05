@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # propose-taxonomy.sh — SP13 T-5 Stage 2: thin shell wrapper over
-# propose-taxonomy.py. Consumes T-4 cluster-output.json (sp13-t4/1) plus
-# the source IR JSONL; produces propose-taxonomy-output.json (sp13-t5/1).
+# propose-taxonomy.py. Consumes T-4 cluster-output.json (cluster-output/1) plus
+# the source IR JSONL; produces propose-taxonomy-output.json (propose-taxonomy/1).
 #
 # Usage:
 #   propose-taxonomy.sh --cluster-output <path> --ir <ir.jsonl> \
@@ -24,7 +24,7 @@
 #   --max-passes          3 (minimum 2 enforced inside helper)
 #   --low-mapped-threshold 0.80
 #
-# Output schema (sp13-t5/1) declared at
+# Output schema (propose-taxonomy/1) declared at
 # schemas/propose-taxonomy-schema.json. Bash 3.2 compatible (R-23). Pure
 # stdlib python3 helper (no requests / numpy / pydantic).
 

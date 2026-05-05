@@ -11,7 +11,7 @@
 #   AC1 — stage-2-5-consultation.sh exists at skills/infer-vault-structure/;
 #         R-23 lint clean (/bin/bash -n + bash --posix -n).
 #   AC2 — Pre-condition: missing T-6 import-plan.md → rc=2 + clear error.
-#   AC3 — Pre-condition: input plan missing ^schema_version: sp13-t6/1$
+#   AC3 — Pre-condition: input plan missing ^schema_version: import-plan/1$
 #         → rc=2 (schema mismatch error).
 #   AC4 — Pre-condition: missing or schema-mismatched templates config
 #         → rc=2.
@@ -21,7 +21,7 @@
 #         URLs.
 #   AC6 — User-accept → rc=0; consulted-import-plan.md exists; carries
 #         consulted_at (ISO-8601 UTC) + consultation_response_hash
-#         (sha256-hex) in frontmatter; ^schema_version: sp13-t6/1$
+#         (sha256-hex) in frontmatter; ^schema_version: import-plan/1$
 #         line preserved.
 #   AC7 — User-reject → rc=1; consulted-import-plan.md NOT written;
 #         audit log records consult/reject with surface_id =
@@ -33,7 +33,7 @@
 #         review-gate.sh (--accept-on-eof) → state/approved-import-plan.md
 #         written; entire chain succeeds end-to-end.
 #   AC10 — Templates config validates against schema under strict
-#          Draft-07 jsonschema (sp15-t7/1).
+#          Draft-07 jsonschema (consultation-rationale-templates/1).
 #
 # CONSTRAINTS (R-23): bash 3.2.57; jq + python3 required.
 #
@@ -86,12 +86,12 @@ with open('$TEMPLATES') as f: d = json.load(f)
 jsonschema.Draft7Validator.check_schema(s)
 jsonschema.validate(instance=d, schema=s)
 " 2>/dev/null; then
-  pass "AC10 templates config validates against sp15-t7/1 Draft-07 schema"
+  pass "AC10 templates config validates against consultation-rationale-templates/1 Draft-07 schema"
 else
   rc=$?
   if [ "$rc" = "77" ]; then
     # jq fallback if jsonschema not installed.
-    if jq -e '.schema_version == "sp15-t7/1"' "$TEMPLATES" >/dev/null 2>&1 && \
+    if jq -e '.schema_version == "consultation-rationale-templates/1"' "$TEMPLATES" >/dev/null 2>&1 && \
        jq -e '.templates["sp13-stage-2-5-import-plan"].citations | length >= 4' "$TEMPLATES" >/dev/null 2>&1; then
       pass "AC10 templates config validates (jq fallback; jsonschema unavailable)"
     else
@@ -122,13 +122,13 @@ mkdir -p "$CLAUDE_HOME/onboarding/audit" "$HOOKS_STATE_OVERRIDE" "$TG_STAGE_DIR"
 # --- Synthetic import-plan.md fixture ---
 
 write_synthetic_import_plan() {
-  # $1 = output path; $2 = schema_version (default sp13-t6/1)
+  # $1 = output path; $2 = schema_version (default import-plan/1)
   local out="$1"
-  local sv="${2:-sp13-t6/1}"
+  local sv="${2:-import-plan/1}"
   cat > "$out" <<EOF
 ---
 schema_version: $sv
-input_propose_taxonomy_schema_version: sp13-t5/1
+input_propose_taxonomy_schema_version: propose-taxonomy/1
 generated_at: 2026-05-04T20:00:00Z
 header:
   n_records: 50
@@ -281,7 +281,7 @@ else
   fail "AC5 expected ≥4 citation URLs, got $url_count"
 fi
 
-# --- AC6: accept → consulted file with consulted_at + hash; sp13-t6/1 anchor preserved ---
+# --- AC6: accept → consulted file with consulted_at + hash; import-plan/1 anchor preserved ---
 
 if [ "$rc" != "0" ]; then
   fail "AC6 accept rc=$rc (expected 0)"
@@ -290,8 +290,8 @@ else
     fail "AC6 consulted-import-plan.md not written"
   else
     # schema_version anchor preserved (downstream T-7 review-gate compatibility).
-    if grep -q "^schema_version: sp13-t6/1$" "$OUT"; then
-      pass "AC6 sp13-t6/1 schema_version anchor preserved in consulted plan"
+    if grep -q "^schema_version: import-plan/1$" "$OUT"; then
+      pass "AC6 import-plan/1 schema_version anchor preserved in consulted plan"
     else
       fail "AC6 schema_version anchor lost in consulted plan"
     fi
@@ -366,13 +366,13 @@ fi
 
 # --- AC9: real-T-6 round-trip → Stage 2.5 → real review-gate ---
 
-# Step 1: write a synthetic propose-taxonomy-output.json (sp13-t5/1).
+# Step 1: write a synthetic propose-taxonomy-output.json (propose-taxonomy/1).
 # Minimal valid instance to exercise T-6 import-plan.py end-to-end.
 PT_OUT="$T7_TEST_DIR/state/propose-taxonomy-output.json"
 mkdir -p "$T7_TEST_DIR/state"
 cat > "$PT_OUT" <<'EOF'
 {
-  "schema_version": "sp13-t5/1",
+  "schema_version": "propose-taxonomy/1",
   "llm_mode": "stub",
   "embedding_mode_input": "stub",
   "n_records": 4,
@@ -433,8 +433,8 @@ T6_OUT="$T7_TEST_DIR/state/import-plan.md"
 "$IMPORT_PLAN_SH" --propose-taxonomy "$PT_OUT" --out "$T6_OUT" \
   --generated-at "2026-05-04T22:30:00Z" >"$T7_TEST_DIR/t6.out" 2>"$T7_TEST_DIR/t6.err"
 t6_rc=$?
-if [ "$t6_rc" = "0" ] && [ -s "$T6_OUT" ] && grep -q "^schema_version: sp13-t6/1$" "$T6_OUT"; then
-  pass "AC9.1 real T-6 import-plan.sh produced sp13-t6/1 plan"
+if [ "$t6_rc" = "0" ] && [ -s "$T6_OUT" ] && grep -q "^schema_version: import-plan/1$" "$T6_OUT"; then
+  pass "AC9.1 real T-6 import-plan.sh produced import-plan/1 plan"
 else
   fail "AC9.1 T-6 invocation failed: rc=$t6_rc"
   head -10 "$T6_OUT" >&2 2>/dev/null || true
@@ -449,7 +449,7 @@ T25_OUT="$T7_TEST_DIR/state/consulted-import-plan.md"
   >"$T7_TEST_DIR/t25.out" 2>"$T7_TEST_DIR/t25.err"
 t25_rc=$?
 if [ "$t25_rc" = "0" ] && [ -s "$T25_OUT" ] && \
-   grep -q "^schema_version: sp13-t6/1$" "$T25_OUT" && \
+   grep -q "^schema_version: import-plan/1$" "$T25_OUT" && \
    grep -qE "^consulted_at: [0-9]{4}-" "$T25_OUT" && \
    grep -qE "^consultation_response_hash: [a-f0-9]{64}$" "$T25_OUT"; then
   pass "AC9.2 Stage 2.5 consumed real-T-6 output + emitted consulted plan with provenance"
@@ -475,7 +475,7 @@ NO_PLAN_TREE="$T7_TEST_DIR/no-plan-tree-here"
   >"$T7_TEST_DIR/rg.out" 2>"$T7_TEST_DIR/rg.err" </dev/null
 rg_rc=$?
 if [ "$rg_rc" = "0" ] && [ -s "$APPROVED_OUT" ] && \
-   grep -q "^schema_version: sp13-t6/1$" "$APPROVED_OUT" && \
+   grep -q "^schema_version: import-plan/1$" "$APPROVED_OUT" && \
    grep -qE "^consulted_at: " "$APPROVED_OUT" && \
    grep -qE "^consultation_response_hash: " "$APPROVED_OUT"; then
   pass "AC9.3 real review-gate.sh consumed consulted plan + emitted approved-import-plan.md preserving provenance"

@@ -156,7 +156,7 @@ n_clusters = sum(1 for c in clusters if c["cluster_id"] != "unclassified")
 
 with open(cluster_path, "w", encoding="utf-8") as fh:
     json.dump({
-        "schema_version": "sp13-t4/1", "embedding_mode": "stub",
+        "schema_version": "cluster-output/1", "embedding_mode": "stub",
         "n_records": n_records, "n_clusters": n_clusters,
         "min_cluster_size": 3, "small_corpus": False,
         "small_corpus_message": None, "clusters": clusters,
@@ -412,8 +412,8 @@ assert_grep_file "AC4: approved plan carries user-edit marker" \
 assert_grep_file "AC4: stderr shows 'your edits' diff block" \
   "=== your edits .vs original generated plan." "$TMPROOT/edit.stderr"
 # schema_version anchor must round-trip
-assert_grep_file "AC4: approved plan retains sp13-t6/1 schema_version" \
-  "^schema_version: sp13-t6/1$" "$APPROVED"
+assert_grep_file "AC4: approved plan retains import-plan/1 schema_version" \
+  "^schema_version: import-plan/1$" "$APPROVED"
 
 # ---------- AC8 — schema_version drift in edit re-prompts (validation gate) ----------
 echo "AC8 — post-edit validation: nuked schema_version re-prompts (does NOT silently apply)"
@@ -424,7 +424,7 @@ cat > "$DESTRUCTIVE_EDITOR" <<'EDITOR'
 set -u
 target="$1"
 tmp="${target}.destructive-edit.tmp"
-sed 's/^schema_version: sp13-t6\/1$/schema_version: nuked-by-test/' "$target" > "$tmp"
+sed 's/^schema_version: import-plan\/1$/schema_version: nuked-by-test/' "$target" > "$tmp"
 mv "$tmp" "$target"
 EDITOR
 chmod +x "$DESTRUCTIVE_EDITOR"

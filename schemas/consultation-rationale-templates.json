@@ -1,5 +1,5 @@
 {
-  "schema_version": "sp15-t7/1",
+  "schema_version": "consultation-rationale-templates/1",
   "templates": {
     "sp13-stage-2-5-import-plan": {
       "preamble": "Before you review the generated import plan in detail at T-7, ratify the rationale behind the proposed taxonomy. The plan you are about to see is the OUTPUT of density-based clustering (HDBSCAN) followed by LLM-assisted iterative refinement (TnT-LLM pattern: Pass 1 propose, Pass 2 outlier merge/split). This consultation gate surfaces WHY the candidates are grouped and named the way they are, and the tradeoffs the system accepted on your behalf — so you can question the underlying logic before rubber-stamping the plan.",

@@ -17,19 +17,19 @@
 #     - state/consulted-import-plan.md (only on consultation accept; T-6
 #       import-plan.md content + 2 additive YAML frontmatter fields:
 #       consulted_at + consultation_response_hash. Preserves the
-#       sp13-t6/1 schema_version anchor for downstream T-7 review-gate.)
+#       import-plan/1 schema_version anchor for downstream T-7 review-gate.)
 #     - $AUTO_AUTHOR_LOG (consult/accept|reject|edit records via
 #       lib/consultation-gate.sh + generate/preview/apply records via
 #       three-step-gate.sh)
 #   Schema-types:
-#     - Input: import-plan.md must carry ^schema_version: sp13-t6/1$.
+#     - Input: import-plan.md must carry ^schema_version: import-plan/1$.
 #     - Templates: schemas/consultation-rationale-templates.json
-#       (sp15-t7/1).
+#       (consultation-rationale-templates/1).
 #     - Output: import-plan.md content + 2 additive frontmatter fields.
 #       schema_version anchor preserved → T-7 review-gate accepts.
 #   Pre-write validation:
 #     - Input plan exists + schema_version anchor present
-#     - Templates config exists + parseable + schema_version=sp15-t7/1
+#     - Templates config exists + parseable + schema_version=consultation-rationale-templates/1
 #     - consultation-gate.sh sourceable
 #     - Templates carry an entry for $SURFACE_ID
 #   Failure mode: BLOCK AND LOG.
@@ -82,8 +82,8 @@ CG_LIB="$DEFAULT_CG_LIB"
 AUTO_APPLY=0
 
 SURFACE_ID="sp13-stage-2-5-import-plan"
-TEMPLATES_SCHEMA_VERSION="sp15-t7/1"
-INPUT_SCHEMA_VERSION="sp13-t6/1"
+TEMPLATES_SCHEMA_VERSION="consultation-rationale-templates/1"
+INPUT_SCHEMA_VERSION="import-plan/1"
 
 usage() {
   cat <<EOF
@@ -358,8 +358,8 @@ _s13_25_rationale_fn() {
 # Emits T-6 import-plan.md content with consultation provenance fields
 # injected into the YAML frontmatter. Reads CG_RATIONALE_SHA +
 # CG_CONSULTED_AT exported by consultation_propose accept-path. Additive:
-# the sp13-t6/1 schema_version line is preserved verbatim → downstream T-7
-# review-gate.sh's `grep -q '^schema_version: sp13-t6/1$'` continues to
+# the import-plan/1 schema_version line is preserved verbatim → downstream T-7
+# review-gate.sh's `grep -q '^schema_version: import-plan/1$'` continues to
 # match.
 _s13_25_generator_fn() {
   python3 - "$INPUT_PLAN" "${CG_CONSULTED_AT:-}" "${CG_RATIONALE_SHA:-}" <<'PY'

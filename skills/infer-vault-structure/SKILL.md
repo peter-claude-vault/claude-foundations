@@ -60,9 +60,9 @@ You can also invoke each stage directly for testing.
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `--cluster-output <path>` | `state/cluster-output.json` | Cluster output (`schema_version: sp13-t4/1`). |
+| `--cluster-output <path>` | `state/cluster-output.json` | Cluster output (`schema_version: cluster-output/1`). |
 | `--ir <path>` | required | Stage 1 IR JSONL — needed for live-mode prompt context (sample text per cluster) and for schema-shape parity in stub mode. |
-| `--out <path>` | `state/propose-taxonomy-output.json` | Output taxonomy JSON (`sp13-t5/1`). |
+| `--out <path>` | `state/propose-taxonomy-output.json` | Output taxonomy JSON (`propose-taxonomy/1`). |
 | `--llm-mode {stub\|live\|auto}` | `auto` | `auto`: live when `ANTHROPIC_API_KEY` is set, else stub. |
 | `--model-pass1 <model-id>` | `claude-haiku-4-5-20251001` | Model for pass-1 initial taxonomy proposal. |
 | `--model-pass2 <model-id>` | `claude-sonnet-4-6` | Model for pass-2 outlier re-pass plus merge/split. |
@@ -73,15 +73,15 @@ You can also invoke each stage directly for testing.
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `--propose-taxonomy <path>` | `state/propose-taxonomy-output.json` | Taxonomy input (`sp13-t5/1`); validated before consumption. |
-| `--out <path>` | `state/import-plan.md` | Output import-plan markdown (`sp13-t6/1` declared in YAML frontmatter). |
+| `--propose-taxonomy <path>` | `state/propose-taxonomy-output.json` | Taxonomy input (`propose-taxonomy/1`); validated before consumption. |
+| `--out <path>` | `state/import-plan.md` | Output import-plan markdown (`import-plan/1` declared in YAML frontmatter). |
 | `--generated-at <ISO-8601>` | current UTC | Override timestamp; useful for reproducible test runs. |
 
 #### `review-gate.sh`
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `--import-plan <path>` | `state/import-plan.md` | Import plan input (`sp13-t6/1`); validated before consumption. |
+| `--import-plan <path>` | `state/import-plan.md` | Import plan input (`import-plan/1`); validated before consumption. |
 | `--approved-out <path>` | `state/approved-import-plan.md` | Output approved plan written on user `apply`; consumed by Stage 3. |
 | `--gate-lib <path>` | `onboarding/lib/three-step-gate.sh` | Gate library; sourced — never forked or re-implemented. |
 | `--accept-on-eof` | off | Treat stdin EOF as default `apply` (smoke-test convenience; never default-on for interactive runs). |
@@ -172,7 +172,7 @@ The review gate reassembles the wrapper from the markdown by parsing frontmatter
 
 ### Schema is authoritative for round-trip
 
-`sp13-t6/1` is declared formally as JSON Schema Draft-07 at `schemas/import-plan-schema.json`. The review gate validates the user-edited plan against this schema before consuming. The schema describes the LOGICAL wrapper that the gate reassembles from the markdown — not the markdown layout itself.
+`import-plan/1` is declared formally as JSON Schema Draft-07 at `schemas/import-plan-schema.json`. The review gate validates the user-edited plan against this schema before consuming. The schema describes the LOGICAL wrapper that the gate reassembles from the markdown — not the markdown layout itself.
 
 Validation properties that matter for round-trip:
 - `schema_version` and `input_propose_taxonomy_schema_version` are `const` fields — bumping them requires a coordinated review-gate update.
@@ -204,7 +204,7 @@ The hand-rolled YAML dumper covers the limited shapes this plan emits (scalars +
 
 The outer loop reads your choice and:
 
-- **apply (`a`/`A`/empty)** — validate the staged content's `schema_version: sp13-t6/1` anchor still intact. On pass: pipe `'a'` to `gate_apply --skip-preview --accept-on-empty-stdin`, which writes `state/approved-import-plan.md` atomically (cp + mv) and audits `apply`. On fail: surface `STAGED PLAN VALIDATION FAILED` and re-prompt.
+- **apply (`a`/`A`/empty)** — validate the staged content's `schema_version: import-plan/1` anchor still intact. On pass: pipe `'a'` to `gate_apply --skip-preview --accept-on-empty-stdin`, which writes `state/approved-import-plan.md` atomically (cp + mv) and audits `apply`. On fail: surface `STAGED PLAN VALIDATION FAILED` and re-prompt.
 - **edit (`e`/`E`)** — invoke `${EDITOR:-vi}` (with a vi/nano/vim fallback chain) on the staged file in place. After editor returns, re-loop back to `gate_preview` so you see your post-edit diff before committing.
 - **skip (`s`/`S`)** — pipe `'s'` to `gate_apply --skip-preview --accept-on-empty-stdin`; library audits `skip` and returns rc=0 without writing the target.
 - **abort (`b`/`B`/`q`/`Q`)** — pipe `'b'` to `gate_apply`; library audits `abort` and returns rc=1.
@@ -224,15 +224,15 @@ This skill writes to the same `auto-author-log.jsonl` stream the personalization
 
 ### Post-edit schema validation — block the round-trip
 
-After every edit cycle (and before invoking `gate_apply` for an `apply` action), the skill greps the staged file for the literal line `schema_version: sp13-t6/1`. Missing-or-different → re-prompt with `STAGED PLAN VALIDATION FAILED`. This is the round-trip contract anchor — Stage 3 reads `approved-import-plan.md` expecting `sp13-t6/1`; the skill refuses to write a target that breaks the contract. Full Draft-07 validation of the reassembled wrapper is deferred to Stage 3 if it wants deeper validation.
+After every edit cycle (and before invoking `gate_apply` for an `apply` action), the skill greps the staged file for the literal line `schema_version: import-plan/1`. Missing-or-different → re-prompt with `STAGED PLAN VALIDATION FAILED`. This is the round-trip contract anchor — Stage 3 reads `approved-import-plan.md` expecting `import-plan/1`; the skill refuses to write a target that breaks the contract. Full Draft-07 validation of the reassembled wrapper is deferred to Stage 3 if it wants deeper validation.
 
 ## Output schemas
 
-### `cluster-output.json` (`schema_version: sp13-t4/1`)
+### `cluster-output.json` (`schema_version: cluster-output/1`)
 
 ```json
 {
-  "schema_version": "sp13-t4/1",
+  "schema_version": "cluster-output/1",
   "embedding_mode": "stub" | "voyage",
   "n_records": 50,
   "n_clusters": 4,
@@ -260,13 +260,13 @@ After every edit cycle (and before invoking `gate_apply` for an `apply` action),
 
 `n_clusters` excludes the `unclassified` bucket.
 
-### `propose-taxonomy-output.json` (`schema_version: sp13-t5/1`)
+### `propose-taxonomy-output.json` (`schema_version: propose-taxonomy/1`)
 
 Formal JSON Schema Draft-07 at `schemas/propose-taxonomy-schema.json`. Top-level shape:
 
 ```json
 {
-  "schema_version": "sp13-t5/1",
+  "schema_version": "propose-taxonomy/1",
   "llm_mode": "stub" | "live",
   "embedding_mode_input": "stub" | "voyage",
   "n_records": 50,
@@ -294,13 +294,13 @@ Formal JSON Schema Draft-07 at `schemas/propose-taxonomy-schema.json`. Top-level
 }
 ```
 
-### `import-plan.md` logical wrapper (`schema_version: sp13-t6/1`)
+### `import-plan.md` logical wrapper (`schema_version: import-plan/1`)
 
 The skill emits a markdown file; the LOGICAL wrapper validates against `schemas/import-plan-schema.json` (Draft-07). Top-level shape (rendered as YAML frontmatter plus body):
 
 ```yaml
-schema_version: sp13-t6/1
-input_propose_taxonomy_schema_version: sp13-t5/1
+schema_version: import-plan/1
+input_propose_taxonomy_schema_version: propose-taxonomy/1
 generated_at: "2026-05-04T17:30:00Z"
 header:
   n_records: 50
@@ -367,16 +367,16 @@ Schema is permissive on user-editable fields (`proposed_path`, `type`, `metadata
   All paths are gitignored under the foundation-repo's `/state/` and `/onboarding/seed-content/state/` rules. No live `~/.claude/` writes.
 
 - **Schema types:**
-  - `sp13-t4/1` declared inline in this doc.
-  - `sp13-t5/1` declared formally at `schemas/propose-taxonomy-schema.json` (Draft-07).
-  - `sp13-t6/1` declared formally at `schemas/import-plan-schema.json` (Draft-07).
+  - `cluster-output/1` declared inline in this doc.
+  - `propose-taxonomy/1` declared formally at `schemas/propose-taxonomy-schema.json` (Draft-07).
+  - `import-plan/1` declared formally at `schemas/import-plan-schema.json` (Draft-07).
   - Audit-log records reuse the gate library's JSONL shape with `surface_id="seed-import-plan"`.
 
 - **Pre-write validation:**
   - `bash -n` on every `.sh` wrapper; Python `ast.parse` on every `.py` helper.
   - `jq -e .` on every emitted JSON file before downstream consumers read.
   - The renderer enforces `routing_table` row count = `header.n_records` and exits 1 if upstream candidates do not cover every IR record.
-  - The review gate grep-validates the `schema_version: sp13-t6/1` anchor on input AND after each edit cycle BEFORE invoking `gate_apply` for an `apply` action.
+  - The review gate grep-validates the `schema_version: import-plan/1` anchor on input AND after each edit cycle BEFORE invoking `gate_apply` for an `apply` action.
 
 - **Failure mode — block and log:**
   - cluster: missing IR → exit 2. Voyage API error → exit 3 (caller decides to fall back to stub or fail). Empty output → exit 1.
@@ -397,7 +397,7 @@ Schema is permissive on user-editable fields (`proposed_path`, `type`, `metadata
 
 | Consumer | Consumes | Notes |
 |---|---|---|
-| `seed-projects/seed.sh` | `approved-import-plan.md` (`sp13-t6/1`) | For each `type: project` candidate, scaffolds the directory plus PRD/Context/Updates triads with provenance frontmatter. Each Stage 3 write flows through the gate library for batched preview/apply. |
+| `seed-projects/seed.sh` | `approved-import-plan.md` (`import-plan/1`) | For each `type: project` candidate, scaffolds the directory plus PRD/Context/Updates triads with provenance frontmatter. Each Stage 3 write flows through the gate library for batched preview/apply. |
 | `/adopt --retrofit-existing` | The full chain via `orchestrate.sh` | Walks an existing populated vault as IR source; produces a collision matrix appended to the import plan. |
 | `/onboard --seed-content <path>` | The full chain via Section F | Greenfield personalization path: dispatches the orchestrator after the seven auto-author surfaces complete. |
 
