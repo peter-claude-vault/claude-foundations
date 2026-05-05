@@ -126,33 +126,66 @@ if ! command -v envsubst >/dev/null 2>&1; then
 fi
 # launchctl is only required in production mode; defer that check.
 
-# --- orchestration.json read ---
-if [ ! -r "${ORCHESTRATION_JSON:-}" ]; then
-  diag "ORCHESTRATION_JSON not readable: ${ORCHESTRATION_JSON:-<unset>}"
-  exit 3
-fi
+# --- schedule resolution ---
+# Two sources by job:
+#   - librarian / architect       → orchestration.json (StartCalendarInterval)
+#   - inbox-processor (SP13 T-12) → INBOX_POLL_INTERVAL_SEC env var (StartInterval)
+#
+# inbox-processor skips orchestration.json entirely because (a) its schedule is
+# user-driven via user-manifest.json#/inbox/poll_interval_minutes consumed by
+# skills/inbox-processor/install-cron.sh, and (b) StartInterval (a single
+# integer) doesn't match the StartCalendarInterval shape orchestration.json's
+# schedule branch encodes.
+hour=""
+minute=""
+weekday=""
+interval_sec=""
 
-job_json=$(jq -c --arg id "$job" '.jobs[] | select(.id == $id)' "$ORCHESTRATION_JSON" 2>/dev/null)
-if [ -z "$job_json" ]; then
-  diag "orchestration.json has no jobs[] entry with id='$job'"
-  exit 3
-fi
+if [ "$job" = "inbox-processor" ]; then
+  interval_sec="${INBOX_POLL_INTERVAL_SEC:-}"
+  if [ -z "$interval_sec" ]; then
+    diag "INBOX_POLL_INTERVAL_SEC env var required for job '$job' (set it via skills/inbox-processor/install-cron.sh)"
+    exit 3
+  fi
+  case "$interval_sec" in
+    *[!0-9]*|"")
+      diag "INBOX_POLL_INTERVAL_SEC must be a positive integer (got: '$interval_sec')"
+      exit 3
+      ;;
+  esac
+  if [ "$interval_sec" -lt 300 ] || [ "$interval_sec" -gt 86400 ]; then
+    diag "INBOX_POLL_INTERVAL_SEC must be in [300, 86400] seconds (got: $interval_sec)"
+    exit 3
+  fi
+else
+  if [ ! -r "${ORCHESTRATION_JSON:-}" ]; then
+    diag "ORCHESTRATION_JSON not readable: ${ORCHESTRATION_JSON:-<unset>}"
+    exit 3
+  fi
 
-# Schedule branch: hour/minute (StartCalendarInterval) only. interval_sec
-# (StartInterval) is forward-compat work for a future StartInterval template.
-hour=$(printf '%s' "$job_json" | jq -r '.schedule.hour // empty' 2>/dev/null)
-minute=$(printf '%s' "$job_json" | jq -r '.schedule.minute // empty' 2>/dev/null)
-interval_sec=$(printf '%s' "$job_json" | jq -r '.schedule.interval_sec // empty' 2>/dev/null)
+  job_json=$(jq -c --arg id "$job" '.jobs[] | select(.id == $id)' "$ORCHESTRATION_JSON" 2>/dev/null)
+  if [ -z "$job_json" ]; then
+    diag "orchestration.json has no jobs[] entry with id='$job'"
+    exit 3
+  fi
 
-if [ -n "$interval_sec" ]; then
-  diag "orchestration.json job '$job' uses schedule.interval_sec; default templates only support hour/minute (StartCalendarInterval). interval_sec is forward-compat work for a future StartInterval template."
-  exit 3
+  # Schedule branch: hour/minute (StartCalendarInterval) only for librarian +
+  # architect. interval_sec via orchestration.json remains rejected for these
+  # jobs — the env-var path is the sanctioned StartInterval channel (T-12).
+  hour=$(printf '%s' "$job_json" | jq -r '.schedule.hour // empty' 2>/dev/null)
+  minute=$(printf '%s' "$job_json" | jq -r '.schedule.minute // empty' 2>/dev/null)
+  interval_sec_orch=$(printf '%s' "$job_json" | jq -r '.schedule.interval_sec // empty' 2>/dev/null)
+
+  if [ -n "$interval_sec_orch" ]; then
+    diag "orchestration.json job '$job' uses schedule.interval_sec; only the inbox-processor job (SP13 T-12) consumes StartInterval, and it sources the value from INBOX_POLL_INTERVAL_SEC env var, not orchestration.json."
+    exit 3
+  fi
+  if [ -z "$hour" ] || [ -z "$minute" ]; then
+    diag "orchestration.json job '$job' missing schedule.hour or schedule.minute"
+    exit 3
+  fi
+  weekday=$(printf '%s' "$job_json" | jq -r '.schedule.dow[0] // empty' 2>/dev/null)
 fi
-if [ -z "$hour" ] || [ -z "$minute" ]; then
-  diag "orchestration.json job '$job' missing schedule.hour or schedule.minute"
-  exit 3
-fi
-weekday=$(printf '%s' "$job_json" | jq -r '.schedule.dow[0] // empty' 2>/dev/null)
 
 # --- compose render-time env vars ---
 USER_HOME="$HOME"
@@ -170,12 +203,13 @@ else
 fi
 TIMEZONE="${TIMEZONE:-America/New_York}"
 
-# Per-job vars — set both pairs to empty so envsubst doesn't leak across renders.
+# Per-job vars — set all groups to empty so envsubst doesn't leak across renders.
 LIBRARIAN_HOUR=""
 LIBRARIAN_MINUTE=""
 ARCHITECT_HOUR=""
 ARCHITECT_MINUTE=""
 ARCHITECT_WEEKDAY=""
+INBOX_POLL_INTERVAL_SEC_RENDER=""
 
 case "$job" in
   librarian)
@@ -193,14 +227,24 @@ case "$job" in
     ARCHITECT_WEEKDAY="$weekday"
     allowlist='$USER_HOME $CLAUDE_HOME $CLAUDE_LOG_DIR $TIMEZONE $LABEL_PREFIX $ARCHITECT_HOUR $ARCHITECT_MINUTE $ARCHITECT_WEEKDAY'
     ;;
+  inbox-processor)
+    # SP13 T-12. Schedule is StartInterval-driven via INBOX_POLL_INTERVAL_SEC
+    # env var (already validated above as positive integer in [300, 86400]).
+    # We re-export under the same name for envsubst (it's already in the env;
+    # the explicit reassign + export keeps the allowlist invariant explicit).
+    INBOX_POLL_INTERVAL_SEC_RENDER="$interval_sec"
+    INBOX_POLL_INTERVAL_SEC="$interval_sec"
+    allowlist='$USER_HOME $CLAUDE_HOME $CLAUDE_LOG_DIR $TIMEZONE $LABEL_PREFIX $INBOX_POLL_INTERVAL_SEC'
+    ;;
   *)
-    diag "no render mapping for job '$job' (templates: librarian, architect)"
+    diag "no render mapping for job '$job' (templates: librarian, architect, inbox-processor)"
     exit 2
     ;;
 esac
 export USER_HOME CLAUDE_HOME CLAUDE_LOG_DIR TIMEZONE LABEL_PREFIX
 export LIBRARIAN_HOUR LIBRARIAN_MINUTE
 export ARCHITECT_HOUR ARCHITECT_MINUTE ARCHITECT_WEEKDAY
+export INBOX_POLL_INTERVAL_SEC
 
 # --- pick target dir ---
 if [ -n "$staging_dir" ]; then

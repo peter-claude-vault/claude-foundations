@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>${USER_HOME}</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:${USER_HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>CLAUDE_HOME</key>
+		<string>${CLAUDE_HOME}</string>
+		<key>CLAUDE_LOG_DIR</key>
+		<string>${CLAUDE_LOG_DIR}</string>
+		<key>TZ</key>
+		<string>${TIMEZONE}</string>
+	</dict>
+	<key>Label</key>
+	<string>${LABEL_PREFIX}.inbox-processor</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>${CLAUDE_HOME}/orchestrator/cron-wrappers/inbox-processor-cron.sh</string>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>${CLAUDE_LOG_DIR}/inbox-processor-stderr.log</string>
+	<key>StandardOutPath</key>
+	<string>${CLAUDE_LOG_DIR}/inbox-processor-stdout.log</string>
+	<key>StartInterval</key>
+	<integer>${INBOX_POLL_INTERVAL_SEC}</integer>
+	<key>WorkingDirectory</key>
+	<string>${USER_HOME}</string>
+</dict>
+</plist>
