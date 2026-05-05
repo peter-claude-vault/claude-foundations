@@ -39,8 +39,17 @@ import re
 import subprocess
 import sys
 
+# H3 walker promoted to shared lib at SP13 T-10 (Session 8) per T-8
+# Decision 7 + T-9 close-out carry-forward. Both seed.py and T-10's
+# inbox-disposition.py import from this module; the YAML parser, frontmatter
+# splitter, schema-version validation, and section walker live in one place.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from h3_walker import (  # noqa: E402
+    SCHEMA_VERSION_EXPECTED,
+    walk_h3_section,
+)
 
-SCHEMA_VERSION_EXPECTED = "sp13-t6/1"
+
 TEMPLATE_NAMES = ("PRD", "Context", "Updates")
 TEMPLATE_FILENAMES = {
     "PRD": "PRD.md",
@@ -53,300 +62,22 @@ def err(msg):
     sys.stderr.write("seed.py: %s\n" % msg)
 
 
-# ---------------------------------------------------------------------------
-# Markdown / YAML parsing
-# ---------------------------------------------------------------------------
-
-def split_frontmatter(text):
-    """Return (frontmatter_body, post_body) split on first two '---' lines."""
-    lines = text.splitlines(keepends=False)
-    if not lines or lines[0].rstrip() != "---":
-        return None, text
-    fm = []
-    i = 1
-    while i < len(lines):
-        if lines[i].rstrip() == "---":
-            return "\n".join(fm), "\n".join(lines[i + 1:])
-        fm.append(lines[i])
-        i += 1
-    return None, text
-
-
-def parse_yaml_block(text):
-    """
-    Minimal recursive YAML parser for the bounded shapes T-6 emits:
-      - scalars (string, int, float, bool, null)
-      - lists of scalars
-      - lists of objects (- key: value\n  key: value)
-      - nested mappings (block style, indented)
-
-    No anchors, aliases, multi-document, or flow style. Quoted strings are
-    unquoted; unquoted ints/floats/bools/null become their Python types.
-
-    Returns the parsed structure (dict or list) on success; raises
-    ValueError on malformed input.
-    """
-    raw_lines = text.splitlines()
-    # Strip trailing empties for the parser; preserve internal blank lines.
-    while raw_lines and raw_lines[-1].strip() == "":
-        raw_lines.pop()
-    pos = [0]
-    return _parse_block(raw_lines, pos, indent=0)
-
-
-def _line_indent(line):
-    """Number of leading spaces (tabs not allowed; mixed-indent rejected)."""
-    n = 0
-    for ch in line:
-        if ch == " ":
-            n += 1
-        elif ch == "\t":
-            raise ValueError("seed.py YAML parser: tabs are not permitted in indentation")
-        else:
-            break
-    return n
-
-
-def _peek_nonblank(lines, pos):
-    """Return next non-blank line index, or len(lines)."""
-    i = pos[0]
-    while i < len(lines) and lines[i].strip() == "":
-        i += 1
-    return i
-
-
-def _parse_block(lines, pos, indent):
-    """Parse a block at the given indent level. Returns a dict or list."""
-    i = _peek_nonblank(lines, pos)
-    pos[0] = i
-    if i >= len(lines):
-        return None
-    line = lines[i]
-    line_indent = _line_indent(line)
-    if line_indent < indent:
-        return None
-    stripped = line.strip()
-    if stripped.startswith("- "):
-        return _parse_list(lines, pos, indent)
-    if stripped == "-":
-        return _parse_list(lines, pos, indent)
-    return _parse_mapping(lines, pos, indent)
-
-
-def _parse_mapping(lines, pos, indent):
-    out = {}
-    while True:
-        i = _peek_nonblank(lines, pos)
-        pos[0] = i
-        if i >= len(lines):
-            break
-        line = lines[i]
-        line_indent = _line_indent(line)
-        if line_indent < indent:
-            break
-        if line_indent != indent:
-            raise ValueError(
-                "seed.py YAML parser: unexpected indent on line %d: %r"
-                % (i + 1, line)
-            )
-        stripped = line.strip()
-        if stripped.startswith("- "):
-            break
-        m = re.match(r"^([A-Za-z_][A-Za-z0-9_./@#-]*|\"[^\"]*\"|'[^']*')\s*:\s*(.*)$",
-                     stripped)
-        if not m:
-            raise ValueError(
-                "seed.py YAML parser: expected 'key: value' on line %d, got %r"
-                % (i + 1, stripped)
-            )
-        key_raw, rest = m.group(1), m.group(2)
-        key = _scalar(key_raw)
-        pos[0] = i + 1
-        if rest == "":
-            # Block-style nested value follows.
-            j = _peek_nonblank(lines, pos)
-            if j >= len(lines):
-                out[key] = None
-                continue
-            next_indent = _line_indent(lines[j])
-            if next_indent <= indent:
-                out[key] = None
-                continue
-            sub = _parse_block(lines, pos, indent=next_indent)
-            out[key] = sub
-        else:
-            # Inline value.
-            if rest in ("{}",):
-                out[key] = {}
-            elif rest in ("[]",):
-                out[key] = []
-            else:
-                out[key] = _scalar(rest)
-    return out
-
-
-def _parse_list(lines, pos, indent):
-    out = []
-    while True:
-        i = _peek_nonblank(lines, pos)
-        pos[0] = i
-        if i >= len(lines):
-            break
-        line = lines[i]
-        line_indent = _line_indent(line)
-        if line_indent < indent:
-            break
-        stripped = line.strip()
-        if not (stripped == "-" or stripped.startswith("- ")):
-            break
-        if line_indent != indent:
-            break
-        rest = stripped[1:].lstrip()
-        pos[0] = i + 1
-        if rest == "":
-            j = _peek_nonblank(lines, pos)
-            if j >= len(lines):
-                out.append(None)
-                continue
-            sub = _parse_block(lines, pos, indent=_line_indent(lines[j]))
-            out.append(sub)
-        elif ":" in rest and re.match(
-            r"^([A-Za-z_][A-Za-z0-9_./@#-]*|\"[^\"]*\"|'[^']*')\s*:",
-            rest,
-        ):
-            # Inline first key:value of a mapping list-item.
-            # Reconstruct so the mapping parser sees `<indent+2>key: value`.
-            synthetic = " " * (indent + 2) + rest
-            tail = lines[i + 1:]
-            new_lines = lines[:i + 1]
-            new_lines.append(synthetic)
-            new_lines.extend(tail)
-            # Replace pos accordingly.
-            lines.clear()
-            lines.extend(new_lines)
-            pos[0] = i + 1
-            sub = _parse_mapping(lines, pos, indent=indent + 2)
-            out.append(sub)
-        else:
-            out.append(_scalar(rest))
-    return out
-
-
-def _scalar(raw):
-    """Parse a YAML scalar. Strip outer quotes; coerce numbers/bools/null."""
-    s = raw.strip()
-    if s == "null" or s == "~":
-        return None
-    if s == "true":
-        return True
-    if s == "false":
-        return False
-    if (s.startswith('"') and s.endswith('"')) or \
-       (s.startswith("'") and s.endswith("'")):
-        return s[1:-1]
-    # Integer?
-    try:
-        return int(s)
-    except ValueError:
-        pass
-    # Float?
-    try:
-        return float(s)
-    except ValueError:
-        pass
-    return s
-
-
-# ---------------------------------------------------------------------------
-# Approved-plan walker
-# ---------------------------------------------------------------------------
-
-CANDIDATE_REQUIRED_FIELDS = (
-    "candidate_id", "label", "type", "proposed_path",
-    "metadata", "source_items", "confidence", "low_confidence",
-)
-
-
 def parse_approved_plan(path):
     """
     Walk the approved-import-plan.md and return a list of project candidate
-    dicts (those with type == "project" only — non-project handling is
-    T-10's territory).
+    dicts (type == "project" only — non-project handling is T-10's territory).
+
+    Thin wrapper around `h3_walker.walk_h3_section` pinned to the
+    "## Project candidates" section + project type filter. Maintains
+    parity with the pre-T-10 contract (same signature, same return shape,
+    same exit-2-on-parse-error semantics) so seed.py call sites are
+    unchanged after the H3 walker promotion.
     """
-    if not os.path.isfile(path):
-        err("approved plan not found: %s" % path)
-        sys.exit(2)
-    with open(path, "r", encoding="utf-8") as fh:
-        content = fh.read()
-
-    fm_text, body = split_frontmatter(content)
-    if fm_text is None:
-        err("approved plan has no YAML frontmatter: %s" % path)
-        sys.exit(2)
-
-    # Schema-version anchor check.
-    if not re.search(r"^schema_version:\s*sp13-t6/1\s*$", fm_text, re.MULTILINE):
-        err("approved plan schema_version mismatch (expected 'sp13-t6/1')")
-        sys.exit(2)
-
-    # Walk to '## Project candidates' section, then iterate H3 + ```yaml.
-    section_re = re.compile(r"^## Project candidates\s*$", re.MULTILINE)
-    next_h2_re = re.compile(r"^## (?!Project candidates)", re.MULTILINE)
-    sec_match = section_re.search(body)
-    if not sec_match:
-        err("approved plan missing '## Project candidates' section")
-        sys.exit(2)
-    start = sec_match.end()
-    next_match = next_h2_re.search(body, pos=start)
-    end = next_match.start() if next_match else len(body)
-    section = body[start:end]
-
-    # Parse each H3 + inline ```yaml block.
-    candidates = []
-    h3_re = re.compile(r"^### .*?$", re.MULTILINE)
-    h3_starts = [m.start() for m in h3_re.finditer(section)]
-    if not h3_starts:
-        # Empty-state: 0 project candidates is legal (empty fixture path).
-        return []
-    h3_starts.append(len(section))
-    for k in range(len(h3_starts) - 1):
-        block_text = section[h3_starts[k]:h3_starts[k + 1]]
-        yaml_match = re.search(
-            r"```yaml\s*\n(.*?)\n```",
-            block_text,
-            re.DOTALL,
-        )
-        if not yaml_match:
-            err("project H3 missing inline ```yaml block at section offset %d"
-                % h3_starts[k])
-            sys.exit(2)
-        try:
-            cand = parse_yaml_block(yaml_match.group(1))
-        except ValueError as e:
-            err("YAML parse error in project block at offset %d: %s"
-                % (h3_starts[k], e))
-            sys.exit(2)
-        if not isinstance(cand, dict):
-            err("project block did not parse to a mapping at offset %d"
-                % h3_starts[k])
-            sys.exit(2)
-        for f in CANDIDATE_REQUIRED_FIELDS:
-            if f not in cand:
-                err("project block missing required field %r at offset %d"
-                    % (f, h3_starts[k]))
-                sys.exit(2)
-        if cand.get("type") != "project":
-            # T-8 only handles project candidates; non-project H3s appear
-            # under '## Doesn’t fit any project — disposition' and are
-            # T-10's territory. But the import-plan author MAY have edited
-            # type at T-7; if a non-project sneaked into the project
-            # section, skip with stderr note (do not crash).
-            err("WARN: non-project candidate %r in '## Project candidates' "
-                "section (type=%r); skipping (T-10 owns non-project routing)"
-                % (cand.get("candidate_id"), cand.get("type")))
-            continue
-        candidates.append(cand)
-    return candidates
+    return walk_h3_section(
+        plan_path=path,
+        section_pattern=r"^## Project candidates\s*$",
+        allowed_types=("project",),
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -64,6 +64,7 @@ DEFAULT_TEMPLATES_DIR="$REPO_ROOT/templates"
 DEFAULT_PF_LIB="$REPO_ROOT/lib/provenance-frontmatter.sh"
 DEFAULT_GATE_LIB="$REPO_ROOT/onboarding/lib/three-step-gate.sh"
 DEFAULT_EXPLAINER_LIB="$SCRIPT_DIR/explainer-fragments.sh"
+DEFAULT_INBOX_DISPO_SH="$SCRIPT_DIR/inbox-disposition.sh"
 DEFAULT_PLAN_TREE="$HOME/.claude-plans/71-claude-foundations-engine-v2"
 
 APPROVED_PLAN="$DEFAULT_APPROVED_PLAN"
@@ -72,6 +73,7 @@ TEMPLATES_DIR="$DEFAULT_TEMPLATES_DIR"
 PF_LIB="$DEFAULT_PF_LIB"
 GATE_LIB="$DEFAULT_GATE_LIB"
 EXPLAINER_LIB="$DEFAULT_EXPLAINER_LIB"
+INBOX_DISPO_SH="$DEFAULT_INBOX_DISPO_SH"
 PLAN_TREE="$DEFAULT_PLAN_TREE"
 ACCEPT_ON_EOF="${SEED_PROJECTS_ACCEPT_ON_EOF:-0}"
 PROMPT_CHOICE="${SEED_PROJECTS_PROMPT_CHOICE:-}"
@@ -85,7 +87,8 @@ seed.sh — SP13 T-8 Stage 3 PRD/Context/Updates scaffolder.
 Usage:
   seed.sh --vault-root PATH [--approved-plan PATH] [--templates-dir PATH]
           [--pf-lib PATH] [--gate-lib PATH] [--explainer-lib PATH]
-          [--plan-tree PATH] [--audience SELF|TEAM|...] [--accept-on-eof]
+          [--inbox-dispo-sh PATH] [--plan-tree PATH]
+          [--audience SELF|TEAM|...] [--accept-on-eof]
 
 Required:
   --vault-root PATH        Vault root; project folders land under here.
@@ -96,6 +99,7 @@ Defaults:
   --pf-lib                 $DEFAULT_PF_LIB
   --gate-lib               $DEFAULT_GATE_LIB
   --explainer-lib          $DEFAULT_EXPLAINER_LIB
+  --inbox-dispo-sh         $DEFAULT_INBOX_DISPO_SH
   --plan-tree              $DEFAULT_PLAN_TREE
                            (used only to detect dev-mode SP12 T-2 + T-11
                             done-markers; absent → checks are no-op for
@@ -125,6 +129,7 @@ while [ $# -gt 0 ]; do
     --pf-lib) PF_LIB="$2"; shift 2 ;;
     --gate-lib) GATE_LIB="$2"; shift 2 ;;
     --explainer-lib) EXPLAINER_LIB="$2"; shift 2 ;;
+    --inbox-dispo-sh) INBOX_DISPO_SH="$2"; shift 2 ;;
     --plan-tree) PLAN_TREE="$2"; shift 2 ;;
     --audience) AUDIENCE="$2"; shift 2 ;;
     --accept-on-eof) ACCEPT_ON_EOF=1; shift ;;
@@ -278,17 +283,61 @@ if ! jq -e . "$MANIFEST_JSON" >/dev/null 2>&1; then
 fi
 
 CANDIDATES_COUNT=$(jq -r '.candidates_count' "$MANIFEST_JSON")
-WRITES_COUNT=$(jq -r '.writes | length' "$MANIFEST_JSON")
 
-if [ "$CANDIDATES_COUNT" = "0" ]; then
-  printf 'seed.sh: approved plan has 0 project candidates; nothing to scaffold.\n' >&2
-  emit_audit "skip" "$MANIFEST_JSON" "" "" "no-project-candidates"
-  exit 0
+# ----- T-10 Inbox routing — stage non-project candidates alongside triads -----
+#
+# Walks the same approved import plan's "## Doesn’t fit any project" H3 section
+# and stages one Inbox file per source_item. Result manifest is jq-merged into
+# MANIFEST_JSON so the rest of seed.sh's flow (audit + batched preview + apply)
+# treats project triads and Inbox writes as one unified work unit per spec L335
+# (single user review surface — NOT a separate gate).
+
+NON_PROJECT_COUNT=0
+INBOX_WRITES_COUNT=0
+if [ -f "$INBOX_DISPO_SH" ]; then
+  INBOX_MANIFEST_JSON="$TG_STAGE_DIR/inbox-disposition-manifest.json"
+  if [ -n "$GENERATED_AT" ]; then
+    INBOX_GEN_AT_ARGS="--generated-at $GENERATED_AT"
+  else
+    INBOX_GEN_AT_ARGS=""
+  fi
+  if ! "$INBOX_DISPO_SH" \
+    --vault-root "$VAULT_ROOT" \
+    --stage-dir "$TG_STAGE_DIR" \
+    --approved-plan "$APPROVED_PLAN" \
+    --pf-lib "$PF_LIB" \
+    --audience "$AUDIENCE" \
+    $INBOX_GEN_AT_ARGS \
+    > "$INBOX_MANIFEST_JSON"; then
+    printf 'seed.sh: inbox-disposition.sh failed\n' >&2
+    exit 2
+  fi
+  if ! jq -e . "$INBOX_MANIFEST_JSON" >/dev/null 2>&1; then
+    printf 'seed.sh: inbox-disposition emitted invalid JSON manifest\n' >&2
+    exit 2
+  fi
+  COMBINED_MANIFEST="$TG_STAGE_DIR/seed-projects-combined-manifest.json"
+  jq --slurpfile inbox "$INBOX_MANIFEST_JSON" \
+    '.writes = (.writes + $inbox[0].writes)
+     | .non_project_candidates_count = $inbox[0].non_project_candidates_count
+     | .inbox_stage_root = $inbox[0].inbox_stage_root' \
+    "$MANIFEST_JSON" > "$COMBINED_MANIFEST" || {
+      printf 'seed.sh: failed to merge project + inbox manifests\n' >&2
+      exit 2
+    }
+  MANIFEST_JSON="$COMBINED_MANIFEST"
+  NON_PROJECT_COUNT=$(jq -r '.non_project_candidates_count // 0' "$MANIFEST_JSON")
+  INBOX_WRITES_COUNT=$(jq -r '[.writes[] | select(.kind == "Inbox")] | length' "$MANIFEST_JSON")
 fi
 
-# ----- audit-log helper -----
+WRITES_COUNT=$(jq -r '.writes | length' "$MANIFEST_JSON")
+PROJECT_WRITES_COUNT=$(jq -r '[.writes[] | select(.kind != "Inbox")] | length' "$MANIFEST_JSON")
 
-# Resolve audit log path via gate library's public API.
+# ----- audit-log helper -----
+# Resolved BEFORE the no-writes skip so the skip path can audit cleanly
+# (the original pre-T-10 early-skip relied on a function defined later in
+# the file — latent bug; T-10 reordering closes it).
+
 AUDIT_LOG=$(gate_audit_path)
 AUDIT_LOG_DIR=$(dirname "$AUDIT_LOG")
 mkdir -p "$AUDIT_LOG_DIR" 2>/dev/null || true
@@ -320,6 +369,12 @@ emit_audit() {
     >> "$AUDIT_LOG"
 }
 
+if [ "$WRITES_COUNT" = "0" ]; then
+  printf 'seed.sh: approved plan has 0 project candidates and 0 non-project items; nothing to scaffold.\n' >&2
+  emit_audit "skip" "$MANIFEST_JSON" "" "" "no-candidates"
+  exit 0
+fi
+
 MANIFEST_SHA=$(_seed_sha_of "$MANIFEST_JSON")
 emit_audit "generate" "$MANIFEST_JSON" "" "$MANIFEST_SHA"
 
@@ -329,8 +384,11 @@ print_batched_preview() {
   printf '\n=== three-step gate: PREVIEW (batched, surface seed-projects) ===\n' >&2
   printf 'Approved plan:    %s\n' "$APPROVED_PLAN" >&2
   printf 'Vault root:       %s\n' "$VAULT_ROOT" >&2
-  printf 'Project candidates: %s   Files staged: %s\n' \
-    "$CANDIDATES_COUNT" "$WRITES_COUNT" >&2
+  printf 'Project candidates: %s   Project triads staged: %s\n' \
+    "$CANDIDATES_COUNT" "$PROJECT_WRITES_COUNT" >&2
+  printf 'Non-project candidates: %s   Inbox items staged: %s\n' \
+    "$NON_PROJECT_COUNT" "$INBOX_WRITES_COUNT" >&2
+  printf 'Total files staged: %s\n' "$WRITES_COUNT" >&2
   printf '\n' >&2
 
   # T-9 inline explainer — fires BEFORE the diff bundle so the user reads
@@ -342,12 +400,14 @@ print_batched_preview() {
   emit_full_block "$TG_STAGE_DIR/seed-projects" >&2
   printf '\n' >&2
 
-  printf 'For each candidate, %d files (PRD.md / Context.md / Updates.md)\n' 3 >&2
-  printf 'will be written under the candidate proposed_path. Below is the\n' >&2
-  printf 'diff per file (full content for new files; unified diff against\n' >&2
-  printf 'pre-existing target if present). All %s files apply atomically\n' \
+  printf 'For each project candidate, 3 files (PRD.md / Context.md /\n' >&2
+  printf 'Updates.md) land under the candidate proposed_path. For each\n' >&2
+  printf 'non-project source item, one Inbox note lands under <vault>/Inbox/\n' >&2
+  printf 'with disposition + tag (#reference / #meeting / #unclassified).\n' >&2
+  printf 'Below is the diff per file (full content for new files; unified\n' >&2
+  printf 'diff against pre-existing target if present). All %s files apply\n' \
     "$WRITES_COUNT" >&2
-  printf 'on [a]pply, or none on [s]kip / [b]ort.\n\n' >&2
+  printf 'atomically on [a]pply, or none on [s]kip / [b]ort.\n\n' >&2
 
   local i=0
   local total

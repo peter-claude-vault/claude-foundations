@@ -49,6 +49,7 @@ Direct invocation:
 | `--pf-lib <path>` | `lib/provenance-frontmatter.sh` | SP12 T-2 provenance helper; sourced (never forked). |
 | `--gate-lib <path>` | `onboarding/lib/three-step-gate.sh` | SP12 T-1 audit-log resolver; sourced for `gate_audit_path`. |
 | `--explainer-lib <path>` | `skills/seed-projects/explainer-fragments.sh` | T-9 inline explainer fragments lib; sourced for `emit_full_block`. |
+| `--inbox-dispo-sh <path>` | `skills/seed-projects/inbox-disposition.sh` | T-10 Inbox-disposition wrapper; invoked between staging and the batched gate to route non-project candidates. Absent → seed.sh runs project-only (graceful degrade). |
 | `--plan-tree <path>` | `~/.claude-plans/71-claude-foundations-engine-v2` | Plan tree root for dev-mode SP12 T-2 + T-11 done-marker checks. Production adopters skip both checks automatically (no plan tree → no-op). |
 | `--audience <enum>` | `self` | Audience field for generated frontmatter. |
 | `--accept-on-eof` | off | Treat stdin EOF as default `apply` (smoke-test convenience). |
@@ -220,6 +221,148 @@ have no plan tree → check is no-op). Mirrors the SP12 T-2 done-marker
 check from T-8: each cross-sub-plan dependency surfaces its own
 hard-block at the seed.sh entry boundary.
 
+## Architecture decisions (T-10)
+
+### H3 walker promotion — path (a), shared module
+
+T-8 introduced the H3 walker as a private helper inside `seed.py`
+(`parse_approved_plan` plus the bounded YAML parser). T-9 close-out
+identified T-10 as the natural promotion point because T-10 is the second
+consumer of the same pattern (walks the non-project H3 section while T-8
+walks the project section). Decision recorded at
+`state/T-10-build-decision.md`: promote (path a) rather than duplicate
+(path b).
+
+The shared module is `skills/seed-projects/h3_walker.py`. It exports:
+
+| Symbol | Purpose |
+|---|---|
+| `SCHEMA_VERSION_EXPECTED` | const `"sp13-t6/1"` — referenced by all consumers |
+| `CANDIDATE_REQUIRED_FIELDS` | 8-tuple every H3 candidate block carries |
+| `split_frontmatter(text)` | (fm, body) split on '---' fences |
+| `parse_yaml_block(text)` | bounded YAML parser (T-6 emission shape only) |
+| `walk_h3_section(plan_path, section_pattern, allowed_types=None, required_fields=None)` | section walker; returns list of candidate dicts |
+
+`seed.py::parse_approved_plan` is now a thin wrapper around
+`walk_h3_section(plan_path, r"^## Project candidates\s*$", ("project",))`.
+`inbox-disposition.py` calls
+`walk_h3_section(plan_path, r"^## Doesn’t fit any project — disposition\s*$", ("reference", "meeting", "unclassified"))`.
+Both consumers handle Unicode-bearing headings (curly apostrophe ’, em-dash —) via raw regex.
+
+T-13 (retrofit) is the next prospective consumer; it reuses the same
+walker without further extraction work.
+
+### Inbox staging — same parent stage tree as project triads
+
+`inbox-disposition.py` stages files at
+`$TG_STAGE_DIR/seed-projects/Inbox/<date>-<slug>.md` — alongside
+`$TG_STAGE_DIR/seed-projects/<proposed_path>/` triads. One unified tree
+rather than parallel trees lets the explainer (T-9 `emit_full_block`)
+scan once and pick up tags + frontmatter from BOTH project and Inbox
+files automatically (anchored coverage carries through for free per
+spec L309 third bullet).
+
+The vault target for Inbox files is `<vault>/Inbox/<date>-<slug>.md`.
+`apply_writes` already handles the `mkdir -p` of the parent directory,
+so an absent `<vault>/Inbox/` is auto-created on first apply (per spec
+L325 + the recommendation in T-10's session prompt).
+
+### Single batched gate — Inbox writes share the gate with project triads
+
+Per spec L335 (and matching T-8 Decision 3 — single batched gate vs
+per-triad gate). `seed.sh` invokes `inbox-disposition.sh` after `seed.py`
+during the staging phase, jq-merges the two manifests' `writes[]`
+arrays, and runs the existing batched preview + atomic-on-approve flow
+over the combined set. Audit-log shape is unchanged: 1 generate + 1
+preview + N apply records (where N = project triads + Inbox items).
+Skip / abort emit one audit record total covering both kinds.
+
+The preview header now reports both kinds explicitly:
+
+```
+Project candidates: 2   Project triads staged: 6
+Non-project candidates: 4   Inbox items staged: 8
+Total files staged: 14
+```
+
+### Per-item filename, slug, and date stamp
+
+Per the spec recommendation #2: filename = `<date>-<slug>.md` where
+`<date>` derives from `--generated-at` (default: now, UTC) and `<slug>`
+is `slugify(basename(source_path))` — lowercase, alphanumerics + hyphens
+only. Collisions append `-1`, `-2`, ... in first-seen order. The Inbox
+file is always `.md` regardless of the source extension; T-12's
+inbox-processor classifies markdown notes, not raw assets.
+
+Reproducibility for tests: `SEED_PROJECTS_GENERATED_AT=<ISO>` env var
+pins the timestamp end-to-end.
+
+### Per-item body — inline source content when readable; pointer stub otherwise
+
+Per the spec recommendation #4: prefer inlining the source file's text
+into the Inbox note body so T-12 (standing inbox processor) has the
+content to classify without re-walking the original. Pragmatic
+fallback: if the source file is missing, binary, too large
+(`SOURCE_INLINE_BYTE_CAP = 256KB`), or non-UTF-8, the body becomes a
+structured placeholder that names the path + reason (T-12 picks up
+classification from the `source_path` + `source_hash` frontmatter
+fields, not the body). The frontmatter `source_inlined: true|false`
+field surfaces which path was taken so downstream consumers can
+distinguish.
+
+### Tag assignment — single tag, anchored to candidate `type`
+
+One tag per Inbox file. Mapping is exact — `type: reference` →
+`#reference`, `type: meeting` → `#meeting`, `type: unclassified` →
+`#unclassified`. T-9's `explainer-fragments.sh::emit_tag_explainer`
+already handles all three prefixes without extension; the explainer
+block surfaces its disposition rationale automatically when the
+explainer scans the staged tree.
+
+NO heuristic over the Inbox file's body content — the user already made
+the disposition decision at T-7's review gate (or accepted the
+Stage-2-INFER-proposed type implicitly by approving the plan). T-10 is
+mechanical disposition, not classification.
+
+### sp13-t10/1 manifest schema — transient
+
+`inbox-disposition.py` emits a manifest JSON on stdout with
+`schema_version: sp13-t10/1`. Like T-8's sp13-t8/1, this is transient
+(written through stdout into seed.sh's combined manifest under
+`$TG_STAGE_DIR`; never persisted past the staging tmpdir). Documented
+inline rather than as a separate Draft-07 schema file. Pattern:
+
+```json
+{
+  "schema_version": "sp13-t10/1",
+  "surface_id": "inbox-disposition",
+  "approved_plan_input": "...",
+  "vault_root": "...",
+  "stage_root": "$TG_STAGE_DIR/seed-projects",
+  "inbox_stage_root": "$TG_STAGE_DIR/seed-projects/Inbox",
+  "generated_at": "2026-05-04T18:00:00Z",
+  "non_project_candidates_count": 4,
+  "writes": [
+    {
+      "staging": "/tmp/.../Inbox/2026-05-04-policy-handbook.md",
+      "target":  "/path/to/vault/Inbox/2026-05-04-policy-handbook.md",
+      "candidate_id": "p0003",
+      "label": "policy-refs",
+      "kind": "Inbox",
+      "type": "reference",
+      "tag": "#reference",
+      "source_path": "/seed/refs/policy-handbook.md",
+      "source_hash": "c1c1c1c1c1c1c1c1",
+      "source_inlined": true
+    }
+  ]
+}
+```
+
+`seed.sh` jq-merges `inbox.writes` into `seed.writes` and propagates
+`non_project_candidates_count` + `inbox_stage_root` onto the combined
+manifest for downstream consumption.
+
 ## Output schema (`schema_version: sp13-t8/1`)
 
 T-8's surface produces a manifest JSON during staging (consumed by
@@ -304,6 +447,8 @@ Manifest shape (transient; not written to disk past the staging tmpdir):
 - **SP12 `onboarding/lib/three-step-gate.sh`** — required for `gate_audit_path` resolver.
 - **SP12 `docs/personalization-model.md`** — required as a doc citation target for the T-9 inline explainer. T-11 done-marker checked in dev-mode.
 - **`skills/seed-projects/explainer-fragments.sh`** (T-9) — required (sourced) for the gate_preview "Why these tags + frontmatter?" block.
+- **`skills/seed-projects/h3_walker.py`** (T-10 promotion) — shared bounded-YAML + section-walker library; imported by `seed.py` and `inbox-disposition.py`.
+- **`skills/seed-projects/inbox-disposition.{sh,py}`** (T-10) — invoked by `seed.sh` between staging and the batched gate to route non-project candidates to vault `Inbox/`.
 - **`templates/{prd,context,updates}-template.md`** — required (rendered with `{{var}}` substitution).
 - **`python3`** on PATH (stdlib only — no pip installs).
 - **`jq`** — used in `seed.sh` for manifest queries + audit-log JSONL emission.
@@ -315,15 +460,16 @@ Manifest shape (transient; not written to disk past the staging tmpdir):
 | Task | Consumes | Notes |
 |---|---|---|
 | **T-9** explainer-fragments.sh | This skill's `print_batched_preview` UX layer | SHIPPED 2026-05-04. `seed.sh` sources `explainer-fragments.sh` and calls `emit_full_block` at the top of `print_batched_preview` (BEFORE the per-file diff bundle). Each per-tag and per-frontmatter-field snippet cites `docs/personalization-model.md` rather than re-stating the universal / combined / personal classification framing. |
-| **T-10** inbox-disposition.sh | `## Doesn’t fit any project` H3 sections from same approved plan | Reuses the H3 walker pattern T-8 introduced. Routes non-project candidates to vault `Inbox/` with `disposition: <type>` + tag (`#unclassified` / `#reference` / `#meeting`). |
+| **T-10** inbox-disposition.{sh,py} | `## Doesn’t fit any project — disposition` H3 section via shared `h3_walker.py` | SHIPPED 2026-05-04. Per source_item under each non-project candidate, stages a date-stamped Inbox file (`<date>-<slug>.md`) at `$TG_STAGE_DIR/seed-projects/Inbox/`; carries SP12 provenance frontmatter + `disposition: <type>` + single tag (`#reference` / `#meeting` / `#unclassified`). `seed.sh` jq-merges T-10 writes[] into the project-triad manifest and surfaces both kinds in the SAME single batched gate (1 generate + 1 preview + N apply audit records, where N = triads + Inbox items). H3 walker promoted from `seed.py` to shared `h3_walker.py` to land path (a) per T-8 Decision 7. |
 | **T-13** retrofit.sh | Templates + provenance contract | Retrofit reuses T-8's PRD/Context/Updates renderer with `mode: retrofit` (skip-creating-new-projects-when-existing-detected; merge-into-existing-instead). |
 
 ## R-55 isolation
 
-T-8 produces no `~/.claude/` writes. Output targets land under the
-caller-supplied `--vault-root` (production: a user vault path; testing:
-a `$TMPDIR/sp13-t8-test-XXXXXX` tmpdir). The hermetic test
-(`tests/sp13-seed-projects-test.sh`) provisions everything under
-`$TMPDIR/sp13-t8-test-XXXXXX` per `feedback_test_isolation_for_hooks_state`;
-sets `AUTO_AUTHOR_LOG` + `TG_STAGE_DIR` into the tmpdir; G1 should never
-fire on a T-8 invocation.
+T-8 + T-9 + T-10 produce no `~/.claude/` writes. Output targets land
+under the caller-supplied `--vault-root` (production: a user vault
+path; testing: a `$TMPDIR/sp13-tN-test-XXXXXX` tmpdir). Hermetic tests
+(`tests/sp13-seed-projects-test.sh`, `tests/sp13-explainer-fragments-test.sh`,
+`tests/sp13-inbox-disposition-test.sh`) all provision everything under
+`$TMPDIR/sp13-*-test-XXXXXX` per `feedback_test_isolation_for_hooks_state`;
+each forces `AUTO_AUTHOR_LOG` + `TG_STAGE_DIR` into the tmpdir; G1
+should never fire on a T-8/T-9/T-10 invocation.
