@@ -18,11 +18,11 @@
 #     -> 7 SP12 auto-author surfaces (1, 2, 3, 4, 5, 6, 9)
 #     -> infer-vault-structure/orchestrate.sh (if SEED_CONTENT_PATH set)
 #     Section F runs AFTER finalize because the surfaces read the populated
-#     user-manifest that bootstrap-schemas.sh writes (and surface-2 needs
-#     the SP11 done-marker that bootstrap-schemas.sh writes via
-#     seed_memories()). SP16 spec L48 said "before run_finalize"; corrected
-#     to "after run_finalize" in SP16 Session 2 (data-flow integrity
-#     overrides defective spec text per feedback_hard_constraint_overrides_spec).
+#     user-manifest that bootstrap-schemas.sh writes (and the memory-seed
+#     surface needs the done-marker that bootstrap-schemas.sh writes via
+#     seed_memories()). The post-finalize ordering is structural: every
+#     Section F surface depends on populated manifest fields, so any
+#     pre-finalize variant would hard-abort the memory-seed surface.
 #
 # Section D's Pass 2 invokes initial-job-setup.sh internally (not by this runner)
 # unless opt-out #9 is elected. See SKILL.md ## Initial-Job-Setup Integration.

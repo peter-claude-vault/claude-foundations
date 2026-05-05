@@ -1365,7 +1365,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh [-
 | Finding | Condition |
 |---------|-----------|
 | `registry-parity-bijection-drift` | SKILL.md heading without registry entry, OR registry entry without SKILL.md heading. `direction` field disambiguates. |
-| `registry-parity-script-missing` | Shipped entry's `script` field points to a file that doesn't exist on disk. (Spec-only entries excluded — implementation deferred to v2.1.) |
+| `registry-parity-script-missing` | Shipped entry's `script` field points to a file that doesn't exist on disk. (Contract-reserved entries excluded — those are documented stubs awaiting implementation.) |
 | `registry-parity-schema-version-drift` | Registry `schema_version` ≠ `$EXPECTED_SCHEMA_VERSION` (default 1). |
 | `registry-parity-emits-missing-subtree-field` | Capability with `emits_findings: true` does not declare `writes_manifest_subtree` key (value may be string or null — key MUST be present). |
 
@@ -2042,7 +2042,7 @@ Create an audit trail from curated memory back to the raw observation that gener
 
 ## Capability: classify
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/classify.sh` (spec-only stub; implementation deferred to v2.1). Stub exits 2 with a deferred-implementation message to stderr.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/classify.sh` (contract reserved; not yet implemented). Stub exits 2 with a not-yet-implemented message to stderr; the capability name and contract are reserved for forward-compatibility.
 
 **Purpose:** Intake classification primitive. Given a raw unstructured blob (email body / meeting transcript / ad-hoc capture), classify it into a canonical `type:` from `vault-schema.json._types`. Upstream of `write-frontmatter` and `cluster-by-topic` in the Phase 2 Act 2 ingestion pipeline.
 
@@ -2084,7 +2084,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/classify.sh < input.ndjson
 
 ## Capability: cluster-by-topic
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh` (spec-only stub; implementation deferred to v2.1). Stub exits 2 with a deferred-implementation message to stderr.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh` (contract reserved; not yet implemented). Stub exits 2 with a not-yet-implemented message to stderr; the capability name and contract are reserved for forward-compatibility.
 
 **Purpose:** Topic clustering primitive. Given a batch of classified records (output of `classify`), group them into topic clusters suitable for canonical-file drafting. Upstream of `draft-canonical-file` in the Phase 2 Act 3 pipeline.
 
@@ -2126,7 +2126,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh < classified
 
 ## Capability: draft-canonical-file
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh` (spec-only stub; implementation deferred to v2.1). Stub exits 2 with a deferred-implementation message to stderr.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh` (contract reserved; not yet implemented). Stub exits 2 with a not-yet-implemented message to stderr; the capability name and contract are reserved for forward-compatibility.
 
 **Purpose:** Canonical-file drafting primitive. Given a cluster of related intake records (output of `cluster-by-topic`) plus a target canonical-file type (e.g., `people`, `project`, `engagement`), synthesize a draft canonical file with a populated `## Context` H2 and structured sections per `vault-schema.json` for the given `type:`. Drafts land in a staging area; canonical placement is gated on user confirmation.
 
@@ -2168,7 +2168,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh < cluste
 
 ## Capability: write-frontmatter
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh` (spec-only stub; implementation deferred to v2.1). Stub exits 2 with a deferred-implementation message to stderr.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh` (contract reserved; not yet implemented). Stub exits 2 with a not-yet-implemented message to stderr; the capability name and contract are reserved for forward-compatibility.
 
 **Purpose:** Frontmatter emission primitive. Given a classified record (output of `classify`) plus a target path, emit valid YAML frontmatter conforming to `vault-schema.json` for the given `type:`. The single sanctioned write-path for new vault files in the Phase 2 Act 2 pipeline; `frontmatter-enforce` is the read/repair counterpart.
 

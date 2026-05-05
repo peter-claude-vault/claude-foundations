@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "_note": "Authored at SP04 T-5 (S34 2026-04-29). 33 entries: 29 shipped scripts (27 baseline incl. SP09 T-12.7's sanctioned-schema-drift-detect, +1 SP04 T-9 capability-registry-parity self-entry per path (a) self-registration, +1 SP04 T-9a librarian-manifest-validate at S37 2026-04-29) + 4 spec-only stubs (T-6 ships SKILL.md sections + 5-line .sh placeholders).",
+  "_note": "33 entries: 29 shipped scripts plus 4 contract-reserved stubs (5-line placeholders that exit 2 with a not-yet-implemented message; SKILL.md documents the contract for forward-compatibility).",
   "capabilities": {
     "architect-triage": {
       "tier": "mechanical",

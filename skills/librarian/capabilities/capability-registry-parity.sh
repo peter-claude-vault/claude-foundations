@@ -10,7 +10,8 @@
 #   (a) SKILL.md `## Capability: <name>` headings ↔ registry keys (strict bijection)
 #       → registry-parity-bijection-drift
 #   (b) Every shipped entry's `script` field points to an existing file
-#       (spec-only entries excluded — implementation deferred to v2.1)
+#       (contract-reserved entries excluded — those are documented stubs
+#       awaiting implementation)
 #       → registry-parity-script-missing
 #   (c) Registry `schema_version` matches the current expected value (1)
 #       → registry-parity-schema-version-drift

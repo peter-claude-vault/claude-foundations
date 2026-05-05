@@ -113,8 +113,9 @@ stub
 stub
 MD
 
-  # Shipped script exists by default; spec-only stub MAY exist (parity test
-  # checks "shipped" exclusion, so spec-only's missing script is FINE).
+  # Shipped script exists by default; contract-reserved stub MAY exist
+  # (the parity test excludes contract-reserved entries, so a missing
+  # script for them is FINE).
   echo '#!/bin/bash' > "$root/capabilities/alpha.sh"
   chmod +x "$root/capabilities/alpha.sh"
 
