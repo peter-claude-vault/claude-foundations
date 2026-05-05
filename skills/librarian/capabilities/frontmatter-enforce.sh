@@ -33,6 +33,17 @@
 #       manifest field; defaults to "Engagements" for backward compatibility)
 #   Logs/ideation-brief-*.md (load-bearing symlink-or-retrofit)
 #
+# Engagement-subfolder taxonomy parameterization (SP16 T-5b — closes LA-6):
+#   The four canonical sub-directories under each engagement (People, Projects,
+#   Strategic, Planning) are parameterized via env / user-manifest fields:
+#     - FM_PEOPLE_DIRNAME       / vault.people_dirname       (default: "People")
+#     - FM_PROJECTS_SUBDIRNAME  / vault.projects_subdirname  (default: "Projects")
+#     - FM_STRATEGIC_DIRNAME    / vault.strategic_dirname    (default: "Strategic")
+#     - FM_PLANNING_DIRNAME     / vault.planning_dirname     (default: "Planning")
+#   Defaults preserve SP10 install-convention for users who never declared
+#   the fields. Path-pattern detection in detect_type() consumes the escaped
+#   env values; no hardcoded substrings remain.
+#
 # Bash 3.2 clean per R-23.
 
 set -euo pipefail
@@ -91,6 +102,18 @@ export FM_ENGAGEMENT_ALIASES_JSON="$(umr_get_object '.vault.engagement_aliases')
 # users who never declared the field.
 FM_PROJECTS_ROOT_DIRNAME_RAW="$(umr_get_string '.vault.projects_root_dirname' 2>/dev/null || true)"
 export FM_PROJECTS_ROOT_DIRNAME="${FM_PROJECTS_ROOT_DIRNAME_RAW:-Engagements}"
+# SP16 T-5b: parameterize engagement-subfolder taxonomy (closes LA-6).
+# Defaults preserve SP10 install-convention for users who never declared
+# the fields. Each is an independent env / manifest field so non-Peter
+# vault structures (academic, generalist, etc.) can rebrand any subset.
+FM_PEOPLE_DIRNAME_RAW="$(umr_get_string '.vault.people_dirname' 2>/dev/null || true)"
+export FM_PEOPLE_DIRNAME="${FM_PEOPLE_DIRNAME_RAW:-People}"
+FM_PROJECTS_SUBDIRNAME_RAW="$(umr_get_string '.vault.projects_subdirname' 2>/dev/null || true)"
+export FM_PROJECTS_SUBDIRNAME="${FM_PROJECTS_SUBDIRNAME_RAW:-Projects}"
+FM_STRATEGIC_DIRNAME_RAW="$(umr_get_string '.vault.strategic_dirname' 2>/dev/null || true)"
+export FM_STRATEGIC_DIRNAME="${FM_STRATEGIC_DIRNAME_RAW:-Strategic}"
+FM_PLANNING_DIRNAME_RAW="$(umr_get_string '.vault.planning_dirname' 2>/dev/null || true)"
+export FM_PLANNING_DIRNAME="${FM_PLANNING_DIRNAME_RAW:-Planning}"
 export FM_VAULT_ROOT="$VAULT_ROOT"
 export FM_VAULT_LOGS="$VAULT_LOGS"
 
@@ -113,6 +136,17 @@ fix_mode = (mode == "fix")
 # backward compatibility with users who never declared the field.
 PROJ_DIR = (os.environ.get("FM_PROJECTS_ROOT_DIRNAME") or "").strip() or "Engagements"
 PD = re.escape(PROJ_DIR)
+# SP16 T-5b: parameterize engagement-subfolder taxonomy (closes LA-6).
+# Each subfolder name is independently overridable via env / user-manifest;
+# fallbacks preserve the canonical SP10 install convention.
+PEOPLE_DIR = (os.environ.get("FM_PEOPLE_DIRNAME") or "").strip() or "People"
+PROJECTS_SUBDIR = (os.environ.get("FM_PROJECTS_SUBDIRNAME") or "").strip() or "Projects"
+STRATEGIC_DIR = (os.environ.get("FM_STRATEGIC_DIRNAME") or "").strip() or "Strategic"
+PLANNING_DIR = (os.environ.get("FM_PLANNING_DIRNAME") or "").strip() or "Planning"
+PD_PEOPLE = re.escape(PEOPLE_DIR)
+PD_PROJECTS = re.escape(PROJECTS_SUBDIR)
+PD_STRATEGIC = re.escape(STRATEGIC_DIR)
+PD_PLANNING = re.escape(PLANNING_DIR)
 findings_out = os.environ.get("FINDINGS_OUTPUT", "")
 vault_root = os.environ["FM_VAULT_ROOT"]
 vault_logs = os.environ["FM_VAULT_LOGS"]
@@ -202,15 +236,15 @@ def detect_type(rel, fm):
     # Path pattern inference
     if rel.startswith("Meetings/") and rel.endswith(".md"):
         return "meeting-note"
-    if re.match(rf"^{PD}/[^/]+/People/[^/]+\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/{PD_PEOPLE}/[^/]+\.md$", rel):
         return "people"
-    if re.match(rf"^{PD}/[^/]+/Projects/[^/]+/.+ - PRD\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/{PD_PROJECTS}/[^/]+/.+ - PRD\.md$", rel):
         return "prd"
-    if re.match(rf"^{PD}/[^/]+/Projects/[^/]+/.+ - Updates\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/{PD_PROJECTS}/[^/]+/.+ - Updates\.md$", rel):
         return "updates"
-    if re.match(rf"^{PD}/[^/]+/Projects/[^/]+/.+ - Context\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/{PD_PROJECTS}/[^/]+/.+ - Context\.md$", rel):
         return "context"
-    if re.match(rf"^{PD}/[^/]+/Projects/[^/]+/[^/]+\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/{PD_PROJECTS}/[^/]+/[^/]+\.md$", rel):
         return "project"
     if re.match(rf"^{PD}/[^/]+/.+ - Overview\.md$", rel):
         return "overview"
@@ -220,9 +254,9 @@ def detect_type(rel, fm):
         return "reference"
     if re.match(rf"^{PD}/[^/]+/CLAUDE\.md$", rel):
         return "navigation"
-    if re.match(rf"^{PD}/[^/]+/Strategic/.+\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/{PD_STRATEGIC}/.+\.md$", rel):
         return "strategic"
-    if re.match(rf"^{PD}/[^/]+/Planning/.+\.md$", rel):
+    if re.match(rf"^{PD}/[^/]+/{PD_PLANNING}/.+\.md$", rel):
         return "planning"
     if rel.startswith("Daily/") and rel.endswith(" - Briefing.md"):
         return "briefing"

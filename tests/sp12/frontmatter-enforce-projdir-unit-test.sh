@@ -59,7 +59,7 @@ heredoc = "".join(src_lines)
 ns = {"os": os, "re": re, "sys": sys}
 
 # Pull out PROJ_DIR + PD definitions.
-m = re.search(r"PROJ_DIR = .*?\nPD = re\.escape\(PROJ_DIR\)", heredoc, re.DOTALL)
+m = re.search(r"PROJ_DIR = .*?\nPD_PLANNING = re\.escape\(PLANNING_DIR\)", heredoc, re.DOTALL)
 if not m:
     print("ERROR: could not find PROJ_DIR/PD bootstrap in heredoc", file=sys.stderr)
     sys.exit(2)
@@ -122,7 +122,7 @@ with open(target_path) as f:
             src_lines.append(line)
 heredoc = "".join(src_lines)
 ns = {"os": os, "re": re, "sys": sys}
-m = re.search(r"PROJ_DIR = .*?\nPD = re\.escape\(PROJ_DIR\)", heredoc, re.DOTALL)
+m = re.search(r"PROJ_DIR = .*?\nPD_PLANNING = re\.escape\(PLANNING_DIR\)", heredoc, re.DOTALL)
 exec(m.group(0), ns)
 m2 = re.search(r"^def detect_type\(rel, fm\):.*?(?=^def )", heredoc, re.MULTILINE | re.DOTALL)
 exec(m2.group(0), ns)
