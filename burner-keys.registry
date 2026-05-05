@@ -35,3 +35,23 @@
 # both the rc1 and the GA cycles.
 #
 # v2.0.x patch / v2.1+ cycles must populate this file as keys are issued.
+
+# v2.1.0-rc1 + v2.1.0 cycle entries (SP14 Connector Wizard)
+# ---------------------------------------------------------------------------
+# (none — no burner keys were issued during the v2.1.0 cycle)
+#
+# Rationale: SP14 T-1..T-17 (8 commits) used stub-mode tests throughout —
+# ANTHROPIC_API_KEY + VOYAGE_API_KEY unset across all 9 unit-test suites
+# (job-iterator, multi-plist-render, connectors-schema, catalog-discovery,
+# wizard-beats-1-3, wizard-beat-4-final-gate, reliability-infra,
+# cross-cutting-smoke + the SP13 ingestor wrapper invocation in T-12).
+# All 225 sub-checks pass without API calls.
+#
+# Beat 4 OAuth walk (beat-4-oauth.sh) tests use --input-actions for
+# non-interactive OAuth simulation; --mock-expiry for synthetic
+# auth_expires_at timestamps. No real OAuth flow executed during
+# foundation-repo development; adopter-runtime owns the live OAuth.
+#
+# Result: v2.1.0 ships with zero burner-key exposure surface.
+# RELEASE_CHECKLIST.md Step 4 revocation audit is a documented NO-OP for
+# the v2.1.0 cycle (matches v2.0.0 cycle pattern).
