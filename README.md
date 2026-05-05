@@ -43,6 +43,16 @@ claude
 > /adopt
 ```
 
+### Greenfield personalization (optional)
+
+Pass `--seed-content <path>` to `/onboard` if you already have vault content (notes, meeting transcripts, project files) you want the personalization layer to learn from. After Sections A–E and `run_finalize`, Section F dispatches seven auto-authoring surfaces (claude-home `CLAUDE.md`, memory seeds, vault `CLAUDE.md` with Routing Decision Tree, `_tag_prefixes[]`, `doc-dependencies.json`, frontmatter-enforce config, architect prior-seed) and then drives a four-stage infer-vault chain (cluster → propose-taxonomy → import-plan → review-gate) over the seeded content. Each LLM-composed surface flows through a preview/edit/apply gate, and surfaces 3/4/6 surface a consultation prompt before applying. See `skills/onboarder/SKILL.md` §"Section F" for the full contract and `docs/llm-cost-model.md` for the cost range.
+
+```bash
+> /onboard --seed-content ~/path/to/seed/vault
+```
+
+Three flags scope what Section F runs: `--skip-auto-author` (skip the seven surfaces), `--skip-content-seeding` (skip the orchestrator chain), `--auto-author-only-surfaces=1,3,9` (run a subset).
+
 For non-default installations (test directories, isolated dogfood):
 
 ```bash

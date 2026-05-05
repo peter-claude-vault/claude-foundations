@@ -238,8 +238,8 @@ display_cost_transparency_and_confirm() {
   fi
   printf '\n=== Auto-Authoring Cost Transparency ===\n\n'
   printf "This onboarding flow auto-authors seven personalized config artifacts on your\n"
-  printf "behalf. Five of those surfaces invoke an LLM to compose prose from your\n"
-  printf "interview answers; two are deterministic template-fill passes.\n\n"
+  printf "behalf. Four of those surfaces invoke an LLM to compose prose from your\n"
+  printf "interview answers; three are deterministic template-fill passes.\n\n"
   printf 'Surface inventory (Tier-1 — pre-GA):\n\n'
   printf '  1. claude-home CLAUDE.md (composed prose)        [LLM]\n'
   printf '  2. ~/.claude/projects/<user>/memory/ seeds       [LLM]\n'

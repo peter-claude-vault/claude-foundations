@@ -47,6 +47,60 @@ The keyword tables for `archetype-inference.sh` are loaded at runtime from `$CLA
 | D | Trust, Privacy & Automation | `/voice` 2–3 min OR typed | ~3 min | `behavioral.autonomy`, `orchestration.jobs[0]`, `architect.prior_seed`, `behavioral.hook_preferences.notification_style` | #7 (hook enforcement), #8 (R-26 threshold), #9 (initial-job), #10 (tripwires) |
 | E | Final Checkboxes | 3 binary toggles (no recording) | ~1 min | `behavioral.hook_preferences.{auto_commit,memory_consolidation,multi_session}_enabled` | (deterministic — no opt-outs) |
 
+## Section F — Greenfield Personalization Auto-Authoring
+
+Section F runs AFTER `run_finalize` (i.e., after `bootstrap-schemas.sh` populates the user-manifest from the Sections A–E extraction stubs). It transforms the populated manifest into seven personalized configuration artifacts and, when greenfield content is supplied, drives the four-stage infer-vault chain that produces an approved import plan. SP16 wired this section in; pre-SP16 v2.1.0 shipped the surfaces and chain as dead code on the greenfield path.
+
+### Invocation order
+
+```
+A → B → C → D → E → run_finalize → Section F
+```
+
+`run_section_f` is invoked by `skills/onboarder/onboard.sh` after `run_finalize`. The post-finalize ordering is structural: every Section F surface reads from the populated user-manifest fields (`identity.industry`, `paths.vault_root`, `vault.organizational_method`, `vault.tag_prefix_archetype`, `vault.has_structured_projects`, `vault.projects_root_dirname`, etc.), and those fields are only written when `bootstrap-schemas.sh` consumes the five `extraction-output-{A..E}.json` stubs. Surface #2 additionally requires the SP11 done-marker `bootstrap-schemas.sh::seed_memories()` writes; placing F before finalize would hard-abort surface #2.
+
+### The seven SP12 auto-author surfaces
+
+Dispatched in declared order (1, 2, 3, 4, 5, 6, 9):
+
+| # | Surface | Output | Mode |
+|---|---|---|---|
+| 1 | claude-home `CLAUDE.md` | Composed-prose personalization over the SP10 identity-substituted template | LLM |
+| 2 | `$CLAUDE_HOME/projects/<user>/memory/` seeds | LLM-composed enrichment over SP11's deterministic R-45 frontmatter seeds | LLM |
+| 3 | Vault `CLAUDE.md` | Routing Decision Tree + tag taxonomy + pre-write checklist | LLM |
+| 4 | `_tag_prefixes[]` | Archetype-keyed tag-namespace registry | Deterministic |
+| 5 | `doc-dependencies.json` | Cascade-rule registry consumed by `pre-write-guard.sh` R-54 | Deterministic |
+| 6 | frontmatter-enforce per-capability config | `projects_root_dirname` + engagement-aliases + required-field overrides | Deterministic |
+| 9 | Architect `prior_seed[]` + `research_topics[]` | Industry-tuned concerns and search-prompt seeds for `/architect` | LLM |
+
+Each surface appends `auto-author-log.jsonl` records (`{action: "generate"|"preview"|"apply", ts, surface, evidence_path, ...}`) to `$AUTO_AUTHOR_LOG` (default `$CLAUDE_HOME/auto-author-log.jsonl`). Surfaces 3, 4, and 6 are wrapped by SP15's collaborative consultation gate, which writes `{action: "consult", ts, surface, rationale, ...}` records to the SAME log. **The log is a heterogeneous JSONL discriminated by the `action` field; there is no separate `consultation-log.jsonl` file.** Consumers grep by action: `grep '"action":"consult"' "$AUTO_AUTHOR_LOG"` to recover the consultation rationale; `grep '"action":"apply"' "$AUTO_AUTHOR_LOG"` to recover the applied artifacts.
+
+### The four-stage infer-vault orchestrator chain
+
+When `SEED_CONTENT_PATH` is set (via `--seed-content <path>` on `/onboard`), Section F invokes `skills/infer-vault-structure/orchestrate.sh` after the seven surfaces complete. The orchestrator chains four scripts in declared order:
+
+```
+cluster.sh → propose-taxonomy.sh → import-plan.sh → review-gate.sh
+```
+
+Per-stage idempotency is enforced via `state/<stage>.done` markers under `$CLAUDE_HOME/projects/<slug>/inferred/`. On a `review-gate` stall (interactive review pending), the orchestrator writes `state/review-pending.flag`, exits 64 (EX_USAGE), and surfaces a clear resume message; the user invokes `/onboard --resume` after review and the orchestrator skips completed stages. Each stage emits one `orchestrate-log.jsonl` record: `{timestamp, stage, exit_code, duration_ms, evidence_path}`.
+
+For the documented non-interactive UX (`/onboard --seed-content <vault>`), Section F sets `REVIEW_GATE_ACCEPT_ON_EOF=1` before invoking the orchestrator so `review-gate.sh` doesn't block on its prompt loop.
+
+### Section F flags
+
+Three flags propagate from the `/onboard` invocation:
+
+| Flag | Behavior |
+|---|---|
+| `--skip-auto-author` | Skip all 7 surfaces (orchestrator still runs if `SEED_CONTENT_PATH` is set) |
+| `--skip-content-seeding` | Skip the orchestrator chain (surfaces still run) |
+| `--auto-author-only-surfaces=<csv>` | Run a comma-separated subset (e.g., `--auto-author-only-surfaces=1,3,9`) |
+
+### Idempotency
+
+Each surface records its own done-marker under `$INPUTS_DIR/section-f-state/surface-N.done`. Re-running `/onboard` (or `/onboard --resume`) skips surfaces whose done-marker exists; the orchestrator inherits per-stage idempotency from its own `state/<stage>.done` markers under the inferred-vault tree.
+
 ## Per-Section Pipeline (B/C/D)
 
 For each transcript-mode section, in this order:
