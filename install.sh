@@ -953,7 +953,15 @@ log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
 } > "$log_path" || { diag "G10: provenance log write failed at $log_path"; exit 11; }
 
 info "install complete (slice). next-steps:"
-info "  - render plists at runtime: \$CLAUDE_HOME/installer/render-launchd.sh --staging-dir \$CLAUDE_HOME/Library/LaunchAgents.staging librarian|architect"
+# SP14 T-2: post-install plist rendering walks O.jobs[] via for_each_job (sourced
+# from onboarding/lib/job-iterator.sh) and invokes render-launchd.sh per declared
+# job. Single-job (librarian|architect) callers may still invoke render-launchd.sh
+# directly; multi-job callers (post-onboarding, post-connector-wizard) use
+# render-all-launchd.sh which iterates via for_each_job over orchestration.json.
+info "  - render plists for ALL declared jobs (post-onboarding):"
+info "    \$CLAUDE_HOME/installer/render-all-launchd.sh --staging-dir \$CLAUDE_HOME/Library/LaunchAgents.staging"
+info "  - render a single job manually:"
+info "    \$CLAUDE_HOME/installer/render-launchd.sh --staging-dir \$CLAUDE_HOME/Library/LaunchAgents.staging <job-id>"
 info "  - claude-mem bundle: deferred to SP08 T-1.5"
 info "  - G6 install-side explicit label sentinel: deferred (transitively preserved via cp -R installer/; render-launchd.sh enforces at runtime)"
 info "  - top-level exit codes 20/22/60: deferred to v2.1 (conflict-manifest, rsync-backup, grep-audit consumer)"

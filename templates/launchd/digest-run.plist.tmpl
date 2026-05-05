@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>${USER_HOME}</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:${USER_HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+		<key>CLAUDE_HOME</key>
+		<string>${CLAUDE_HOME}</string>
+		<key>CLAUDE_LOG_DIR</key>
+		<string>${CLAUDE_LOG_DIR}</string>
+		<key>TZ</key>
+		<string>${TIMEZONE}</string>
+	</dict>
+	<key>Label</key>
+	<string>${LABEL_PREFIX}.digest-run</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>${CLAUDE_HOME}/orchestrator/cron-wrappers/digest-run-cron.sh</string>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>${CLAUDE_LOG_DIR}/digest-run-stderr.log</string>
+	<key>StandardOutPath</key>
+	<string>${CLAUDE_LOG_DIR}/digest-run-stdout.log</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>${DIGEST_RUN_HOUR}</integer>
+		<key>Minute</key>
+		<integer>${DIGEST_RUN_MINUTE}</integer>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>${USER_HOME}</string>
+</dict>
+</plist>

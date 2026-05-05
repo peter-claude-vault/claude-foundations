@@ -127,15 +127,22 @@ fi
 # launchctl is only required in production mode; defer that check.
 
 # --- schedule resolution ---
-# Two sources by job:
-#   - librarian / architect       → orchestration.json (StartCalendarInterval)
-#   - inbox-processor (SP13 T-12) → INBOX_POLL_INTERVAL_SEC env var (StartInterval)
+# Sources by job (post-SP14 T-2 generalization):
+#   - inbox-processor (SP13 T-12) → INBOX_POLL_INTERVAL_SEC env var only
+#     (skips orchestration.json entirely — schedule comes from
+#     user-manifest.json#/inbox/poll_interval_minutes consumed by
+#     skills/inbox-processor/install-cron.sh)
+#   - librarian, architect         → orchestration.json StartCalendarInterval
+#     (.schedule.{hour,minute}, plus .schedule.dow[0] for architect Weekday)
+#   - digest-run, meeting-processor (SP14 T-2 calendar-shape)
+#     → orchestration.json StartCalendarInterval (.schedule.{hour,minute})
+#   - chat-scrape, calendar-sync, connector-runtime (SP14 T-2 interval-shape)
+#     → orchestration.json StartInterval (.schedule.interval_sec)
 #
-# inbox-processor skips orchestration.json entirely because (a) its schedule is
-# user-driven via user-manifest.json#/inbox/poll_interval_minutes consumed by
-# skills/inbox-processor/install-cron.sh, and (b) StartInterval (a single
-# integer) doesn't match the StartCalendarInterval shape orchestration.json's
-# schedule branch encodes.
+# The previous "only inbox-processor uses StartInterval" gate (rejecting
+# .schedule.interval_sec for all other jobs) was relaxed by SP14 T-2 — the
+# orchestration-schema.json oneOf already supports both shapes; render-launchd
+# now reads whichever shape orchestration.json declares per-job.
 hour=""
 minute=""
 weekday=""
@@ -169,22 +176,31 @@ else
     exit 3
   fi
 
-  # Schedule branch: hour/minute (StartCalendarInterval) only for librarian +
-  # architect. interval_sec via orchestration.json remains rejected for these
-  # jobs — the env-var path is the sanctioned StartInterval channel (T-12).
   hour=$(printf '%s' "$job_json" | jq -r '.schedule.hour // empty' 2>/dev/null)
   minute=$(printf '%s' "$job_json" | jq -r '.schedule.minute // empty' 2>/dev/null)
   interval_sec_orch=$(printf '%s' "$job_json" | jq -r '.schedule.interval_sec // empty' 2>/dev/null)
 
   if [ -n "$interval_sec_orch" ]; then
-    diag "orchestration.json job '$job' uses schedule.interval_sec; only the inbox-processor job (SP13 T-12) consumes StartInterval, and it sources the value from INBOX_POLL_INTERVAL_SEC env var, not orchestration.json."
-    exit 3
+    # Interval-shape branch (SP14 T-2 generalization). Validate range matches
+    # the inbox-processor env-var contract for consistency: [300, 86400].
+    case "$interval_sec_orch" in
+      *[!0-9]*|"")
+        diag "orchestration.json job '$job' .schedule.interval_sec must be a positive integer (got: '$interval_sec_orch')"
+        exit 3
+        ;;
+    esac
+    if [ "$interval_sec_orch" -lt 300 ] || [ "$interval_sec_orch" -gt 86400 ]; then
+      diag "orchestration.json job '$job' .schedule.interval_sec must be in [300, 86400] seconds (got: $interval_sec_orch)"
+      exit 3
+    fi
+    interval_sec="$interval_sec_orch"
+  else
+    if [ -z "$hour" ] || [ -z "$minute" ]; then
+      diag "orchestration.json job '$job' missing schedule.{hour,minute} OR schedule.interval_sec"
+      exit 3
+    fi
+    weekday=$(printf '%s' "$job_json" | jq -r '.schedule.dow[0] // empty' 2>/dev/null)
   fi
-  if [ -z "$hour" ] || [ -z "$minute" ]; then
-    diag "orchestration.json job '$job' missing schedule.hour or schedule.minute"
-    exit 3
-  fi
-  weekday=$(printf '%s' "$job_json" | jq -r '.schedule.dow[0] // empty' 2>/dev/null)
 fi
 
 # --- compose render-time env vars ---
@@ -210,6 +226,14 @@ ARCHITECT_HOUR=""
 ARCHITECT_MINUTE=""
 ARCHITECT_WEEKDAY=""
 INBOX_POLL_INTERVAL_SEC_RENDER=""
+DIGEST_RUN_HOUR=""
+DIGEST_RUN_MINUTE=""
+CHAT_SCRAPE_INTERVAL_SEC=""
+CALENDAR_SYNC_INTERVAL_SEC=""
+MEETING_PROCESSOR_HOUR=""
+MEETING_PROCESSOR_MINUTE=""
+CONNECTOR_RUNTIME_INTERVAL_SEC=""
+CONNECTOR_ID="${CONNECTOR_ID:-}"
 
 case "$job" in
   librarian)
@@ -236,8 +260,66 @@ case "$job" in
     INBOX_POLL_INTERVAL_SEC="$interval_sec"
     allowlist='$USER_HOME $CLAUDE_HOME $CLAUDE_LOG_DIR $TIMEZONE $LABEL_PREFIX $INBOX_POLL_INTERVAL_SEC'
     ;;
+  digest-run)
+    # SP14 T-2 calendar-shape. Reads .schedule.{hour,minute} from orchestration.json.
+    if [ -z "$hour" ] || [ -z "$minute" ]; then
+      diag "digest-run job requires .schedule.{hour,minute}"
+      exit 3
+    fi
+    DIGEST_RUN_HOUR="$hour"
+    DIGEST_RUN_MINUTE="$minute"
+    allowlist='$USER_HOME $CLAUDE_HOME $CLAUDE_LOG_DIR $TIMEZONE $LABEL_PREFIX $DIGEST_RUN_HOUR $DIGEST_RUN_MINUTE'
+    ;;
+  meeting-processor)
+    # SP14 T-2 calendar-shape. Reads .schedule.{hour,minute} from orchestration.json.
+    if [ -z "$hour" ] || [ -z "$minute" ]; then
+      diag "meeting-processor job requires .schedule.{hour,minute}"
+      exit 3
+    fi
+    MEETING_PROCESSOR_HOUR="$hour"
+    MEETING_PROCESSOR_MINUTE="$minute"
+    allowlist='$USER_HOME $CLAUDE_HOME $CLAUDE_LOG_DIR $TIMEZONE $LABEL_PREFIX $MEETING_PROCESSOR_HOUR $MEETING_PROCESSOR_MINUTE'
+    ;;
+  chat-scrape)
+    # SP14 T-2 interval-shape. Reads .schedule.interval_sec from orchestration.json.
+    if [ -z "$interval_sec" ]; then
+      diag "chat-scrape job requires .schedule.interval_sec"
+      exit 3
+    fi
+    CHAT_SCRAPE_INTERVAL_SEC="$interval_sec"
+    allowlist='$USER_HOME $CLAUDE_HOME $CLAUDE_LOG_DIR $TIMEZONE $LABEL_PREFIX $CHAT_SCRAPE_INTERVAL_SEC'
+    ;;
+  calendar-sync)
+    # SP14 T-2 interval-shape. Reads .schedule.interval_sec from orchestration.json.
+    if [ -z "$interval_sec" ]; then
+      diag "calendar-sync job requires .schedule.interval_sec"
+      exit 3
+    fi
+    CALENDAR_SYNC_INTERVAL_SEC="$interval_sec"
+    allowlist='$USER_HOME $CLAUDE_HOME $CLAUDE_LOG_DIR $TIMEZONE $LABEL_PREFIX $CALENDAR_SYNC_INTERVAL_SEC'
+    ;;
+  connector-runtime)
+    # SP14 T-2 interval-shape. Parameterized template — one plist per CONNECTOR_ID.
+    # Caller must set CONNECTOR_ID env var to identify the per-connector instance.
+    if [ -z "$interval_sec" ]; then
+      diag "connector-runtime job requires .schedule.interval_sec"
+      exit 3
+    fi
+    if [ -z "$CONNECTOR_ID" ]; then
+      diag "connector-runtime job requires CONNECTOR_ID env var (per-connector instance id; matches connectors[].id in user-manifest.json)"
+      exit 3
+    fi
+    case "$CONNECTOR_ID" in
+      *[!a-z0-9-]*|[!a-z]*|"")
+        diag "CONNECTOR_ID must match ^[a-z][a-z0-9-]*\$ (got: '$CONNECTOR_ID')"
+        exit 3
+        ;;
+    esac
+    CONNECTOR_RUNTIME_INTERVAL_SEC="$interval_sec"
+    allowlist='$USER_HOME $CLAUDE_HOME $CLAUDE_LOG_DIR $TIMEZONE $LABEL_PREFIX $CONNECTOR_ID $CONNECTOR_RUNTIME_INTERVAL_SEC'
+    ;;
   *)
-    diag "no render mapping for job '$job' (templates: librarian, architect, inbox-processor)"
+    diag "no render mapping for job '$job' (templates: librarian, architect, inbox-processor, digest-run, chat-scrape, calendar-sync, meeting-processor, connector-runtime)"
     exit 2
     ;;
 esac
@@ -245,6 +327,10 @@ export USER_HOME CLAUDE_HOME CLAUDE_LOG_DIR TIMEZONE LABEL_PREFIX
 export LIBRARIAN_HOUR LIBRARIAN_MINUTE
 export ARCHITECT_HOUR ARCHITECT_MINUTE ARCHITECT_WEEKDAY
 export INBOX_POLL_INTERVAL_SEC
+export DIGEST_RUN_HOUR DIGEST_RUN_MINUTE
+export CHAT_SCRAPE_INTERVAL_SEC CALENDAR_SYNC_INTERVAL_SEC
+export MEETING_PROCESSOR_HOUR MEETING_PROCESSOR_MINUTE
+export CONNECTOR_RUNTIME_INTERVAL_SEC CONNECTOR_ID
 
 # --- pick target dir ---
 if [ -n "$staging_dir" ]; then
