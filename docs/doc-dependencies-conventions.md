@@ -1,28 +1,16 @@
 # doc-dependencies — Cascade Registry Conventions
 
-**Audience:** users adding or auditing entries in
-`~/.claude/hooks/config/doc-dependencies.json`. The registry tells
-`pre-write-guard.sh` which files mirror which canonical sources, so a write
-to either side surfaces a "review the mirror" prompt before commit.
+`doc-dependencies.json` is a registry that tells `pre-write-guard.sh` which files mirror which canonical sources, so a write to either side surfaces a "review the mirror" prompt before commit. The hook is advisory — it does not block the write — but it catches the case where you edit one half of a duplicated piece of content and forget to update the other.
 
-**Status:** authoritative for v2.0.0 (Plan 71 SP12 T-8 + T-15-G4-docs).
+**Audience:** users adding or auditing entries in `~/.claude/hooks/config/doc-dependencies.json`.
 
 ---
 
 ## What this file does
 
-`pre-write-guard.sh` reads `doc-dependencies.json` on every `Edit` / `Write`
-/ `MultiEdit` tool call against a vault file. If the write target matches an
-entry's `primary` / `primary_dir` / one of its `mirrors[].file` paths, the
-hook injects an advisory message into the tool result — "this write touches
-a registered dependency, review the mirrors." The user can either review and
-update the mirror in the same session OR file a waiver via
-`cascade_waiver_write` (waivers documented separately in the librarian
-SKILL.md).
+`pre-write-guard.sh` reads `doc-dependencies.json` on every `Edit`, `Write`, or `MultiEdit` tool call against a vault file. If the write target matches an entry's `primary`, `primary_dir`, or one of its `mirrors[].file` paths, the hook injects an advisory message into the tool result — "this write touches a registered dependency, review the mirrors." You can review and update the mirror in the same session OR file a waiver via `cascade_waiver_write` (waivers are documented in the librarian SKILL.md).
 
-The cascade registry is **advisory** — it does not block writes. Its job is
-to surface the dependency at the moment of edit so the user doesn't ship a
-write whose mirror has silently rotted.
+The cascade registry is **advisory** — it does not block writes. Its job is to surface the dependency at the moment of edit so you don't ship a write whose mirror has silently rotted.
 
 ---
 
@@ -61,36 +49,21 @@ Every entry under `.entries[]` has this shape:
 Add an entry when **a piece of authoritative content is duplicated by design**
 in two or more locations. Common cases:
 
-1. **Schema-mirror.** A schema declaration mirrors documentation that
-   describes it. Example: `vault-schema.json::types[]` ↔ vault `CLAUDE.md`
-   "canonical file types" section. Both sides describe the same type taxonomy;
-   editing one without the other creates drift.
+1. **Schema-mirror.** A schema declaration mirrors documentation that describes it. Example: `vault-schema.json::types[]` ↔ vault `CLAUDE.md` "canonical file types" section. Both sides describe the same type taxonomy; editing one without the other creates drift.
 
-2. **Satellite-cascade.** A summary row mirrors per-row history files.
-   Example: System Backlog rows ↔ `Logs/backlog-progress/<slug>.md`. The
-   row carries only the current-state pointer; the satellite is the single
-   source of session history.
+2. **Satellite-cascade.** A summary row mirrors per-row history files. Example: System Backlog rows ↔ `Logs/backlog-progress/<slug>.md`. The row carries only the current-state pointer; the satellite is the single source of session history.
 
-3. **Directory-mirror.** A folder's children are enumerated in an index file.
-   Example: each `Engagements/<name>/` directory is enumerated in vault
-   `CLAUDE.md`'s "Directory layout" section and (when present) in
-   `Engagements/_index.md`'s "Engagements" section. Adding a new engagement
-   directory must update both indexes.
+3. **Directory-mirror.** A folder's children are enumerated in an index file. Example: each `Engagements/<name>/` directory is enumerated in vault `CLAUDE.md`'s "Directory layout" section and (when present) in `Engagements/_index.md`'s "Engagements" section. Adding a new engagement directory must update both indexes.
 
-4. **External-mirror.** A symlink or pointer references content outside the
-   vault. Example: `Plans/` symlinks to `$PLANS_HOME/`; the vault-side path
-   is read-only navigation, the canonical state lives at `$PLANS_HOME`.
+4. **External-mirror.** A symlink or pointer references content outside the vault. Example: `Plans/` symlinks to `$PLANS_HOME/`; the vault-side path is read-only navigation, the canonical state lives at `$PLANS_HOME`.
 
-If you find yourself editing the same content in two places without the hook
-prompting, add an entry. If the prompt fires for a cascade you no longer
-maintain, drop the entry.
+If you find yourself editing the same content in two places without the hook prompting, add an entry. If the prompt fires for a cascade you no longer maintain, drop the entry.
 
 ---
 
 ## What `/onboard` ships
 
-SP12 T-8 generates 3-5 entries at onboarding time based on declared
-structure flags:
+The onboarder generates 3-5 entries based on the structure flags you declared during the interview:
 
 | Always-on | Conditional |
 |---|---|
@@ -98,17 +71,13 @@ structure flags:
 | `vault-claude-md-canonical-types` (CLAUDE.md ↔ vault-schema.json types[]) | `people-list` (gated on `organizational_method` containing `engagement`) |
 | `plan-state` (Plans/ ↔ $PLANS_HOME/_index.md) | |
 
-The generator output carries a top-level `_provenance` field (see
-`docs/personalization-model.md` §4) — `pre-write-guard.sh` reads `.entries[]`
-only, so the additional sibling key is non-breaking.
+The generator output carries a top-level `_provenance` field (see [provenance-frontmatter.md](provenance-frontmatter.md)) — `pre-write-guard.sh` reads `.entries[]` only, so the additional sibling key is non-breaking.
 
 ---
 
 ## How the hook reads the file
 
-`pre-write-guard.sh` extracts the registry path from
-`${HOOKS_DIR}/config/doc-dependencies.json`. The match logic (jq pipeline,
-abbreviated):
+`pre-write-guard.sh` extracts the registry path from `${HOOKS_DIR}/config/doc-dependencies.json`. The match logic (jq pipeline, abbreviated):
 
 ```jq
 .entries[]?
@@ -121,18 +90,13 @@ abbreviated):
   )
 ```
 
-Three trigger paths: exact-match on `primary`, exact-match on any
-`mirrors[].file`, prefix-match on `primary_dir`. The matched entry's `id` +
-`kind` + mirrors[] are surfaced in the advisory message.
+Three trigger paths: exact-match on `primary`, exact-match on any `mirrors[].file`, prefix-match on `primary_dir`. The matched entry's `id`, `kind`, and `mirrors[]` are surfaced in the advisory message.
 
 ---
 
 ## Editing the registry by hand
 
-Editing `doc-dependencies.json` directly is supported — `/onboard` does not
-clobber user edits on a re-author run because the file-level `_provenance.last_user_edit`
-field is checked by the regen workflow (deferred to v2.1; SP12 ships the
-contract only).
+Editing `doc-dependencies.json` directly is supported — `/onboard` does not clobber user edits on a re-author run because the file-level `_provenance.last_user_edit` field is checked by the regen workflow.
 
 Best practice when hand-editing:
 
@@ -144,8 +108,7 @@ Best practice when hand-editing:
 
 2. Validate with `jq -e .` after every edit.
 
-3. Bump `_provenance.last_user_edit` to the current ISO timestamp so the
-   regen workflow recognizes the file as user-owned:
+3. Bump `_provenance.last_user_edit` to the current ISO timestamp so the regen workflow recognizes the file as user-owned:
    ```bash
    ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
    jq --arg ts "$ts" '._provenance.last_user_edit = $ts' \
@@ -157,13 +120,7 @@ Best practice when hand-editing:
 
 ## Related
 
-- `docs/personalization-model.md` §3 — where doc-dependencies.json sits in
-  the universal/combined/personal taxonomy (Combined tier).
-- `docs/r-37-lockstep-walkthrough.md` — the 5-surface commit pattern when
-  you add a new file type. doc-dependencies updates often happen in that
-  same lockstep.
-- `docs/provenance-frontmatter.md` — the provenance contract; same shape
-  as the file-level `_provenance` block in this file.
-- `skills/librarian/SKILL.md` (waiver-audit capability) — how to file a
-  cascade waiver when you intentionally ship a write without updating the
-  mirror.
+- [`personalization-model.md`](personalization-model.md) — where doc-dependencies.json sits in the universal/combined/personal taxonomy (Combined tier).
+- [`adding-a-vault-file-type.md`](adding-a-vault-file-type.md) — the 5-surface commit pattern when you add a new file type. doc-dependencies updates often happen in that same lockstep.
+- [`provenance-frontmatter.md`](provenance-frontmatter.md) — the provenance contract; same shape as the file-level `_provenance` block in this file.
+- `skills/librarian/SKILL.md` (waiver-audit capability) — how to file a cascade waiver when you intentionally ship a write without updating the mirror.

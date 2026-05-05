@@ -13,7 +13,7 @@ tags:
 
 # <Project Title> — Progress Log
 
-Satellite for backlog row `<Project Title>` (Plan `<slug>`). Append-only session history per sentinel pattern (R-29/R-30/R-31). The `System Backlog.md` row carries only a current-state pointer to this file; full reasoning, decisions, and per-session deltas live here.
+Satellite for backlog row `<Project Title>` (Plan `<slug>`). Append-only session history per the sentinel pattern: the `System Backlog.md` row carries only a current-state pointer to this file; full reasoning, decisions, and per-session deltas live here.
 
 ## Plan Shape
 

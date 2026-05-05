@@ -2,11 +2,6 @@
 title: Section D — Trust, Privacy & Automation (extraction prompt)
 type: extraction-prompt
 status: ready
-created: 2026-04-25
-updated: 2026-04-25
-parent_plan: 71-claude-foundations-engine-v2
-sub_plan: 01-schemas-and-onboarder-contract
-task: T-9
 section: D
 extraction_mode: transcript
 q_ids: [D-1, D-2, D-3, D-4]
@@ -20,8 +15,7 @@ on Section D's transcript. The bootstrap engine substitutes the four
 the extraction model. Output is strict JSON conforming to the schema
 declared at the bottom of this file.
 
-Source template: Research C §3 (verbal-first onboarding — per-section
-extraction pipeline). Q-ID set: `D-1`, `D-2`, `D-3` (conditional on
+Q-ID set: `D-1`, `D-2`, `D-3` (conditional on
 `D-2 == "architect"`), `D-4` (canonical lock per
 `onboarder-design.md` §10 and `q-field-map.json:direct_qs.D-*`).
 
@@ -206,7 +200,7 @@ OUTPUT — strict JSON, no commentary, no markdown fences.
   defaults bundle (`enabled`, `schedule`, `log_path`,
   `idle_watchdog_sec`) AFTER the model emits `O.jobs[0].id`. The
   model only chooses which job ID — schedule and watchdog are
-  deterministic per ID. SP07 onboarder UX surfaces them in
+  deterministic per ID. The onboarder UX surfaces them in the
   confirmation summary but does not re-prompt.
 - **D-3 comma-join handled engine-side.** The model emits user
   concerns as a single string; the engine prepends the archetype
@@ -221,5 +215,4 @@ OUTPUT — strict JSON, no commentary, no markdown fences.
   archetypes' concerns (consultant — engagement deadlines / client
   scope creep; developer — slow CI / doc rot; writer — draft
   freshness / publication cadence; academic — citation rot / paper
-  pipeline) so the model does not anchor on one. Same posture as
-  the T-7 design doc.
+  pipeline) so the model does not anchor on one.

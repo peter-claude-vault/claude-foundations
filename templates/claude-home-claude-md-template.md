@@ -98,7 +98,8 @@ readily available.
 New memory files live at
 `$CLAUDE_HOME/projects/<slug>/memory/<type>_<slug>.md` where `<type>` is
 one of `user`, `feedback`, `project`, or `reference`. Every memory file
-MUST carry the four-field R-45 frontmatter contract:
+MUST carry the four-field memory frontmatter contract enforced by the
+pre-write guard's R-45 advisory:
 
 ```yaml
 ---
@@ -109,9 +110,8 @@ last_verified: <ISO 8601 date>
 ---
 ```
 
-The pre-write-guard hook validates this frontmatter on every memory write
-(R-45 advisory). Adding a new memory file should also append a one-line
-index entry under the appropriate H2 section in `MEMORY.md`.
+Adding a new memory file should also append a one-line index entry under
+the appropriate H2 section in `MEMORY.md`.
 
 ## Plan Creation Conventions
 
@@ -240,6 +240,8 @@ tokens should remain. If you see `{{...}}` markers anywhere in this file,
 the substitution failed; re-run `install.sh` (idempotent) to refresh.
 
 To customize this file, edit it directly. `install.sh` will not clobber it
-on re-run unless invoked with `--force-install` and the
-`I-UNDERSTAND-APRIL-13` sentinel — the same April-13 protection that
-guards every other foundation file.
+on re-run unless invoked with `--force-install` and the explicit
+clobber-acknowledgement sentinel — the same install-corruption protection
+that guards every other foundation file. See
+[`docs/install-corruption-incident.md`](../docs/install-corruption-incident.md)
+for the rationale.

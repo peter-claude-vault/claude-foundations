@@ -1,26 +1,33 @@
 ---
 name: meeting-note-ingestor-granola
-description: SP13 T-11 connector. Wraps the foundation-portable meeting-note-ingestor with Granola MCP. Fetches a Granola transcript via MCP, writes to a tmp JSON file, and invokes the portable ingestor with --format granola. Produces a structured meeting note (frontmatter + cleaned body) with title/date/participants pulled from Granola JSON metadata.
+description: >
+  Granola connector for meeting-note-ingestor. Wraps the portable ingestor with a
+  friendlier flag (--granola-json) for users whose meeting capture pipeline is
+  Granola.ai. The MCP fetch step is documented as an orchestration pattern, not
+  embedded in this skill.
 disable-model-invocation: true
 argument-hint: "--granola-json PATH [--output PATH|-] [--ingestor PATH]"
 ---
 
 # meeting-note-ingestor-granola
 
-Granola MCP → foundation-portable `meeting-note-ingestor`. Thin connector pattern:
-this skill fetches/accepts Granola transcript JSON and pipes through the portable
-T-11 ingestor.
+Thin connector around `meeting-note-ingestor` for Granola.ai users. Granola JSON
+has a recognizable shape (top-level `title`, `attendees`, `transcript` fields), but
+the portable ingestor expects either a transcript file path with auto-detection
+or an explicit `--format granola` flag. This skill smooths the entry point: pass
+`--granola-json <path>`, get back the same structured note. It's a routing layer,
+not a separate generator — same output shape as the portable ingestor.
 
-## Personalization tier
-
-**Universal capability (connector pattern)** per `docs/personalization-model.md` §1.
-Adopters who use Granola.ai for meeting capture invoke this skill; adopters who use
-Otter, Zoom, or Word transcripts use `meeting-note-ingestor` directly. Both paths
-land at the same structured-note output shape.
+The MCP fetch step itself is documented as an orchestration pattern (Claude session,
+cron, or downstream consumer skill calls `mcp__claude_ai_Granola__get_meeting_transcript`
+and writes the JSON to a tmp file), not embedded here. Embedding MCP calls in a
+shell skill would couple the foundation repo to a specific MCP version and to the
+adopter's MCP availability. Adopters who don't use Granola never invoke this
+skill; they call the portable ingestor directly with their format.
 
 ## How adopters use this
 
-Two invocation paths depending on whether the Granola transcript is already on disk:
+There are two paths depending on whether the Granola transcript is already on disk:
 
 ### A. Granola transcript already on disk
 
@@ -32,8 +39,7 @@ Two invocation paths depending on whether the Granola transcript is already on d
 
 ### B. Granola transcript fetched via MCP at runtime
 
-The connector pattern below — Claude (or an automation harness) fetches the Granola
-transcript, writes it to a tmp file, then invokes `from-granola.sh`:
+The connector pattern: Claude (or an automation harness) fetches the transcript, writes it to a tmp file, then invokes `from-granola.sh`:
 
 ```text
 1. Call mcp__claude_ai_Granola__get_meeting_transcript(meeting_id) → transcript JSON
@@ -42,103 +48,43 @@ transcript, writes it to a tmp file, then invokes `from-granola.sh`:
 4. Capture stdout (or read --output PATH) as the structured meeting note
 ```
 
-This skill does NOT include the MCP fetch step in code — Granola MCP availability
-varies per adopter (some have it, some don't), and embedding MCP calls in a shell
-skill would couple the foundation repo to a specific MCP version. The pattern is
-documented; the orchestration layer (Claude session, cron job, or
-`/meeting-processor`-style consumer skill) owns the MCP fetch.
-
 ## Flags (`from-granola.sh`)
 
 | Flag | Default | Meaning |
 |---|---|---|
 | `--granola-json <path>` | required | Granola transcript JSON file. |
-| `--output <path|->` | `-` (stdout) | Pass-through to portable ingestor. |
-| `--ingestor <path>` | sibling-skill `../meeting-note-ingestor/ingest.sh` | Override the portable ingestor path. |
+| `--output <path\|->` | `-` (stdout) | Pass-through to the portable ingestor. |
+| `--ingestor <path>` | `../meeting-note-ingestor/ingest.sh` | Override the portable ingestor path. |
 | `--title <str>` | derived | Override extracted title (passes through). |
 | `--date <YYYY-MM-DD>` | derived | Override extracted date (passes through). |
 
-All other flags accepted by `meeting-note-ingestor/ingest.sh` are passed through
-verbatim after `--`.
+Any other flag accepted by `meeting-note-ingestor/ingest.sh` is passed through verbatim after `--`.
 
 ## Output Contract
 
-**Files written:** zero by default (pipes through stdout). When `--output PATH`
-supplied, writes exactly one structured note via the portable ingestor.
+**Files written:** zero by default (pipes through stdout). When `--output PATH` is supplied, exactly one structured note via the portable ingestor.
 
-**Schema-types:** Same as `meeting-note-ingestor` — `provenance-frontmatter-schema.json`
-required fields + meeting-note-specific fields (title, date, source_format,
-source_path, participants[]).
+**Schema:** same as `meeting-note-ingestor` — `provenance-frontmatter-schema.json` required fields plus meeting-note-specific fields (`title`, `date`, `source_format`, `source_path`, `participants[]`).
 
 **Pre-write validation:**
-- Granola JSON file existence + readability checked.
-- Portable ingestor existence checked.
-- Granola JSON parseability validated by the portable ingestor's granola.sh parser
-  (this connector does not re-validate).
+- The Granola JSON file exists and is readable.
+- The portable ingestor exists.
+- Granola JSON parseability is validated by the portable ingestor's Granola parser; this connector does not re-validate.
 
-**Failure mode:** **Block and log.** Non-zero exit on missing JSON file or missing
-ingestor. Otherwise inherits the portable ingestor's failure semantics.
+**Failure mode:** non-zero exit on a missing JSON file or missing ingestor. Otherwise inherits the portable ingestor's failure semantics — the connector aborts on validation failure rather than emitting a partial note.
 
-## Architecture decisions (T-11)
+## Why a separate skill (vs. just docs)
 
-### Connector shape — thin wrapper, not a re-implementation
+Three reasons:
 
-Spec L355 + T-11 build-decision: this skill ships a 1-script wrapper, not a parallel
-ingestor. The Granola JSON parsing logic lives ONCE at
-`skills/meeting-note-ingestor/parsers/granola.sh` (co-located with the portable
-ingestor because the JSON shape is transcript-specific, not generic seed-content).
-This connector skill is documentation + invocation pattern.
-
-### MCP fetch — orchestration layer's problem
-
-Embedding `mcp__claude_ai_Granola__*` calls in a shell skill would couple the
-foundation repo to a specific MCP version + the adopter's MCP availability. The
-fetch step is documented as a pattern; consumers (Claude sessions, cron, or a
-v2.x successor skill) own the orchestration. Pure shell stays portable.
-
-### Why a separate skill at all (vs. just docs)
-
-Three reasons: (a) `disable-model-invocation: true` lets the wrapper participate in
-the skill registry without being auto-invoked by Claude — adopters opt in via the
-connector skill name; (b) the wrapper smooths over flag-name differences (the
-adopter-facing flag `--granola-json` is friendlier than `--transcript --format
-granola`); (c) the existence of a Granola-named skill in the registry signals to
-consumers that the connector pattern is sanctioned (no need to wonder if there's a
-different "right way").
+1. `disable-model-invocation: true` lets the wrapper participate in the skill registry without being auto-invoked by Claude. Adopters opt in by name.
+2. The wrapper smooths over flag-name differences. `--granola-json <path>` is friendlier than `--transcript <path> --format granola` for callers who only ever consume Granola.
+3. Having a Granola-named skill in the registry signals to other consumers that the connector pattern is sanctioned — no need to wonder whether there's a "different right way."
 
 ## Provenance
 
-Notes generated through this connector carry `generated_by: sp13-t11/1` (same
-surface_id as the portable ingestor — this is a routing layer, not a separate
-generator). To distinguish Granola-sourced from VTT-sourced notes downstream,
-read the `source_format` field in the frontmatter (`granola` vs `otter-vtt`).
-
-## R-55 + test isolation
-
-Zero `~/.claude/` writes. Hermetic tests for this connector are folded into
-`onboarding/tests/sp13-meeting-note-ingestor-test.sh` (Granola fixture is one of
-the format probes covered there). R-55 G1 override-log delta asserted == 0.
-
-## Relationship to Peter's hard-coded `meeting-processor`
-
-`~/.claude/skills/meeting-processor/SKILL.md` (Peter's existing version) is a
-fully-coupled adopter skill — Granola MCP fetch + transcript parsing + vault path
-resolution + People-registry fuzzy-match + engagement/project tag inference + dedup
-state file. T-11 splits the responsibilities:
-
-| Responsibility | T-11 home | Peter's `meeting-processor` |
-|---|---|---|
-| MCP fetch | orchestration layer | embedded |
-| Transcript JSON parsing | `meeting-note-ingestor/parsers/granola.sh` | embedded |
-| Format-agnostic ingestion | `meeting-note-ingestor/ingest.sh` | Granola-only |
-| Frontmatter assembly | `meeting-note-ingestor/ingest.sh` | embedded |
-| Vault placement | downstream (T-12 / per-adopter) | embedded |
-| People-registry enrichment | NOT in T-11 (v2.x backlog: CONFIG-consuming variant) | embedded |
-| Engagement/project tagging | NOT in T-11 (v2.x backlog: same) | embedded |
-| Dedup state | downstream (T-12 owns its own) | embedded |
-
-Peter's existing skill is unaffected by T-11 ship. v2.x may add a CONFIG-consuming
-generic variant that reads `user-manifest.json` for engagement/People metadata,
-landing the missing rows above on the foundation-portable side. Per
-`feedback_no_skill_code_generation`, that variant ships as a CONFIG-consuming
-generic skill, NOT as a generated skill body.
+Notes generated through this connector carry `generated_by: meeting-note-ingestor`
+(same surface ID as the portable ingestor — this is a routing layer, not a separate
+generator). Downstream consumers that want to distinguish Granola-sourced from
+VTT-sourced notes read the `source_format` field in the frontmatter (`granola`
+vs `otter-vtt`).

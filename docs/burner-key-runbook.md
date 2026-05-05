@@ -1,14 +1,12 @@
 # Burner API Key Runbook
 
-**Status:** active — SP00 T-11 deliverable.
-**Owner:** Sub-plan 00 (Isolation Harness).
-**First downstream consumers:** SP03 T-8 (cold-wake probe invokes real `claude -p`); SP07 T-5 (verbal-first extraction synthesis).
+A disposable, zero-budget, test-project-scoped Anthropic API key lifecycle for anyone running the test harness against the real Anthropic API. The key is created for a release cycle, used only inside the isolated test environment, and revoked at the end of the cycle.
 
 ---
 
-## Purpose
+## Why a burner
 
-The `foundations-v2` test surface can, in later sub-plans, invoke the real Anthropic API. That requires an `ANTHROPIC_API_KEY`. This runbook defines the only approved lifecycle for such a key: a **disposable, zero-budget, test-project-scoped** credential that never overlaps with a production key and is injected via the BuildKit secret mount — never via a `-e` env var.
+The test harness can invoke the real Anthropic API. That requires an `ANTHROPIC_API_KEY`. This runbook defines the only approved lifecycle for such a key: a credential that never overlaps with a production key, lives in a project with a zero-dollar spend cap, and is injected into container builds via BuildKit's `--secret` mount — never via a `-e` env var.
 
 Five phases, each with a verify-command:
 
@@ -16,13 +14,13 @@ Five phases, each with a verify-command:
 2. **Budget-enforce** — cap the project budget at zero so a leaked key cannot incur spend.
 3. **Scope** — confirm the key lives in a project distinct from any production workspace.
 4. **Inject** — pass the key into container builds exclusively via BuildKit `--secret`; never env.
-5. **Revoke + verify** — rotate per release candidate; verify revocation returns 401/403.
+5. **Revoke and verify** — rotate at the end of every release-candidate cycle; verify revocation returns 401/403.
 
 ---
 
 ## Phase 1 — Create
 
-**Who:** human operator, via the Anthropic console, before any consumer sub-plan dispatches.
+**Who:** human operator, via the Anthropic console, before any test that needs a real API call.
 
 **Steps:**
 
@@ -39,7 +37,7 @@ Five phases, each with a verify-command:
 
    `/tmp/.burner-key` is the path the Phase 4 BuildKit `--secret` mount reads. It must never be committed, symlinked into the tree, or referenced by an absolute path outside this runbook.
 
-5. Screenshot the console showing the label and the project assignment. Store the screenshot with the RC tag in the release evidence bundle — outside the repository.
+5. Screenshot the console showing the label and the project assignment. Store the screenshot with the release evidence bundle — outside the repository.
 
 **Verify-command:**
 
@@ -61,7 +59,7 @@ Exit 0 means: the burner file exists and is mode 0600. Any other state is a prov
 
 1. Console → project settings → Usage limits → set monthly spend cap to `$0`.
 2. Set the per-request hard limit to a small ceiling (e.g. 1000 input tokens) if the console allows — a second layer on top of the project cap.
-3. Screenshot the usage-limits panel; store with the RC evidence bundle.
+3. Screenshot the usage-limits panel; store with the release evidence bundle.
 
 **Verify-command:**
 
@@ -74,7 +72,7 @@ curl -s -X POST https://api.anthropic.com/v1/messages \
   -o /tmp/.burner-probe.json -w '%{http_code}\n'
 ```
 
-**Expected outcome at budget-zero:** HTTP `400` or `429` with an `error.type` of `"invalid_request_error"` or `"rate_limit_error"` carrying a message about the project's spend cap. HTTP `200` here means Phase 2 failed — the cap is not in place. Delete and redo from Phase 1.
+**Expected at budget-zero:** HTTP `400` or `429` with an `error.type` of `"invalid_request_error"` or `"rate_limit_error"` carrying a message about the project's spend cap. HTTP `200` means Phase 2 failed — the cap is not in place. Delete and redo from Phase 1.
 
 `jq -r .error.message /tmp/.burner-probe.json` surfaces the console-side cap message for archival.
 
@@ -88,15 +86,13 @@ curl -s -X POST https://api.anthropic.com/v1/messages \
 
 1. In the Anthropic console, confirm the burner key is the only key in its project.
 2. Confirm the project name does **not** share a prefix or suffix with any working-project name.
-3. Record the last-4 of the burner key prefix (e.g. if the key starts with `sk-ant-api03-abcd...`, record `abcd`) in the RC evidence bundle.
+3. Record the last-4 of the burner key prefix (e.g. if the key starts with `sk-ant-api03-abcd...`, record `abcd`) in the release evidence bundle.
 
 **Verify-command:**
 
 ```bash
 burner_prefix=$(head -c 20 /tmp/.burner-key)
 # A working key must never share a prefix with the burner.
-# If a working key exists on the host for any reason, confirm its prefix
-# does not collide with the burner's.
 if [ -f ~/.anthropic/working-key ] && [ "$(head -c 20 ~/.anthropic/working-key)" = "$burner_prefix" ]; then
   echo "COLLISION: burner and working key share a prefix — destroy the burner and re-provision" >&2
   exit 1
@@ -119,7 +115,7 @@ echo "scope-ok"
 limactl shell foundations -- bash -lc '
   nerdctl build \
     --secret id=anthropic_api_key,src=/tmp/.burner-key \
-    --tag sp0X-consumer:$(git rev-parse --short HEAD) \
+    --tag consumer-image:$(git rev-parse --short HEAD) \
     -f docker/Dockerfile.consumer \
     .
 '
@@ -135,16 +131,16 @@ RUN --mount=type=secret,id=anthropic_api_key,mode=0400 \
     /opt/claude-code/install.sh
 ```
 
-### Runtime injection (when a RUNNING container needs the key)
+### Runtime injection (when a running container needs the key)
 
-For probes where the key is consumed at `docker run` time (not `build` time), mount the same path into the container as a tmpfs-backed file owned by `tester`:
+For probes where the key is consumed at `docker run` time (not `build` time), mount the same path into the container as a tmpfs-backed file:
 
 ```bash
 nerdctl run --rm \
   --tmpfs /home/tester:uid=1000,gid=1000,mode=1777 \
   --mount type=bind,src=/tmp/.burner-key,dst=/run/secrets/anthropic_api_key,ro \
   --network=bridge \
-  sp0X-consumer:<sha> \
+  consumer-image:<sha> \
   /tests/consumer-entry.sh
 ```
 
@@ -152,9 +148,9 @@ The container entrypoint reads `/run/secrets/anthropic_api_key` directly; the al
 
 ### Prohibited patterns
 
-The following patterns are forbidden anywhere in `foundations-v2`:
+The following are forbidden anywhere in the test harness:
 
-1. `nerdctl run -e ANTHROPIC_API_KEY=...` — env injection survives the scrub only if added to the allowlist, and it will not be. The `docker/entrypoint-scrub-env.sh` allowlist (see `ALLOWED_VARS`) deliberately omits `ANTHROPIC_API_KEY` for this exact reason.
+1. `nerdctl run -e ANTHROPIC_API_KEY=...` — env injection survives the scrub only if added to the allowlist, and it will not be. The `docker/entrypoint-scrub-env.sh` allowlist deliberately omits `ANTHROPIC_API_KEY`.
 2. `docker run -e ANTHROPIC_API_KEY=...` — same reason.
 3. `ENV ANTHROPIC_API_KEY=` in any Dockerfile — bakes the key into the image layer.
 4. `COPY .burner-key /...` in any Dockerfile — bakes the key into the image layer.
@@ -166,7 +162,7 @@ The following patterns are forbidden anywhere in `foundations-v2`:
 ```bash
 # After a build that should have mounted the secret, confirm the image
 # has no trace of the key value in any layer.
-image=sp0X-consumer:<sha>
+image=consumer-image:<sha>
 nerdctl image history --no-trunc "$image" | grep -Ei 'ANTHROPIC|sk-ant|burner' && {
   echo "LEAK: image history references the key"; exit 1;
 }
@@ -180,9 +176,9 @@ Exit 0 means: no layer contains the first 12 characters of the burner key. Any n
 
 ---
 
-## Phase 5 — Revoke + verify
+## Phase 5 — Revoke and verify
 
-**Invariant:** the burner is revoked at the end of every release candidate (RC) cycle. A new burner is provisioned for the next RC. No key outlives its RC.
+**Invariant:** the burner is revoked at the end of every release-candidate cycle. A new burner is provisioned for the next cycle. No key outlives its cycle.
 
 **Steps:**
 
@@ -193,7 +189,7 @@ Exit 0 means: no layer contains the first 12 characters of the burner key. Any n
    shred -u /tmp/.burner-key 2>/dev/null || rm -f /tmp/.burner-key
    ```
 
-3. Archive the key's prefix (last-4 from Phase 3) + revocation timestamp in the RC evidence bundle.
+3. Archive the key's prefix (last-4 from Phase 3) plus revocation timestamp in the release evidence bundle.
 
 **Verify-command:**
 
@@ -208,19 +204,19 @@ curl -s -I -X GET https://api.anthropic.com/v1/messages \
 
 **Expected:** HTTP `401` or `403`. Anything else — especially `200`, `400`, or `429` — means the revoke did not propagate; retry the console revoke and re-probe until two consecutive probes return 401/403 at least 60 seconds apart.
 
-### SP08 T-9 pre-tag check
+### Pre-tag check
 
-Before `foundations-v2` cuts a release tag, SP08 T-9 runs this verify-command against every burner referenced by this RC's evidence bundle. Any burner returning non-401/403 blocks the tag.
+Before cutting a release tag, the release-tag verify pass runs this verify-command against every burner referenced by this cycle's evidence bundle. Any burner returning non-401/403 blocks the tag.
 
 ---
 
 ## Enforcement surface
 
-This runbook is enforced by three existing mechanisms in `foundations-v2`:
+This runbook is enforced by three existing mechanisms in the test harness:
 
-- **`docker/entrypoint-scrub-env.sh`** (SP00 T-3) — the `ALLOWED_VARS` allowlist deliberately omits `ANTHROPIC_API_KEY`. Any env-var injection is stripped before the container command runs.
-- **`tests/grep-audit.sh`** (SP00 T-7) — layer-4 scans the full git history; any real key value committed to git (even if reverted at HEAD) is a blocker. SP00 T-13 expands layer-1 fixed-string patterns as the exhaustive reference-leak floor.
-- **`tests/readiness-gate.sh`** (SP00 T-1, formalized in SP00 T-12) — the 3 invariants (I_HOME, I_USERS, I_UID) run before any test that could consume a burner; a tampered container short-circuits before the key mount is read.
+- **`docker/entrypoint-scrub-env.sh`** — the `ALLOWED_VARS` allowlist deliberately omits `ANTHROPIC_API_KEY`. Any env-var injection is stripped before the container command runs.
+- **`tests/grep-audit.sh`** — layer-4 scans the full git history; any real key value committed to git (even if reverted at HEAD) is a blocker.
+- **`tests/readiness-gate.sh`** — the three structural invariants (I_HOME, I_USERS, I_UID) run before any test that could consume a burner; a tampered container short-circuits before the key mount is read.
 
 This runbook is the human-facing procedure. The scripts are the machine-facing enforcement. Both must stay aligned.
 
@@ -230,6 +226,6 @@ This runbook is the human-facing procedure. The scripts are the machine-facing e
 
 - `docker/entrypoint-scrub-env.sh` — env scrub allowlist
 - `docker/Dockerfile` — `CLAUDE_HOME`, `PLANS_HOME`, `TEST_MODE`, `MOCK_LAUNCHCTL`, `CI` ENV floor
-- `tests/grep-audit.sh` — 4-layer reference-leak audit (T-7)
-- `tests/readiness-gate.sh` — 3-invariant pre-flight gate (T-1 → T-12)
-- `docs/isolation-contract.md` — consumer API for all 11 SP00 primitives (T-12)
+- `tests/grep-audit.sh` — 4-layer reference-leak audit
+- `tests/readiness-gate.sh` — 3-invariant pre-flight gate
+- [`test-harness.md`](test-harness.md) — the consumer API for every test isolation primitive

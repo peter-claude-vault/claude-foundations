@@ -1,13 +1,7 @@
 ---
 title: Verbal-First Onboarder — Design Doc
 type: design-doc
-status: draft
-created: 2026-04-24
-updated: 2026-04-24
-parent_plan: 71-claude-foundations-engine-v2
-sub_plan: 01-schemas-and-onboarder-contract
-task: T-7
-schema_version: 1.0.0
+status: stable
 ---
 
 # Verbal-First Onboarder — Design Doc
@@ -26,31 +20,31 @@ This doc is the onboarder's machine-checkable design contract:
 - Confidence threshold policy.
 - 17 direct questions + 6 checkbox fields enumerated by stable Q-ID.
 
-T-7a's `archetype-inference.sh` consumes the keyword tables at
-`archetype-keywords.json`. T-8's `q-field-map.json` owns the Q-ID →
+`archetype-inference.sh` consumes the keyword tables at
+`archetype-keywords.json`. `q-field-map.json` owns the Q-ID →
 schema-path mapping; this doc declares the Q-ID set and target schema paths
-that map will encode.
+that map encodes.
 
 ---
 
 ## 1. Schema alignment
 
 All seeded fields below resolve to live paths in
-`~/.claude/schemas/user-manifest-schema.json` (T-3),
-`~/.claude/schemas/orchestration-schema.json` (T-4), and
-`~/.claude/schemas/vault-schema.json` (T-2).
+`~/.claude/schemas/user-manifest-schema.json`,
+`~/.claude/schemas/orchestration-schema.json`, and
+`~/.claude/schemas/vault-schema.json`.
 
-**Three Research-C field names that do NOT exist in the live schema** —
-flagged for the SP01 T-10 observation gate. The onboarder aliases as noted:
+**Three field names from prior research that do NOT exist in the live
+schema** — the onboarder aliases as noted:
 
-| Research C citation | Live schema destination | Notes |
+| Research-cited path | Live schema destination | Notes |
 |---|---|---|
 | `identity.archetype` | `architect.prior_seed` (string) | No dedicated archetype field. Inference label written as a single token to `architect.prior_seed`; Section D answers append to the same field, comma-joined. |
-| `identity.projects[]` | `projects.active[]` | Top-level `projects` section in canonical 10-section shape. |
-| `hooks.{auto_commit,memory_consolidation,multi_session}.enabled` | `behavioral.hook_preferences.<key>_enabled` | Schema's `hook_preferences` is `additionalProperties: true`; opaque keys defined here are the de-facto contract until a `hooks-schema.json` lands. |
+| `identity.projects[]` | `projects.active[]` | Top-level `projects` section in the canonical 10-section shape. |
+| `hooks.{auto_commit,memory_consolidation,multi_session}.enabled` | `behavioral.hook_preferences.<key>_enabled` | The schema's `hook_preferences` is `additionalProperties: true`; the opaque keys defined here are the de-facto contract until a `hooks-schema.json` lands. |
 
 These aliases are deterministic — extraction targets the live paths, not
-the Research-C names.
+the research-cited names.
 
 ---
 
@@ -283,12 +277,9 @@ model=sonnet/opus per-job, skip_weekends=true for librarian),
 `architect.prior_seed`,
 `behavioral.hook_preferences.notification_style`.
 
-The `budget_usd`, `model`, and `skip_weekends` defaults were added by
-SP03 T-12 (S56) per the SP02-T-0 additive amendment pattern. The 8-question
-customization sub-flow that surfaces these fields as user-facing
-overrides is documented at `onboarding/initial-job-setup-flow.md`. No new
-Q-IDs are added to the §10 namespace lock — the sub-flow is a UX
-expansion of D-2's `defaults_applied` table, owned by SP07 T-9.
+The 8-question customization sub-flow that surfaces `budget_usd`, `model`,
+and `skip_weekends` as user-facing overrides is documented at
+`onboarding/initial-job-setup-flow.md`.
 
 ### Minimum-viable
 
@@ -369,7 +360,7 @@ authoritative required-field set per section.
 
 Archetype inference runs on the concatenated transcripts from Section B
 and Section C, after extraction completes for both. The inference is a
-deterministic shell pass implemented in T-7a's `archetype-inference.sh`,
+deterministic shell pass implemented in `archetype-inference.sh`,
 loading keyword tables from
 `~/.claude/onboarding/archetype-keywords.json`.
 
@@ -401,9 +392,7 @@ ELSE:
 ```
 
 **Confidence**: `min(1.0, score(top) / 6.0)`. The divisor 6 is calibrated
-so that ~6 unambiguous positive hits saturate to confidence 1.0; the
-exact constant is a tuning surface revisitable at T-13's fixture
-round-trip gate.
+so that ~6 unambiguous positive hits saturate to confidence 1.0.
 
 The match mode is case-insensitive, word-or-phrase. Multi-word tokens
 require exact phrase order. Tokenization details and the constants
@@ -435,8 +424,8 @@ proposes a refined archetype with the benefit of the populated vault.
 
 ## 10. Q-ID enumeration (canonical lock)
 
-This table is the canonical Q-ID set. T-8's `q-field-map.json` encodes the
-exact same Q-IDs as keys; SP07's onboarder UX cannot introduce new IDs.
+This table is the canonical Q-ID set. `q-field-map.json` encodes the
+exact same Q-IDs as keys; the onboarder UX cannot introduce new IDs.
 
 ### Direct Qs (17)
 
@@ -498,17 +487,7 @@ exact same Q-IDs as keys; SP07's onboarder UX cannot introduce new IDs.
 
 ## 12. References
 
-- `/tmp/foundations-v2-wave2/research-c-verbal-onboarding.md` — source
-  research for §1 question triage, §2 section design, §3 extraction
-  pipeline, §6 archetype keyword signals, §8 sub-plan task list.
-- `~/.claude/schemas/user-manifest-schema.json` — T-3 deliverable;
-  10-section canonical shape used throughout.
-- `~/.claude/schemas/orchestration-schema.json` — T-4 deliverable;
-  `jobs[]`, `tripwires[]`, `observability` shape.
-- `~/.claude/schemas/vault-schema.json` — T-2 deliverable;
-  `_tag_prefixes` empty-seeded, populated per Section C-4 + archetype
-  inference.
-- `~/.claude/onboarding/archetype-keywords.json` — companion JSON
-  consumed by T-7a's `archetype-inference.sh`.
-- SP01 (`schemas-and-onboarder-contract`) spec — T-7 acceptance criteria.
-- SP01 tasks file — T-7 block (lines 313–330).
+- `~/.claude/schemas/user-manifest-schema.json` — 10-section canonical shape used throughout.
+- `~/.claude/schemas/orchestration-schema.json` — `jobs[]`, `tripwires[]`, `observability` shape.
+- `~/.claude/schemas/vault-schema.json` — `_tag_prefixes` empty-seeded, populated per Section C-4 + archetype inference.
+- `~/.claude/onboarding/archetype-keywords.json` — companion JSON consumed by `archetype-inference.sh`.

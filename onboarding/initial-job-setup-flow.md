@@ -1,24 +1,16 @@
 ---
 title: Initial Autonomous Job Setup — 8-Question Flow
 type: design-doc
-status: draft
-created: 2026-04-30
-updated: 2026-04-30
-parent_plan: 71-claude-foundations-engine-v2
-sub_plan: 03-orchestration-engine
-task: T-12
-schema_version: 1.0.0
+status: stable
 ---
 
 # Initial Autonomous Job Setup — 8-Question Flow
 
-The orchestration sub-flow that customizes a single launchd job at first install. SP07 T-9 (`onboarding/initial-job-setup.sh`) absorbs this spec when SP07 unpauses; this document is the canonical source for question text, validation rules, defaults, and the Q→field map.
+The orchestration sub-flow that customizes a single launchd job at first install. `onboarding/initial-job-setup.sh` reads this spec — it is the canonical source for question text, validation rules, defaults, and the Q-to-field map.
 
-## 1. Scope and relationship to SP01
+## 1. Scope and relationship to the main flow
 
-This is a **sub-flow of SP01 D-2** ("First scheduled job choice"), not a new Q-ID block. The 8 questions are user-facing surfacings of D-2's `defaults_applied` table (`~/Code/claude-stem/onboarding/q-field-map.json` D-2 entry). They do not introduce new Q-IDs into the §10 namespace lock at `onboarder-design.md`.
-
-Two manifest fields surfaced for the first time — `jobs[].budget_usd` and `jobs[].model` — are added to D-2's `defaults_applied` block via additive amendment per the SP02-T-0 precedent (foundation-repo `f9e096a`). No SP01 T-8 reopening required.
+This is a **sub-flow of D-2** ("First scheduled job choice") in `onboarder-design.md`, not a new Q-ID block. The 8 questions are user-facing surfacings of D-2's `defaults_applied` table (`onboarding/q-field-map.json` D-2 entry). They do not introduce new Q-IDs into the §10 namespace lock at `onboarder-design.md`.
 
 The flow runs **after** Section D commits its schema fragment. Q1's value is pre-filled from D-2 (`O.jobs[0].id`); the remaining 7 questions customize the other `jobs[0]` fields. If D-2 resolved to `none`, this entire 8-Q flow is skipped — `O.jobs: []` is written, no plist is staged, no terminal prompt fires.
 
@@ -56,7 +48,7 @@ Default: librarian
 **Type:** string, enum
 **Allowed values:** `librarian` | `architect` | `none`
 **Validation:** Q1=`none` → write `O.jobs: []` and short-circuit Q2-Q8.
-**Pre-fill:** SP01 D-2 (`O.jobs[0].id`); user confirms or changes here.
+**Pre-fill:** D-2 (`O.jobs[0].id`); user confirms or changes here.
 
 ### Q2 — Time of day
 
@@ -69,7 +61,7 @@ Default: 06:00
 
 **Fields:** `O.jobs[0].schedule.hour` (integer 0–23), `O.jobs[0].schedule.minute` (integer 0–59)
 **Validation:** parse `^([01]?\d|2[0-3]):[0-5]\d$`; reject otherwise.
-**Pre-fill:** SP01 D-2 `defaults_applied.O.jobs[0].schedule.{hour,minute}` (06:00 for both jobs).
+**Pre-fill:** D-2 `defaults_applied.O.jobs[0].schedule.{hour,minute}` (06:00 for both jobs).
 
 ### Q3 — Timezone
 
@@ -82,9 +74,9 @@ Detected: ${TZ_DEFAULT}
 Press Enter to accept, or type an IANA name (e.g. America/Los_Angeles, Europe/London).
 ```
 
-**Field:** `U.system.timezone` (already captured at SP01 A-3; this Q is a confirm-and-correct display, not a re-prompt).
+**Field:** `U.system.timezone` (already captured at A-3; this Q is a confirm-and-correct display, not a re-prompt).
 
-**Autodetect:** privilege-free, launchd-context-safe, byte-identical to `installer/render-launchd.sh:169`.
+**Autodetect:** privilege-free, launchd-context-safe, byte-identical to `installer/render-launchd.sh`.
 
 ```sh
 TZ_DEFAULT="${TZ:-$(readlink /etc/localtime 2>/dev/null | sed 's|.*/zoneinfo/||')}"
@@ -95,7 +87,7 @@ TZ_DEFAULT="${TZ_DEFAULT:-America/New_York}"
 
 **Validation:** must be IANA `Continent/City` form. `date +%Z` (returns `EDT`) is **NOT** a valid value — abbreviation rejected at extraction. `systemsetup -gettimezone` is intentionally not used (requires admin even for read; fails under launchd).
 
-**Render flow:** the value is read from manifest at install time and passed as `$TZ` env var to `render-launchd.sh`'s envsubst pass. It is **not** a jq-extracted field of `orchestration.json` at render time — it flows via process env.
+**Render flow:** the value is read from the manifest at install time and passed as the `$TZ` env var to `render-launchd.sh`'s envsubst pass. It is **not** a `jq`-extracted field of `orchestration.json` at render time — it flows via process env.
 
 ### Q4 — Weekly day (architect only)
 
@@ -111,9 +103,9 @@ Default: 1 (Monday)
 **Field:** `O.jobs[0].schedule.dow` (array of integers 0–6, single-element `[N]`)
 **Validation:** integer 0–6; serialized as a single-element array `[N]`.
 **Skip condition:** Q1 = `librarian` → field omitted entirely; librarian fires daily.
-**Render-launchd consumption:** `installer/render-launchd.sh:155` reads `.schedule.dow[0]`; only the first element is consumed.
+**render-launchd consumption:** `installer/render-launchd.sh` reads `.schedule.dow[0]`; only the first element is consumed.
 
-> **Drift note (CFF-S56-7):** `orchestration-schema.json` declares `dow` as a multi-element array, but `render-launchd.sh` reads only `[0]`. Either the schema needs `maxItems: 1` for the StartCalendarInterval branch, or the renderer needs to emit launchd's `StartCalendarInterval` array form. Tracked as SP03 v2_1_deferral.
+> **Drift note.** `orchestration-schema.json` declares `dow` as a multi-element array, but `render-launchd.sh` reads only `[0]`. Either the schema needs `maxItems: 1` for the `StartCalendarInterval` branch, or the renderer needs to emit launchd's `StartCalendarInterval` array form. <!-- TODO: Peter — schema vs renderer drift on dow -->
 
 ### Q5 — Cron log directory
 
@@ -126,10 +118,10 @@ Default: ~/.claude/logs
 
 **Field:** `O.jobs[0].log_path`
 **User-facing form:** displayed as `~/.claude/logs` (familiar to most users).
-**Manifest write form:** absolute path (eval-expanded). Tilde and `$VAR` references must be resolved before write so downstream consumers (jq → bash without `eval`) don't emit literal tildes.
-**Default value resolution:** `$CLAUDE_HOME/logs` where `CLAUDE_HOME` defaults to `$HOME/.claude` per `orchestrator/lib/paths.sh:21,83`.
+**Manifest write form:** absolute path (eval-expanded). Tilde and `$VAR` references must be resolved before write so downstream consumers (`jq` → bash without `eval`) don't emit literal tildes.
+**Default value resolution:** `$CLAUDE_HOME/logs` where `CLAUDE_HOME` defaults to `$HOME/.claude` per `orchestrator/lib/paths.sh`.
 
-> **Drift note (CFF-S56-4):** `orchestration-schema.json` declares `jobs[].log_path` required, but `render-launchd.sh` consumes `$CLAUDE_LOG_DIR` env directly (templates `librarian.plist.tmpl:14, 26-28` and `architect.plist.tmpl:13-14, 26-28`) — `log_path` is currently a write-only field. Forward-compat: T-12 doc still writes the field. Either wire `log_path` through the templates or drop `log_path` from the schema's required list. Tracked as SP03 v2_1_deferral.
+> **Drift note.** `orchestration-schema.json` declares `jobs[].log_path` required, but `render-launchd.sh` consumes `$CLAUDE_LOG_DIR` env directly (templates `librarian.plist.tmpl` and `architect.plist.tmpl`) — `log_path` is currently a write-only field. Either wire `log_path` through the templates or drop `log_path` from the schema's required list. <!-- TODO: Peter — log_path schema-vs-renderer drift -->
 
 ### Q6 — Per-call budget cap
 
@@ -144,18 +136,16 @@ Note: librarian fires up to 3 sub-calls per run + 1 cold-wake probe; architect f
 
 **Field:** `O.jobs[0].budget_usd` (number, ≥0)
 **Default (per-job conditional):**
-- librarian → `5` (mirrors `librarian-cron.sh:177` `--max-budget-usd 5`)
-- architect → `10` (mirrors `architect-cron.sh:84,90` `--max-budget-usd 10`)
+- librarian → `5` (mirrors `librarian-cron.sh` `--max-budget-usd 5`)
+- architect → `10` (mirrors `architect-cron.sh` `--max-budget-usd 10`)
 
-**Semantics:** per-`claude -p`-invocation cap, NOT per-wall-clock-run total. Consumed by `orchestrator/job-runner.sh:94,158` as the `--max-budget-usd` flag passed to a single claude invocation.
+**Semantics:** per-`claude -p`-invocation cap, NOT per-wall-clock-run total. Consumed by `orchestrator/job-runner.sh` as the `--max-budget-usd` flag passed to a single claude invocation.
 
 **Worst-case wall-clock cost:**
 - librarian: `$5 × 3 calls + $1 cold-wake probe = $16/run`
 - architect: `$10 × 1 call = $10/run`
 
 **Absent value:** schema permits omission → no `--max-budget-usd` flag passed → unlimited. Onboarder writes the explicit default; users may delete the field manually post-onboard for unlimited.
-
-> **Drift note (CFF-S56 covered):** SP03 tasks.md L304 wording "(6) budget/run" is misleading; it's per-call. Inline-fixed in S56 close-out.
 
 ### Q7 — Model
 
@@ -172,10 +162,10 @@ Default: ${PER_JOB_DEFAULT}
 
 **Field:** `O.jobs[0].model`
 **Type:** string, enum
-**Allowed values:** `sonnet` | `opus` | `haiku` (per `orchestration-schema.json:74-78`)
+**Allowed values:** `sonnet` | `opus` | `haiku` (per `orchestration-schema.json`)
 **Default (per-job conditional):**
-- librarian → `sonnet` (mirrors `librarian-cron.sh:89,176`)
-- architect → `opus` (mirrors `architect-cron.sh:83,89`)
+- librarian → `sonnet` (mirrors `librarian-cron.sh`)
+- architect → `opus` (mirrors `architect-cron.sh`)
 
 **Schema fallback:** `orchestration-schema.json` declares uniform `default: "sonnet"`. The cron-wrappers override to opus for architect; the onboarder mirrors cron-wrapper truth (per-job conditional default), not schema fallback — otherwise architect users always pay the manual override tax.
 
@@ -196,19 +186,9 @@ Default: yes
 **Wiring:**
 - The boolean is exported by `render-launchd.sh` into `librarian.plist.tmpl`'s `EnvironmentVariables` block as `SKIP_WEEKENDS=true|false`.
 - `orchestrator/cron-wrappers/librarian-cron.sh` reads `${SKIP_WEEKENDS:-true}` from env; gates the `if [ "$DOW" -gt 5 ]; then exit 0` block on this value.
-- Default `true` preserves backward-compat with the pre-T-12 hardcoded weekend-skip behavior.
+- Default `true` preserves backward-compat with the pre-customization hardcoded weekend-skip behavior.
 
-**Required c1.5 changes (shipped this session):**
-1. `schemas/orchestration-schema.json` — add `jobs[].skip_weekends: boolean` (additive; default `true`)
-2. `orchestrator/cron-wrappers/librarian-cron.sh` — gate weekend-skip by `SKIP_WEEKENDS` env
-
-**Deferred to SP03 T-15 / SP07 T-9 (not c1.5 scope):**
-1. `templates/launchd/librarian.plist.tmpl` — add `SKIP_WEEKENDS` to `EnvironmentVariables` block
-2. `installer/render-launchd.sh` — export `SKIP_WEEKENDS` from `jobs[0].skip_weekends`; add to allowlist for librarian branch
-
-The wrapper gate alone is sufficient for backward-compat (defaults to `true` if env unset). Plist/render wiring lands when SP07 T-9 implements the rendering pipeline.
-
-## 4. Q→field map (canonical)
+## 4. Q-to-field map (canonical)
 
 | Q | Manifest path | Type | Default | Source-of-truth |
 |---|---|---|---|---|
@@ -218,9 +198,9 @@ The wrapper gate alone is sufficient for backward-compat (defaults to `true` if 
 | 3 | `U.system.timezone` | string IANA | autodetected | A-3 (pre-existing) |
 | 4 | `O.jobs[0].schedule.dow` | int[] | `[1]` | D-2 `defaults_applied` (architect only) |
 | 5 | `O.jobs[0].log_path` | string abs-path | `$CLAUDE_HOME/logs` | D-2 `defaults_applied` |
-| 6 | `O.jobs[0].budget_usd` | number ≥0 | `5`/`10` per-job | D-2 `defaults_applied` (added S56) |
-| 7 | `O.jobs[0].model` | string enum | `sonnet`/`opus` per-job | D-2 `defaults_applied` (added S56) |
-| 8 | `O.jobs[0].skip_weekends` | boolean | `true` | NEW field S56 (orchestration-schema.json + librarian-cron.sh) |
+| 6 | `O.jobs[0].budget_usd` | number ≥0 | `5`/`10` per-job | D-2 `defaults_applied` |
+| 7 | `O.jobs[0].model` | string enum | `sonnet`/`opus` per-job | D-2 `defaults_applied` |
+| 8 | `O.jobs[0].skip_weekends` | boolean | `true` | `orchestration-schema.json` + `librarian-cron.sh` |
 
 Always written:
 - `O.jobs[0].enabled` = `true` (D-2 `defaults_applied`)
@@ -243,28 +223,24 @@ plist staged at $CLAUDE_HOME/Library/LaunchAgents.staging/com.claude-stem.<label
   ↓
 terminal prompt: "Onboarding complete. Run `claude system enable-daemon` to activate."
   ↓
-[user-initiated, separate invocation; SP08-owned]
+[user-initiated, separate invocation]
   ↓
 claude system enable-daemon
-  ├─ G1–G10 installer-tree validation (G6 enforces com.claude-stem.* prefix)
+  ├─ installer-tree validation gates (G6 enforces com.claude-stem.* prefix)
   ├─ mv staged plist → ~/Library/LaunchAgents/<Label>.plist
   └─ launchctl bootout (idempotent) + launchctl bootstrap gui/$UID
 ```
 
-**SP07 onboarder does NOT invoke `launchctl bootstrap` on the user's real host** (per SP07 spec L86-102 + SP00 invariant I2). Activation is opt-in and gated by SP08's G1-G10 validation.
-
-> **Inter-project gap (CFF-S56-2):** The `claude system enable-daemon` CLI is named in SP07 spec L99 but is not yet shipped as a named SP08 task line-item. SP08 tasks.md ships `install.sh` (T-1) and `uninstall.sh` (T-2). Whether `enable-daemon` is part of `install.sh` or a separate CLI shim is unowned. Flagged as a missing-task gap on the SP08 manifest; T-12 doc still references the contracted command name per the SP07 spec promise.
+The onboarder does NOT invoke `launchctl bootstrap` on the user's real host. Activation is opt-in and gated by the installer's validation guards.
 
 ## 6. Test/dogfood output chain (footnote)
 
-For SP07 T-11 Alex-archetype greenfield dogfood and Peter reinstall:
-- `launchctl bootstrap` invocations run inside SP00 T-1 Lima VM
-- Wrapped in SP00 T-9 sandbox-exec profile (deny-default; allow only `$DOGFOOD_ROOT/Library/LaunchAgents/` writes + launchctl IPC)
+For greenfield dogfood and reinstall tests:
+- `launchctl bootstrap` invocations run inside the Lima VM
+- Wrapped in a `sandbox-exec` profile (deny-default; allow only `$DOGFOOD_ROOT/Library/LaunchAgents/` writes + launchctl IPC)
 - `$DOGFOOD_ROOT` is the Lima-scoped `CLAUDE_HOME` isolation root; never resolves to `$HOME` on the real host
 
-See SP00 (isolation-harness) tasks.md T-9 (sandbox-exec profile) and SP07 (onboarder-ux) tasks.md T-11 (Alex dogfood).
-
-## 7. TCC grant pointer
+## 7. Full Disk Access pointer
 
 After running `claude system enable-daemon`, the user's first launchd fire requires Full Disk Access for the cron-wrapper to read `$VAULT_ROOT` and write `$VAULT_LOGS`. The terminal prompt at the end of the onboarder includes:
 
@@ -272,11 +248,9 @@ After running `claude system enable-daemon`, the user's first launchd fire requi
 After running `claude system enable-daemon`, grant Full Disk Access to /bin/bash
 in System Settings → Privacy & Security → Full Disk Access.
 
-See docs/installer.md §TCC for step-by-step instructions including
-MDM-managed-device caveats.
+See docs/installer.md (Full Disk Access section) for step-by-step instructions
+including MDM-managed-device caveats.
 ```
-
-Full macOS-specific instructions (MDM caveats, signed-binary inheritance, sandbox-exec interactions under launchd) are deferred to SP08's `docs/installer.md` runbook (SP08 T-9 deliverable). T-12 surfaces the pointer; SP08 owns the content.
 
 ## 8. Failure modes
 
@@ -295,7 +269,7 @@ Full macOS-specific instructions (MDM caveats, signed-binary inheritance, sandbo
 ## 9. Acceptance self-check
 
 - [x] 8 questions enumerated with prompt text + manifest mapping
-- [x] TCC grant pointer included (defers full instructions to SP08 docs/installer.md §TCC)
+- [x] Full-Disk-Access pointer included (defers full instructions to `docs/installer.md`)
 - [x] Default first job = librarian (Q1 default)
 - [x] Q1=`none` short-circuits to `O.jobs: []` with both jobs effectively disabled (no jobs in array)
 - [x] Production chain stages-only (no bootstrap from onboarder)
@@ -303,20 +277,3 @@ Full macOS-specific instructions (MDM caveats, signed-binary inheritance, sandbo
 - [x] Q6 budget defaults match cron-wrapper truth: librarian=$5, architect=$10
 - [x] Q7 model defaults match cron-wrapper truth: librarian=sonnet, architect=opus
 - [x] Q8 librarian-only; architect skipped (Q4 already picks weekly day)
-- [x] CFF-S56-1 (TZ spec drift), CFF-S56-2 (enable-daemon gap), CFF-S56-4 (log_path drift), CFF-S56-7 (dow array drift) flagged inline
-
-## 10. References
-
-- SP03 (orchestration-engine) spec L96-114 — T-12 spec source
-- SP03 (orchestration-engine) tasks L296-314 — T-12 task block
-- SP07 (onboarder-ux) spec L86-102 — production-vs-test isolation
-- SP07 (onboarder-ux) tasks L184-207 — SP07 T-9 absorbs this flow
-- SP08 (distribution-installer-adopt) spec L80, L69-105 — G6 + G1-G10 guards
-- `~/Code/claude-stem/installer/render-launchd.sh` L162-203 — TZ + envsubst allowlist (S55 commit `48cee95`)
-- `~/Code/claude-stem/templates/launchd/librarian.plist.tmpl` — daily plist (no Weekday key)
-- `~/Code/claude-stem/templates/launchd/architect.plist.tmpl` — weekly plist (single Weekday)
-- `~/Code/claude-stem/orchestrator/cron-wrappers/librarian-cron.sh` L53-57 — weekend-skip gate (post-S56: SKIP_WEEKENDS env)
-- `~/Code/claude-stem/orchestrator/cron-wrappers/architect-cron.sh` L83-90 — model + budget defaults
-- `~/Code/claude-stem/schemas/orchestration-schema.json` L19-86 — jobs[] schema
-- `~/Code/claude-stem/onboarding/q-field-map.json` D-2 entry — `defaults_applied` table
-- `~/Code/claude-stem/onboarding/onboarder-design.md` §6 + §10 — Section D + Q-ID enumeration

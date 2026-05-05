@@ -1,79 +1,79 @@
-# Foundation hooks — overview + install map
+# hooks/
 
-This directory ships the generic Claude Code hook set: 17 default-on hooks
-covering write-time enforcement (R-01..R-54), session lifecycle, multi-session
-coordination, and post-write validation. One additional hook is available as
-opt-in.
+Claude Code hooks shipped by Claude Stem. Seventeen are default-on. Four are conditional fragments the installer merges based on manifest opt-in flags. One is opt-in advanced.
 
-## Install
+## What hooks are
 
-The SP08 distribution installer reads `templates/settings.json` and merges it
-into the user's `~/.claude/settings.json`, then drops the hook scripts at
-`$CLAUDE_HOME/hooks/` and the lib helpers at `$CLAUDE_HOME/hooks/lib/`. Hooks
-read manifest fields from `$CLAUDE_HOME/user-manifest.json` with hardcoded
-fallbacks — every hook exits 0 on missing manifest (graceful-degrade per
-SP02 spec Constraint).
+Claude Code is a CLI harness wrapping a Claude model. Hooks are user-supplied shell commands the harness invokes at specific lifecycle events. Each hook receives a JSON event payload on stdin and may emit JSON on stdout to feed context back into the conversation, allow or deny a tool call, or block a stop.
 
-## Default-on hooks (17)
+The events this hook set wires:
 
-Wired into `templates/settings.json`. Always installed.
+- **PreToolUse** — fires before a tool runs. Returns allow/deny.
+- **PostToolUse** — fires after a tool finishes.
+- **UserPromptSubmit** — fires every time the user submits a prompt.
+- **SessionStart** — fires once per session boot. The `source` field distinguishes startup / resume / compact.
+- **Stop** — fires when the model would otherwise stop. Exit code 2 forces continuation.
+- **PreCompact** — fires immediately before context compaction. Last chance to snapshot.
+- **SessionEnd** — fires when the session terminates. Cleanup only; output is ignored.
+- **statusLine** — runs continuously to render the bottom-of-terminal status line.
+
+## Default-on
+
+Always installed. Wired into `templates/settings.json`.
 
 | Event | Hook | Purpose |
 |---|---|---|
-| PreToolUse[Edit\|Write] | `pre-write-guard.sh` | 13-rule R-enforcement (R-01..R-54 generic core) |
-| PostToolUse[Edit\|Write] | `track-vault-write.sh` | Multi-session registry update on vault writes |
-| PostToolUse[Edit\|Write] | `post-write-verify.sh` | Frontmatter schema validation + R-38/R-39 advisory |
-| UserPromptSubmit | `prompt-context.sh` | Context-pressure mandate + multi-session overlap surfacing |
-| SessionStart | `session-register.sh` | Multi-session coordination registry entry |
-| SessionStart | `cron-health-banner.sh` | 24h-cached cron-health summary |
-| Stop | `stop-checkpoint-check.sh` | Block stop on stale checkpoint at high context-pressure |
-| Stop | `stop-drift-scan.sh` | Touched-file drift advisory at session end |
-| PreCompact[auto\|manual] | `pre-compact-checkpoint.sh` | Pre-compact session-state snapshot |
-| SessionEnd | `session-deregister.sh` | Multi-session coordination cleanup |
-| statusLine | `worker-statusline.sh` | Statusline rendering |
+| PreToolUse[Edit\|Write] | `pre-write-guard.sh` | 13-rule write-time policy gate. See [RULES.md](RULES.md). |
+| PostToolUse[Edit\|Write] | `track-vault-write.sh` | Multi-session registry update on vault writes. |
+| PostToolUse[Edit\|Write] | `post-write-verify.sh` | Frontmatter schema validation + post-write advisories. |
+| UserPromptSubmit | `prompt-context.sh` | Context-pressure mandates + multi-session overlap surfacing. |
+| SessionStart | `session-register.sh` | Multi-session coordination registry entry. |
+| SessionStart | `cron-health-banner.sh` | 24-hour-cached cron-health summary. |
+| Stop | `stop-checkpoint-check.sh` | Block stop on stale checkpoint at high context-pressure. |
+| Stop | `stop-drift-scan.sh` | Touched-file drift advisory at session end. |
+| PreCompact[auto\|manual] | `pre-compact-checkpoint.sh` | Pre-compact session-state snapshot. |
+| SessionEnd | `session-deregister.sh` | Multi-session coordination cleanup. |
+| statusLine | `worker-statusline.sh` | Statusline rendering. |
 
-Plus 6 supporting scripts: `auto-commit-surfaces.sh`, `memory-consolidation-check.sh`,
-`memory-consolidation-run.sh`, `reconcile-sessions.sh`, `session-auto-close.sh`,
-`tasks-md-autosync.sh`. These are wired conditionally — see below.
+Plus six supporting scripts spawned conditionally: `auto-commit-surfaces.sh`, `memory-consolidation-check.sh`, `memory-consolidation-run.sh`, `reconcile-sessions.sh`, `session-auto-close.sh`, `tasks-md-autosync.sh`.
 
-## Conditional hooks (4 fragments)
+## Conditional fragments (4)
 
-The SP08 installer reads `manifest.behavioral.hook_preferences` and merges
-fragment files from `templates/settings-fragments/` based on opt-in flags:
+Off by default. The installer reads `manifest.behavioral.hook_preferences` and merges the matching fragment from `templates/settings-fragments/` only if you opted in.
 
-| Fragment | Manifest flag | When to enable |
+| Fragment | Manifest flag | When you'd enable it |
 |---|---|---|
-| `memory-consolidation.json` | `hooks.memory_consolidation.enabled` | Installing claude-mem; SessionEnd consolidation desired |
-| `auto-commit.json` | `hooks.auto_commit.enabled` | `$CLAUDE_HOME` and/or vault are git repos with auto-commit policy |
-| `tasks-md-autosync.json` | `hooks.tasks_autosync.enabled` | Plan workflow with `tasks.md` task-status markers |
-| `multi-session.json` | `hooks.multi_session.enabled` | Concurrent Claude Code sessions on the same vault expected |
+| `memory-consolidation.json` | `hooks.memory_consolidation.enabled` | You're using the bundled `claude-mem` plugin. |
+| `auto-commit.json` | `hooks.auto_commit.enabled` | Your `~/.claude/` and/or vault are git repos. |
+| `tasks-md-autosync.json` | `hooks.tasks_autosync.enabled` | You use the plan workflow with `tasks.md` task-status markers. |
+| `multi-session.json` | `hooks.multi_session.enabled` | You expect concurrent Claude Code sessions on the same vault. |
 
-Default posture: all four conditionals are **off** unless the user opts in
-during onboarding. Foundation install ships strictest-by-default.
+The installer never strips entries from the default `templates/settings.json`; fragments are additive only. To turn off a default-on hook, edit your own `~/.claude/settings.json` post-install.
 
 ## Opt-in advanced (1)
 
-`session-start-canary.sh` is **not** wired into the default `templates/settings.json`.
-It detects unexpected resurrection of a tripwire path (e.g., a deprecated plans
-directory). It is a migration-scar pattern — useful for users tracking a
-specific filesystem move, never useful on a greenfield install. Add to the
-SessionStart array manually if you have a tripwire path to monitor; declare it
-via `manifest.paths.tripwire_paths[]` (foundation hook reads this; absent
-manifest entry = no-op).
+`session-start-canary.sh` is **not** wired into the default `templates/settings.json`. It's a tripwire pattern: detect unexpected resurrection of a path you're trying to keep dead (e.g., a deprecated plans directory after a rename). Useful only when you have a known dead path to monitor; never useful on a greenfield install. Add it to your SessionStart array manually if you need it; declare the path via `manifest.paths.tripwire_paths[]`.
 
-## State + config
+## State and config
 
-- `hooks/state/` — runtime state (`hook-audit.log`, `tripwire.log`, etc.). Created lazily by hooks; ships empty.
+- `hooks/state/` — runtime state (`hook-audit.log`, `tripwire.log`, etc.). Created lazily; ships empty.
 - `hooks/config/` — hand-editable allowlists:
-  - `doc-dependencies.json` — R-54 doc-dependency cascade entries
-  - `drift-allowlist.json` — librarian provides:-overlap exemptions
-  - `cron-log-architecture-exceptions.json` — R-22 wrapper-owned-logging exceptions
+  - `doc-dependencies.json` — registered documentation cascade primaries and mirrors. Read by `pre-write-guard.sh`.
+  - `drift-allowlist.json` — `provides:` overlap exemptions used by the librarian.
+  - `cron-log-architecture-exceptions.json` — plist labels exempt from the wrapper-owned-logging convention.
 
-All three ship empty (`[]`); users add entries as their installation evolves.
+All three ship empty. Add entries as your installation evolves.
+
+## Manifest-driven posture (current state)
+
+The intended design: every hook reads identity / paths / preferences from `~/.claude/user-manifest.json` via `lib/paths.sh`, with env-var overrides for testing. The intended resolution order is env → manifest field → install-convention default. Each hook exits 0 on missing manifest (graceful degrade), so the system never blocks on a missing or malformed config.
+
+What's actually wired up today is a partial implementation. `pre-write-guard.sh`, `auto-commit-surfaces.sh`, and the two `memory-consolidation*.sh` hooks honor `${CLAUDE_HOME:-$HOME/.claude}`. Several other default-on hooks (`prompt-context.sh`, `session-register.sh`, `cron-health-banner.sh`, `post-write-verify.sh`, `pre-compact-checkpoint.sh`, `stop-checkpoint-check.sh`, plus a few others) hardcode `$HOME/.claude` directly. If you install with a non-default `CLAUDE_HOME`, those hooks will read from the wrong place.
+
+For most adopters this doesn't matter — `~/.claude/` is where you want everything anyway. For test harnesses and isolated dogfood installs, the inconsistency is real and is tracked as a known issue.
 
 ## See also
 
-- `lib/paths.sh` — manifest-driven path resolution (single source of truth)
-- `DROPPED-RULES.md` — rationale for R-rules dropped in the live→foundation rewrite
-- `templates/settings.json` — default hook wiring (consumed by SP08 installer)
-- `templates/settings-fragments/` — opt-in conditional fragments
+- [`RULES.md`](RULES.md) — the 13 active rules `pre-write-guard.sh` enforces, in plain English.
+- [`templates/README.md`](../templates/README.md) — `settings.json` defaults and the conditional-fragment merge contract.
+- [`lib/paths.sh`](lib/paths.sh) — the path-resolution helper every hook sources.

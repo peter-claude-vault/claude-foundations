@@ -16,3 +16,5 @@
 # Default --out for skills/infer-vault-structure/cluster.sh writes here.
 /onboarding/seed-content/state/
 __pycache__/
+# Documentation overhaul scratch directory
+/_doc-overhaul/

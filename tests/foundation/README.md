@@ -1,19 +1,16 @@
 # tests/foundation/
 
-Hermetic end-to-end test harness for foundation-repo distribution validation.
+Hermetic end-to-end test harness for foundation distribution validation.
 
-Landed by Plan 71 SP04 T-12 (2026-04-29).
+The harness installs `skills/librarian/`, `lib/`, and `schemas/` into a fresh `$CLAUDE_HOME` and runs them end-to-end against a synthetic vault — without ever touching the host's live `~/.claude/` or vault directories.
 
-## Scope
+This is stand-alone from the per-capability test suite under `skills/librarian/capabilities/tests/`. That suite asserts each capability's contract in isolation; this harness asserts the install + chain-invocation contract.
 
-Validates that the foundation-repo `skills/librarian/`, `lib/`, and `schemas/`
-distribution can be installed into a fresh `$CLAUDE_HOME` and run end-to-end
-against a synthetic vault — without touching Peter's live `~/.claude/` or
-vault.
+## When to run it
 
-Stand-alone from the per-capability `skills/librarian/capabilities/tests/`
-suite. That suite asserts each capability's contract in isolation; this
-harness asserts the install + chain-invocation contract.
+- Before opening a PR that touches anything under `skills/librarian/`, `lib/`, `schemas/`, or `templates/`.
+- Before cutting a release (the harness is part of [`docs/release-runbook.md`](../../docs/release-runbook.md) Step 2).
+- Whenever you want to verify a new capability composes into the full chain without breaking siblings.
 
 ## Layout
 
@@ -21,45 +18,50 @@ harness asserts the install + chain-invocation contract.
 tests/foundation/
   README.md                          (this file)
   librarian-full/
-    run.sh                           # hermetic test driver (T-12 c4)
-    capability-coverage.sh           # per-capability coverage harness (T-12 c5)
+    run.sh                           # hermetic test driver
+    capability-coverage.sh           # per-capability coverage harness
   fixtures/
     claude-home/                     # synthetic $CLAUDE_HOME data
       user-manifest-structured.json    # has_structured_projects: true
       user-manifest-flat.json          # has_structured_projects: false
       librarian-manifest.json          # copy of templates/librarian-manifest-skeleton.json
-    vault-minimal/                   # synthetic vault root (single tree, both manifests pass)
-      CLAUDE.md                        # plain markdown, no frontmatter -> detect_type=None -> silent skip
-      Vault Architecture.md            # plain markdown, no frontmatter -> silent skip
-      Logs/.gitkeep                    # empty Logs/ -> log-archive no-op
-      # No Engagements/ -> structured manifest finds nothing to check (still passes);
-      # flat manifest skips engagement-tree checks silently per SKILL.md L55.
+    vault-minimal/                   # synthetic vault root (passes both manifests)
+      CLAUDE.md                        # plain markdown, no frontmatter (silent skip)
+      Vault Architecture.md            # plain markdown, no frontmatter (silent skip)
+      Logs/.gitkeep                    # empty Logs/ → log-archive no-op
 ```
 
-## Hermetic-isolation contract
+The minimal vault has no engagement tree. The structured manifest finds nothing engagement-related to check (still passes); the flat manifest skips engagement-tree checks silently.
 
-The driver MUST:
+## Hermetic isolation
 
-1. mktemp -d a fresh `$DOGFOOD_ROOT`
-2. Materialize `$DOGFOOD_ROOT/.claude/` by symlinking foundation-repo
-   `lib/`, `skills/`, `schemas/` into install-shape (capabilities source from
-   `$CLAUDE_HOME/hooks/lib/paths.sh` so `lib/` materializes there)
-3. Materialize `$DOGFOOD_ROOT/vault/` from `fixtures/vault-minimal/`
-4. Materialize `$DOGFOOD_ROOT/.claude/user-manifest.json` by selecting one of
-   the two fixture manifests and templating `vault.root`/`paths.vault_root`
-   to the materialized vault path
-5. Set CLAUDE_HOME, VAULT_ROOT, HOOKS_STATE, PLANS_DIR env to fixture paths
-   (no live-host paths leak in)
-6. Invoke the integrity-capability chain
-7. Assert + teardown
+The driver:
 
-`tests/dogfood-root-helper.sh` (sourced) provides $DOGFOOD_ROOT + cleanup
-trap; harness inherits.
+1. Creates a fresh `$DOGFOOD_ROOT` via `mktemp -d`.
+2. Materializes `$DOGFOOD_ROOT/.claude/` by symlinking foundation `lib/`, `skills/`, `schemas/` into install-shape (capabilities source from `$CLAUDE_HOME/hooks/lib/paths.sh`, so `lib/` materializes there).
+3. Materializes `$DOGFOOD_ROOT/vault/` from `fixtures/vault-minimal/`.
+4. Materializes `$DOGFOOD_ROOT/.claude/user-manifest.json` from one of the two fixture manifests, templating `vault.root` and `paths.vault_root` to the materialized vault path.
+5. Sets `CLAUDE_HOME`, `VAULT_ROOT`, `HOOKS_STATE`, `PLANS_DIR` env vars to fixture paths so no live-host paths leak in.
+6. Invokes the integrity-capability chain.
+7. Asserts and tears down.
 
-## Acceptance contract (SP04 T-12)
+`tests/dogfood-root-helper.sh` (sourced by the drivers) provides `$DOGFOOD_ROOT` plus a cleanup trap.
 
-- [ ] `/librarian full` chain completes against synthetic vault with exit 0
-- [ ] Aggregated log written to `{fixture.vault.root}/Logs/session-close-*.md`
-- [ ] `librarian-manifest.json` populated with 7 expected top-level data sections
-- [ ] Zero unexpected findings (baseline fixture has known-zero drift)
-- [ ] Both `has_structured_projects: true` + `false` fixtures pass
+## Acceptance contract
+
+A green run requires:
+
+- `/librarian full` chain completes against the synthetic vault with exit 0
+- An aggregated log written to `{fixture.vault.root}/Logs/session-close-*.md`
+- `librarian-manifest.json` populated with seven expected top-level data sections
+- Zero unexpected findings (the baseline fixture has known-zero drift)
+- Both `has_structured_projects: true` and `false` fixtures pass
+
+## Adding a new test
+
+1. Drop the new fixture under `fixtures/` — manifest files into `claude-home/`, vault content into `vault-minimal/` or a sibling vault directory.
+2. Extend `librarian-full/run.sh` (or `capability-coverage.sh`) to materialize and invoke against your fixture.
+3. Add the assertion lines.
+4. Run from a clean shell to confirm the cleanup trap restores the host state.
+
+If you need a shape `vault-minimal/` doesn't cover, add a new fixture vault rather than mutating the minimal one — the minimal one is the baseline known-zero-drift case and other tests rely on it staying that way.

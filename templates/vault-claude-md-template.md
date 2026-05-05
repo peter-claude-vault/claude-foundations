@@ -24,11 +24,10 @@ without re-creating directory scaffolding.
 - **Organizational method:** {{VAULT_ORGANIZATIONAL_METHOD}}
 - **Top-level folder:** `{{VAULT_TOP_LEVEL_FOLDER}}/` (engagement-based vaults)
   or flat layout (project-based vaults)
-- **Canonical file types:** populated by `/adopt` (skeleton at adoption time;
-  Phase 2 in v2.1 populates richer set from archetype heuristic). Authoritative
+- **Canonical file types:** populated by `/adopt` at adoption time. Authoritative
   list lives at `$CLAUDE_HOME/user-manifest.json` `vault.canonical_file_types[]`
   and at `<vault_root>/.coordination/canonical-file-types.json`. Both are kept
-  in sync by future hooks.
+  in sync by hook automation.
 - **Frontmatter contract:** every non-exempt vault file carries `tags:`. Orphans
   in graph view are a hygiene alert. Validate frontmatter against
   `$CLAUDE_HOME/schemas/vault-schema.json` before any vault write.
@@ -42,7 +41,7 @@ without re-creating directory scaffolding.
 |---|---|---|
 | `Inbox/` | Capture surface — emails, transcripts, dashboard data | Daily reconcile |
 | `Logs/` | Build logs, ideation briefs, session notes | Append-only |
-| `Logs/backlog-progress/` | Per-backlog-item satellite logs (R-29/R-30/R-31) | Sentinel-driven |
+| `Logs/backlog-progress/` | Per-backlog-item satellite logs (sentinel pattern: each backlog row carries a pointer; full session history lives in the satellite file) | Sentinel-driven |
 | `.coordination/` | Multi-session shared state, hook artifacts, manifests | Hook-managed |
 | `Plans/` | Symlink to `$PLANS_HOME` (plan-state, manifests, handoffs) | External |
 | `System Backlog.md` | Vault-root index of system-project ideas | librarian-maintained |
@@ -90,9 +89,8 @@ file in this folder, classified by topic. Most users will only need
 `_index.md`; `File-Index.md` is the answer when graph view shows hub-spoke
 density warnings on a folder root.
 
-Generation of `_index.md` scaffolds at onboarding time is **deferred to
-v2.1** (Tier 2 — `_index.md` autogeneration capability). v2.0.0 ships the
-convention; you author the index files yourself as the vault grows. Once
+Auto-generation of `_index.md` scaffolds at onboarding time is **not in the
+current release.** Author the index files yourself as the vault grows. Once
 they exist, `librarian placement-validate` keeps them honest.
 
 ## What `/adopt` did

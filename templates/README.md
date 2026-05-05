@@ -1,14 +1,9 @@
-# Claude Code settings templates
+# templates/
 
-This directory ships the foundation hook-config in two layers:
+Files the installer renders into a user's `~/.claude/` and vault directories at install or adopt time. The templates ship the foundation hook config in two layers:
 
-- **`settings.json`** — always-on default. Wires the 11 default-on hook entries
-  across 8 hook events. Default-deny posture: opinionated extras (memory
-  consolidation, auto-commit, tasks-md autosync, multi-session reconciliation)
-  are NOT in this file. Users opt in to those during onboarding.
-- **`settings-fragments/`** — 4 opt-in conditional fragments. The SP08 installer
-  reads `manifest.hooks.<flag>.enabled` and deep-merges enabled fragments into
-  the user's `~/.claude/settings.json`.
+- **`settings.json`** — the always-on default. Wires the default-on hook entries across eight Claude Code lifecycle events. Default-deny posture: opinionated extras (memory consolidation, auto-commit, multi-session reconciliation, tasks-md autosync) are NOT in this file. Users opt in to those during onboarding.
+- **`settings-fragments/`** — opt-in conditional fragments. The installer reads `manifest.behavioral.hook_preferences.<flag>` and deep-merges enabled fragments into the user's `~/.claude/settings.json`.
 
 ## Default `settings.json`
 
@@ -23,12 +18,9 @@ This directory ships the foundation hook-config in two layers:
 | SessionEnd | 1 | `session-deregister.sh` |
 | statusLine | 1 | `worker-statusline.sh` |
 
-**Timeouts** are in seconds (per Claude Code hooks docs). Hooks without an
-explicit timeout inherit the default 600s command-hook ceiling — fine for the
-fast registry/git/python operations they run.
+**Timeouts** are in seconds (per Claude Code hooks docs). Hooks without an explicit timeout inherit the default 600s command-hook ceiling — fine for the fast registry / git / python operations they run.
 
-`session-start-canary.sh` is **not** in default `SessionStart`. See
-`hooks/README.md` for the opt-in pattern.
+`session-start-canary.sh` is **not** in default `SessionStart`. See [`hooks/README.md`](../hooks/README.md) for the opt-in pattern.
 
 ## Conditional fragments
 
@@ -50,26 +42,22 @@ Each fragment file has a self-describing schema:
 | `tasks-md-autosync.json` | `hooks.tasks_autosync.enabled` | `PostToolUse[Edit\|Write].hooks` |
 | `multi-session.json` | `hooks.multi_session.enabled` | `SessionEnd[0].hooks` |
 
-## Installer contract (SP08)
+## Installer contract
 
 ```
 for each fragment in templates/settings-fragments/*.json:
-  flag = jq .[ "_manifest_flag" ] fragment
+  flag = jq ._manifest_flag fragment
   if jq -e ."$flag" user-manifest.json:
-    target = jq .[ "_merge_target" ] fragment
+    target  = jq ._merge_target fragment
     entries = jq .entries fragment
     deep-merge entries into user-settings.json at target
 ```
 
-Fragments are additive. The installer never strips entries from the default
-`settings.json`. To disable a default-on hook, the user edits their own
-`~/.claude/settings.json` post-install.
+Fragments are additive. The installer never strips entries from the default `settings.json`. To disable a default-on hook, the user edits their own `~/.claude/settings.json` post-install.
 
 ## Manual install (no installer)
 
-Copy `settings.json` to `~/.claude/settings.json`. For each opt-in fragment
-you want enabled, manually merge its `entries[]` into the matching event's
-`hooks[]` array.
+Copy `settings.json` to `~/.claude/settings.json`. For each opt-in fragment you want enabled, manually merge its `entries[]` into the matching event's `hooks[]` array.
 
 ## Validation
 

@@ -2,11 +2,6 @@
 title: Section A — Discovery Review (stub, no LLM extraction)
 type: extraction-prompt
 status: stub
-created: 2026-04-25
-updated: 2026-04-25
-parent_plan: 71-claude-foundations-engine-v2
-sub_plan: 01-schemas-and-onboarder-contract
-task: T-9
 section: A
 extraction_mode: deterministic
 ---
@@ -21,7 +16,7 @@ follow-up loop to run.
 
 This stub exists so the prompt-set has 1:1 coverage of the 5 sections
 declared in `onboarder-design.md` §2 — every section gets a file even
-when extraction does not. Consumers (T-10 `bootstrap-schemas.sh`) can
+when extraction does not. Consumers (`bootstrap-schemas.sh`) can
 iterate `extraction-prompts/section-{A..E}.md` deterministically.
 
 ## What runs instead

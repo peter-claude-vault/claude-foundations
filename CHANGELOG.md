@@ -1,140 +1,55 @@
 # Changelog
 
-All notable changes to Claude Stem are documented here. Versioning follows the
-foundation-manifest `version` field; tag identity matches `vMAJOR.MINOR.PATCH`.
+All notable changes to Claude Stem are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/), and the project follows semantic versioning.
 
-For prior release narratives, see `docs/release-notes-v<version>.md`.
+For longer release narratives, see `docs/release-notes-v<version>.md`.
 
 ## [v2.1.2] — 2026-05-05
 
-**Plan 71 SP16 — Greenfield Personalization Wiring.** Closes the v2.1.0
-architectural-thesis-to-runtime delta surfaced by the 2026-05-05 audit:
-v2.1.0 shipped its differentiation surface (seven SP12 auto-author surfaces +
-four-stage SP13 infer-vault chain) as dead code on the greenfield onboarding
-path. v2.1.2 wires it.
+Greenfield content seeding now actually runs end-to-end.
 
-### Wiring delta (closes audit findings P-1, P-2, A1)
+### Fixed
 
-- **`run_section_f` in `skills/onboarder/onboard.sh`** (P-1) — new section
-  invoked AFTER `run_finalize`. Reads the populated user-manifest, dispatches
-  the seven SP12 auto-author surfaces in declared order (1, 2, 3, 4, 5, 6, 9),
-  then invokes the four-stage infer-vault orchestrator chain when
-  `SEED_CONTENT_PATH` is set. Honors `--skip-auto-author`,
-  `--skip-content-seeding`, `--auto-author-only-surfaces=<csv>`. Idempotent on
-  re-run via per-surface `state/section-f-state/surface-N.done` markers.
-- **`skills/infer-vault-structure/orchestrate.sh`** (P-2) — deterministic
-  4-stage chain wrapping `cluster.sh → propose-taxonomy.sh → import-plan.sh →
-  review-gate.sh`. Idempotent re-run via per-stage `state/<stage>.done`
-  markers. Halt-resume on review-gate stall (writes
-  `state/review-pending.flag`, exits 64; `--resume` honors existing markers).
-  One JSONL record per stage in `orchestrate-log.jsonl`.
-- **`tests/sp16/greenfield-end-to-end.sh`** + synthetic
-  `tests/sp16/fixtures/greenfield-seed/` (A1) — drives full
-  `intake.sh + ir-builder.sh + 7-surface auto-author + 4-stage orchestrator`
-  pipeline against a sandboxed `$HOME` / `$CLAUDE_HOME`. Assertions: ≥7 records
-  in `auto-author-log.jsonl`, `approved-import-plan.md` present, ≥1
-  consultation record (tag-prefix surface fired), all 4 orchestrator stages
-  green, identity-substituted vault `CLAUDE.md` present, zero forbidden
-  identity tokens across the sandbox.
+- **Seed-content pipeline reaches the user.** When you run `/onboard --seed-content <path>`, the seven personalization surfaces and the four-stage infer-vault chain now execute on greenfield onboarding. Earlier 2.1.x releases shipped these as code paths reachable only through the retrofit flow.
+- **Connector probe parses the canonical MCP server shape.** The MCP registry probe now validates `id`, `display_name`, and `mcp_server_id` before emitting a connector record, and reads the per-server name from the standard `server.{name,...}` shape. Live registry probes now return ~21 valid records instead of one placeholder.
 
-### Adopter-visible cleanup bundle (closes audit findings S-1, LA-6, S-3, A3)
+### Changed
 
-- **`tests/grep-audit-patterns/literal.txt` scrubbed** (S-1, A3) — 28
-  client / engagement names removed (`LUXE`, `Walmart`, `Ara Partners`,
-  `gold-layer-qa`, `b2c-renovate`, `bar-dashboard`, `1p-acquisition`,
-  `amazon-creator-directory`, `luxe-creator-analytics`, plus enumerated
-  remainder). 10 generic identity tokens retained (Peter-name variants, GitHub
-  handle, home-directory paths, vault-path tokens). Audit-detector functional
-  equivalence preserved (`tests/grep-audit-unit-test.sh` 5/5 PASS post-scrub).
-- **`skills/librarian/capabilities/frontmatter-enforce.sh` parameterized**
-  (LA-6) — engagement-subfolder taxonomy now reads from
-  `vault.{people,projects_subdirname,strategic,planning}_dirname` user-manifest
-  fields via `umr_get_string`. Defaults preserve the SP10 install-convention
-  for users who never declared the fields. Closes the SP12 T-9 parameterization
-  begun under `vault.projects_root_dirname`. Regression: SP12 unit suite 12/12
-  PASS unchanged; new 27-AC sweep across academic / generalist / default vault
-  structures all PASS.
-- **`onboarding/lib/mcp-registry-probe.sh` response-shape allowlist** (S-3) —
-  records now validated for resolvable `id` / `display_name` / `mcp_server_id`
-  before emit. Records failing the allowlist drop with per-record reason on
-  STDERR. jq filter rewritten to descend into `.server.{name,...}` per the
-  canonical 2025-12-11 `server.schema.json` shape; legacy flat-fields shape
-  still tolerated via fallback. Live-registry probe now returns 21 valid
-  records with proper title-resolved display names (was: 1 sentinel-substituted
-  placeholder under the old filter).
+- **Engagement-folder taxonomy is parameterized.** The frontmatter enforcer reads `vault.{people,projects_subdirname,strategic,planning}_dirname` from your manifest instead of assuming default folder names.
+- **Test fixtures scrubbed.** Removed 28 named clients and engagement slugs from grep-audit fixtures. The audit detector still passes its full unit suite.
 
-### Documentation true-up (closes audit findings P-3, P-4, B1, B2)
+### Added
 
-- **`skills/onboarder/SKILL.md`** — new "Section F — Greenfield Personalization
-  Auto-Authoring" section documenting post-finalize ordering, the seven
-  surfaces, the four-stage chain, the consultation-records-in-auto-author-log
-  shape (heterogeneous JSONL discriminated by `action`; no separate
-  `consultation-log.jsonl` file), the three flags, and per-surface idempotency.
-- **`onboarding/ux/section-a.sh:240-242`** — cost-disclosure prose corrected
-  from "Five LLM, two deterministic" to "Four LLM, three deterministic" to
-  match the bracketed surface inventory and `docs/llm-cost-model.md`
-  classification (LLM: 1, 2, 3, 9; deterministic: 4, 5, 6).
-- **`README.md`** — new "Greenfield personalization (optional)" subsection in
-  Quick start documenting `/onboard --seed-content <path>`, the seven
-  dispatched surfaces, the four-stage chain, the SP15 consultation prompt on
-  surfaces 3/4/6, and the three flags.
-
-### Install-shipping fix for `skills/infer-vault-structure/` (latent v2.1.0 carry-forward)
-
-- **`install.sh` and `generate-foundation-manifest.sh` 8-named-skills →
-  9-named-skills.** v2.1.0 shipped `skills/infer-vault-structure/` (10 files:
-  4-stage chain + orchestrate.sh + 3 Python helpers + stage-2-5-consultation
-  + SKILL.md) in the source repo but excluded the directory from install.sh's
-  named-skills allowlist. `skills/onboarder/onboard.sh` Section F orchestrator
-  invocation and `skills/adopt/retrofit.sh` both depend on this directory at
-  `$REPO_ROOT/skills/infer-vault-structure/`. On adopter installs at v2.1.0
-  and v2.1.1, those code paths gracefully-skipped or errored; the four-stage
-  infer-vault chain was structurally unreachable adopter-side.
-
-  v2.1.2 adds `infer-vault-structure` to install.sh's enumeration (becomes 9
-  named skills) and to the foundation-manifest generator's matching scope.
-  Adopter-side `~/.claude/skills/infer-vault-structure/` now ships, and the
-  Section F orchestrator chain runs end-to-end on `/onboard --seed-content
-  <vault>` adopter runs as the v2.1.2 release notes describe.
-
-### Foundation-manifest completeness fix (latent v2.1.0 carry-forward)
-
-- **`foundation-manifest.json` regenerated against v2.1.2 tree.** v2.1.0's
-  manifest was timestamped 2026-05-03 but the v2.1.0 tag landed 2026-05-05;
-  files added between (SP14 connector wizard runtime, SP15 consultation gate
-  library, SP08 retrofit harness, SP13 seed-content/format-parsers tree, etc.)
-  were absent from the v2.1.0 manifest. v2.1.2 regen captures those plus the
-  SP16 T-1..T-5 deltas plus the `infer-vault-structure` install-shipping fix
-  above. Net: 197 → 257 tracked files; tracked SHAs now match the v2.1.2
-  working tree.
-
-### Out of scope (deferred to v2.2)
-
-- B4 / LA-5 onboarder Q-coverage of 24+ schema fields — UX expansion charter.
-- B6 SP03/SP04/SP05/SP06 label hygiene.
-- C1–C4 v2.x charter rows.
-- Reopening SP12 (precluded by GA Sigstore attestation).
-- Modifications to SP12 surface scripts or SP13 infer-vault scripts
-  (composition-not-fork constraint).
-- Live `~/.claude/` writes (R-55 zero-touch maintained through v2.1.2).
-
-### Audit reference
-
-`~/.claude-plans/71-claude-foundations-engine-v2/_audit-2026-05-05/00-synthesis.md`
-+ `03-personalization-design-integrity.md` + `04-librarian-architect-personalization.md` +
-`05-security-audit.md`. Sub-plan: `16-greenfield-personalization-wiring/`.
-SP16 commits: `36b0d7f` (T-1) → `6d6a1d2` (T-2) → `8173556` (T-3) →
-`19b7351` (T-4) → `3f725ee` (T-5a) → `05cdbe0` (T-5b) → `c48ad75` (T-5c).
-
----
+- **`infer-vault-structure` skill is now installed.** The four-stage cluster → propose → import-plan → review-gate chain ships to `~/.claude/skills/infer-vault-structure/`. Earlier 2.1.x releases left this directory off the install allowlist.
+- **End-to-end greenfield test.** A new test driver (`tests/sp16/greenfield-end-to-end.sh` in this release; the path will likely move to `tests/greenfield-pipeline/` in a future release) drives the full intake → 7-surface auto-author → 4-stage orchestrator pipeline against a sandboxed `$HOME` and asserts on auto-author log records, the approved import plan, consultation records, and identity-token leakage.
 
 ## [v2.1.0] — 2026-05-05
 
-Plan 71 SP14 — Connector Wizard. See `docs/release-notes-v2.1.0.md` for full
-narrative.
+Connector wizard.
+
+### Added
+
+- **`/connectors` wizard.** A four-step flow that walks you through wiring MCP connectors (12 known servers in the catalog), confirms a per-app schedule, and runs OAuth at first use. Produces a working multi-connector cron install.
+- **First reference connector pipeline.** `connectors/templates/granola-meetings.json` pulls Granola transcripts daily into your vault Inbox and processes them via the meeting-note ingestor. Generic by construction; intended as the canonical example for adopter-authored pipeline templates.
+- **Five new launchd plist templates** at `templates/launchd/`: `digest-run`, `chat-scrape`, `calendar-sync`, `meeting-processor`, `connector-runtime` (parameterized per connector).
+- **Reliability features for connectors:** auto-disable on auth-expiry, run-history JSONL logs, RECONNECT REQUIRED status badges, and a five-mode failure-handling catalog.
+
+### Changed
+
+- The launchd renderer (`installer/render-launchd.sh`) supports schedule shapes from `orchestration.json#/jobs[].schedule.interval_sec` and `.schedule.{hour,minute}` for all jobs, not just the baseline three.
 
 ## [v2.0.0] — 2026-05-03
 
-Plan 71 ships the personalization engine. Supersedes Plan 38 after the
-2026-04-13 incident. See `docs/release-notes-v2.0.0.md` (where present) and
-`RELEASE_CHECKLIST.md` for tag-cut procedure.
+Initial public release of the personalization engine.
+
+### Added
+
+- **Manifest-driven runtime.** Every skill and hook reads `~/.claude/user-manifest.json` instead of carrying per-user content.
+- **`/onboard` interview.** Five-section flow (identity → vault → working style → daily jobs → confirmation), voice-first with typed fallback, producing a populated manifest in roughly 25 minutes.
+- **`/adopt` vault scaffold.** Idempotent fresh-vault creation from the manifest's identity and vault fields.
+- **Generic skill set.** `/librarian`, `/architect`, `/inbox-processor`, `/meeting-note-ingestor`, `/morning-brief`, `/backlog-{triage,research,hygiene}`, `/seed-projects`.
+- **17 default-on hooks.** Write-time policy, frontmatter validation, session lifecycle, multi-session coordination, context-pressure mandates.
+- **Daily cron infrastructure.** `librarian` (vault hygiene) and `architect` (strategic review) plist templates, off by default.
+- **Installer with vault-protection guard.** Refuses to clobber an existing `~/.claude/` without an explicit confirmation phrase.
+- **Hermetic test harness.** Lima VM with `mounts: []` invariant; `tests/runner-shell.sh` is the single approved entrypoint.
+- **Sigstore-signed release attestation.** Every tag fires a macOS smoke workflow that signs `macos-smoke-passed.json` via OIDC.

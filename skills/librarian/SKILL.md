@@ -1,6 +1,6 @@
 ---
 name: librarian
-description: Librarian
+description: Vault hygiene authority. Validates frontmatter, placement, cross-references, stale content, log archival, backup, tag taxonomy, and cross-domain sync. Also serves as session-close orchestrator. ~25 capabilities; runs read-only by default with --fix and --apply variants.
 ---
 
 # Librarian
@@ -39,13 +39,13 @@ Vault integrity, cross-domain sync, and backup. Single authority on "is the vaul
 | `/librarian people-audit` | Audit `*/People/*.md` conformance (frontmatter + `## Context` H2) | all engagements (auto-exempts `status: complete\|archived\|historical\|closed`) |
 | `/librarian waiver-audit` | Audit `cascade-waivers.json` abuse + `hook-audit.log` override fires (R-46) | all waivers + all logged fires |
 | `/librarian wikilink-repair` | Detect broken `[[wikilinks]]` + propose doc-dependency-registry-seeded repairs (dry-run default; `--apply` to rewrite) | full vault (excl. `Archive/`, `Logs/foundations-essays/`, `Logs/backlog-progress/`) |
-| `/librarian stale-detect` | Extracted shell (Plan 63 T-4). 8 staleness rules across file types + R-16 plan-stale-status detection + Plan 67 SP04 trinity-lag | full vault + plan roots |
-| `/librarian placement-validate` | Extracted shell (Plan 63 T-5). Vault-root allowlist + project-folder rules + Index File Convention + Logs/ dated pattern | full vault |
-| `/librarian tag-coverage-audit` | Vault-wide tag coverage + taxonomy compliance audit (Plan 59 T-1); flags `missing_tags_field`, `empty_tags_field`, `unrecognized_tag_prefix`, `historical_type_residual` | full vault (excl. `Archive/`, `Tags/`, `.claude/projects/`, `.claude/skills/`, `$PLANS_DIR/`) |
-| `/librarian rename-detect` | Scan last 24h of `git log --diff-filter=R` across vault + plans; emit NDJSON rename records (Plan 67 SP02 T-1) | vault + plans git repos |
-| `/librarian rename-cascade` | Consume rename-detect NDJSON on stdin; rewrite inbound `[[wikilinks]]` + (optional) frontmatter path refs + `parent_plan:` slug; dry-run default (Plan 67 SP02 T-2) | vault + plans |
-| `/librarian rename-history-sync` | Maintain `rename_history[]` on `doc-dependencies.json`: `migrate` to backfill empty arrays, `append` to ingest rename-detect stdin (Plan 67 SP02 T-3) | `doc-dependencies.json` |
-| `/librarian trinity-drift-detect` | Detect spec.md / manifest.json / tasks.md / per-task T-N status disagreement at plan-root + sub-plan-root (Plan 67 SP04 T-1) | `$PLANS_DIR/**` depth 2 + 3 |
+| `/librarian stale-detect` | 8 staleness rules across file types + R-16 plan-stale-status detection + plan trinity-lag | full vault + plan roots |
+| `/librarian placement-validate` | Vault-root allowlist + project-folder rules + Index File Convention + Logs/ dated pattern | full vault |
+| `/librarian tag-coverage-audit` | Vault-wide tag coverage + taxonomy compliance audit; flags `missing_tags_field`, `empty_tags_field`, `unrecognized_tag_prefix`, `historical_type_residual` | full vault (excl. `Archive/`, `Tags/`, `.claude/projects/`, `.claude/skills/`, `$PLANS_DIR/`) |
+| `/librarian rename-detect` | Scan last 24h of `git log --diff-filter=R` across vault + plans; emit NDJSON rename records | vault + plans git repos |
+| `/librarian rename-cascade` | Consume rename-detect NDJSON on stdin; rewrite inbound `[[wikilinks]]` + (optional) frontmatter path refs + `parent_plan:` slug; dry-run default | vault + plans |
+| `/librarian rename-history-sync` | Maintain `rename_history[]` on `doc-dependencies.json`: `migrate` to backfill empty arrays, `append` to ingest rename-detect stdin | `doc-dependencies.json` |
+| `/librarian trinity-drift-detect` | Detect spec.md / manifest.json / tasks.md / per-task T-N status disagreement at plan-root + sub-plan-root | `$PLANS_DIR/**` depth 2 + 3 |
 
 **Note:** `/librarian` and `/librarian full` run the 5 integrity capabilities (frontmatter-enforce, xref-check, log-archive, stale-detect, placement-validate). They do NOT run sync-check, backup, or session-close — those are invoked explicitly. `drift-sweep` + `people-audit` + `waiver-audit` + `tag-coverage-audit` + `trinity-drift-detect` + `skill-parity` are wired into the **Monday-only** `/librarian full` cron block in `librarian-cron.sh` (non-blocking, supplemental to write-time hooks). `rename-detect | rename-history-sync | rename-cascade` runs as Step 2b of `session-close` (dry-run-cascade only; `--apply` is human-initiated).
 
@@ -58,7 +58,7 @@ Vault integrity, cross-domain sync, and backup. Single authority on "is the vaul
 
 ## Capability: frontmatter-enforce
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/frontmatter-enforce.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 01 T-2; sources `lib/findings.sh` + `lib/manifest.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/frontmatter-enforce.sh` (sources `lib/findings.sh` + `lib/manifest.sh`).
 
 **Purpose:** Validate and optionally fix frontmatter on vault files against the specs in {VAULT_ARCHITECTURE_DOC}. Two phases: per-file validation (required fields, empty optionals, tag taxonomy) + four vault-wide drift audits (provides-canonicality, size monitoring, hub-spoke recommendation, schema-type-hook-coverage-gap).
 
@@ -76,12 +76,12 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/frontmatter-enforce.sh [--scope 
 | `--check` | Report only (default). |
 | `--fix` | Auto-apply auto-fix class: add missing `updated` (today's date), infer `tags` from path heuristics, remove empty-string optional fields. Survivorship: never modify fields with existing non-empty values. |
 | `--dry-run` | Summary counts only; no emissions, no fixes. |
-| `--logs-only` | Restrict scope to `$VAULT_LOGS/**/*.md`. Runs only deliverable-detection check (Module 16-C, spine-remediation Session 16) — emits `logs-deliverable-detected` findings. All other scopes and drift audits skipped. |
+| `--logs-only` | Restrict scope to `$VAULT_LOGS/**/*.md`. Runs only deliverable-detection check — emits `logs-deliverable-detected` findings. All other scopes and drift audits skipped. |
 
 **Per-file validation output (stdout or `$FINDINGS_OUTPUT`):**
 - `frontmatter-missing-required` — required field absent
 - `frontmatter-empty-optional` — optional field set to empty string (`""`, `''`, `null`)
-- `frontmatter-tag-violation` — tag not in R-32 allowlist, or `tags:` is a string instead of a list
+- `frontmatter-tag-violation` — tag not in R-32 (vault tag-prefix allowlist) allowlist, or `tags:` is a string instead of a list
 
 **File type detection (alias collapse applied):** path-pattern rules yield one of 20 schema keys or 5 aliases. Aliases resolve as `skill-spec → reference`, `overview → engagement`, `updates → engagement`, `file-index → index`, `tier-2 → reference`. Required-field matrix mirrors `$CLAUDE_HOME/schemas/vault-schema.json`; tag prefix allowlist mirrors `_tag_prefixes` (default seed: `engagement/`, `project/`, `scope/`, `status/`, `initiative/`; archetype installs may add domain-specific prefixes).
 
@@ -112,19 +112,18 @@ Matched rows retain `first_seen`. New rows append with next sequence number. Res
 
 **Tests:** synthetic test harness at `tests/frontmatter-enforce.sh` (16-assertion acceptance suite). Pre-extraction `drift_findings` baseline at `tests/baselines/frontmatter-enforce-pre-manifest.json`.
 
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; manifest subtree `drift_findings` (sub-keys `provides_canonicality`, `size_monitoring`, `schema_type_coverage`) via `manifest_set`. In `--fix` mode also rewrites in-vault `.md` files (atomic temp+rename, survivorship-preserved).
 - **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/drift_findings`.
-- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a); in `--fix` mode, frontmatter rewrites preserve all existing key order and never modify non-empty values.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh`; in `--fix` mode, frontmatter rewrites preserve all existing key order and never modify non-empty values.
 - **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-frontmatter-enforce.md`.
 
 ---
 
 ## Capability: xref-check
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-3; sources `lib/findings.sh` + `lib/manifest.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh` (sources `lib/findings.sh` + `lib/manifest.sh`).
 
 **Purpose:** Detect broken wikilinks, orphaned files, and stale People cross-references. Writes `xref_graph` manifest subtree.
 
@@ -153,7 +152,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh [--full|--recent|-
 | `xref-people-one-way` | warn | File in `*/People/*.md` references another People file without reciprocal back-ref. |
 | `xref-orphan` | info | File has zero inbound links. Excluded by default: `CLAUDE.md`, `_index.md`, `File-Index.md`, `{VAULT_ARCHITECTURE_DOC}`, `Tasks.md`, `Archive/**`, `Logs/**`. |
 
-**Manifest write:** `xref_graph` subtree via `manifest_set` (entire replacement — resolved-row drop-out pattern per T-2 precedent). Fields: `last_scan`, `total_files`, `scoped_files`, `broken`, `people_oneway`, `orphan`.
+**Manifest write:** `xref_graph` subtree via `manifest_set` (entire replacement — resolved-row drop-out pattern). Fields: `last_scan`, `total_files`, `scoped_files`, `broken`, `people_oneway`, `orphan`.
 
 **Env overrides (testing):** `VAULT_ROOT_OVERRIDE`, `XREF_SCOPE`, `MANIFEST_PATH`, `FINDINGS_OUTPUT`.
 
@@ -172,14 +171,11 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh [--full|--recent|-
 
 **Tests:** `tests/xref-check.sh` — 14/14 pass (happy path cross-link, broken wikilink, alias-style resolution, orphan detection, orphan exclusions for CLAUDE.md/_index.md/Logs, unknown-flag exit 2, manifest subtree persistence, `--scope` single-file).
 
-**Pseudocode-bug correction (extraction time):** SKILL.md legacy pseudocode invoked multiple `echo $RESULT | python3 -c` + `echo $RESULT | python3 - <<PY` subshells. The heredoc-script + stdin-pipe combination silently empties stdin under some bash/python3 combos (python consumes the heredoc AS stdin, ignoring the pipe). Replaced with a single argv-based Python pass returning a multi-line summary + JSON blob. Caught by test Scenario 7 (manifest subtree wrote empty-string `"xref_graph": ""` on first run).
-
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; manifest subtree `xref_graph` via `manifest_set`.
 - **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/xref_graph`.
-- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh`.
 - **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-xref-check.md`.
 
 ---
@@ -196,16 +192,15 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh [--full|--recent|-
 - `--batch-size N` — progress emit every N files (default 50). Resets stream-json 180s idle watchdog.
 - `--output <path>` — write findings ndjson to file (cron mode passes `$CAP_LOG`).
 
-**Implementation:** `$CLAUDE_HOME/skills/librarian/capabilities/drift-sweep.sh`. Bash 3.2 clean (R-23). Emits `unregistered_type` and `missing_required` findings.
+**Implementation:** `$CLAUDE_HOME/skills/librarian/capabilities/drift-sweep.sh`. Bash 3.2 clean. Emits `unregistered_type` and `missing_required` findings.
 
-**Cron wiring:** Monday-only block in `$CLAUDE_HOME/orchestrator/cron-wrappers/librarian-cron.sh`. Non-blocking (`ANY_FAIL` is not flipped on drift-sweep failure). Timing (spine-remediation-followup Phase 4 P4-T04): 884 files / 35.4s / 17 progress emits / worst-case idle 1.9s — ~95× headroom under the 180s stream-json watchdog.
+**Cron wiring:** Monday-only block in `$CLAUDE_HOME/orchestrator/cron-wrappers/librarian-cron.sh`. Non-blocking (`ANY_FAIL` is not flipped on drift-sweep failure).
 
 **Finding classes:**
 - `unregistered_type` — `type:` value not in the 24-value R-32 allowlist
 - `missing_required` — required fields (per vault-schema.json) missing
 
-Findings are weekly-review material, not write-time advisories. Human resolution path: add type to schema + hooks + CLAUDE.md (R-37 lockstep) OR correct the file.
-
+Findings are weekly-review material, not write-time advisories. Human resolution path: add type to schema + hooks + CLAUDE.md (R-37, schema-type lockstep) OR correct the file.
 
 **Output Contract:**
 
@@ -218,7 +213,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 ## Capability: people-audit
 
-**Purpose:** Weekly audit of `*/People/*.md` frontmatter + `## Context` H2 section conformance. Moved here from `post-write-verify.sh` because C's research measured a 28% false-positive rate at write-time (disqualifying host). Periodic audit tolerates the noise and still surfaces actionable findings.
+**Purpose:** Weekly audit of `*/People/*.md` frontmatter + `## Context` H2 section conformance. Periodic audit avoids the false-positive rate seen at write-time and still surfaces actionable findings.
 
 **Scope:** all `*/People/*.md` under vault root.
 
@@ -232,12 +227,11 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 - `--batch-size N` — progress emit every N files (default 50).
 - `--output <path>` — write findings ndjson to file.
 
-**Implementation:** `$CLAUDE_HOME/skills/librarian/capabilities/people-audit.sh`. Bash 3.2 clean. Runtime 0.6s on 30 files (P4-T03 smoke test).
+**Implementation:** `$CLAUDE_HOME/skills/librarian/capabilities/people-audit.sh`. Bash 3.2 clean.
 
 **Cron wiring:** Monday-only block in `librarian-cron.sh`, alongside `drift-sweep`. Zero write-time noise — standalone shell, never hook-invoked.
 
 **Finding class:** `people_non_conforming` with `file` + `issues` (pipe-joined `missing_required:<fields>` and/or `missing_context_section`).
-
 
 **Output Contract:**
 
@@ -250,7 +244,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 ## Capability: waiver-audit
 
-**Purpose:** Audit two bypass surfaces for abuse, ad-hoc use, and cluster-to-rule candidates: (a) `$HOOKS_STATE/cascade-waivers.json` (R-07 waivers) and (b) `$HOOKS_STATE/hook-audit.log` override fires (R-24 `HOOK_GUARD_DISABLE_OK`, R-27 `PLAN_STATUS_OK`). Observational — emits findings, never blocks. Enforces R-46 (ENFORCEMENT-MAP).
+**Purpose:** Audit two bypass surfaces for abuse, ad-hoc use, and cluster-to-rule candidates: (a) `$HOOKS_STATE/cascade-waivers.json` (R-07 waivers) and (b) `$HOOKS_STATE/hook-audit.log` override fires (R-24 `HOOK_GUARD_DISABLE_OK`, R-27 `PLAN_STATUS_OK`). Observational — emits findings, never blocks. Enforces R-46 (waiver-audit invariant for waiver-abuse signature surfacing).
 
 **Scope:** all waivers in the canonical + 4 historical drift shapes; all override fires in the hook-audit log.
 
@@ -268,7 +262,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 **Abuse signatures (overrides):**
 - `override-rate-warning` — ≥3 override fires on the same calendar date (day is proxy for session since hook-audit.log has no session id)
 
-**Implementation:** `$CLAUDE_HOME/skills/librarian/capabilities/waiver-audit.sh`. Bash 3.2 clean. Read-only against `cascade-waivers.json` (the canonical writer is `$CLAUDE_HOME/hooks/lib/cascade-waiver.sh`, shipped 2026-04-20 Phase-0 Fix 1). Baseline preservation: the capability refuses to write to any `cascade-waiver-audit-*.md` path (Plan 65 T-1 baseline at `Logs/cascade-waiver-audit-2026-04-20.md` is immutable Sub-plan 05 evidence).
+**Implementation:** `$CLAUDE_HOME/skills/librarian/capabilities/waiver-audit.sh`. Bash 3.2 clean. Read-only against `cascade-waivers.json` (the canonical writer is `$CLAUDE_HOME/hooks/lib/cascade-waiver.sh`). Baseline preservation: the capability refuses to write to any `cascade-waiver-audit-*.md` path.
 
 **Env overrides (testing):** `CASCADE_WAIVER_PATH`, `HOOK_AUDIT_LOG`, `DOC_DEP_FILE`, `FINDINGS_OUTPUT`.
 
@@ -278,8 +272,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 **Tests:** synthetic test harness at `tests/synthetic-waiver-audit.sh` (17-assertion acceptance suite).
 
-**Enforcement layer for:** ENFORCEMENT-MAP R-46, R-48, R-49, R-50 (Plan 64 Sub-plan 02 added R-46; follow-up rules landed alongside waiver-audit).
-
+**Enforcement layer for:** R-46, R-48, R-49, R-50.
 
 **Output Contract:**
 
@@ -292,9 +285,9 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 ## Capability: tag-coverage-audit
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh` (Plan 59 T-1, 2026-04-19; sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/plan-path.sh` + `lib/findings.sh` + `lib/frontmatter.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh` (sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/plan-path.sh` + `lib/findings.sh` + `lib/frontmatter.sh`).
 
-**Purpose:** Vault-wide tag coverage + taxonomy compliance audit. Measures presence of `tags:` frontmatter field, classifies tags against the canonical allowlist (`vault-schema.json` `_tag_prefixes`), and flags residual `#type/*` references remaining after the 2026-04-17 R-37 lockstep `type:` elimination.
+**Purpose:** Vault-wide tag coverage + taxonomy compliance audit. Measures presence of `tags:` frontmatter field, classifies tags against the canonical allowlist (`vault-schema.json` `_tag_prefixes`), and flags residual `#type/*` references remaining after the R-37 (schema-type lockstep) `type:` elimination.
 
 **Invocation:**
 
@@ -309,16 +302,16 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <
 | `--output <file>` | Write NDJSON findings to file instead of stdout. |
 | `--verbose` | Emit per-file diagnostic lines during walk. |
 
-**Scope:** VAULT-ONLY v1. `$PLANS_DIR` + `Plans/` symlinks exempted (plans-folder tag dimensions are a Q3 follow-up).
+**Scope:** VAULT-ONLY v1. `$PLANS_DIR` + `Plans/` symlinks exempted (plans-folder tag dimensions are a future follow-up).
 
 **Exempt surfaces (do NOT flag):**
 - `Archive/**`, `Tags/**`, `_test*`
 - `Logs/ideation-brief-*.md` (symlinks to `~/.claude-plans/`)
 - `.claude/projects/**` (auto-memory; separate schema domain)
-- `.claude/skills/**` (mirrored skill specs; separate schema domain — added 2026-04-22)
-- Root navigation: `CLAUDE.md`, `{VAULT_ARCHITECTURE_DOC}` (untagged-navigation convention, added 2026-04-21)
+- `.claude/skills/**` (mirrored skill specs; separate schema domain)
+- Root navigation: `CLAUDE.md`, `{VAULT_ARCHITECTURE_DOC}` (untagged-navigation convention)
 - Plan-root files + any depth ≥2 under `$PLANS_DIR`
-- `Logs/foundations-essays/**` and `Logs/backlog-progress/**` are **no longer exempt** (2026-04-21 exhaustive backfill; `#log/{log-type}` mirrors frontmatter `log-type:`)
+- `Logs/foundations-essays/**` and `Logs/backlog-progress/**` are NOT exempt (`#log/{log-type}` mirrors frontmatter `log-type:`)
 
 **Canonical tag-prefix allowlist (default seed):** `engagement/`, `project/`, `scope/`, `status/`, `initiative/`, `about-me/`, `log/`. Sourced at runtime from `vault-schema.json._tag_prefixes`; archetype installs may extend with domain-specific prefixes via onboarding. The runtime list and the `frontmatter-enforce.sh` `TAG_PREFIXES` constant must stay mirrored — see `lib/frontmatter.sh` for the shared loader.
 
@@ -326,14 +319,13 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <
 - `missing_tags_field` — no `tags:` field at all
 - `empty_tags_field` — `tags: []`
 - `unrecognized_tag_prefix` — tag prefix not in canonical allowlist
-- `historical_type_residual` — special case for residual `#type/*` (emitted in addition to `unrecognized_tag_prefix`, for T-5 migration tracker consumption)
+- `historical_type_residual` — special case for residual `#type/*` (emitted in addition to `unrecognized_tag_prefix`, for migration tracker consumption)
 
 **Lifecycle events (via `emit_event`):** `tag_coverage_audit_start`, `progress` every `BATCH_SIZE` files, `tag_coverage_audit_end` carrying `files_scanned`, `findings`, `missing_tags_count`, `empty_tags_count`, `unrecognized_tag_count`, `historical_type_residual_count`.
 
 **Env overrides (testing):** `VAULT_ROOT`, `PLANS_DIR`, `FINDINGS_OUTPUT`.
 
 **Cron wiring:** Monday-only block in `librarian-cron.sh`, alongside `drift-sweep`, `people-audit`, `waiver-audit`, `trinity-drift-detect`. Read-only; no write-time integration.
-
 
 **Output Contract:**
 
@@ -346,7 +338,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <
 
 ## Capability: wikilink-repair
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/wikilink-repair.sh` (Plan 59 T-3, 2026-04-20 — parallel session with T-5; sources `lib/findings.sh` + Plan 61 `lib/plan-path.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/wikilink-repair.sh` (sources `lib/findings.sh` + `lib/plan-path.sh`).
 
 **Purpose:** Detect broken `[[wikilinks]]` across the vault and propose repairs seeded from the `doc-dependencies.json` registry. **No heuristic / fuzzy match** — a broken target with no registry seed is logged as `broken-wikilink` for manual triage.
 
@@ -376,7 +368,6 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/wikilink-repair.sh [--apply] [--
 
 **Exit codes:** `0` success, `2` unknown flag. Defensive — never fails on missing files or parse errors; emits warning findings instead.
 
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; vault `.md` files when `--live` (default `--dry-run`).
@@ -388,7 +379,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/wikilink-repair.sh [--apply] [--
 
 ## Capability: rename-detect
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/rename-detect.sh` (Plan 67 Sub-plan 02 T-1, 2026-04-22; sources `lib/findings.sh`, optionally `lib/manifest.sh` under `--register`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/rename-detect.sh` (sources `lib/findings.sh`, optionally `lib/manifest.sh` under `--register`).
 
 **Purpose:** Detect file renames by scanning `git log --diff-filter=R --name-status -M90` across the vault + plans repos over a time window (default last 24h). Emits one NDJSON record per rename. **Upstream signal** for `rename-cascade` — pipe-composable.
 
@@ -419,8 +410,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/rename-detect.sh [--since <iso86
 
 **Exit codes:** `0` on success or empty-window (no-op is not a failure), `2` unknown flag.
 
-**Session-close integration:** Step 2b (Plan 67 SP02 T-4). See session-close chain below.
-
+**Session-close integration:** Step 2b. See session-close chain below.
 
 **Output Contract:**
 
@@ -433,7 +423,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/rename-detect.sh [--since <iso86
 
 ## Capability: rename-cascade
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/rename-cascade.sh` (Plan 67 Sub-plan 02 T-2, 2026-04-22). Consumes `rename-detect` NDJSON on stdin; rewrites inbound references. Stdin capture pattern avoids the `python3 heredoc` stdin-swallow bug (`feedback_python_heredoc_argv.md`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/rename-cascade.sh`. Consumes `rename-detect` NDJSON on stdin; rewrites inbound references. Stdin capture pattern avoids the `python3 heredoc` stdin-swallow bug.
 
 **Purpose:** Apply the rename cascade — update inbound `[[wikilinks]]`, optionally frontmatter path refs (`spec_path`, `handoff_path`, `ideation_brief_path`, `tasks_path`), and `parent_plan:` slugs when a plan directory is renamed.
 
@@ -464,7 +454,6 @@ rename-detect.sh | rename-cascade.sh --include-frontmatter    # include path-val
 
 **Session-close integration:** Step 2b runs `rename-detect | rename-cascade` in dry-run only — `--apply` is human-initiated.
 
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; vault `.md` files when `--live` (default `--dry-run`).
@@ -476,7 +465,7 @@ rename-detect.sh | rename-cascade.sh --include-frontmatter    # include path-val
 
 ## Capability: rename-history-sync
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/rename-history-sync.sh` (Plan 67 Sub-plan 02 T-3, 2026-04-22).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/rename-history-sync.sh`.
 
 **Purpose:** Maintain the `rename_history[]` field on `$CLAUDE_HOME/hooks/doc-dependencies.json`. Two idempotent sub-commands.
 
@@ -498,19 +487,18 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/rename-history-sync.sh append < 
 
 **Session-close integration:** Step 2b runs `rename-detect | tee (rename-history-sync append) | rename-cascade`. Downstream consumer: `wikilink-repair` uses the rename-aware registry as its sole repair source.
 
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; manifest subtree `rename_history` via `manifest_set`.
 - **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/rename_history`.
-- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh`.
 - **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-rename-history-sync.md`.
 
 ---
 
 ## Capability: trinity-drift-detect
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/trinity-drift-detect.sh` (Plan 67 Sub-plan 04 T-1, 2026-04-22; sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/findings.sh`). Addresses the drift class caught by the 2026-04-21 validation audit: sub-plan spec/manifest declared `status: complete`, but tasks.md ledger lagged with `not-started`/`in-progress` per-task statuses, masking incomplete work as complete.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/trinity-drift-detect.sh` (sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/findings.sh`). Addresses the drift class where a sub-plan spec/manifest declares `status: complete`, but the tasks.md ledger lags with `not-started`/`in-progress` per-task statuses, masking incomplete work as complete.
 
 **Purpose:** Detect disagreement between `spec.md` / `manifest.json` / `tasks.md` / per-task T-N statuses across plan-root and sub-plan-root directories.
 
@@ -560,7 +548,6 @@ For every directory containing BOTH `spec.md` and `manifest.json`, compare `spec
 
 **Complementary to:** `stale-detect` Check #8 (same drift class surfaces there as `trinity-lag` category, plan-root scope only); `trinity-drift-detect` adds the broader divergence classes + sub-plan-root walk.
 
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
@@ -572,7 +559,7 @@ For every directory containing BOTH `spec.md` and `manifest.json`, compare `spec
 
 ## Capability: log-archive
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-1; sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/findings.sh` + `lib/dates.sh` — `lib/dates.sh` co-shipped in the same commit). Note: `paths.sh` lives under `$CLAUDE_HOME/hooks/lib/`, not `librarian/lib/`; librarian's own `lib/plan-path.sh` is a separate helper for plan-root detection.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh` (sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/findings.sh` + `lib/dates.sh`). Note: `paths.sh` lives under `$CLAUDE_HOME/hooks/lib/`, not `librarian/lib/`; librarian's own `lib/plan-path.sh` is a separate helper for plan-root detection.
 
 **Purpose:** Archive old top-level Logs/ files to `Archive/Logs/{YYYY}-W{WW}/` per retention thresholds. Never deletes — only `mv`.
 
@@ -591,7 +578,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 - Dashboard-sync logs (filename contains `dashboard-sync`): older than **3 days**
 - General logs: older than **7 days**
 
-**Scope rules (scope-hardening vs legacy pseudocode):**
+**Scope rules:**
 - Top-level `*.md` in Logs/ only. Subdirectories (`backlog-progress/`, `foundations-essays/`, etc.) preserved.
 - Symlinks skipped (`ideation-brief-*.md` symlinks point to `~/.claude-plans/` canonical files — must not be moved).
 - Files without a `YYYY-MM-DD` in their filename stay in place (non-dated content in Logs/ is a placement-validate concern, not a log-archive concern).
@@ -613,8 +600,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 - Remaining in Logs/: {N} files (within retention window)
 ```
 
-**Tests:** `tests/log-archive.sh` — 19/19 pass 2026-04-21 (happy path, threshold boundaries, symlink skip, non-dated preservation, dry-run no-op + lib/dates.sh direct smoke tests).
-
+**Tests:** `tests/log-archive.sh` — 19/19 pass (happy path, threshold boundaries, symlink skip, non-dated preservation, dry-run no-op + lib/dates.sh direct smoke tests).
 
 **Output Contract:**
 
@@ -627,7 +613,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 
 ## Capability: stale-detect
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/stale-detect.sh` (extracted from pseudocode 2026-04-20 via Plan 63 Sub-plan 01 T-4; sources `lib/manifest.sh` + `lib/plan-path.sh` + `lib/findings.sh`). Plan 67 Sub-plan 04 T-2 (2026-04-22) added **Check #8** (trinity-lag) without disturbing the 7-rule pseudocode contract.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/stale-detect.sh` (sources `lib/manifest.sh` + `lib/plan-path.sh` + `lib/findings.sh`). Includes Check #8 (trinity-lag).
 
 **Purpose:** Identify files that may need attention based on age or missing processing.
 
@@ -641,8 +627,8 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 | Project files | `updated` older than 14 days (active projects only) |
 | Meeting notes | `processed: false` |
 | Logs | Older than 7 days and still in `Logs/` |
-| Plan files (`$PLANS_DIR/**`) | Case-insensitive match on `status:\s*(complete\|completed\|implemented\|done)` in YAML frontmatter OR `\*\*Status:\*\*\s*(Complete\|COMPLETE\|Completed\|Implemented\|Done)` header bullet (corpus uses all five forms; Session 17 stale-detect run verified), AND no evidence of verification. Verification evidence is any one of: (a) `last_verified: <ISO date>` in YAML frontmatter within 14 days, (b) `**Last Verified:** <ISO date>` header bullet within 14 days (header-bullet style matches the `**Status:**` style plans already use), (c) sibling `handoff.md` with a non-empty acceptance-criteria section. Enforcement layer for R-16 (Session 05 / spine-remediation Session 16; regex + header-bullet support added in Session 17 Module A2). |
-| Plan trinity (`$PLANS_DIR/**`) | **Check #8 (Plan 67 SP04 T-2, 2026-04-22).** `manifest.json.status == "complete"` AND any per-task `**Status:**` value in sibling `tasks.md` lags (`not-started`, `in-progress`, `blocked`, `pending`, `planned`). Emits category `trinity-lag` with the lagging T-N list. Complementary to `trinity-drift-detect` (which surfaces the same class as a standalone finding + broader spec/manifest/tasks divergence classes). |
+| Plan files (`$PLANS_DIR/**`) | Case-insensitive match on `status:\s*(complete\|completed\|implemented\|done)` in YAML frontmatter OR `\*\*Status:\*\*\s*(Complete\|COMPLETE\|Completed\|Implemented\|Done)` header bullet, AND no evidence of verification. Verification evidence is any one of: (a) `last_verified: <ISO date>` in YAML frontmatter within 14 days, (b) `**Last Verified:** <ISO date>` header bullet within 14 days, (c) sibling `handoff.md` with a non-empty acceptance-criteria section. Enforcement layer for R-16 (plans marked complete without verification evidence). |
+| Plan trinity (`$PLANS_DIR/**`) | **Check #8.** `manifest.json.status == "complete"` AND any per-task `**Status:**` value in sibling `tasks.md` lags (`not-started`, `in-progress`, `blocked`, `pending`, `planned`). Emits category `trinity-lag` with the lagging T-N list. Complementary to `trinity-drift-detect`. |
 
 ### Process
 
@@ -651,12 +637,12 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 3. For People files, also scan body for TODO markers and Timeline dates
 4. Apply staleness rules per file type
 5. Skip completed engagements, archived files, and non-content files
-6. For plan files under `$PLANS_DIR`: **scope is plan-root files ONLY** — the same set enforced by R-27 pre-write-guard (flat root `*.md`, `*/spec.md`, `*/00-ideation-brief.md`, `*/README.md`, `*/manifest.json`). **Sub-task files at depth ≥ 2** (e.g. `32-autonomous-project-orchestration/32a-*.md`, `34-digest-synthesis-intelligence/tasks.md`, `*/phase*.md`, `*/test-results.md`) and orchestrator artifacts (`*/_orchestrator/**`) are **explicitly excluded** — they inherit status from the parent plan rather than carrying independent completion markers. Scope rewritten in spine-remediation Session 22 to eliminate the sub-task false-positive class (10 findings filed Session 21). Case-insensitive check for ANY of these completion markers — frontmatter `status:\s*(complete|completed|implemented|done)`, OR header bullet matching `\*\*Status:\*\*\s*(Complete|COMPLETE|Completed|Implemented|Done)`. If a completion marker exists, check for any one of these verification evidence forms:
+6. For plan files under `$PLANS_DIR`: **scope is plan-root files ONLY** — the same set enforced by R-27 (plan-naming/structure pre-write-guard) (flat root `*.md`, `*/spec.md`, `*/00-ideation-brief.md`, `*/README.md`, `*/manifest.json`). **Sub-task files at depth ≥ 2** (e.g. `<plan>/tasks.md`, `*/phase*.md`, `*/test-results.md`) and orchestrator artifacts (`*/_orchestrator/**`) are **explicitly excluded** — they inherit status from the parent plan rather than carrying independent completion markers. Case-insensitive check for ANY of these completion markers — frontmatter `status:\s*(complete|completed|implemented|done)`, OR header bullet matching `\*\*Status:\*\*\s*(Complete|COMPLETE|Completed|Implemented|Done)`. If a completion marker exists, check for any one of these verification evidence forms:
    - `last_verified: <ISO date>` in YAML frontmatter within 14 days, OR
-   - `**Last Verified:** <ISO date>` header bullet within 14 days (mirrors the `**Status:**` header-bullet style most legacy plans use — Session 17 discovered plans don't have YAML frontmatter, only markdown header blocks), OR
+   - `**Last Verified:** <ISO date>` header bullet within 14 days, OR
    - A sibling `handoff.md` file with non-empty acceptance-criteria evidence section.
 
-   If no verification evidence exists, emit stale-detect finding `stale-status-no-evidence` with plan slug and resolution hint ("add `last_verified:` frontmatter OR `**Last Verified:**` header bullet with today's ISO date, OR attach sibling `handoff.md` with acceptance-criteria section"). Category: `stale-status`. This is the enforcement layer for ENFORCEMENT-MAP R-16 (plans marked complete without evidence). Regex + header-bullet support added by Session 17 Module A2; scope tightened to plan-root only in Session 22.
+   If no verification evidence exists, emit stale-detect finding `stale-status-no-evidence` with plan slug and resolution hint ("add `last_verified:` frontmatter OR `**Last Verified:**` header bullet with today's ISO date, OR attach sibling `handoff.md` with acceptance-criteria section"). Category: `stale-status`. This is the enforcement layer for R-16.
 
 ### Output Format
 
@@ -671,7 +657,6 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 | {path} | Log file, 12 days old | archive-candidate |
 | {plan-slug} | completion marker (frontmatter `status: complete\|completed\|implemented\|done` or `**Status:**` header bullet) without `last_verified` frontmatter, `**Last Verified:**` header bullet, or linked `handoff.md` | stale-status |
 ```
-
 
 **Output Contract:**
 
@@ -698,7 +683,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 4. **Meeting notes** must be in `Meetings/`
 5. **Engagement root** should only contain the 4 standard files + CLAUDE.md + `_index.md` + `File-Index.md` + `.DS_Store`. (See {VAULT_ARCHITECTURE_DOC} for `File-Index.md` — auto-maintained by digest-run as the fallback link-routing destination when project is ambiguous.)
 6. **Reference/ (Tier 1)** should not contain engagement-specific files
-7. **Logs/** is for dated operational logs only. Allowed patterns: dated logs matching `{log-type}-{date}-*.md` (e.g., `digest-*`, `session-auto-close-*`, `librarian-cron-error-*`), `build-*.md` build session records, and `ideation-brief-*.md` (vault-visibility symlinks or pending-retrofit files — canonical location is `~/.claude-plans/{slug}/00-ideation-brief.md`, see `project_backlog_cron_brief_paths.md` memory). No other content files in `Logs/`, `Archive/`, `.obsidian/`, `.git/`, `.claude/`.
+7. **Logs/** is for dated operational logs only. Allowed patterns: dated logs matching `{log-type}-{date}-*.md` (e.g., `digest-*`, `session-auto-close-*`, `librarian-cron-error-*`), `build-*.md` build session records, and `ideation-brief-*.md` (vault-visibility symlinks or pending-retrofit files — canonical location is `~/.claude-plans/{slug}/00-ideation-brief.md`). No other content files in `Logs/`, `Archive/`, `.obsidian/`, `.git/`, `.claude/`.
 
 ### Index File Convention
 
@@ -706,7 +691,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 
 `File-Index.md` is a scaffolding file that houses external resource links (SharePoint, Google Drive, Excel) and file paths. It exists at project roots (`{projects_dir}/*/Projects/*/File-Index.md`) for workstream-scoped links and at engagement roots (`{projects_dir}/*/File-Index.md`) as the fallback destination for digest-run Phase 2.5 when links can't be clearly routed to a project. See `$CLAUDE_HOME/skills/digest-run/SKILL.md` Phase 2.5 and {VAULT_ARCHITECTURE_DOC}.
 
-`ideation-brief-*.md` in `Logs/` is load-bearing infrastructure for the autonomous orchestration workflow — see `project_backlog_cron_brief_paths.md` and `project_autonomous_orchestration.md`. Never relocate, delete, or enforce log-frontmatter schema on these files. Canonical location is `~/.claude-plans/{slug}/00-ideation-brief.md`; the `Logs/` path is a symlink (or a pending-retrofit regular file awaiting T-8 in `vault-workflow-restructure`). Frontmatter-enforce must skip files matching `Logs/ideation-brief-*.md`.
+`ideation-brief-*.md` in `Logs/` is load-bearing infrastructure for the autonomous orchestration workflow. Never relocate, delete, or enforce log-frontmatter schema on these files. Canonical location is `~/.claude-plans/{slug}/00-ideation-brief.md`; the `Logs/` path is a symlink (or a pending-retrofit regular file). Frontmatter-enforce must skip files matching `Logs/ideation-brief-*.md`.
 
 ### Process
 
@@ -725,7 +710,6 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 | {path} | Non-project file in project folder | {suggested} | manual |
 ```
 
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`. Read-only; never modifies vault files or manifest.
@@ -737,7 +721,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 
 ## Capability: sync-check
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/sync-check.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 01 T-3; sources `lib/findings.sh` + `lib/manifest.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/sync-check.sh` (sources `lib/findings.sh` + `lib/manifest.sh`).
 
 **Purpose:** Cross-domain consistency between backend (`$CLAUDE_HOME`) and vault (`$VAULT_ROOT`). Deterministic checklist of known relationships — not agent-based discovery.
 
@@ -774,21 +758,20 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/sync-check.sh [--scope <group|ch
 
 **Env overrides (testing):** `SC_BACKEND_ROOT`, `SC_MEMORY_ROOT`, `SC_ROOT_CLAUDE_MD`, `SC_VAULT_CLAUDE_MD`, `SC_VAULT_ARCH_MD`, `SC_SKILLS_INDEX`, `MANIFEST_PATH`, `FINDINGS_OUTPUT`.
 
-**Tests:** `tests/sync-check.sh` — 12/12 pass 2026-04-21 (--scope backend/vault/cross + persistent S-NNN IDs across runs). Foundation also ships `tests/synthetic-sync-check-gate.sh` (2/2 pass) covering the `manifest.vault.has_structured_projects` gate — checks 5-7 emit `skipped (ungated)` events when false.
-
+**Tests:** `tests/sync-check.sh` — 12/12 pass (--scope backend/vault/cross + persistent S-NNN IDs across runs). Foundation also ships `tests/synthetic-sync-check-gate.sh` (2/2 pass) covering the `manifest.vault.has_structured_projects` gate — checks 5-7 emit `skipped (ungated)` events when false.
 
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding` for findings, plus `librarian-event` lines for gate-skip notifications; manifest subtree `drift_findings.sync_check[]` via `manifest_set` (persistent `S-NNN` IDs reconciled across runs). In `--fix` mode also rewrites engagement CLAUDE.md status frontmatter and copies SKILL.md into the vault skill-spec mirror.
 - **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/drift_findings`.
-- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a); checks 5-7 (vault-claude-md, vault-architecture, engagement-status) gated on `manifest.vault.has_structured_projects` and skip with explicit event when gate is false.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh`; checks 5-7 (vault-claude-md, vault-architecture, engagement-status) gated on `manifest.vault.has_structured_projects` and skip with explicit event when gate is false.
 - **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-sync-check.md`.
 
 ---
 
 ## Capability: backup
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/backup.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-2).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/backup.sh`.
 
 **Purpose:** Git add/commit/push across tracked directories. Mechanical close-the-loop. Graceful degradation on push failure (logged, never retried, exit 0).
 
@@ -823,7 +806,6 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/backup.sh [--dry-run] [--scope <
 
 **Tests:** `tests/backup.sh` — 13/13 pass (clean tree, dirty tree dry-run, dirty tree live commit, push failure graceful, unknown-flag exit 2, `--message` override, `--scope` precedence, non-git skip).
 
-
 **Output Contract:**
 
 - **Files written:** stdout — markdown summary with one bullet per target (`- {dir}: {N} files committed, pushed`, `not a git repo, skipped`, `clean tree`, `push failed`, etc.). Side effects: `git add`/`git commit`/`git push` against each target directory's configured remote. Per-target VAULT_ROOT special case excludes `.obsidian/workspace.json` from staging.
@@ -835,7 +817,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/backup.sh [--dry-run] [--scope <
 
 ## Capability: plan-index
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/plan-index.sh` (extracted from pseudocode 2026-04-20 via Plan 63 Sub-plan 01 T-1; co-ships with `lib/manifest.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/plan-index.sh` (co-ships with `lib/manifest.sh`).
 
 **Purpose:** Regenerate `~/.claude-plans/_index.md` as a status-grouped navigation index. Runs during `librarian full`. Read-only walk of `~/.claude-plans/` + one atomic file write.
 
@@ -848,7 +830,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/plan-index.sh [--dry-run] [--par
 | Flag | Effect |
 |------|--------|
 | `--dry-run` | Produce the target content + report counts; write nothing. |
-| `--parent <slug>` | Restrict output to plans whose `parent_plan:` frontmatter chain includes `<slug>`. Shares the walker with `plan-parent-resolve` (Session 24 Phase 1). |
+| `--parent <slug>` | Restrict output to plans whose `parent_plan:` frontmatter chain includes `<slug>`. Shares the walker with `plan-parent-resolve`. |
 
 **Status vocabulary** (normalized by `normalize_status()` in the script):
 
@@ -860,14 +842,14 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/plan-index.sh [--dry-run] [--par
 
 Whitespace in raw status values is collapsed to hyphens (`"On Hold"` ↔ `on-hold`); trailing commentary after ` — ` or ` - ` is stripped.
 
-**`partial` is deprecated.** The legacy model-interpreter invented a non-canonical `Partial` group for Plans 42 and 54 (which carry `status: partial`). Shell extraction (2026-04-20) maps `partial` to Active to preserve read behavior, but the word should be retired from plan manifests — its semantics are ambiguous (partial-complete vs partial-start vs partially-deferred). Migrate Plans 42 and 54 to `status: in-progress` at next touch; remove `partial` from the Active mapping set once both are migrated.
+**`partial` is deprecated.** Maps to Active to preserve read behavior, but the word should be retired from plan manifests — its semantics are ambiguous (partial-complete vs partial-start vs partially-deferred). Migrate plans carrying `status: partial` to `status: in-progress` at next touch; remove `partial` from the Active mapping set once all are migrated.
 
 **Guardrails:**
 
 - Aborts with `exit 4` if the walk finds 0 plan roots (prevents wiping `_index.md` on a misread).
 - Aborts with `exit 3` if the group-count sum assertion fails.
 - Atomic write via temp-file + `os.replace`; never deletes plans.
-- Master-initiative whitelist (Session 22-I, TEMPORARY): `57-spine-remediation`, `58-vault-workflow-restructure` skip the prefix-conformance audit.
+- Master-initiative whitelist (TEMPORARY): selected master plans skip the prefix-conformance audit.
 - Orchestrator-artifact exclusion: directories whose `manifest.json.spec_path` points outside the directory are skipped (the canonical plan is the file the spec_path references).
 
 **Output format:** writes the composed markdown to `_index.md` (or stderr on `--dry-run`) and emits structured JSON findings + a summary object on stdout:
@@ -900,10 +882,9 @@ _Plans missing a detectable status. Fix by adding a `**Status:**` header or `man
 - ...
 ```
 
-Sub-initiatives with internal session structure (e.g. `57-spine-remediation/`) appear once in the index under the master plan's status; internal session directories are not flattened.
+Sub-initiatives with internal session structure appear once in the index under the master plan's status; internal session directories are not flattened.
 
 **Tests:** `tests/plan-index.sh` — synthetic acceptance suite. Baselines at `tests/baselines/`.
-
 
 **Output Contract:**
 
@@ -916,7 +897,7 @@ Sub-initiatives with internal session structure (e.g. `57-spine-remediation/`) a
 
 ## Capability: plan-parent-resolve
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/plan-parent-resolve.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-7; sources `lib/findings.sh` + `lib/frontmatter.sh`). Enforcement layer for ENFORCEMENT-MAP R-28 (spine-remediation Session 24 Phase 1, 2026-04-14).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/plan-parent-resolve.sh` (sources `lib/findings.sh` + `lib/frontmatter.sh`). Enforcement layer for R-28 (`parent_plan:` frontmatter contract for sub-task files).
 
 **Purpose:** Walk the `parent_plan:` frontmatter chain for sub-task files under `$PLANS_DIR`, resolving inherited state and detecting drift. Read-only — emits findings only; never writes.
 
@@ -954,7 +935,7 @@ None block writes or session close. R-28 is drift-surface enforcement only.
 
 **Exit codes:** `0` success, `2` unknown flag, `3` PLANS_DIR or `--file` target not found.
 
-**Cycle-detection design:** visited-set walk with hard depth cap of 6. Self-parent caught on hop 1. Floyd's tortoise-hare is overkill for bounded single-parent trees.
+**Cycle-detection design:** visited-set walk with hard depth cap of 6. Self-parent caught on hop 1.
 
 **Output Format (corpus mode):**
 
@@ -971,10 +952,6 @@ None block writes or session close. R-28 is drift-surface enforcement only.
 
 **Tests:** `tests/plan-parent-resolve.sh` — 15-assertion acceptance suite covering scope exclusion for `handoff.md` and `tests/`.
 
-**Pseudocode-bug correction (extraction time):** the Session 24 inline resolver only recognized `<slug>/` and `<slug>.md` forms. Live corpus (2026-04-20) has 63 files carrying `parent_plan: <slug-without-prefix>` pointing at `NN-<slug>/` dirs — the convention documented in CLAUDE.md rule #5. The capability accepts all three forms. Pre-fix live signal: 63 spurious broken pointers. Post-fix: 0 broken, 9 real self-cycle findings in `56-spine-remediation-finalization/` surface as legitimate drift.
-
-
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
@@ -986,7 +963,7 @@ None block writes or session close. R-28 is drift-surface enforcement only.
 
 ## Capability: cron-log-architecture
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/cron-log-architecture.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-4; sources `lib/findings.sh`). Enforcement layer for ENFORCEMENT-MAP R-22 (spine-remediation Session 19 Module 19-A).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/cron-log-architecture.sh` (sources `lib/findings.sh`). Enforcement layer for R-22 (cron-log architecture: dated wrapper LOG_FILE vs plist StandardOutPath/StandardErrorPath consistency).
 
 **Purpose:** Detect plists whose `StandardOutPath`/`StandardErrorPath` competes with a wrapper's dated-`LOG_FILE=$(date …)` pattern. Report-only — resolution requires a human `launchctl unload/load`.
 
@@ -1003,7 +980,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/cron-log-architecture.sh [--scop
 | `--scope allowlist` | Print the allowlist file's contents and exit. |
 | `--allowlist-path <path>` | Override the exceptions JSON path. |
 
-**Scope:** `$PLIST_DIR/com.*.plist` (default `~/Library/LaunchAgents`) correlated against wrappers under `$CRON_WRAPPERS_RES` (default `$CLAUDE_HOME/orchestrator/cron-wrappers`). Plists whose Program is not a script under `$CRON_WRAPPERS_RES` are silently skipped (not spine-remediation-managed).
+**Scope:** `$PLIST_DIR/com.*.plist` (default `~/Library/LaunchAgents`) correlated against wrappers under `$CRON_WRAPPERS_RES` (default `$CLAUDE_HOME/orchestrator/cron-wrappers`). Plists whose Program is not a script under `$CRON_WRAPPERS_RES` are silently skipped.
 
 **Allowlist:** `$CRON_LOG_EXCEPTIONS` (default `$HOOKS_DIR/cron-log-architecture-exceptions.json`). Schema `{ "<label>": "<reason>", ... }`. Allowlisted labels are emitted at `level=info` with `allowlisted_reason` field; non-allowlisted are `level=error`.
 
@@ -1016,7 +993,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/cron-log-architecture.sh [--scop
   "level": "error|info", "allowlisted_reason": "<optional>" }
 ```
 
-**Env overrides (testing):** `PLIST_DIR_OVERRIDE`, `CRON_WRAPPERS_OVERRIDE`, `CRON_LOG_EXCEPTIONS`, `FINDINGS_OUTPUT`. Override vars use `_OVERRIDE` suffix because `paths.sh` unconditionally exports `PLIST_DIR` / `CRON_WRAPPERS` — pseudocode-bug correction (T-4 extraction).
+**Env overrides (testing):** `PLIST_DIR_OVERRIDE`, `CRON_WRAPPERS_OVERRIDE`, `CRON_LOG_EXCEPTIONS`, `FINDINGS_OUTPUT`. Override vars use `_OVERRIDE` suffix because `paths.sh` unconditionally exports `PLIST_DIR` / `CRON_WRAPPERS`.
 
 **Exit codes:** `0` always when PlistBuddy present (report-only capability), `2` unknown flag. Non-macOS (no PlistBuddy): exit 0 with advisory message.
 
@@ -1033,9 +1010,6 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/cron-log-architecture.sh [--scop
 
 **Where it fires:** `/librarian cron-log-architecture` (ad-hoc), `/librarian full` (every full scan), `librarian session-close` Step 2 (when Touched Files include plists or wrappers).
 
-**Session 19 baseline preserved:** 9 plists + 9 dated wrappers. Session 19 Module 19-A fixed `com.digest-run.plist`; 8 remaining deferred to cron-log-architecture-exceptions.json or case-by-case resolution.
-
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
@@ -1047,7 +1021,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/cron-log-architecture.sh [--scop
 
 ## Capability: handoff-disposition-check
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/handoff-disposition-check.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-5; sources `lib/findings.sh`). Enforcement layer for ENFORCEMENT-MAP R-25. Codifies `feedback_no_remembered_followups.md`.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/handoff-disposition-check.sh` (sources `lib/findings.sh`). Enforcement layer for R-25 (handoff follow-ups must carry FIX NOW / ABSORB / STANDALONE / deferred-to disposition).
 
 **Purpose:** Block session-close when touched `*handoff.md` files contain unresolved follow-up language without a disposition tag within a 2-line window.
 
@@ -1095,8 +1069,7 @@ echo "<path>" | $CLAUDE_HOME/skills/librarian/capabilities/handoff-disposition-c
 
 **Tests:** `tests/handoff-disposition-check.sh` — 13/13 pass (compliant, missing disposition, out-of-window, `laterally` word-boundary, `todos.txt` word-boundary, unknown-flag, multi-`--files`, stdin scope, non-handoff skip).
 
-**Regex tuning:** deliberately tight — literal words only, word-boundary-guarded. False positives (e.g. `laterally`, `todos.txt`) verified negative in tests. Tighten if Session 21+ surfaces new false-positive classes; never relax dispositions.
-
+**Regex tuning:** deliberately tight — literal words only, word-boundary-guarded. False positives (e.g. `laterally`, `todos.txt`) verified negative in tests. Tighten if new false-positive classes surface; never relax dispositions.
 
 **Output Contract:**
 
@@ -1109,7 +1082,7 @@ echo "<path>" | $CLAUDE_HOME/skills/librarian/capabilities/handoff-disposition-c
 
 ## Capability: skill-parity
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/skill-parity.sh` (Plan 12 skill-optimizer scope evolution, 2026-04-21; sources `lib/findings.sh`). Absorbs the mechanical (bash-checkable) subset of the original skill-optimizer Axis 1 config audit. Bash-vs-LLM boundary: LLM-interpreted checks (effort calibration, argument-hint extraction, description rewrite, disable-model-invocation heuristics) remain in `/skill-optimizer --skill {name}`.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/skill-parity.sh` (sources `lib/findings.sh`). Absorbs the mechanical (bash-checkable) subset of the skill-optimizer config audit. Bash-vs-LLM boundary: LLM-interpreted checks (effort calibration, argument-hint extraction, description rewrite, disable-model-invocation heuristics) remain in `/skill-optimizer --skill {name}`.
 
 **Scope:** `$CLAUDE_HOME/skills/*/SKILL.md` — not vault content.
 
@@ -1144,7 +1117,6 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/skill-parity.sh [--check|--fix] 
 
 **Tests:** `tests/skill-parity.sh` — 16-assertion acceptance suite.
 
-
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`.
@@ -1156,9 +1128,9 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/skill-parity.sh [--check|--fix] 
 
 ## Capability: entity-parity
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/entity-parity.sh` (Plan 68; V1 shipped 2026-04-21 for skill entity; V2 extended 2026-04-21 to `plan` + `memory-file`). Cross-surface parity driven by the `entities` section of `$CLAUDE_HOME/hooks/doc-dependencies.json`. V3 (deferred) adds event-time advisory via pre-write-guard; V4 (deferred) adds `--apply` + session-close Step 2d gate.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/entity-parity.sh`. Cross-surface parity driven by the `entities` section of `$CLAUDE_HOME/hooks/doc-dependencies.json`. V3 (deferred) adds event-time advisory via pre-write-guard; V4 (deferred) adds `--apply` + session-close gate.
 
-**Scope (V2):** three entity types — `skill`, `plan`, `memory-file`. Each entity declares a canonical path template (with `{placeholder}`), a `canonical_field`, an `instance_enumerator` (glob), and N mirrors. Mirror paths may be vault-root-relative, home-relative (`~/...`), or include a `#row[{key}]` suffix indicating a row-within-file selector.
+**Scope:** three entity types — `skill`, `plan`, `memory-file`. Each entity declares a canonical path template (with `{placeholder}`), a `canonical_field`, an `instance_enumerator` (glob), and N mirrors. Mirror paths may be vault-root-relative, home-relative (`~/...`), or include a `#row[{key}]` suffix indicating a row-within-file selector.
 
 **Invocation:**
 
@@ -1195,7 +1167,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/entity-parity.sh [--check] [--sc
 | `entity-parity-index-row-missing` | warn | `#row[]` mirror has no matching row |
 | `entity-parity-registry-parse-failed` | warn | Registry unreadable or entities block empty |
 
-**Persistent IDs:** `EP-NNN` with `first_seen` / `last_seen`. Match key: `(entity_type, instance_id, invariant_id, mirror_path)`. Reconciliation pattern ported from `frontmatter-enforce.sh:700-739`.
+**Persistent IDs:** `EP-NNN` with `first_seen` / `last_seen`. Match key: `(entity_type, instance_id, invariant_id, mirror_path)`. Reconciliation pattern ported from `frontmatter-enforce.sh`.
 
 **Exit codes:** `0` on clean run, `2` on unknown flag.
 
@@ -1206,12 +1178,6 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/entity-parity.sh [--check] [--sc
 **Tests:**
 - V1: `tests/entity-parity-v1.sh` — 26-assertion acceptance suite.
 - V2: `tests/entity-parity-v2.sh` — 27-assertion suite covering backlog-row three pointer forms, memory-index-line, `optional` mirror silent-when-absent, `match_kind: json-field`, `exclude_basenames`, `--entity-type` filter, persistent ID stability across V2 findings.
-
-**Baseline (real inventory, 2026-04-21 V2 dry-run):** 170 instances scanned; 40 findings; all legitimate drift, zero detector bugs.
-- skill: 29 (V1 unchanged) — 3 canonical-missing-description, 7 mirror-missing, 9 mirror-absent-description (info), 3 description-mismatch, 7 index-row-missing
-- plan: 10 — all `index-row-missing` (plans lacking System Backlog rows; consistent with R-15 principle)
-- memory-file: 1 — `index-row-missing` (memory file absent from MEMORY.md)
-
 
 **Output Contract:**
 
@@ -1272,7 +1238,7 @@ End-of-session reconciliation — a deterministic shell orchestrator that chains
 
 **Invocation:** `/librarian session-close [--deep]`
 
-**Orchestrator:** `$CLAUDE_HOME/skills/librarian/capabilities/session-close.sh` (Plan 63 Sub-plan 04, 2026-04-21). Deterministic shell; chains extracted capability shells; advisory-only (always exits 0).
+**Orchestrator:** `$CLAUDE_HOME/skills/librarian/capabilities/session-close.sh`. Deterministic shell; chains extracted capability shells; advisory-only (always exits 0).
 
 ### Flags
 
@@ -1296,9 +1262,9 @@ Default if no registry: **solo**.
 ### Capability chain (executed in order)
 
 1. **Scoped integrity** (Step 2): `frontmatter-enforce --check` → `xref-check` → `placement-validate` → `stale-detect` → `cron-log-architecture` → `handoff-disposition-check` → `plan-index` → `plan-parent-resolve`.
-2. **Rename cascade** (Step 2b, Plan 67 SP02 T-4, 2026-04-22): `rename-detect` over last-24h git log across VAULT + PLANS → `rename-history-sync append` onto `doc-dependencies.json` → `rename-cascade` (dry-run only; `--apply` is human-initiated). Empty 24h window is a valid no-op. Logged as `rename-cascade-pipeline` + per-subcommand status in the aggregated log.
+2. **Rename cascade** (Step 2b): `rename-detect` over last-24h git log across VAULT + PLANS → `rename-history-sync append` onto `doc-dependencies.json` → `rename-cascade` (dry-run only; `--apply` is human-initiated). Empty 24h window is a valid no-op. Logged as `rename-cascade-pipeline` + per-subcommand status in the aggregated log.
 3. **Reconciliation sweep** (Step 2c): `$CLAUDE_HOME/hooks/reconcile-sessions.sh`. **Skipped in `scoped` mode** (R-42 defers to reconciler). Idempotent and lock-guarded; safe to fire in `solo` and `reconciler`.
-4. **Trinity drift detect** (Step 2d, Plan 67 SP04 T-1, 2026-04-22): `trinity-drift-detect` full walk of `$PLANS_DIR` depth 2 + 3. Surfaces `spec-manifest-divergence`, `trinity-task-ledger-lag`, `header-trinity-divergence`. Advisory; does not block close.
+4. **Trinity drift detect** (Step 2d): `trinity-drift-detect` full walk of `$PLANS_DIR` depth 2 + 3. Surfaces `spec-manifest-divergence`, `trinity-task-ledger-lag`, `header-trinity-divergence`. Advisory; does not block close.
 5. **Sync check** (Step 3): `sync-check --fix` (full scope).
 6. **Architect triage** (Step 4c): `architect-triage` — reads `Logs/architect-*.md`, deduplicates against backlog + manifest.
 7. **Backup** (Step 5): `backup` capability. **Skipped in `scoped` mode** to avoid partial-state commits during overlapping sessions.
@@ -1379,7 +1345,7 @@ Proceed with all? Or specify capabilities/files to include/exclude.
 
 ## Capability: capability-registry-parity
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh` (Plan 71 SP04 T-9, 2026-04-29; sources `lib/findings.sh`). Closes the dispatcher-invariant gap that registry/SKILL.md/on-disk drift silently degrades the dispatcher (spec.md L65/L78/L267/L312).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh` (sources `lib/findings.sh`). Closes the dispatcher-invariant gap that registry/SKILL.md/on-disk drift silently degrades the dispatcher.
 
 **Purpose:** Runtime audit of `capability-registry.json` against SKILL.md `## Capability:` headings + on-disk capability scripts. Self-registered (the parity audit is itself audited by its own bijection check).
 
@@ -1394,7 +1360,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh [-
 | `--check` (default) | Emit findings, no writes |
 | `--dry-run` | Summary counts only, no JSON finding emission |
 
-**Drift classes (per T-9 ACs):**
+**Drift classes:**
 
 | Finding | Condition |
 |---------|-----------|
@@ -1421,7 +1387,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh [-
 
 **Env overrides (testing):** `LIBRARIAN_ROOT_OVERRIDE` (relocate librarian/ root for fixture tests), `FINDINGS_OUTPUT` (append findings instead of stdout), `EXPECTED_SCHEMA_VERSION` (forward-compat).
 
-**Exit codes:** `0` always (report-only — non-zero finding count does NOT change exit), `2` on unknown flag. Pattern matches `cron-log-architecture`.
+**Exit codes:** `0` always (report-only — non-zero finding count does NOT change exit), `2` on unknown flag.
 
 **Output Format:**
 
@@ -1438,7 +1404,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh [-
 
 **Where it fires:** `/librarian capability-registry-parity` (ad-hoc), `/librarian librarian-full` (every full scan), `librarian session-close` Step 2 (drift sweep block), Monday cron via registry `cron_block: monday`.
 
-**Self-reference invariant:** `capability-registry-parity` is itself registered in `capability-registry.json` (32nd entry). The bijection check audits the audit — drift in either direction (SKILL.md heading drops, registry entry drops) is caught by the next run.
+**Self-reference invariant:** `capability-registry-parity` is itself registered in `capability-registry.json`. The bijection check audits the audit — drift in either direction (SKILL.md heading drops, registry entry drops) is caught by the next run.
 
 **Output Contract:**
 
@@ -1451,7 +1417,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/capability-registry-parity.sh [-
 
 ## Capability: librarian-manifest-validate
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/librarian-manifest-validate.sh` (Plan 71 SP04 T-9a, 2026-04-29; sources `lib/findings.sh` + `lib/manifest.sh`). Closes audit SP04-05 F-1 (SP09 T-7.5 explicit consumer mandate) — staged librarian-manifest writes are validated against `schemas/librarian-manifest-schema.json` before they land.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/librarian-manifest-validate.sh` (sources `lib/findings.sh` + `lib/manifest.sh`). Staged librarian-manifest writes are validated against `schemas/librarian-manifest-schema.json` before they land.
 
 **Purpose:** Runtime block-and-log gate for librarian-manifest writes. Capabilities that emit `writes_manifest_subtree` invoke this validator with the staged payload; on schema violation the write is denied and a structured diagnostic is logged.
 
@@ -1476,8 +1442,6 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/librarian-manifest-validate.sh [
 | `ajv` | `ajv` Node CLI (full draft 2020-12) | Preferred when `ajv` is in `$PATH` |
 | `python-jsonschema` | `python3 -m jsonschema` (Draft202012Validator) | When `jsonschema` module is importable |
 | `minimal` | Built-in: JSON parses + top-level `required[]` keys present + `schema_version` matches schema's `const` | ALWAYS available; no external deps |
-
-Spec called for two-tier (ajv → python-jsonschema). Tier-3 minimal added at T-9a c1 for synthetic-test determinism and out-of-the-box utility on systems without `ajv` or `jsonschema`. Honest divergence captured for T-13 final acceptance gate.
 
 **Finding shape:**
 
@@ -1542,7 +1506,7 @@ Spec called for two-tier (ajv → python-jsonschema). Tier-3 minimal added at T-
 
 ## Capability: memory-hygiene
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/memory-hygiene.sh` (shipped Plan 63 Sub-plan 03 T-2, 2026-04-20 — pattern exemplar for the Tier 3 shell-prefilter + Claude-synthesis hybrid).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/memory-hygiene.sh` — pattern exemplar for the shell-prefilter + Claude-synthesis hybrid tier.
 
 **Purpose:** Lifecycle maintenance for the Claude memory system. Shell prefilter handles 5 deterministic drift classes as direct findings; emits NDJSON candidates for 3 judgment classes that Claude synthesizes here at runtime.
 
@@ -1559,7 +1523,7 @@ Spec called for two-tier (ajv → python-jsonschema). Tier-3 minimal added at T-
 | `STALENESS_THRESHOLD_DAYS` | Staleness cutoff | 30 |
 | `MANIFEST_PATH` | librarian-manifest.json target | `$VAULT_LOGS/librarian-manifest.json` |
 
-**Flag map (SKILL.md legacy → runtime):**
+**Flag map (legacy → runtime):**
 - `/librarian memory-hygiene` → runs the prefilter, emits findings + NDJSON candidates; Claude synthesizes candidate proposals at the invocation site.
 - `/librarian memory-hygiene --fix` → after synthesis proposals are accepted, apply approved mutations (add to MEMORY.md, remove dead refs, refresh `last_verified`). Fix mode is a synthesis-time action, not a shell flag.
 
@@ -1597,8 +1561,7 @@ Every judgment candidate carries:
 }
 ```
 
-Full schema + per-capability evidence payloads live at
-`tests/prefilter-contract.md §1`.
+Full schema + per-capability evidence payloads live at `tests/prefilter-contract.md §1`.
 
 ### Model synthesis prompt (LIVE — this IS what Claude executes)
 
@@ -1613,7 +1576,7 @@ When `/librarian memory-hygiene` emits NDJSON candidates, Claude reads each line
 **For `#3 overlap` candidates:**
 1. Read the `file_a` + `file_b` names, descriptions, and excerpts in the evidence payload.
 2. Decide: MERGE (same subject, redundant); KEEP-BOTH (intentionally distinct — add `related:` frontmatter cross-link); SUPERSEDE (one explicitly marked superseded in its own body — delete it, keep the survivor).
-3. Specifically flag 2-file sentinel-pattern pairs with high slug similarity (≥0.7) and one file explicitly marked SUPERSEDED — these are high-confidence merge targets that pseudocode's "3+ group" threshold misses.
+3. Specifically flag 2-file sentinel-pattern pairs with high slug similarity (≥0.7) and one file explicitly marked SUPERSEDED — these are high-confidence merge targets.
 
 **For `#6 conflict` candidates:**
 1. Same-name memory pairs. Read both content excerpts.
@@ -1623,7 +1586,7 @@ When `/librarian memory-hygiene` emits NDJSON candidates, Claude reads each line
 
 **Batch optimization:** When prefilter emits many `status-verification` candidates with similar shape (`status: completed` + stale `last_verified` + quiet bodies), propose a single BULK REFRESH action covering all of them rather than per-file proposals.
 
-**Dotfile filter:** If `subject` ends in `.md` but starts with `.`, REJECT the finding — dotfiles are infrastructure, not memories. This is a known pseudocode-bug correction pending prefilter v2.
+**Dotfile filter:** If `subject` ends in `.md` but starts with `.`, REJECT the finding — dotfiles are infrastructure, not memories.
 
 ### Output format (runtime)
 
@@ -1676,9 +1639,8 @@ When a new memory is being created (by any skill or by the auto-memory system), 
 ### Tests + two-gate acceptance status
 
 - Tests: `tests/memory-hygiene.sh` — 19 assertions across 5 scenarios (deterministic direct-fire, NDJSON shape, empty-state, Gate A adversarial recall, --dry-run summary).
-- Gate A (adversarial prefilter recall): **5/5 seeded anomalies surfaced** (verified 2026-04-20 T-2).
+- Gate A (adversarial prefilter recall): **5/5 seeded anomalies surfaced**.
 - Gate B (proposal acceptance delta): pending user judge-pack pass at `baselines/judge-pack/memory-hygiene.md`.
-
 
 **Output Contract:**
 
@@ -1692,7 +1654,7 @@ When a new memory is being created (by any skill or by the auto-memory system), 
 
 ## Capability: transcript-mine
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/transcript-mine.sh` (Plan 63 Sub-plan 03 T-3, 2026-04-20; sources `lib/findings.sh` + `lib/manifest.sh` + `lib/dates.sh`). Hybrid shell-prefilter + Claude-synthesis. **Phase 1 + Phase 2 are deterministic shell** — they discover transcripts and emit NDJSON signal candidates. **Phase 3 + Phase 4 are Claude synthesis at runtime** using the prompt below against the NDJSON stream.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/transcript-mine.sh` (sources `lib/findings.sh` + `lib/manifest.sh` + `lib/dates.sh`). Hybrid shell-prefilter + Claude-synthesis. **Phase 1 + Phase 2 are deterministic shell** — they discover transcripts and emit NDJSON signal candidates. **Phase 3 + Phase 4 are Claude synthesis at runtime** using the prompt below against the NDJSON stream.
 
 **Purpose:** Mine meeting transcripts for implicit knowledge — decisions, preferences, action-items, tool-mentions, corrections — that was never explicitly saved as a memory. Proposes new memory entries for review.
 
@@ -1745,9 +1707,9 @@ Scores: baseline 0.6 per hit; `**Decision:**` leader bumps to 0.9; action-item h
 
 ### Phase 3: Deduplication Against Existing Memories
 
-1. For each extracted signal, compare against existing memory file names and descriptions
-2. If the signal clearly maps to an existing memory: skip (already captured)
-3. If the signal is novel: promote to a proposed memory entry
+1. For each extracted signal, compare against existing memory file names and descriptions.
+2. If the signal clearly maps to an existing memory: skip (already captured).
+3. If the signal is novel: promote to a proposed memory entry.
 
 ### Phase 4: Proposal Generation
 
@@ -1776,7 +1738,7 @@ confidence: high|medium|low
 - **Low:** Inferred from pattern across multiple sessions
 
 In `--propose` mode: output all proposals as a report for the user's review.
-In `--apply` mode: write high-confidence proposals directly (with memory pre-write guard validation from Plan 20), present medium/low for approval.
+In `--apply` mode: write high-confidence proposals directly (with memory pre-write guard validation), present medium/low for approval.
 
 ### Output Format
 
@@ -1809,9 +1771,8 @@ In `--apply` mode: write high-confidence proposals directly (with memory pre-wri
 ### Tests + two-gate acceptance status
 
 - Tests: `tests/transcript-mine.sh` — 17 assertions across 6 scenarios (NDJSON schema, no-match, malformed skip, Gate A adversarial, --dry-run, frontmatter strip).
-- Gate A (adversarial prefilter recall): **0 candidates from 20L DQ Sheet placeholder** (verified 2026-04-20 T-3). PASS — near-zero condition satisfied.
+- Gate A (adversarial prefilter recall): **0 candidates from 20L DQ Sheet placeholder**. PASS — near-zero condition satisfied.
 - Gate B (proposal acceptance delta): pending user judge-pack pass at `baselines/judge-pack/transcript-mine.md`.
-
 
 **Output Contract:**
 
@@ -1825,7 +1786,7 @@ In `--apply` mode: write high-confidence proposals directly (with memory pre-wri
 
 ## Capability: architect-triage
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/architect-triage.sh` (extracted from pseudocode 2026-04-21 via Plan 63 Sub-plan 02 T-6; sources `lib/findings.sh` + `lib/manifest.sh` + `lib/dates.sh`).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/architect-triage.sh` (sources `lib/findings.sh` + `lib/manifest.sh` + `lib/dates.sh`).
 
 **Purpose:** Surface untracked architect `[R-NNN]` recommendations as System Backlog candidates. Dedupe against Backlog row text + prior manifest state. Manifest I/O heavy — persists `architect_recommendations` subtree via `manifest_set`.
 
@@ -1891,23 +1852,22 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/architect-triage.sh [--check|--a
 | R-NNN | {title} | {category} | {source_log} |
 ```
 
-**Session-close integration (Step 4c):** gates on last_scanned_log vs newest log mtime — only fires if a new log exists. Runs after Step 4b (System Backlog Update).
+**Session-close integration:** gates on last_scanned_log vs newest log mtime — only fires if a new log exists. Runs after the System Backlog Update step.
 
 **Tests:** `tests/architect-triage.sh` — 14/14 pass (new untracked, Backlog dedupe, manifest completed dropout, duplicate-across-logs dedupe, unknown-flag exit 2, `--apply` blocked exit 4, manifest subtree persistence, prior-status preservation).
-
 
 **Output Contract:**
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; manifest subtree `architect_recommendations` via `manifest_set`.
 - **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); manifest subtree validates against `librarian-manifest-schema.json#/properties/architect_recommendations`.
-- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh` (T-9a).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; manifest subtree write protected by `librarian-manifest-validate.sh`.
 - **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout/manifest; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-architect-triage.md`.
 
 ---
 
 ## Capability: mem-promote
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/mem-promote.sh` (shipped Plan 63 Sub-plan 03 T-4, 2026-04-20 — Tier 3 hybrid: shell prefilter + Claude synthesis).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/mem-promote.sh` — hybrid shell prefilter + Claude synthesis.
 
 **Purpose:** Query claude-mem's observation database for high-value patterns and propose promotions to the auto-memory system. Bridges the gap between claude-mem's wide-net automatic capture and auto-memory's curated, always-available context.
 
@@ -2004,9 +1964,9 @@ confidence: high|medium|low
 ```
 
 **Confidence levels:**
-- **High:** Observation captures a direct user correction, explicit decision, or stated rule
-- **Medium:** Observation captures a pattern or discovery with clear future relevance
-- **Low:** Observation captures context that might be useful but is situational
+- **High:** Observation captures a direct user correction, explicit decision, or stated rule.
+- **Medium:** Observation captures a pattern or discovery with clear future relevance.
+- **Low:** Observation captures context that might be useful but is situational.
 
 **Synthesis rubric (per candidate):**
 
@@ -2014,7 +1974,7 @@ confidence: high|medium|low
 2. For `promotion-candidate` with `dedup_decision: variant` — produce an **UPDATE proposal** targeting the matched memory file. Merge new detail into the existing body; refresh `last_verified`.
 3. For `promotion-candidate` with `dedup_decision: duplicate` — **SKIP**, but surface to the user if `match_score < 0.8` (for confirmation).
 4. For `pair-overlap` findings — **COLLAPSE**: both subjects refer to the same underlying work. Emit ONE consolidated proposal, not two. The higher-jaccard cross-session pair is the strongest collapse signal.
-5. For clusters of ≥3 promotion-candidates sharing a topic cluster (session-work on the same plan/feature/domain) — propose a **bulk UPDATE** to the matching project/feature memory, not per-observation proposals. Saves churn; preserves signal.
+5. For clusters of ≥3 promotion-candidates sharing a topic cluster (session-work on the same plan/feature/domain) — propose a **bulk UPDATE** to the matching project/feature memory, not per-observation proposals.
 
 **Batch optimization:** When 5+ observations from the same session describe per-plan/per-handoff status updates (handoff appends, manifest flips, System Backlog rows), SKIP them en masse — they're routine discipline captured in per-plan handoff records, not promotable signal.
 
@@ -2061,15 +2021,14 @@ Create an audit trail from curated memory back to the raw observation that gener
 ### Integration with Consolidation Pipeline
 
 - The background consolidation runner does NOT run mem-promote (requires Claude's judgment for proposal quality — not suitable for shell automation).
-- mem-promote runs via explicit `/librarian mem-promote --session <path>` invocation, or as part of session-close (Step 2.5) when the 48-hour gate is met, or from a session-end hook passing the current session JSONL.
+- mem-promote runs via explicit `/librarian mem-promote --session <path>` invocation, or as part of session-close when the 48-hour gate is met, or from a session-end hook passing the current session JSONL.
 - After a successful run, update `.consolidation-state.json` with `last_mem_promote` set to current ISO timestamp.
 
 ### Tests + two-gate acceptance status
 
 - Tests: `tests/mem-promote.sh` — 19 assertions across 7 scenarios (novel candidate emission, duplicate/variant detection, nonexistent-session handling, Gate A adversarial pair, --dry-run summary, within-session cluster consolidation, unknown-flag exit 2).
-- Gate A (adversarial pair-overlap): **4 pair-aware findings emit** (shared-token jaccard 0.30-0.40 across the 8b4eccad + 83468272 pair — cascade-waiver ×2, partial-status, Plan 64 SP02). Gate A PASS per prefilter-contract.md (disjunctive "collapse OR pair-aware finding").
+- Gate A (adversarial pair-overlap): **4 pair-aware findings emit** (shared-token jaccard 0.30-0.40 across the seeded session pair). Gate A PASS per prefilter-contract.md (disjunctive "collapse OR pair-aware finding").
 - Gate B (proposal acceptance delta): pending user judge-pack pass at `baselines/judge-pack/mem-promote.md`.
-
 
 **Output Contract:**
 
@@ -2083,9 +2042,9 @@ Create an audit trail from curated memory back to the raw observation that gener
 
 ## Capability: classify
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/classify.sh` (spec-only stub — Plan 71 SP04 T-6, 2026-04-29; implementation deferred to v2.1). Stub exits 2 with `v2.1 deferred per Plan 71 SP04` to stderr.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/classify.sh` (spec-only stub; implementation deferred to v2.1). Stub exits 2 with a deferred-implementation message to stderr.
 
-**Purpose:** Intake classification primitive. Given a raw unstructured blob (email body / meeting transcript / ad-hoc capture), classify it into a canonical `type:` from `vault-schema.json._types`. Upstream of `write-frontmatter` and `cluster-by-topic` in the SP07 Phase 2 Act 2 pipeline.
+**Purpose:** Intake classification primitive. Given a raw unstructured blob (email body / meeting transcript / ad-hoc capture), classify it into a canonical `type:` from `vault-schema.json._types`. Upstream of `write-frontmatter` and `cluster-by-topic` in the Phase 2 Act 2 ingestion pipeline.
 
 **Tier:** mechanical (prefilter for high-confidence inputs) + judgment (edge cases requiring Claude synthesis). Registry dispatcher-gate is `mechanical` (silent fast path); `cron_block: none`; `requires_confirmation: false`. Edge-case synthesis fires at invocation time per the rubric below — not gated through `requires_confirmation` because classification emits NDJSON only, never mutates the vault.
 
@@ -2113,22 +2072,21 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/classify.sh < input.ndjson
 
 **Dependencies:** `vault-schema.json`, `lib/findings.sh`.
 
-
 **Output Contract:**
 
-- **Files written:** none. Capability emits NDJSON records to stdout only. Caller (SP07 Phase 2 Act 2) consumes the stream and routes records to `write-frontmatter` (when `type` is known) or back to user-confirmation flow (when `type: unknown`).
+- **Files written:** none. Capability emits NDJSON records to stdout only. Caller consumes the stream and routes records to `write-frontmatter` (when `type` is known) or back to user-confirmation flow (when `type: unknown`).
 - **Schema type:** NDJSON output records validated against `vault-schema.json._types` for `type` field; record shape itself not formally schematized (intermediate-pipeline contract).
 - **Pre-write validation:** none required (no vault writes). Output record `type` field gated against `vault.type_allowlist[]` from the user manifest before emission; out-of-allowlist types emit as `unknown` with rationale.
-- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-classify.md`. Stub-mode invocation (v2.0 ship state) exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
+- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-classify.md`. Stub-mode invocation exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
 - **Tier:** mechanical (with v2.1 judgment-tier escalation per rubric). **requires_confirmation:** false at the dispatcher gate. **cron_block:** none.
 
 ---
 
 ## Capability: cluster-by-topic
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh` (spec-only stub — Plan 71 SP04 T-6, 2026-04-29; implementation deferred to v2.1). Stub exits 2 with `v2.1 deferred per Plan 71 SP04` to stderr.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh` (spec-only stub; implementation deferred to v2.1). Stub exits 2 with a deferred-implementation message to stderr.
 
-**Purpose:** Topic clustering primitive. Given a batch of classified records (output of `classify`), group them into topic clusters suitable for canonical-file drafting. Upstream of `draft-canonical-file` in the SP07 Phase 2 Act 3 pipeline.
+**Purpose:** Topic clustering primitive. Given a batch of classified records (output of `classify`), group them into topic clusters suitable for canonical-file drafting. Upstream of `draft-canonical-file` in the Phase 2 Act 3 pipeline.
 
 **Tier:** mechanical (embedding-based clustering on the deterministic path) + judgment (cluster-boundary decisions when cohesion scores fall in the ambiguous range). Registry dispatcher-gate is `mechanical`; `cron_block: none`; `requires_confirmation: false`. v2.1 implementation: pluggable clustering backend — first-pass uses shared-keyword TF-IDF; v2.2 upgrades to embedding-based.
 
@@ -2156,24 +2114,23 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh < classified
 
 **Dependencies:** `lib/findings.sh`, `capabilities/classify.sh` (upstream — `cluster-by-topic` consumes its output).
 
-
 **Output Contract:**
 
-- **Files written:** none. Capability emits NDJSON cluster records to stdout only. Caller (SP07 Phase 2 Act 3) consumes the stream and routes clusters to `draft-canonical-file` (when cohesion is high) or back to user-confirmation flow (when cohesion is ambiguous).
+- **Files written:** none. Capability emits NDJSON cluster records to stdout only. Caller consumes the stream and routes clusters to `draft-canonical-file` (when cohesion is high) or back to user-confirmation flow (when cohesion is ambiguous).
 - **Schema type:** NDJSON output records — record shape not formally schematized (intermediate-pipeline contract); `records[]` carries pass-through `classify` output records.
 - **Pre-write validation:** none required (no vault writes). `min_cluster_size` floor enforced from manifest before emission; clusters below floor are dropped (constituent records re-emitted as singletons with `below-min-cluster-size` annotation).
-- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-cluster-by-topic.md`. Stub-mode invocation (v2.0 ship state) exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
+- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-cluster-by-topic.md`. Stub-mode invocation exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
 - **Tier:** mechanical (with v2.1 judgment-tier escalation per rubric). **requires_confirmation:** false at the dispatcher gate. **cron_block:** none.
 
 ---
 
 ## Capability: draft-canonical-file
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh` (spec-only stub — Plan 71 SP04 T-6, 2026-04-29; implementation deferred to v2.1). Stub exits 2 with `v2.1 deferred per Plan 71 SP04` to stderr.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh` (spec-only stub; implementation deferred to v2.1). Stub exits 2 with a deferred-implementation message to stderr.
 
 **Purpose:** Canonical-file drafting primitive. Given a cluster of related intake records (output of `cluster-by-topic`) plus a target canonical-file type (e.g., `people`, `project`, `engagement`), synthesize a draft canonical file with a populated `## Context` H2 and structured sections per `vault-schema.json` for the given `type:`. Drafts land in a staging area; canonical placement is gated on user confirmation.
 
-**Tier:** judgment. Requires Claude synthesis at every invocation — no deterministic path. Registry dispatcher-gate is `judgment`; `cron_block: skip-non-interactive`; `requires_confirmation: true`. Capability never fires unattended; `/librarian` cron runs short-circuit with `draft-canonical-file: skipped (non-interactive)` when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
+**Tier:** judgment. Requires Claude synthesis at every invocation — no deterministic path. Registry dispatcher-gate is `judgment`; `cron_block: skip-non-interactive`; `requires_confirmation: true`. Capability never fires unattended; cron runs short-circuit with `draft-canonical-file: skipped (non-interactive)` when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
 
 **Invocation:**
 
@@ -2199,22 +2156,21 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh < cluste
 
 **Dependencies:** `vault-schema.json`, `lib/frontmatter.sh`, `capabilities/classify.sh` (transitively, via cluster records), `capabilities/cluster-by-topic.sh` (direct upstream).
 
-
 **Output Contract:**
 
 - **Files written:** `{vault.root}/_drafts/*.md` (staging area only — canonical placement under `{vault.root}/People/`, `{vault.root}/{projects_dir}/`, etc., is gated on user confirmation and is NOT performed by this capability). NDJSON output records emitted to stdout post-write.
 - **Schema type:** draft files are frontmatter-prefixed Markdown validated against `vault-schema.json` for the requested `target_type`. NDJSON output record shape not formally schematized (intermediate-pipeline contract).
 - **Pre-write validation:** for every draft file: (1) frontmatter lint via `lib/frontmatter.sh::validate_frontmatter`; (2) R-40 plan-artifact-schema check (skipped for non-plan target types); (3) `## Context` H2 must be present and non-empty when `target_type` is in `vault.context_section_types[]` (canonical types like `people`, `project`, `engagement`). Failures abort the write before any bytes hit `_drafts/` — block-and-log, never partial.
-- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — schema-invalid drafts never written to staging; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-draft-canonical-file.md`. Stub-mode invocation (v2.0 ship state) exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
+- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — schema-invalid drafts never written to staging; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-draft-canonical-file.md`. Stub-mode invocation exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
 - **Tier:** judgment. **requires_confirmation:** true. **cron_block:** skip-non-interactive — capability exits 0 with `draft-canonical-file: skipped (non-interactive)` log line when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
 
 ---
 
 ## Capability: write-frontmatter
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh` (spec-only stub — Plan 71 SP04 T-6, 2026-04-29; implementation deferred to v2.1). Stub exits 2 with `v2.1 deferred per Plan 71 SP04` to stderr.
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh` (spec-only stub; implementation deferred to v2.1). Stub exits 2 with a deferred-implementation message to stderr.
 
-**Purpose:** Frontmatter emission primitive. Given a classified record (output of `classify`) plus a target path, emit valid YAML frontmatter conforming to `vault-schema.json` for the given `type:`. The single sanctioned write-path for new vault files in the SP07 Phase 2 Act 2 pipeline; `frontmatter-enforce` is the read/repair counterpart.
+**Purpose:** Frontmatter emission primitive. Given a classified record (output of `classify`) plus a target path, emit valid YAML frontmatter conforming to `vault-schema.json` for the given `type:`. The single sanctioned write-path for new vault files in the Phase 2 Act 2 pipeline; `frontmatter-enforce` is the read/repair counterpart.
 
 **Tier:** mechanical. Pure transform — no Claude synthesis required. Registry dispatcher-gate is `mechanical`; `cron_block: none`; `requires_confirmation: false`. Mutations are gated structurally by the pre-write validation chain rather than by user confirmation.
 
@@ -2237,28 +2193,27 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh < classifie
 2. **R-40 plan-artifact-schema check** — when `type` is a plan-artifact type (per `plans-schema.json`), the additional R-40 plan-artifact frontmatter requirements are checked atop the vault-schema base.
 3. **R-32 tier-2 tag-allowlist** — every emitted `tags:` entry validated against `vault-schema.json._tag_prefixes` ∪ `manifest.vault.tag_prefixes[]`. Out-of-allowlist tags abort the write.
 
-**Pre-write-guard interlock:** writes also flow through the SP02 `pre-write-guard.sh` PreToolUse hook chain at the harness level (Tier 1 advisory + Tier 2 manifest-block + Tier 3 cascade-waiver). `write-frontmatter` is the in-capability validation; `pre-write-guard` is the harness-level structural backstop. Both must pass.
+**Pre-write-guard interlock:** writes also flow through the `pre-write-guard.sh` PreToolUse hook chain at the harness level (Tier 1 advisory + Tier 2 manifest-block + Tier 3 cascade-waiver). `write-frontmatter` is the in-capability validation; `pre-write-guard` is the harness-level structural backstop. Both must pass.
 
 **Invocation modes:** `ad-hoc`, `phase-2-act-2`, `phase-2-act-3`.
 
-**Dependencies:** `vault-schema.json`, `lib/frontmatter.sh`, `pre-write-guard` (SP02 PreToolUse hook chain).
-
+**Dependencies:** `vault-schema.json`, `lib/frontmatter.sh`, `pre-write-guard` (PreToolUse hook chain).
 
 **Output Contract:**
 
 - **Files written:** `{vault.root}/**/*.md` (frontmatter-prefixed Markdown files at the target path supplied per input record). Atomic temp+rename via `lib/frontmatter.sh::write_atomic`; never partial-write. NDJSON output records emitted to stdout post-write.
 - **Schema type:** every written file is a frontmatter-prefixed Markdown file validated against `vault-schema.json` for the input `type:`. NDJSON output record shape not formally schematized (intermediate-pipeline contract).
 - **Pre-write validation:** three-step chain — (1) frontmatter lint, (2) R-40 plan-artifact-schema check (when applicable), (3) R-32 tier-2 tag-allowlist check. All three must pass before the temp file is opened. Failures abort the write before any bytes touch the target path; the write is replaced with a `validation_result: fail-*` NDJSON record on stdout.
-- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — schema-invalid writes never reach the target path; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-write-frontmatter.md`. Stub-mode invocation (v2.0 ship state) exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
+- **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — schema-invalid writes never reach the target path; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-write-frontmatter.md`. Stub-mode invocation exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
 - **Tier:** mechanical. **requires_confirmation:** false at the dispatcher gate. **cron_block:** none.
 
 ---
 
 ## Capability: sanctioned-schema-drift-detect
 
-**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/sanctioned-schema-drift-detect.sh` (shipped Plan 71 SP09 T-12.7, 2026-04-28; defense-in-depth tripwire against unsanctioned drift between live `$CLAUDE_HOME/schemas/` and foundation-repo distribution source).
+**Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/sanctioned-schema-drift-detect.sh` — defense-in-depth tripwire against unsanctioned drift between live `$CLAUDE_HOME/schemas/` and the foundation-repo distribution source.
 
-**Purpose:** Verify that the 3 sanctioned schemas in the live install (`vault-schema.json`, `plans-schema.json`, `plan-manifest-schema.json`) are byte-identical to the foundation-repo distribution source. The schemas retained post-SP09 T-10 atomic revert are the load-bearing structural contracts for vault writes (R-32 / R-40 / plan-manifest validation); silent drift between live and source would invalidate every downstream pre-write-validation chain.
+**Purpose:** Verify that the 3 sanctioned schemas in the live install (`vault-schema.json`, `plans-schema.json`, `plan-manifest-schema.json`) are byte-identical to the foundation-repo distribution source. The schemas are the load-bearing structural contracts for vault writes (R-32 / R-40 / plan-manifest validation); silent drift between live and source would invalidate every downstream pre-write-validation chain.
 
 **Invocation:**
 
@@ -2273,13 +2228,13 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/sanctioned-schema-drift-detect.s
 | `FOUNDATION_REPO` | Foundation-repo root (test override) | `$HOME/Code/claude-stem` |
 | `LIVE_SCHEMAS` | Live schemas directory (test override) | `$HOME/.claude/schemas` |
 
-**Sanctioned schemas (post-SP09 T-10):**
+**Sanctioned schemas:**
 
 1. `vault-schema.json` — vault file frontmatter contract (R-32 source of truth).
 2. `plans-schema.json` — plan-artifact frontmatter contract (R-40 source of truth).
 3. `plan-manifest-schema.json` — plan-manifest.json contract.
 
-These three are the only schemas retained after the SP09 atomic revert. Any other schema appearing under `$CLAUDE_HOME/schemas/` is unsanctioned drift; this capability flags it via the `MISSING-SOURCE` shape.
+These three are the only schemas retained in the install. Any other schema appearing under `$CLAUDE_HOME/schemas/` is unsanctioned drift; this capability flags it via the `MISSING-SOURCE` shape.
 
 **Drift shapes:**
 
@@ -2293,8 +2248,7 @@ These three are the only schemas retained after the SP09 atomic revert. Any othe
 - `1` — drift detected; findings written to stdout (text mode) or as JSON (`--json`).
 - `2` — usage / unknown flag.
 
-**Tests:** integrated into the foundation-repo grep-audit pre-flight; runs as part of `/librarian` (mode `librarian-full`) on every invocation. No standalone synthetic test harness — tripwire semantics verified by the pre-flight grep-audit gate (foundation grep-audit clean implies live-source bijection on the 3 sanctioned schemas).
-
+**Tests:** integrated into the foundation-repo grep-audit pre-flight; runs as part of `/librarian librarian-full` on every invocation. No standalone synthetic test harness — tripwire semantics verified by the pre-flight grep-audit gate.
 
 **Output Contract:**
 
@@ -2302,7 +2256,7 @@ These three are the only schemas retained after the SP09 atomic revert. Any othe
 - **Schema type:** text-mode output is `PASS:` / `FAIL: <N> finding(s):` framed; JSON-mode output validates against ad-hoc shape `{"drift_count": int, "findings": [string]}` (no formal schema — capability is its own consumer via exit code).
 - **Pre-write validation:** N/A (no writes).
 - **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — invocation errors (missing trees, unknown flags) exit non-zero with stderr diagnostic; never silently passes through drift. Drift exits 1 by design (signal-bearing); usage errors exit 2.
-- **Tier:** mechanical. **requires_confirmation:** false. **cron_block:** none — capability is read-only and safe to fire from `/librarian` cron.
+- **Tier:** mechanical. **requires_confirmation:** false. **cron_block:** none — capability is read-only and safe to fire from cron.
 
 ---
 
@@ -2324,7 +2278,7 @@ Each layer is progressively more curated and more available.
 
 ## Shared Helpers (`$CLAUDE_HOME/skills/librarian/lib/`)
 
-Six shared shell libraries, sourced by capability scripts to keep invariants in one place (Plan 61 seed, extended by Plans 63/64/67/71). Contract: every capability that emits findings, reads/writes the manifests, handles dates, parses frontmatter, or resolves plan paths sources the relevant helper instead of inlining logic.
+Six shared shell libraries, sourced by capability scripts to keep invariants in one place. Contract: every capability that emits findings, reads/writes the manifests, handles dates, parses frontmatter, or resolves plan paths sources the relevant helper instead of inlining logic.
 
 | Helper | Purpose | Key exports | Primary consumers |
 |--------|---------|-------------|-------------------|
@@ -2337,7 +2291,7 @@ Six shared shell libraries, sourced by capability scripts to keep invariants in 
 
 **Note:** `lib/plan-path.sh` is librarian-local. The paths helper `lib/paths.sh` lives under `$CLAUDE_HOME/hooks/lib/paths.sh` (vault/plans/logs env exports) — librarian capabilities source it via absolute path, not via `librarian/lib/`. Do not conflate the two.
 
-**Output Contract — `lib/user-manifest-read.sh` (Plan 71 SP04 T-9b 2026-04-29; T-4 c5 2026-04-29 added `umr_get_string`):**
+**Output Contract — `lib/user-manifest-read.sh`:**
 
 - **Files written:** none. Helper is read-only against `user-manifest.json`.
 - **Schema:** consumed manifest validates against `schemas/user-manifest-schema.json` (1.3.0+ for `system.backup_targets[]` and `vault.tag_audit_exemptions[]`); helper does NOT validate, defers to capability-level Output Contracts.
@@ -2354,7 +2308,7 @@ Six shared shell libraries, sourced by capability scripts to keep invariants in 
 4. **Skip non-content files.** Ignore `.json`, `.DS_Store`, `.obsidian/`, `.git/`, `.claude/`, image files. Also skip `librarian-manifest.json` — it is infrastructure, not content.
 5. **{VAULT_ARCHITECTURE_DOC} is source of truth.** All rules derive from it. If a file violates a rule not in VA.md, it's not a violation.
 
-### Multi-Session Coordination (Plan 42 Phase 3, carved into foundation 2026-04-30)
+### Multi-Session Coordination
 
 These rules govern librarian behavior when multiple Claude Code sessions are active concurrently against the same vault. They complement R-42 (pending-reconciliation sweep) and the registry/reconciler infrastructure under `{VAULT_LOGS}/.coordination/`. Rules 6 and 9 are gated by `manifest.hooks.multi_session.enabled` — when disabled, the registry/reconciler hooks are not registered in `settings.json` and these rules become advisory. Rule 7 (atomic writes) and Rule 8 (mtime re-read) apply universally regardless of multi-session enablement.
 
@@ -2613,3 +2567,4 @@ Other skills **read** the manifest (never write). Available data:
 | Last scan results | `scan_state.findings_by_capability` |
 
 **Staleness:** If `generated` is >24 hours old, consuming skills should log a warning but proceed. The manifest is advisory, not blocking. If the manifest is missing entirely, skills fall back to direct filesystem scanning (the old behavioral approach).
+

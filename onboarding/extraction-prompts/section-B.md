@@ -2,11 +2,6 @@
 title: Section B — Who You Are (extraction prompt)
 type: extraction-prompt
 status: ready
-created: 2026-04-25
-updated: 2026-04-25
-parent_plan: 71-claude-foundations-engine-v2
-sub_plan: 01-schemas-and-onboarder-contract
-task: T-9
 section: B
 extraction_mode: transcript
 q_ids: [B-1, B-2, B-3, B-4, B-5]
@@ -20,10 +15,8 @@ on Section B's transcript. The bootstrap engine substitutes the four
 the extraction model. Output is strict JSON conforming to the schema
 declared at the bottom of this file.
 
-Source template: Research C §3 (verbal-first onboarding — per-section
-extraction pipeline). Q-ID set: `B-1`, `B-2`, `B-3`, `B-4`, `B-5`
-(canonical lock per `onboarder-design.md` §10 and
-`q-field-map.json:direct_qs.B-*`).
+Q-ID set: `B-1`, `B-2`, `B-3`, `B-4`, `B-5` (canonical lock per
+`onboarder-design.md` §10 and `q-field-map.json:direct_qs.B-*`).
 
 ---
 
@@ -163,10 +156,10 @@ OUTPUT — strict JSON, no commentary, no markdown fences.
 - **Output sink.** Model output is appended to
   `~/.claude/onboarding/extraction-output-B.json` (atomic
   tmp+rename). Confidence + source-span entries also append to
-  `~/.claude/onboarding/bootstrap-log.jsonl` per task T-10's audit
+  `~/.claude/onboarding/bootstrap-log.jsonl` per the engine's audit
   contract.
 - **Archetype handoff.** B-section transcripts are also fed to
-  `archetype-inference.sh` (T-7a) after extraction completes; that
+  `archetype-inference.sh` after extraction completes; that
   pass writes `U.architect.prior_seed` and seeds
   `U.vault.canonical_file_types[]`. The extraction pass here does NOT
   populate `U.architect.prior_seed` — leave it for the inference
@@ -174,5 +167,4 @@ OUTPUT — strict JSON, no commentary, no markdown fences.
 - **Industry-neutral framing.** Examples in the prompt body intentionally
   span four archetypes (consultant — engagement / client; developer —
   repository / deploy; writer — essay / draft; academic — paper /
-  citation) so the model does not anchor on one. Same posture as the
-  T-7 design doc.
+  citation) so the model does not anchor on one.

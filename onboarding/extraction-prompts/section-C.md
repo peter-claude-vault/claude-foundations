@@ -2,11 +2,6 @@
 title: Section C — Your Knowledge System (extraction prompt)
 type: extraction-prompt
 status: ready
-created: 2026-04-25
-updated: 2026-04-25
-parent_plan: 71-claude-foundations-engine-v2
-sub_plan: 01-schemas-and-onboarder-contract
-task: T-9
 section: C
 extraction_mode: transcript
 q_ids: [C-1, C-2, C-3, C-4]
@@ -20,10 +15,8 @@ on Section C's transcript. The bootstrap engine substitutes the four
 the extraction model. Output is strict JSON conforming to the schema
 declared at the bottom of this file.
 
-Source template: Research C §3 (verbal-first onboarding — per-section
-extraction pipeline). Q-ID set: `C-1`, `C-2`, `C-3`, `C-4` (canonical
-lock per `onboarder-design.md` §10 and
-`q-field-map.json:direct_qs.C-*`).
+Q-ID set: `C-1`, `C-2`, `C-3`, `C-4` (canonical lock per
+`onboarder-design.md` §10 and `q-field-map.json:direct_qs.C-*`).
 
 ---
 
@@ -87,7 +80,7 @@ RULES
 5. ARRAY CAP. `U.vault.canonical_file_types[]` has no hard cap from
    the design doc, but practically: keep entries the user names
    explicitly; do not invent types. The archetype-inference pass
-   (T-7a) appends archetype-derived seeds AFTER this extraction
+   appends archetype-derived seeds AFTER this extraction
    runs — this prompt should NOT pre-populate types it didn't hear.
    `U.system.opt_outs[]` is a conditional append (see C-3 cardinality
    note below); cap not applicable.
@@ -177,15 +170,15 @@ OUTPUT — strict JSON, no commentary, no markdown fences.
   "missing_required": [], "follow_up": null }`. The model is not
   invoked. Resumption when a vault is later created re-runs Section
   C from scratch.
-- **C-3 idempotency.** T-10 `bootstrap-schemas.sh` is responsible for
+- **C-3 idempotency.** `bootstrap-schemas.sh` is responsible for
   the de-duplicated append on `U.system.opt_outs[]`. The model emits
   the single-element array; the engine merges. Do not require the
   model to read prior state.
 - **Archetype handoff.** C-section transcripts feed
-  `archetype-inference.sh` (T-7a) alongside Section B. That pass
+  `archetype-inference.sh` alongside Section B. That pass
   appends archetype-derived entries to
   `U.vault.canonical_file_types[]`. The extraction pass here populates
   only what the user named; the inference pass handles the seeds.
 - **Industry-neutral framing.** Examples in the prompt body span four
   archetypes (consultant, developer, writer, academic) so the model
-  does not anchor on one. Same posture as the T-7 design doc.
+  does not anchor on one.
