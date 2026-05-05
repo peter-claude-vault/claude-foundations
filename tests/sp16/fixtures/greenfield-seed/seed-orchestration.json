@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "platform": "darwin-launchd",
+  "jobs": [],
+  "tripwires": [],
+  "observability": {
+    "morning_brief_staleness_h": 48,
+    "librarian_staleness_h": 24,
+    "sessionstart_banner_staleness_h": 24,
+    "filename_epoch_parsing": true
+  }
+}

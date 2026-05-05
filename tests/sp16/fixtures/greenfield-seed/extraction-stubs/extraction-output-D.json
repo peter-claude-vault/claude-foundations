@@ -1,0 +1,10 @@
+{
+  "section_id": "D",
+  "populated": {
+    "U.behavioral.autonomy": "balanced",
+    "U.architect.prior_seed": "engagement-quality, stakeholder-coverage, deliverable-cadence",
+    "U.behavioral.hook_preferences.notification_style": "digest"
+  },
+  "confidence": {},
+  "source_spans": {}
+}

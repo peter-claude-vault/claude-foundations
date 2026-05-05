@@ -1,0 +1,19 @@
+{
+  "section_id": "A",
+  "populated": {
+    "U.identity.name": "Alex Rivera",
+    "U.identity.email": "alex.rivera@synthetic.example",
+    "U.system.timezone": "America/New_York",
+    "U.paths.vault_root": "{{TEST_VAULT_ROOT}}",
+    "U.vault.root": "{{TEST_VAULT_ROOT}}",
+    "U.tools.calendar": "google-calendar",
+    "U.tools.messaging[]": ["slack"],
+    "U.tools.email": "outlook",
+    "U.tools.transcription": "granola",
+    "U.tools.tasks": "asana",
+    "U.tools.dev_env": "vscode",
+    "U.vault.tag_prefix_archetype": "consultant"
+  },
+  "confidence": {},
+  "source_spans": {}
+}

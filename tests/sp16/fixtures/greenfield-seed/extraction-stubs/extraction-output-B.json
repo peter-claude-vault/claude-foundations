@@ -1,0 +1,23 @@
+{
+  "section_id": "B",
+  "populated": {
+    "U.identity.role": "Director",
+    "U.identity.organization": "Synthetic Holdings Inc.",
+    "U.identity.industry": "Generic Sector",
+    "U.identity.seniority": "Senior",
+    "U.projects.active[]": [
+      {"name": "Northstar", "status": "active", "tag_prefix": "northstar/"},
+      {"name": "Brightline", "status": "active", "tag_prefix": "brightline/"}
+    ],
+    "U.people[]": [
+      {"name": "Priya Vasquez", "role": "Partner", "relationship": "executive sponsor"},
+      {"name": "Jordan Liu", "role": "Senior Associate", "relationship": "workstream lead"},
+      {"name": "Tomás Kuria", "role": "Client COO", "relationship": "primary stakeholder"}
+    ],
+    "U.behavioral.cadence_default": "weekly steering committee",
+    "U.vault.default_audience": "joint"
+  },
+  "confidence": {},
+  "source_spans": {},
+  "raw_transcript": "I always lead with the business outcome before the mechanics. I never start a steering committee without a written read-ahead."
+}

@@ -1,0 +1,19 @@
+{
+  "section_id": "C",
+  "populated": {
+    "U.vault.organizational_method": "engagement-based",
+    "U.vault.has_structured_projects": true,
+    "U.vault.architecture_doc": "Vault Architecture.md",
+    "U.vault.is_fresh": true,
+    "U.vault.canonical_file_types[]": [
+      "meeting-note",
+      "deliverable",
+      "engagement",
+      "stakeholder",
+      "reference"
+    ]
+  },
+  "confidence": {},
+  "source_spans": {},
+  "raw_transcript": "I always organize the vault by engagement. I never let stakeholder context drift away from the project root."
+}

@@ -1,0 +1,16 @@
+{
+  "identity": {},
+  "paths": {},
+  "tools": {"messaging": []},
+  "vault": {},
+  "projects": {"active": []},
+  "people": [],
+  "behavioral": {"hook_preferences": {}},
+  "backlog": {},
+  "architect": {},
+  "system": {
+    "schema_version": "1.1.0",
+    "opt_outs": [],
+    "phases_completed": ["A", "B", "C", "D", "E"]
+  }
+}
