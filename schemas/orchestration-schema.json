@@ -16,7 +16,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "enabled", "schedule", "command", "log_path", "idle_watchdog_sec"],
+        "required": ["id", "enabled", "schedule", "command", "idle_watchdog_sec"],
         "properties": {
           "id": {
             "type": "string",
@@ -37,7 +37,9 @@
                   "minute": { "type": "integer", "minimum": 0, "maximum": 59 },
                   "dow": {
                     "type": "array",
-                    "items": { "type": "integer", "minimum": 0, "maximum": 6 }
+                    "items": { "type": "integer", "minimum": 0, "maximum": 6 },
+                    "maxItems": 1,
+                    "description": "Single launchd Weekday (0=Sunday, 6=Saturday). Renderer reads dow[0]; multi-element arrays are rejected to match runtime semantics."
                   }
                 }
               },
