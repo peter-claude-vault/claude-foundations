@@ -1,0 +1,60 @@
+{
+  "$schema_doc": "Connector pipeline template — SP14 T-12. Declares MCP calls + write target + processor invocation as DATA, not CODE. Generic — no Peter-isms. Wraps SP13 T-11 ingestor (skills/meeting-note-ingestor-granola) for the processor step. Consumed by connectors/runner.sh + connector-runtime.plist.tmpl when a `connectors[]` entry has default_pipeline_template_id == 'granola-meetings'.",
+  "id": "granola-meetings",
+  "version": "1.0.0",
+  "connector_id": "granola",
+  "mcp_server": "claude_ai_Granola",
+  "ingestor_signature": "skills/meeting-note-ingestor-granola/SKILL.md (SP13 T-11 wrapper around skills/meeting-note-ingestor/ingest.sh --format granola)",
+  "mcp_calls": [
+    {
+      "step": 1,
+      "tool": "mcp__claude_ai_Granola__list_meetings",
+      "purpose": "List all Granola meetings since the last successful pipeline run (or 24h window for first-run).",
+      "args_template": {
+        "since": "{last_run_iso_or_24h_ago}",
+        "include_pending": false
+      },
+      "stdout_shape": "array of {id, title, date, participants, has_transcript}"
+    },
+    {
+      "step": 2,
+      "tool": "mcp__claude_ai_Granola__get_meeting_transcript",
+      "purpose": "Per meeting from step 1 with has_transcript=true: fetch the transcript JSON.",
+      "args_template": {
+        "meeting_id": "{step_1_iter.id}"
+      },
+      "stdout_shape": "{transcript_text, segments[], metadata{participants,title,date}}",
+      "iteration": "for each step_1 result with has_transcript=true"
+    }
+  ],
+  "target_vault_path_template": "Inbox/Meetings/{date}-{slug}.md",
+  "target_filename_slug_source": "step_2.metadata.title (slugified: lowercase, alphanum + hyphen)",
+  "processor_skill": "meeting-note-ingestor-granola",
+  "processor_invocation": {
+    "skill_path": "skills/meeting-note-ingestor-granola",
+    "argv_template": [
+      "--granola-json",
+      "{step_2_tmp_json_path}",
+      "--output",
+      "{target_vault_path}"
+    ],
+    "expected_rc": 0
+  },
+  "failure_mode_default": "block-and-log",
+  "failure_mode_overrides": {
+    "step_2_no_transcript": "no-op"
+  },
+  "frontmatter_required_fields": [
+    "type: meeting-note",
+    "date",
+    "meeting_title",
+    "attendees",
+    "tags",
+    "processed",
+    "updated"
+  ],
+  "schedule_default": "0 6 * * *",
+  "schedule_rationale": "Daily 06:00 — captures yesterday's meetings before user starts day. Matches Architecture A pattern from R3 §5.",
+  "tier": "tier-1-reference-template",
+  "tier_doc": "docs/connectors-schema.md §SP12-coordination + §connector-job-derivation"
+}

@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Connector Pipeline Template",
+  "description": "Schema for SP14 connector pipeline templates (e.g., granola-meetings.json). Declares MCP calls + write target + processor invocation as DATA, not CODE. Consumed by connectors/runner.sh when a connectors[] entry's default_pipeline_template_id matches.",
+  "type": "object",
+  "required": ["id", "version", "connector_id", "mcp_server", "mcp_calls", "target_vault_path_template", "processor_skill", "failure_mode_default"],
+  "properties": {
+    "$schema_doc": {
+      "type": "string",
+      "description": "Free-form documentation note explaining the template's purpose."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Pipeline template id; matches catalog.json#/[]/default_pipeline_template_id."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "connector_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Connector this template wires (matches connectors[].id)."
+    },
+    "mcp_server": {
+      "type": "string",
+      "description": "MCP server identifier (e.g., 'claude_ai_Granola')."
+    },
+    "ingestor_signature": {
+      "type": "string",
+      "description": "Reference to the SP13 ingestor function/skill the processor wraps. Documentation field — runtime resolution is via processor_invocation.skill_path."
+    },
+    "mcp_calls": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["step", "tool", "purpose"],
+        "properties": {
+          "step": {"type": "integer", "minimum": 1},
+          "tool": {"type": "string"},
+          "purpose": {"type": "string"},
+          "args_template": {"type": "object"},
+          "stdout_shape": {"type": "string"},
+          "iteration": {"type": "string"}
+        }
+      }
+    },
+    "target_vault_path_template": {
+      "type": "string",
+      "description": "Template with {placeholder} tokens (e.g., 'Inbox/Meetings/{date}-{slug}.md')."
+    },
+    "target_filename_slug_source": {
+      "type": "string",
+      "description": "Where the {slug} value comes from."
+    },
+    "processor_skill": {
+      "type": "string",
+      "description": "Skill name (matches connectors[].processor_skill)."
+    },
+    "processor_invocation": {
+      "type": "object",
+      "required": ["skill_path", "argv_template"],
+      "properties": {
+        "skill_path": {"type": "string"},
+        "argv_template": {"type": "array", "items": {"type": "string"}},
+        "expected_rc": {"type": "integer"}
+      }
+    },
+    "failure_mode_default": {
+      "type": "string",
+      "enum": ["block-and-log", "auto-disable", "backoff-retry", "skip-and-log", "no-op"]
+    },
+    "failure_mode_overrides": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "frontmatter_required_fields": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "schedule_default": {"type": "string"},
+    "schedule_rationale": {"type": "string"},
+    "tier": {"type": "string"},
+    "tier_doc": {"type": "string"}
+  }
+}
