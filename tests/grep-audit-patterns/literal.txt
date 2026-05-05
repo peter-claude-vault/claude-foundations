@@ -8,31 +8,3 @@ peter-claude-vault
 /Users/peter
 Obsidian Vault
 Documents/Obsidian Vault
-Artefact
-artefact.com
-artefact-bd
-artefact-dashboard
-artefact-daily-logs
-CDMO
-CDMO DDX
-DDX
-L'Oreal
-L'Oréal
-LOreal
-loreal
-L Oreal
-LUXE
-Walmart
-Ara Partners
-gold-layer-qa
-b2c-renovate
-bar-dashboard
-1p-acquisition
-amazon-creator-directory
-luxe-creator-analytics
-com.librarian-scan
-com.architect-analysis
-com.dispatch-onetime
-com.claude-mem
-Claude-Foundations-Burner
-petertiktinsky.linux
