@@ -48,7 +48,8 @@ Direct invocation:
 | `--templates-dir <path>` | `templates/` | Foundation-repo templates dir holding `prd-template.md` / `context-template.md` / `updates-template.md`. |
 | `--pf-lib <path>` | `lib/provenance-frontmatter.sh` | SP12 T-2 provenance helper; sourced (never forked). |
 | `--gate-lib <path>` | `onboarding/lib/three-step-gate.sh` | SP12 T-1 audit-log resolver; sourced for `gate_audit_path`. |
-| `--plan-tree <path>` | `~/.claude-plans/71-claude-foundations-engine-v2` | Plan tree root for dev-mode SP12 T-2 done-marker check. Production adopters skip the check automatically (no plan tree → no-op). |
+| `--explainer-lib <path>` | `skills/seed-projects/explainer-fragments.sh` | T-9 inline explainer fragments lib; sourced for `emit_full_block`. |
+| `--plan-tree <path>` | `~/.claude-plans/71-claude-foundations-engine-v2` | Plan tree root for dev-mode SP12 T-2 + T-11 done-marker checks. Production adopters skip both checks automatically (no plan tree → no-op). |
 | `--audience <enum>` | `self` | Audience field for generated frontmatter. |
 | `--accept-on-eof` | off | Treat stdin EOF as default `apply` (smoke-test convenience). |
 
@@ -155,6 +156,70 @@ walker pattern (T-9: explainer fragments anchored to per-block tags;
 T-10: non-project H3s under `## Doesn’t fit any project`); the natural
 promotion point for a shared library helper is T-9 close-out.
 
+## Architecture decisions (T-9)
+
+### Reference, do not rewrite — explainer fragments cite the model doc
+
+`docs/personalization-model.md` (SP12 T-11) is the single source of truth
+for the universal / combined / personal classification framing. T-9 ships
+a sibling lib (`explainer-fragments.sh`) that emits short (1-3 sentence)
+per-tag and per-frontmatter-field explainer snippets at the gate_preview
+surface; each snippet **cites** the model doc rather than re-stating its
+content. If the framing evolves in v2.1, the doc updates and every T-9
+explainer automatically points at the latest version — no rewrite churn
+across two surfaces.
+
+### Fire-point — gate_preview, not gate_apply
+
+The explainer block fires inside `print_batched_preview`, immediately
+after the run-summary header and BEFORE the per-file diff bundle. The
+flow is:
+
+1. Run header (approved plan, vault root, candidates, files staged)
+2. **`emit_full_block` → "Why these tags + frontmatter?" section**
+3. Per-file diff bundle (one `diff -u` per staged file vs target)
+4. "what happens next" UX block
+5. `[a/e/s/b]` prompt
+
+Per spec L297: the user reads BEFORE confirming. Firing after `apply`
+would explain the artifact post-hoc — too late to inform the apply
+decision.
+
+### API shape — three public functions, prefix-bucket dedup
+
+`explainer-fragments.sh` exports three functions:
+
+| Function | Input | Output |
+|---|---|---|
+| `emit_tag_explainer <tag>` | one tag (e.g., `#engagement/alpha`) | 1-3 sentences explaining what the tag does + a `docs/personalization-model.md` §-reference |
+| `emit_field_explainer <field>` | one frontmatter field (`type` / `tags` / `generated_by` / ...) | 1-3 sentences (or silent skip for unknown fields) |
+| `emit_full_block [stage_root]` | optional stage tree path | Composes the full "Why these tags + frontmatter?" section: scans the stage tree for tags + fields actually present, dedupes tags by prefix bucket, dispatches to per-tag and per-field emitters |
+
+Tag dispatch is prefix-aware: `#project`, `#project/alpha`, `#project/beta`
+all bucket to the `#project` explainer (one entry per prefix bucket per
+preview). Same for `#engagement/*`, `#scope/*`, etc. Unknown tags get a
+generic "carried through from your import plan" fallback that still
+points to the model doc. Unknown frontmatter fields silent-skip (avoid
+polluting the explainer with fields we have no documented opinion on).
+
+### Coverage — anchored to actual generated content
+
+When `stage_root` is supplied (the seed.sh call site passes
+`$TG_STAGE_DIR/seed-projects`), `emit_full_block` scans every `.md` file
+under it for frontmatter tags and field names; the explainer surfaces
+ONLY what's actually present in this run's staging tree. Per spec L291
+("anchored to actual generated files"). When `stage_root` is omitted,
+`emit_full_block` falls back to the union of all known tags + fields —
+useful for unit-testing the lib in isolation without a staging tree.
+
+### SP12 T-11 done-marker pre-flight
+
+`seed.sh` checks `~/.claude-plans/71-claude-foundations-engine-v2/12-auto-authored-personalization/state/T-11.done`
+before sourcing the explainer lib. Dev-mode only (production adopters
+have no plan tree → check is no-op). Mirrors the SP12 T-2 done-marker
+check from T-8: each cross-sub-plan dependency surfaces its own
+hard-block at the seed.sh entry boundary.
+
 ## Output schema (`schema_version: sp13-t8/1`)
 
 T-8's surface produces a manifest JSON during staging (consumed by
@@ -209,10 +274,13 @@ Manifest shape (transient; not written to disk past the staging tmpdir):
     sha_before, sha_after, note}`) governs every audit record T-8 emits.
 - **Pre-write validation:** `bash -n` clean on `seed.sh`; Python
   `ast.parse` clean on `seed.py`. SP12 T-2 done-marker presence check
-  (dev-mode only). Approved-plan path exists + carries `sp13-t6/1`.
+  (dev-mode only; provenance frontmatter contract). SP12 T-11 done-marker
+  presence check (dev-mode only; `docs/personalization-model.md` for the
+  T-9 explainer to cite). Approved-plan path exists + carries `sp13-t6/1`.
   Templates exist at `templates/{prd,context,updates}-template.md`.
   `pf_emit` callable via sourced `lib/provenance-frontmatter.sh`.
   `gate_audit_path` callable via sourced `lib/three-step-gate.sh`.
+  `emit_full_block` callable via sourced `explainer-fragments.sh`.
   After staging, every staged file is a non-empty regular file before
   the user prompt fires (parser failure short-circuits the run; no
   preview ever surfaces a half-staged tree).
@@ -234,6 +302,8 @@ Manifest shape (transient; not written to disk past the staging tmpdir):
 - **T-7 approved import plan** (`onboarding/seed-content/state/approved-import-plan.md`) — required input (`schema_version: sp13-t6/1`).
 - **SP12 `lib/provenance-frontmatter.sh`** — required (sourced; never forked). T-2 done-marker checked in dev-mode.
 - **SP12 `onboarding/lib/three-step-gate.sh`** — required for `gate_audit_path` resolver.
+- **SP12 `docs/personalization-model.md`** — required as a doc citation target for the T-9 inline explainer. T-11 done-marker checked in dev-mode.
+- **`skills/seed-projects/explainer-fragments.sh`** (T-9) — required (sourced) for the gate_preview "Why these tags + frontmatter?" block.
 - **`templates/{prd,context,updates}-template.md`** — required (rendered with `{{var}}` substitution).
 - **`python3`** on PATH (stdlib only — no pip installs).
 - **`jq`** — used in `seed.sh` for manifest queries + audit-log JSONL emission.
@@ -244,7 +314,7 @@ Manifest shape (transient; not written to disk past the staging tmpdir):
 
 | Task | Consumes | Notes |
 |---|---|---|
-| **T-9** explainer-fragments.sh | This skill's per-write events | NEXT. Per-tag + per-frontmatter explainer block emitted at gate_preview surface (the same surface this skill renders). T-9 hooks into the `print_batched_preview` UX layer; pre-existing block content is preserved. |
+| **T-9** explainer-fragments.sh | This skill's `print_batched_preview` UX layer | SHIPPED 2026-05-04. `seed.sh` sources `explainer-fragments.sh` and calls `emit_full_block` at the top of `print_batched_preview` (BEFORE the per-file diff bundle). Each per-tag and per-frontmatter-field snippet cites `docs/personalization-model.md` rather than re-stating the universal / combined / personal classification framing. |
 | **T-10** inbox-disposition.sh | `## Doesn’t fit any project` H3 sections from same approved plan | Reuses the H3 walker pattern T-8 introduced. Routes non-project candidates to vault `Inbox/` with `disposition: <type>` + tag (`#unclassified` / `#reference` / `#meeting`). |
 | **T-13** retrofit.sh | Templates + provenance contract | Retrofit reuses T-8's PRD/Context/Updates renderer with `mode: retrofit` (skip-creating-new-projects-when-existing-detected; merge-into-existing-instead). |
 

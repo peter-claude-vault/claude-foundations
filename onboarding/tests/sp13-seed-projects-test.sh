@@ -252,7 +252,12 @@ fi
 # pre-flight passes the dev-mode check).
 DEV_PLAN_TREE="$TMPROOT/devplan"
 mkdir -p "$DEV_PLAN_TREE/12-auto-authored-personalization/state"
-echo "T-2 done synthetic" > "$DEV_PLAN_TREE/12-auto-authored-personalization/state/T-2.done"
+echo "T-2 done synthetic"  > "$DEV_PLAN_TREE/12-auto-authored-personalization/state/T-2.done"
+# T-9 (2026-05-04) added a SP12 T-11 done-marker pre-flight check —
+# seed.sh sources explainer-fragments.sh which cites
+# docs/personalization-model.md (SP12 T-11). All happy-path invocations
+# below need both markers present in the synthetic plan tree.
+echo "T-11 done synthetic" > "$DEV_PLAN_TREE/12-auto-authored-personalization/state/T-11.done"
 
 # Vault root for tests.
 VAULT_ROOT="$TMPROOT/vault"

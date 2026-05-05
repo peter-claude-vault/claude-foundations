@@ -63,6 +63,7 @@ DEFAULT_APPROVED_PLAN="$REPO_ROOT/onboarding/seed-content/state/approved-import-
 DEFAULT_TEMPLATES_DIR="$REPO_ROOT/templates"
 DEFAULT_PF_LIB="$REPO_ROOT/lib/provenance-frontmatter.sh"
 DEFAULT_GATE_LIB="$REPO_ROOT/onboarding/lib/three-step-gate.sh"
+DEFAULT_EXPLAINER_LIB="$SCRIPT_DIR/explainer-fragments.sh"
 DEFAULT_PLAN_TREE="$HOME/.claude-plans/71-claude-foundations-engine-v2"
 
 APPROVED_PLAN="$DEFAULT_APPROVED_PLAN"
@@ -70,6 +71,7 @@ VAULT_ROOT=""
 TEMPLATES_DIR="$DEFAULT_TEMPLATES_DIR"
 PF_LIB="$DEFAULT_PF_LIB"
 GATE_LIB="$DEFAULT_GATE_LIB"
+EXPLAINER_LIB="$DEFAULT_EXPLAINER_LIB"
 PLAN_TREE="$DEFAULT_PLAN_TREE"
 ACCEPT_ON_EOF="${SEED_PROJECTS_ACCEPT_ON_EOF:-0}"
 PROMPT_CHOICE="${SEED_PROJECTS_PROMPT_CHOICE:-}"
@@ -82,8 +84,8 @@ seed.sh — SP13 T-8 Stage 3 PRD/Context/Updates scaffolder.
 
 Usage:
   seed.sh --vault-root PATH [--approved-plan PATH] [--templates-dir PATH]
-          [--pf-lib PATH] [--gate-lib PATH] [--plan-tree PATH]
-          [--audience SELF|TEAM|...] [--accept-on-eof]
+          [--pf-lib PATH] [--gate-lib PATH] [--explainer-lib PATH]
+          [--plan-tree PATH] [--audience SELF|TEAM|...] [--accept-on-eof]
 
 Required:
   --vault-root PATH        Vault root; project folders land under here.
@@ -93,9 +95,11 @@ Defaults:
   --templates-dir          $DEFAULT_TEMPLATES_DIR
   --pf-lib                 $DEFAULT_PF_LIB
   --gate-lib               $DEFAULT_GATE_LIB
+  --explainer-lib          $DEFAULT_EXPLAINER_LIB
   --plan-tree              $DEFAULT_PLAN_TREE
-                           (used only to detect dev-mode SP12 T-2 done-marker;
-                            absent → check is a no-op for production adopters)
+                           (used only to detect dev-mode SP12 T-2 + T-11
+                            done-markers; absent → checks are no-op for
+                            production adopters)
   --audience               self
 
 Env hooks (test-only):
@@ -120,6 +124,7 @@ while [ $# -gt 0 ]; do
     --templates-dir) TEMPLATES_DIR="$2"; shift 2 ;;
     --pf-lib) PF_LIB="$2"; shift 2 ;;
     --gate-lib) GATE_LIB="$2"; shift 2 ;;
+    --explainer-lib) EXPLAINER_LIB="$2"; shift 2 ;;
     --plan-tree) PLAN_TREE="$2"; shift 2 ;;
     --audience) AUDIENCE="$2"; shift 2 ;;
     --accept-on-eof) ACCEPT_ON_EOF=1; shift ;;
@@ -201,6 +206,37 @@ if [ ! -f "$GATE_LIB" ]; then
 fi
 # shellcheck disable=SC1090
 . "$GATE_LIB" || { printf 'seed.sh: failed to source gate lib\n' >&2; exit 2; }
+
+# ----- pre-flight: SP12 T-11 done-marker (dev-mode only — T-9 anchor) -----
+
+SP12_T11_RELPATH="12-auto-authored-personalization/state/T-11.done"
+SP12_T11_DONE="$PLAN_TREE/$SP12_T11_RELPATH"
+if [ -d "$PLAN_TREE" ] && [ ! -f "$SP12_T11_DONE" ]; then
+  cat <<EOF >&2
+seed.sh: HARD ABORT — SP12 T-11 done-marker not found.
+  Expected at: $SP12_T11_DONE
+  Plan tree:   $PLAN_TREE
+
+SP12 T-11 ships docs/personalization-model.md, which the T-9 inline
+explainer block cites at the gate_preview surface (see
+explainer-fragments.sh). The block is a hard pre-flight requirement:
+without the doc, the citations would dangle.
+
+Production adopters with no plan tree skip this check automatically —
+the absence of the plan tree directory is the signal that this is a
+runtime adopter context, not a Plan 71 dev session.
+EOF
+  exit 2
+fi
+
+# ----- pre-flight: explainer-fragments lib (T-9) -----
+
+if [ ! -f "$EXPLAINER_LIB" ]; then
+  printf 'seed.sh: explainer-lib not found: %s\n' "$EXPLAINER_LIB" >&2
+  exit 2
+fi
+# shellcheck disable=SC1090
+. "$EXPLAINER_LIB" || { printf 'seed.sh: failed to source explainer lib\n' >&2; exit 2; }
 
 # ----- staging -----
 
@@ -296,6 +332,16 @@ print_batched_preview() {
   printf 'Project candidates: %s   Files staged: %s\n' \
     "$CANDIDATES_COUNT" "$WRITES_COUNT" >&2
   printf '\n' >&2
+
+  # T-9 inline explainer — fires BEFORE the diff bundle so the user reads
+  # what the tags + frontmatter mean before reading the per-file diffs and
+  # the [a/e/s/b] prompt. Anchored to actual staged content (scans the
+  # stage tree for tags + fields actually present); cites
+  # docs/personalization-model.md rather than rewriting the universal /
+  # combined / personal classification framing.
+  emit_full_block "$TG_STAGE_DIR/seed-projects" >&2
+  printf '\n' >&2
+
   printf 'For each candidate, %d files (PRD.md / Context.md / Updates.md)\n' 3 >&2
   printf 'will be written under the candidate proposed_path. Below is the\n' >&2
   printf 'diff per file (full content for new files; unified diff against\n' >&2
