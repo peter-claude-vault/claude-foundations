@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Connector Catalog",
+  "description": "Curated catalog of 8-12 known MCP connectors shipped with Plan 71 v2.1. Consumed by SP14 wizard Beat 2 (multiselect) for role-based pre-checked recommendations and per-connector defaults. Top-level is an array of catalog entries.",
+  "type": "array",
+  "minItems": 8,
+  "maxItems": 12,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "display_name", "description", "category", "role_recommendations", "default_schedule", "failure_mode_catalog_ref"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "description": "Stable connector identifier; matches user-manifest.json#/connectors[].id slot."
+      },
+      "display_name": {
+        "type": "string",
+        "minLength": 2,
+        "description": "Human-friendly name shown in wizard UI."
+      },
+      "description": {
+        "type": "string",
+        "minLength": 10,
+        "description": "One-line what-this-connector-does for the wizard's catalog grid."
+      },
+      "mcp_server_id": {
+        "type": ["string", "null"],
+        "description": "Anthropic-bundled MCP server id (e.g., 'claude_ai_Granola'), or null when only a community-MCP exists."
+      },
+      "category": {
+        "type": "string",
+        "enum": ["calendar", "messaging", "email", "tasks", "notes", "dev", "design", "transcription", "storage"],
+        "description": "Single category for grid grouping + search filtering."
+      },
+      "role_recommendations": {
+        "type": "array",
+        "minItems": 0,
+        "items": {
+          "type": "string",
+          "enum": ["consultant", "solo-founder", "engineer", "researcher", "operator"]
+        },
+        "uniqueItems": true,
+        "description": "Roles for which this connector is pre-checked in Beat 2 multiselect. Empty array = never pre-checked."
+      },
+      "default_pipeline_template_id": {
+        "type": ["string", "null"],
+        "description": "Group D pipeline template id (e.g., 'granola-meetings' for T-12); null if no default pipeline ships in v2.1."
+      },
+      "default_schedule": {
+        "type": "string",
+        "description": "Cron-style schedule string (e.g., '0 6 * * *') OR the literal 'manual' (no auto-runs; user invokes on demand)."
+      },
+      "default_target_vault_path": {
+        "type": ["string", "null"],
+        "description": "Vault subdirectory where pulled data lands (e.g., 'Inbox/Meetings/' for Granola). Null when connector writes outside the vault."
+      },
+      "failure_mode_catalog_ref": {
+        "type": "string",
+        "enum": ["block-and-log", "auto-disable", "backoff-retry", "skip-and-log", "no-op"],
+        "description": "Reference to docs/connectors-schema.md failure-mode catalog. Default 'block-and-log' per R-43."
+      },
+      "default_processor_skill": {
+        "type": ["string", "null"],
+        "description": "Skill that processes pulled data (e.g., 'meeting-processor' for Granola). Null when connector is read-only data source."
+      }
+    }
+  }
+}
