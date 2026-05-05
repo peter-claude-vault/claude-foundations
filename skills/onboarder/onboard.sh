@@ -14,6 +14,15 @@
 #     -> ux/section-e.sh -> checkpoint --section E
 #   Finalize
 #     -> bootstrap-schemas.sh                       (consumes all 5 -> writes manifest)
+#   Section F (deterministic, SP16 T-2)
+#     -> 7 SP12 auto-author surfaces (1, 2, 3, 4, 5, 6, 9)
+#     -> infer-vault-structure/orchestrate.sh (if SEED_CONTENT_PATH set)
+#     Section F runs AFTER finalize because the surfaces read the populated
+#     user-manifest that bootstrap-schemas.sh writes (and surface-2 needs
+#     the SP11 done-marker that bootstrap-schemas.sh writes via
+#     seed_memories()). SP16 spec L48 said "before run_finalize"; corrected
+#     to "after run_finalize" in SP16 Session 2 (data-flow integrity
+#     overrides defective spec text per feedback_hard_constraint_overrides_spec).
 #
 # Section D's Pass 2 invokes initial-job-setup.sh internally (not by this runner)
 # unless opt-out #9 is elected. See SKILL.md ## Initial-Job-Setup Integration.
@@ -31,6 +40,13 @@
 #                 the first incomplete phase.
 #   --section X   Runs only the indicated section (and its checkpoint), then
 #                 exits. Useful for re-running a single section after a quit.
+#                 X ∈ {a,b,c,d,e,f}.
+#
+#   Section F (auto-author + content-seeding) flags (SP16 T-2):
+#   --skip-auto-author             Skip the 7 SP12 auto-author surfaces.
+#   --skip-content-seeding         Skip the SP13 four-stage orchestrator.
+#   --auto-author-only-surfaces=<csv>
+#                                  Run a subset of surfaces (e.g. 1,3,5).
 #
 # Exit codes:
 #   0   Pipeline complete (all 5 sections + bootstrap-schemas committed).
@@ -92,6 +108,9 @@ EXTRACTION_STUB=""
 DRY_RUN=0
 SEED_CONTENT=""
 SEED_BATCH_CAP=100
+SKIP_AUTO_AUTHOR=0
+SKIP_CONTENT_SEEDING=0
+AUTO_AUTHOR_ONLY_SURFACES=""
 
 usage() {
   sed -n '2,50p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -130,6 +149,20 @@ while [ $# -gt 0 ]; do
       shift
       [ $# -gt 0 ] || { echo "onboard.sh: --seed-batch-cap requires N" >&2; exit 2; }
       SEED_BATCH_CAP="$1"
+      ;;
+    --skip-auto-author)
+      SKIP_AUTO_AUTHOR=1
+      ;;
+    --skip-content-seeding)
+      SKIP_CONTENT_SEEDING=1
+      ;;
+    --auto-author-only-surfaces)
+      shift
+      [ $# -gt 0 ] || { echo "onboard.sh: --auto-author-only-surfaces requires <csv>" >&2; exit 2; }
+      AUTO_AUTHOR_ONLY_SURFACES="$1"
+      ;;
+    --auto-author-only-surfaces=*)
+      AUTO_AUTHOR_ONLY_SURFACES="${1#--auto-author-only-surfaces=}"
       ;;
     -h|--help)
       usage
@@ -244,6 +277,132 @@ run_finalize() {
 }
 
 # -----------------------------------------------------------------------------
+# Section F — auto-author personalization surfaces + content-seeding (SP16 T-2).
+# -----------------------------------------------------------------------------
+# Invokes the seven SP12 Tier-1 surfaces (1, 2, 3, 4, 5, 6, 9) in declared
+# order, then the SP13 four-stage infer-vault chain via SP16 T-1's
+# orchestrate.sh — but only if Stage-1 INGEST produced a seed-content IR.
+#
+# Idempotency: each surface and the orchestrator are skipped on re-run if
+# their done-marker exists under $SECTION_F_STATE_DIR.
+#
+# Test affordance: SURFACE_DIR_OVERRIDE (env) re-roots the surface dispatch
+# at a synthetic stub directory for hermetic Section-F orchestration tests.
+
+SECTION_F_STATE_DIR="${SECTION_F_STATE_DIR:-$INPUTS_DIR/section-f-state}"
+SECTION_F_SURFACE_DIR="${SURFACE_DIR_OVERRIDE:-$ONBOARDING_ROOT/auto-author}"
+SECTION_F_ORCHESTRATE_SH="${ORCHESTRATE_SH_OVERRIDE:-$REPO_ROOT/skills/infer-vault-structure/orchestrate.sh}"
+
+section_f_surfaces_in_order() {
+  # Echo the per-run surface list (default 7; subset honored).
+  if [ -n "$AUTO_AUTHOR_ONLY_SURFACES" ]; then
+    echo "$AUTO_AUTHOR_ONLY_SURFACES" | tr ',' ' '
+  else
+    echo "1 2 3 4 5 6 9"
+  fi
+}
+
+resolve_surface_script() {
+  # $1 = surface number; echoes resolved path, or empty if not found.
+  local n="$1"
+  local cand
+  for cand in "$SECTION_F_SURFACE_DIR"/surface-${n}-*.sh; do
+    [ -f "$cand" ] || continue
+    printf '%s\n' "$cand"
+    return 0
+  done
+  return 1
+}
+
+run_section_f_surface() {
+  local n="$1"
+  local marker="$SECTION_F_STATE_DIR/surface-${n}.done"
+  if [ -f "$marker" ]; then
+    log "Section F surface-${n} — SKIP (marker exists)"
+    return 0
+  fi
+
+  local script_path
+  script_path="$(resolve_surface_script "$n" || true)"
+  if [ -z "$script_path" ]; then
+    log "Section F surface-${n} — script not found under $SECTION_F_SURFACE_DIR; skipping"
+    return 0
+  fi
+
+  log "Section F surface-${n} — RUN ($(basename "$script_path"))"
+  bash "$script_path" \
+    --user-manifest "$USER_MANIFEST" \
+    --auto-apply --skip-preview </dev/null
+  local rc=$?
+  if [ "$rc" -ne 0 ]; then
+    log "Section F surface-${n} FAILED rc=$rc"
+    return "$rc"
+  fi
+  printf 'surface-%s\t%s\n' "$n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$marker"
+  return 0
+}
+
+run_section_f_orchestrator() {
+  if [ ! -x "$SECTION_F_ORCHESTRATE_SH" ]; then
+    log "Section F orchestrator — script not found/executable: $SECTION_F_ORCHESTRATE_SH; skipping"
+    return 0
+  fi
+  if [ ! -f "$SEED_CONTENT_PATH" ]; then
+    log "Section F orchestrator — SEED_CONTENT_PATH not a file: $SEED_CONTENT_PATH; skipping"
+    return 0
+  fi
+
+  # T-1 carry-forward: review-gate.sh's interactive prompt blocks indefinitely
+  # on non-TTY stdin unless one of these env vars is set. Default-apply on the
+  # documented `/onboard --seed-content <vault>` greenfield UX.
+  if [ ! -t 0 ] \
+     && [ -z "${REVIEW_GATE_ACCEPT_ON_EOF:-}" ] \
+     && [ -z "${REVIEW_GATE_PROMPT_CHOICE:-}" ]; then
+    REVIEW_GATE_ACCEPT_ON_EOF=1
+    export REVIEW_GATE_ACCEPT_ON_EOF
+  fi
+
+  local slug="${ONBOARDER_SEED_SLUG:-onboarding}"
+  log "Section F orchestrator — RUN (slug=$slug, ir=$SEED_CONTENT_PATH)"
+  # No --resume: orchestrate.sh's per-stage state/<stage>.done markers handle
+  # idempotency unconditionally; --resume only affects the review-pending
+  # halt-message path, not stage-skipping.
+  "$SECTION_F_ORCHESTRATE_SH" \
+    --slug "$slug" \
+    --ir-path "$SEED_CONTENT_PATH"
+  local rc=$?
+  if [ "$rc" -ne 0 ]; then
+    log "Section F orchestrator FAILED rc=$rc"
+    return "$rc"
+  fi
+  return 0
+}
+
+run_section_f() {
+  log "Section F — auto-author personalization + content-seeding orchestrator"
+  [ "$DRY_RUN" -eq 1 ] && { emit_handoff "would-run section-f"; return 0; }
+
+  mkdir -p "$SECTION_F_STATE_DIR"
+
+  if [ "$SKIP_AUTO_AUTHOR" -eq 1 ]; then
+    log "Section F — auto-author surfaces SKIPPED via --skip-auto-author"
+  else
+    local n
+    for n in $(section_f_surfaces_in_order); do
+      run_section_f_surface "$n" || return $?
+    done
+  fi
+
+  if [ "$SKIP_CONTENT_SEEDING" -eq 1 ]; then
+    log "Section F — content-seeding orchestrator SKIPPED via --skip-content-seeding"
+  elif [ -n "${SEED_CONTENT_PATH:-}" ]; then
+    run_section_f_orchestrator || return $?
+  else
+    log "Section F — no SEED_CONTENT_PATH; content-seeding orchestrator skipped"
+  fi
+}
+
+# -----------------------------------------------------------------------------
 # Main control flow.
 # -----------------------------------------------------------------------------
 
@@ -270,6 +429,12 @@ if [ -n "$SEED_CONTENT" ]; then
       --ir "$seed_dir/ir.jsonl" \
       --batch-cap "$SEED_BATCH_CAP"
   fi
+
+  # Wire IR path forward to Section F's content-seeding orchestrator.
+  if [ -s "$seed_dir/ir.jsonl" ]; then
+    SEED_CONTENT_PATH="$seed_dir/ir.jsonl"
+    export SEED_CONTENT_PATH
+  fi
 fi
 
 # Single-section mode.
@@ -279,7 +444,8 @@ if [ -n "$ONLY_SECTION" ]; then
     A) run_section_a ;;
     B|C|D) run_two_pass_section "$uc" ;;
     E) run_section_e ;;
-    *) echo "onboard.sh: --section must be one of a|b|c|d|e" >&2; exit 2 ;;
+    F) run_section_f ;;
+    *) echo "onboard.sh: --section must be one of a|b|c|d|e|f" >&2; exit 2 ;;
   esac
   exit 0
 fi
@@ -306,6 +472,12 @@ else
 fi
 
 run_finalize
+
+# Section F runs post-finalize: surfaces require the populated user-manifest
+# that bootstrap-schemas.sh writes (and surface-2 needs the SP11 done-marker
+# bootstrap-schemas writes via seed_memories()). See run_section_f docstring
+# for the spec-defect correction history.
+run_section_f
 
 log "Pipeline complete."
 exit 0
