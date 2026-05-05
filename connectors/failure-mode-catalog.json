@@ -1,0 +1,38 @@
+{
+  "$schema_doc": "Catalog of per-mode failure-handling policies consumed by connectors/runner.sh per SP14 T-16. Each connector entry in user-manifest.json#/connectors[].failure_mode references one of these mode names; the runner consults this catalog at start-time (with jq -e validation) and applies the matched policy on per-run errors.",
+  "schema_version": "1.0.0",
+  "modes": {
+    "block-and-log": {
+      "description": "Default for every connector per R-43. Halt the connector's pull on any non-transient error; log to ~/.claude/connectors/logs/<id>.log; surface in STATUS.md. No retry; no auto-disable; user investigates manually.",
+      "retry_attempts": 0,
+      "auto_disable": false,
+      "rc_to_launchd": 1
+    },
+    "auto-disable": {
+      "description": "OAuth-token hard-expiry pattern (Zapier-style). On auth-detected failure (T-15 detector pattern-matches 401/403/invalid_grant), flip auth_status:expired + suspend the connector's launchd plist. User reconnects via /connectors reconnect <id>. Delegates entirely to T-15 helper.",
+      "retry_attempts": 0,
+      "auto_disable": true,
+      "rc_to_launchd": 0
+    },
+    "backoff-retry": {
+      "description": "Rate-limit pattern. On rate-limit response (HTTP 429 or MCP equivalent), retry with exponential backoff: 1s, 2s, 4s, 8s, 16s. Cap 5 attempts. After cap exhausted: skip-and-log this run; reset on next scheduled cycle.",
+      "retry_attempts": 5,
+      "backoff_intervals_sec": [1, 2, 4, 8, 16],
+      "auto_disable": false,
+      "rc_to_launchd": 0
+    },
+    "skip-and-log": {
+      "description": "Transient-error pattern. On network/transient error (timeout, DNS, 5xx), retry 3 times with backoff (1s, 2s, 4s) then log + skip this run. Next scheduled cycle retries fresh.",
+      "retry_attempts": 3,
+      "backoff_intervals_sec": [1, 2, 4],
+      "auto_disable": false,
+      "rc_to_launchd": 0
+    },
+    "no-op": {
+      "description": "Source-empty pattern. On empty source-data response (no new items since last_run), log status='no-op' + items_pulled=0. NOT an error; rc=0 to launchd; processor_skill not invoked.",
+      "retry_attempts": 0,
+      "auto_disable": false,
+      "rc_to_launchd": 0
+    }
+  }
+}
