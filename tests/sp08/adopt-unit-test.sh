@@ -10,7 +10,7 @@
 #   AC3 — Scaffold 5 directories + symlink; idempotent on re-run
 #   AC4 — CLAUDE.md substituted from manifest identity; no placeholder tokens remain
 #   AC5 — Output Contract block present per CLAUDE.md Skill Creation Rules
-#   AC6 — --retrofit-existing explicitly rejected with v2.1 deferral message
+#   AC6 — --retrofit-existing delegates to retrofit.sh (SP13 T-13, v2.1)
 #   AC7 — Round-trip time <2 min on Alex archetype fixture
 #
 # Plus structural / validation guardrails:
@@ -354,36 +354,63 @@ test_ac5_output_contract_present() {
 }
 
 # ----------------------------------------------------------------------------
-# AC6 — --retrofit-existing explicitly rejected with v2.1 deferral message
+# AC6 — --retrofit-existing delegates to retrofit.sh (SP13 T-13, v2.1)
 # ----------------------------------------------------------------------------
+#
+# v2.0.0 contract: refused with exit 22 + v2.1 deferral message.
+# v2.1.0 contract (SP13 T-13): adopt.sh exec's into retrofit.sh which walks
+# the existing vault as IR source and surfaces a collision matrix. With
+# --dry-run, retrofit.sh renders the matrix and exits 0 without vault writes.
+# We exercise the dry-run path here so the test stays hermetic + stub-only.
 
-test_ac6_retrofit_rejected() {
+test_ac6_retrofit_delegated() {
   local env_lines run_root claude_home plans_home rc out
-  env_lines=$(setup_run "AC6" "Alex" "true" "yes")
+  env_lines=$(setup_run "AC6" "Alex" "false" "yes")
   claude_home=$(echo "$env_lines" | sed -n '1p')
   run_root=$(echo "$env_lines" | sed -n '2p')
   plans_home=$(echo "$env_lines" | sed -n '3p')
 
-  out=$(CLAUDE_HOME="$claude_home" HOME="$run_root" PLANS_HOME="$plans_home" bash "$ADOPT_SH" --retrofit-existing 2>&1)
+  # Pre-seed the vault with at least one .md file so retrofit.sh has IR
+  # input. setup_run wrote vault.root into user-manifest.json; create the
+  # vault root + a single seed file the walker will pick up.
+  local vault_root
+  vault_root=$(jq -r '.vault.root' "$claude_home/user-manifest.json")
+  mkdir -p "$vault_root"
+  cat > "$vault_root/seed-note.md" <<'EOF'
+---
+title: seed
+---
+
+# Seed note
+
+Single fixture file so retrofit.sh has at least one IR record for stub
+clustering.
+EOF
+
+  out=$(CLAUDE_HOME="$claude_home" HOME="$run_root" PLANS_HOME="$plans_home" \
+    ANTHROPIC_API_KEY="" VOYAGE_API_KEY="" \
+    bash "$ADOPT_SH" --retrofit-existing --dry-run --retrofit-cap 100 2>&1)
   rc=$?
 
-  if [ "$rc" = "22" ]; then
-    pass "AC6 --retrofit-existing → exit 22"
+  if [ "$rc" = "0" ]; then
+    pass "AC6 --retrofit-existing --dry-run → exit 0 (delegated)"
   else
-    fail "AC6 --retrofit-existing → exit 22" "got rc=$rc"
+    fail "AC6 --retrofit-existing --dry-run → exit 0" "got rc=$rc; output: $out"
   fi
 
-  if echo "$out" | grep -qiE 'v2\.1|deferred|retrofit'; then
-    pass "AC6 v2.1 deferral message present in stderr"
+  # Collision matrix appendix should be present in dry-run stdout.
+  if echo "$out" | grep -q '## Collision matrix'; then
+    pass "AC6 dry-run rendered Collision matrix"
   else
-    fail "AC6 v2.1 deferral message present in stderr" "output: $out"
+    fail "AC6 dry-run rendered Collision matrix" "output head: $(echo "$out" | head -10)"
   fi
 
-  # No scaffolding occurred.
-  if [ ! -d "$run_root/vault/Inbox" ]; then
-    pass "AC6 no scaffolding on retrofit refusal"
+  # Dry-run path must NOT scaffold the fresh-vault skeleton (Inbox/, Logs/, etc.)
+  # — adopt.sh's exec into retrofit.sh short-circuits that.
+  if [ ! -d "$vault_root/Inbox" ]; then
+    pass "AC6 dry-run did NOT trigger fresh-vault scaffold (no Inbox/)"
   else
-    fail "AC6 no scaffolding on retrofit refusal" "Inbox/ exists"
+    fail "AC6 dry-run did NOT trigger fresh-vault scaffold" "Inbox/ exists at $vault_root"
   fi
 }
 
@@ -741,11 +768,10 @@ test_exit_code_matrix() {
   # 10: missing CLAUDE_HOME (covered above).
   # 20: vault.is_fresh = false (AC1).
   # 21: user-only without --force-install (AC2).
-  # 22: --retrofit-existing (AC6).
+  # 22: RETIRED 2026-05-05 — SP13 T-13 closed the v2.1 retrofit deferral.
+  #     adopt.sh now delegates --retrofit-existing to retrofit.sh.
   # 30: empty vault.root (T-VAULT-ROOT-EMPTY).
-  # All covered by other tests. This is a meta-assertion that no two refusal
-  # classes share an exit code (they don't by construction).
-  pass "T-EXIT-CODE-MATRIX 5 distinct refusal classes mapped to 5 distinct exit codes (10/20/21/22/30)"
+  pass "T-EXIT-CODE-MATRIX 4 active refusal classes mapped to distinct exit codes (10/20/21/30); 22 retired post-T-13"
 }
 
 # ----------------------------------------------------------------------------
@@ -774,7 +800,7 @@ test_ac3_scaffold_directories
 test_ac3_idempotent_rerun
 test_ac4_substitute_identity
 test_ac5_output_contract_present
-test_ac6_retrofit_rejected
+test_ac6_retrofit_delegated
 test_ac7_round_trip_time
 test_preflight_unset_claude_home
 test_preflight_missing_manifest

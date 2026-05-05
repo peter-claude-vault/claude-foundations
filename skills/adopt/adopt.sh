@@ -14,38 +14,67 @@
 #   10 pre-flight failure (CLAUDE_HOME unset, user-manifest missing/invalid)
 #   20 vault.is_fresh != true (refusal)
 #   21 state user-only without --force-install (refusal)
-#   22 --retrofit-existing flag (v2.1 deferral refusal)
+#   22 (RETIRED 2026-05-05; now delegated to retrofit.sh — SP13 T-13)
 #   30 vault.root missing/empty in manifest
 #   40 scaffolding write failure (block-and-log)
 #   50 post-write validation failure (placeholder tokens remain)
 
 set -uo pipefail
 
-ADOPT_VERSION="1.0.0-mvp"
+ADOPT_VERSION="2.1.0"
 
 # ---- argv parse -------------------------------------------------------------
 
 FORCE_INSTALL=0
 RETROFIT_EXISTING=0
+RETROFIT_PATH=""
+RETROFIT_FORWARD_ARGS=""
 DRY_RUN=0
 VERBOSE=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --force-install)     FORCE_INSTALL=1 ;;
-    --retrofit-existing) RETROFIT_EXISTING=1 ;;
+    --retrofit-existing)
+      RETROFIT_EXISTING=1
+      # Optional positional sub-tree path: if next arg is non-empty and not
+      # a flag (doesn't start with --), consume it as the retrofit scope.
+      if [ $# -gt 1 ] && [ -n "${2:-}" ]; then
+        case "$2" in
+          --*) ;;  # next is a flag; no positional consumed
+          *)
+            RETROFIT_PATH="$2"
+            shift
+            ;;
+        esac
+      fi
+      ;;
+    --retrofit-cap|--retrofit-keep-threshold|--seed-batch-cap)
+      # Forwarded verbatim to retrofit.sh.
+      [ $# -gt 1 ] || { printf 'adopt: %s requires a value\n' "$1" >&2; exit 10; }
+      RETROFIT_FORWARD_ARGS="$RETROFIT_FORWARD_ARGS $1 $2"
+      shift
+      ;;
     --dry-run)           DRY_RUN=1 ;;
     --verbose|-v)        VERBOSE=1 ;;
     --version)           echo "$ADOPT_VERSION"; exit 0 ;;
     --help|-h)
       cat <<'EOF'
 Usage: adopt.sh [--force-install] [--dry-run] [--verbose]
+                [--retrofit-existing [<path>] [--retrofit-cap N]
+                                     [--retrofit-keep-threshold F]
+                                     [--seed-batch-cap N]]
 
 Fresh-vault MVP scaffolding. Reads $CLAUDE_HOME/user-manifest.json and
 scaffolds the vault root with 5 directories, seeded CLAUDE.md, empty
 System Backlog.md, and canonical_file_types skeleton.
 
-Refuses with exit 22 if --retrofit-existing is passed (v2.1 deferral).
+With --retrofit-existing, delegates to skills/adopt/retrofit.sh which
+walks the existing vault as IR source, augments the import plan with a
+collision matrix appendix, and runs the SP13 Stage 2/3 pipeline against
+truly-new candidates only. Optional positional <path> after
+--retrofit-existing scopes to a vault sub-tree.
+
 EOF
       exit 0
       ;;
@@ -66,15 +95,62 @@ log_err() {
   printf 'adopt: ERROR: %s\n' "$1" >&2
 }
 
-# ---- early refusal: --retrofit-existing -------------------------------------
+# ---- delegate: --retrofit-existing -> retrofit.sh ---------------------------
+#
+# SP13 T-13 (2026-05-05) closes the SP08 v2.1-deferred surface. retrofit.sh
+# walks the existing vault as IR source, augments the import plan with a
+# collision matrix appendix, and runs Stage 2/3 against truly-new candidates
+# only. retrofit.sh handles its own pre-flight (vault-root + sub-tree
+# validation, cap check); we forward the user's intent.
 
 if [ "$RETROFIT_EXISTING" = "1" ]; then
-  log_err "--retrofit-existing is deferred to v2.1."
-  log_err "MVP supports fresh-vault adoption only. See spec.md SP08 §scope-cuts:"
-  log_err "  Retrofit is a high-touch edge case; v2.1 will ship a collision matrix."
-  log_err "Workaround: copy your existing vault content into the scaffolded skeleton"
-  log_err "manually after a fresh /adopt run."
-  exit 22
+  RETROFIT_SH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/retrofit.sh"
+  if [ ! -f "$RETROFIT_SH" ]; then
+    log_err "retrofit.sh missing at $RETROFIT_SH"
+    log_err "Re-install foundation-repo or check your installation."
+    exit 10
+  fi
+
+  # Resolve vault.root from user-manifest.json. retrofit.sh requires it as
+  # --vault-root; we pre-resolve here so we can fail with the same exit-10
+  # diagnostic if user-manifest is missing/invalid (consistent with the
+  # fresh-vault pre-flight below).
+  if [ -z "${CLAUDE_HOME:-}" ]; then
+    log_err "CLAUDE_HOME is unset; cannot resolve vault.root for retrofit"
+    exit 10
+  fi
+  RETROFIT_USER_MANIFEST="$CLAUDE_HOME/user-manifest.json"
+  if [ ! -f "$RETROFIT_USER_MANIFEST" ]; then
+    log_err "user-manifest.json missing at $RETROFIT_USER_MANIFEST"
+    log_err "Run /onboard BEFORE /adopt --retrofit-existing."
+    exit 10
+  fi
+  if ! jq -e . "$RETROFIT_USER_MANIFEST" >/dev/null 2>&1; then
+    log_err "user-manifest.json is not valid JSON: $RETROFIT_USER_MANIFEST"
+    exit 10
+  fi
+  RETROFIT_VAULT_ROOT=$(jq -r '.vault.root // ""' "$RETROFIT_USER_MANIFEST")
+  if [ -z "$RETROFIT_VAULT_ROOT" ]; then
+    log_err "vault.root is empty in user-manifest.json"
+    log_err "Run /onboard --section a to set the vault root path."
+    exit 30
+  fi
+  # Expand ~/ if present (bash 3.2 safe substring slice).
+  if [ "${RETROFIT_VAULT_ROOT:0:2}" = "~/" ]; then
+    RETROFIT_VAULT_ROOT="$HOME/${RETROFIT_VAULT_ROOT:2}"
+  fi
+
+  RETROFIT_INVOCATION="$RETROFIT_SH --vault-root $RETROFIT_VAULT_ROOT"
+  if [ -n "$RETROFIT_PATH" ]; then
+    RETROFIT_INVOCATION="$RETROFIT_INVOCATION $RETROFIT_PATH"
+  fi
+  if [ "$DRY_RUN" = "1" ]; then
+    RETROFIT_INVOCATION="$RETROFIT_INVOCATION --dry-run"
+  fi
+  RETROFIT_INVOCATION="$RETROFIT_INVOCATION$RETROFIT_FORWARD_ARGS"
+
+  log_info "delegating to retrofit.sh: $RETROFIT_INVOCATION"
+  exec bash $RETROFIT_INVOCATION
 fi
 
 # ---- pre-flight: CLAUDE_HOME ------------------------------------------------

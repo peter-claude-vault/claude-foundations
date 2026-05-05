@@ -1,8 +1,8 @@
 ---
 name: adopt
-description: Fresh-vault MVP scaffolding skill. Reads $CLAUDE_HOME/user-manifest.json (SP07 Phase 1 output) and scaffolds a minimum-viable Obsidian vault at vault.root — 5 directories, seeded CLAUDE.md with identity substitution, empty System Backlog.md, canonical_file_types skeleton. Refuses if vault.is_fresh != true, refuses if foundation install state is user-only without --force-install, refuses --retrofit-existing (deferred to v2.1). Idempotent — re-running is a no-op except post-write validation.
+description: Vault adoption skill. Two modes — (1) fresh-vault scaffolding from $CLAUDE_HOME/user-manifest.json (5 directories, seeded CLAUDE.md, empty System Backlog.md, canonical_file_types skeleton), (2) retrofit-existing for populated vaults (delegates to retrofit.sh — walks vault as IR source, renders collision matrix, runs Stage 2/3 against truly-new candidates with provenance idempotency). Refuses if vault.is_fresh != true (in fresh mode) or foundation install state is user-only without --force-install. Idempotent in both modes.
 disable-model-invocation: false
-argument-hint: "[--force-install] [--dry-run] [--verbose] [--retrofit-existing(v2.1)]"
+argument-hint: "[--force-install] [--dry-run] [--verbose] [--retrofit-existing [<path>] [--retrofit-cap N] [--retrofit-keep-threshold F] [--seed-batch-cap N]]"
 ---
 
 # /adopt — Fresh-Vault MVP
@@ -19,9 +19,11 @@ the Alex archetype fixture.
 | Command | Behavior |
 |---------|----------|
 | `/adopt` | Default: scaffold the fresh-vault skeleton at `$CLAUDE_HOME/user-manifest.json:vault.root` |
-| `/adopt --dry-run` | Print scaffolding plan to stdout; zero filesystem mutations |
+| `/adopt --dry-run` | Fresh-vault: print scaffolding plan to stdout; zero filesystem mutations. With `--retrofit-existing`: render collision matrix to stdout; skip gate + Stage 3. |
 | `/adopt --force-install` | Bypass user-only state refusal (foundation install incomplete or absent) |
-| `/adopt --retrofit-existing` | **Refused (exit 22)** — retrofit deferred to v2.1; emits guidance |
+| `/adopt --retrofit-existing [<path>]` | **Retrofit mode (SP13 T-13, v2.1).** Delegates to `retrofit.sh`. Walks the existing vault (or `<path>` sub-tree) as IR source; augments import plan with collision matrix appendix; runs Stage 2/3 against truly-new candidates only. Idempotent via `generated_by: retrofit@v2.1.0` provenance. |
+| `/adopt --retrofit-existing --retrofit-cap N` | Refuse retrofit if walked corpus exceeds N records (default 500). Forces sub-tree scoping on large vaults. |
+| `/adopt --retrofit-existing --retrofit-keep-threshold F` | Modal-parent-dir ratio above which reference/meeting candidates are `keep` rather than `move-to` (default 0.8). |
 | `/adopt --verbose` | Verbose progress output (info-level diagnostics to stdout) |
 | `/adopt --version` | Print scaffolding-script version and exit |
 
@@ -161,12 +163,85 @@ The user sees the exit code + diagnostic and chooses whether to re-run
 `/adopt` (typical case after a transient mkdir/jq failure) or address the
 failure manually (re-run `/onboard --section a` to fix `vault.root`, etc.).
 
+## Retrofit-Existing Flow (SP13 T-13, v2.1)
+
+When `--retrofit-existing` is passed, `adopt.sh` delegates (via `exec`) to
+`skills/adopt/retrofit.sh`. The fresh-vault flow above does NOT fire. Retrofit
+is a separate orchestrator that:
+
+1. **Resolves vault root + optional sub-tree.** Reads
+   `$CLAUDE_HOME/user-manifest.json:vault.root` and (when supplied) the
+   positional `<path>` argument. Sub-tree must be under vault root.
+2. **Walks vault tree** for known text formats (.md / .txt / .markdown /
+   .vtt) honoring `<vault>/.seedignore` if present.
+3. **Idempotency filter:** files whose first 20 lines contain
+   `^generated_by: retrofit@` are skipped (already retrofitted in a prior
+   run). Surfaced in the matrix as `idempotency-skip` rows.
+4. **Cap check** (default 500 records). Refuses with guidance if exceeded —
+   forces sub-tree scoping on large vaults rather than producing an
+   unwieldy matrix.
+5. **Stage 1 IR build** (T-3 `ir-builder.sh` unmodified).
+6. **Stage 2** (T-4 `cluster.sh` + T-5 `propose-taxonomy.sh` unmodified).
+7. **Retrofit prefilter** (`retrofit-prefilter.py` — T-13 layer):
+   - Drops type=project candidates whose `proposed_path` is already
+     scaffolded (folder exists with PRD.md / Context.md / Updates.md).
+     Stage 3 will not re-scaffold these.
+   - Annotates each candidate with a retrofit-action enum
+     (`scaffold` / `keep` / `move-to` / `inbox` / `review`).
+   - Applies the keep-heuristic: reference/meeting candidates whose
+     source items already cluster under a coherent existing parent
+     (≥ keep-threshold ratio; default 0.8) are marked `keep` rather
+     than `move-to`. **Default-keep posture protects user-organized
+     vault structure from LLM-proposed reorganization.**
+8. **T-6 import-plan.sh** (unmodified) renders the import plan from the
+   filtered taxonomy.
+9. **Collision matrix appendix** (`retrofit-collision-matrix.sh` — T-13
+   layer): appends `## Collision matrix — N existing files` H2 to
+   `import-plan.md`. Paginated at 50 rows when total > 50. Schema_version
+   anchor `sp13-t6/1` preserved (additive append).
+10. **Dry-run path** (`--dry-run`): cat augmented plan to stdout; SKIP
+    Stage 2.5, T-7 gate, and Stage 3 entirely. No vault writes.
+11. **SP15 Stage 2.5 consultation** when present at
+    `skills/infer-vault-structure/stage-2-5-consultation.sh`. Gracefully
+    falls through if absent.
+12. **T-7 review-gate.sh** (unmodified) — user reviews the augmented plan
+    + collision matrix, takes [a]pply / [e]dit / [s]kip / [b]ort.
+13. **Stage 3** (T-8 `seed.sh` + transitively T-10 `inbox-disposition.sh`,
+    both unmodified) on apply. Filtered taxonomy ensures only truly-new
+    candidates scaffold.
+
+### Retrofit safety guarantees
+
+- **Existing user files are never overwritten** outside the SP12 3-step
+  gate's preview/diff cycle. Already-scaffolded folders are dropped from
+  the plan; the matrix surfaces them as `keep` rows (advisory).
+- **`move-to` and `merge-into` are advisory only.** Spec §`Stage 3`
+  retrofit defers full auto-merge to v2.x. The matrix surfaces moves
+  for user manual action; Stage 3 only scaffolds NEW project folders.
+- **Idempotency is structural.** Re-running `/adopt --retrofit-existing`
+  on a partially-retrofitted vault skips files marked
+  `generated_by: retrofit@*` at intake — they don't even reach Stage 1.
+- **`.seedignore` honored.** Same filter as fresh-seed onboarding.
+- **Cap refusal preserves UX.** Default 500 — forces sub-tree scoping
+  on multi-thousand-file vaults rather than producing an unwieldy matrix.
+
+### Action enum surfaced in the collision matrix
+
+| Action | Trigger | Stage 3 effect |
+|---|---|---|
+| `scaffold` | type=project, proposed_path NOT already-scaffolded | seed.sh creates new folder + PRD/Context/Updates triad |
+| `keep` | type=project already-scaffolded; OR reference/meeting where ≥80% of source items share a parent dir | NO-OP (advisory) |
+| `move-to` | reference/meeting where source items scatter | Advisory; user must move manually post-gate |
+| `inbox` | type=unclassified | inbox-disposition.sh routes to `<vault>/Inbox/` |
+| `review` | low_confidence (<0.5) OR unknown type | Advisory; user must triage at the gate |
+| `idempotency-skip` | file already carries `generated_by: retrofit@*` | Not walked at all |
+
 ## Hard Rules
 
-1. **No retrofit, ever (in MVP).** `--retrofit-existing` is structurally
-   refused with exit 22. Any retrofit attempt is a v2.1 scope item; the
-   MVP path forward for users with existing vaults is manual content copy
-   into a fresh-scaffolded skeleton.
+1. **Retrofit ships in v2.1 (SP13 T-13).** `--retrofit-existing`
+   delegates to `retrofit.sh` which preserves the conservative-scope
+   contract: only NEW project folders are auto-scaffolded; moves and
+   merges are advisory in the matrix. Fresh-vault behavior is unchanged.
 2. **Idempotent on re-run.** Every directory create is `mkdir -p`. Every
    symlink is `ln -sfn`. Every file seed is `[ ! -f ]` guarded. Re-running
    `/adopt` on a populated vault must NOT overwrite any user content. The
@@ -198,7 +273,7 @@ failure manually (re-run `/onboard --section a` to fix `vault.root`, etc.).
 - `/backlog-triage` — first user of the seeded `System Backlog.md`
 - `/new-plan` — first user of the seeded `Plans/` symlink surface
 - `librarian` — ongoing hygiene over the seeded vault structure (R-29/R-30/R-31)
-- `/adopt --retrofit-existing` (v2.1, deferred) — collision matrix flow
+- `/adopt --retrofit-existing` (SP13 T-13, v2.1) — collision matrix flow via `retrofit.sh`
 
 ## Cross-Plan References
 
@@ -212,6 +287,10 @@ failure manually (re-run `/onboard --section a` to fix `vault.root`, etc.).
 | vault-schema (1.0.0) | `~/Code/claude-stem/schemas/vault-schema.json` |
 | Template | `~/Code/claude-stem/templates/vault-claude-md-template.md` |
 | Scaffolding script | `~/Code/claude-stem/skills/adopt/adopt.sh` |
-| Test harness | `~/Code/claude-stem/tests/sp08/adopt-unit-test.sh` |
+| Retrofit orchestrator | `~/Code/claude-stem/skills/adopt/retrofit.sh` |
+| Retrofit prefilter | `~/Code/claude-stem/skills/adopt/retrofit-prefilter.py` |
+| Retrofit matrix renderer | `~/Code/claude-stem/skills/adopt/retrofit-collision-matrix.{sh,py}` |
+| Test harness (fresh-vault) | `~/Code/claude-stem/tests/sp08/adopt-unit-test.sh` |
+| Test harness (retrofit) | `~/Code/claude-stem/tests/sp13/sp13-retrofit-existing-test.sh` |
 | R-37 single-deliverable rationale | CLAUDE.md (Plan 71 working agreement) |
 | R-55 live-mutation containment | CLAUDE.md (foundation-repo target enforced) |
