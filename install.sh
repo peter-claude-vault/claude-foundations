@@ -555,7 +555,7 @@ if [ "$APPLY_MODE" != "1" ]; then
     {"step": 2, "op": "cp", "target": "$CLAUDE_HOME/hooks/", "source": "$SOURCE_REPO/hooks/{*.sh,*.md,MANIFEST.txt}", "rationale": "ship hook entry-points + MANIFEST"},
     {"step": 3, "op": "cp", "target": "$CLAUDE_HOME/hooks/lib/", "source": "$SOURCE_REPO/lib/", "rationale": "ship hook libs (lib/ to hooks/lib/ translation per A4)"},
     {"step": 4, "op": "cp", "target": "$CLAUDE_HOME/hooks/config/", "source": "$SOURCE_REPO/hooks/config/", "rationale": "ship hook config JSON"},
-    {"step": 5, "op": "cp", "target": "$CLAUDE_HOME/skills/", "source": "$SOURCE_REPO/skills/{8 named}/", "rationale": "ship 8 named skill subtrees recursively"},
+    {"step": 5, "op": "cp", "target": "$CLAUDE_HOME/skills/", "source": "$SOURCE_REPO/skills/{9 named}/", "rationale": "ship 9 named skill subtrees recursively (infer-vault-structure added v2.1.2 SP16 T-6 — Section F orchestrator + /adopt --retrofit-existing depend on it)"},
     {"step": 6, "op": "cp", "target": "$CLAUDE_HOME/onboarding/", "source": "$SOURCE_REPO/onboarding/", "rationale": "ship onboarding subtree"},
     {"step": 7, "op": "cp", "target": "$CLAUDE_HOME/orchestrator/", "source": "$SOURCE_REPO/orchestrator/", "rationale": "ship orchestrator subtree"},
     {"step": 8, "op": "cp", "target": "$CLAUDE_HOME/installer/", "source": "$SOURCE_REPO/installer/", "rationale": "ship installer subtree (G6 LABEL_PREFIX preserved transitively)"},
@@ -608,9 +608,11 @@ for f in "$SOURCE_REPO/hooks/config"/*.json; do
   cp $cp_clobber "$f" "$CLAUDE_HOME/hooks/config/" 2>/dev/null || true
 done
 
-# Step 5: skills/{8 dirs} → $CLAUDE_HOME/skills/
+# Step 5: skills/{9 dirs} → $CLAUDE_HOME/skills/
 # Slice tolerates absent skills (some land in later sub-plans); warn but proceed.
-for skill in librarian architect backlog-hygiene backlog-triage backlog-research morning-brief onboarder adopt; do
+# infer-vault-structure added v2.1.2 SP16 T-6: Section F orchestrator
+# (skills/onboarder/onboard.sh) + /adopt --retrofit-existing both depend on it.
+for skill in librarian architect backlog-hygiene backlog-triage backlog-research morning-brief onboarder adopt infer-vault-structure; do
   src="$SOURCE_REPO/skills/$skill"
   if [ ! -d "$src" ]; then
     warn "skill not present in foundation-repo source: $skill (deferred to its sub-plan)"

@@ -141,8 +141,9 @@ emit_pairs() {
     printf 'lib/%s\thooks/lib/%s\n' "$base" "$base"
   done
 
-  # skills/{8 named}/** (recursive within named dirs)
-  for skill in librarian architect backlog-hygiene backlog-triage backlog-research morning-brief onboarder adopt; do
+  # skills/{9 named}/** (recursive within named dirs)
+  # infer-vault-structure added v2.1.2 SP16 T-6 to mirror install.sh's 9-named scope.
+  for skill in librarian architect backlog-hygiene backlog-triage backlog-research morning-brief onboarder adopt infer-vault-structure; do
     d="$SOURCE_REPO/skills/$skill"
     [ -d "$d" ] || continue
     LC_ALL=C find "$d" -type f 2>/dev/null | LC_ALL=C sort | while IFS= read -r f; do

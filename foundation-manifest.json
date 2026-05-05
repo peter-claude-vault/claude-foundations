@@ -55,6 +55,12 @@
       "size": 4237
     },
     {
+      "mode": "0755",
+      "path": "hooks/lib/consultation-gate.sh",
+      "sha256": "f8ef2b5e8991f5289800fe86579c6163a180cfdfc8f98935f18eb77a03271512",
+      "size": 27138
+    },
+    {
       "mode": "0644",
       "path": "hooks/lib/dates.sh",
       "sha256": "05ede2056cc619bcadb600b89d0bfa72d91bceec31203785d8ee9e80844a2c6f",
@@ -81,8 +87,8 @@
     {
       "mode": "0755",
       "path": "hooks/lib/provenance-frontmatter.sh",
-      "sha256": "115cbaf9fa9db5037df41d04953d5b8f4d5281d6df8fbae82efd71f6e546dd76",
-      "size": 12354
+      "sha256": "a4dc155008ff542053b5023c329925340d26161504aab95b747ac759b7abf84f",
+      "size": 14441
     },
     {
       "mode": "0755",
@@ -224,9 +230,15 @@
     },
     {
       "mode": "0755",
+      "path": "installer/render-all-launchd.sh",
+      "sha256": "67470b202315f13bd51bae996aed0e38e8c8540365cdb55539f03d88505822af",
+      "size": 4835
+    },
+    {
+      "mode": "0755",
       "path": "installer/render-launchd.sh",
-      "sha256": "2c582e9ddaff8d94cf9933f5c3c46780ee977c45ed11615806c4d33a86970a45",
-      "size": 10233
+      "sha256": "83763f038a47dafe9ee7ffd44ece5258ba44f0693c8872effd29b814e2ca56fb",
+      "size": 15865
     },
     {
       "mode": "0644",
@@ -273,14 +285,14 @@
     {
       "mode": "0755",
       "path": "onboarding/auto-author/surface-3-vault-claude-md.sh",
-      "sha256": "a072e063d80bcb46e05244fd2396961f240de6195b570116ba9bb59e57ed2f3b",
-      "size": 15058
+      "sha256": "53a65fbe12d791b736c0647dcc5dc5141ce98b555115c07cc0595aeb6aa7e777",
+      "size": 27445
     },
     {
       "mode": "0755",
       "path": "onboarding/auto-author/surface-4-tag-prefixes.sh",
-      "sha256": "6262afb74dbea6543d48a07a742d62750d04b580d0e8bc095d506c7bc89e84f2",
-      "size": 10172
+      "sha256": "6a4eaeaf271bb34e2dcd420984bb233528c9b4e07713da7bb2a686639b045097",
+      "size": 28449
     },
     {
       "mode": "0755",
@@ -291,8 +303,8 @@
     {
       "mode": "0755",
       "path": "onboarding/auto-author/surface-6-frontmatter-enforce.sh",
-      "sha256": "e1635472898244cf95710ec92376d43cbf1c2c2e660c8754cc6f2cfc3430388f",
-      "size": 7606
+      "sha256": "8a41456abd98a179a355c6e1b6dc899ce493d9a202b7ff0b7520a56e25265982",
+      "size": 30830
     },
     {
       "mode": "0755",
@@ -311,6 +323,48 @@
       "path": "onboarding/checkpoint.sh",
       "sha256": "b4e19167eb2dcf0ac0c82e2d9d3a8bdef7852905a831ef3caff88da5c439db9c",
       "size": 7162
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/connectors/beats/beat-1-role.sh",
+      "sha256": "78dadfbe7974772477e63ebbc83f58238a398eef8d37568a598493916a99963c",
+      "size": 5141
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/connectors/beats/beat-2-multiselect.sh",
+      "sha256": "a789c33738ff462420181635fe1eaf1cfe8a7f8a55904a0c75d56da93d19b42f",
+      "size": 8511
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/connectors/beats/beat-3-schedule.sh",
+      "sha256": "a6ceac5f8b33ba5cf7dca88051305500dec54d5800894de6627e87d9effed196",
+      "size": 5976
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/connectors/beats/beat-4-oauth.sh",
+      "sha256": "4ca76eabfffc76c7f44016fbb1bdc5030412c10b2deeafb21fdcfac008e161c6",
+      "size": 9546
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/connectors/beats/final-gate.sh",
+      "sha256": "0e3c902b5ad39679cb445384b876ed7cc0fc621e7149a92165fb60875a1a2fad",
+      "size": 5223
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/connectors/catalog.json",
+      "sha256": "f731ee2c3a78d74e8b4c4e979ef16b271c7411831b4b55793db37d674558fb91",
+      "size": 5968
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/connectors/wizard.sh",
+      "sha256": "e3ef68167964a6c512bd5c969d541535a4bae990acae73e3803bda54d626ce8a",
+      "size": 2952
     },
     {
       "mode": "0644",
@@ -470,6 +524,24 @@
     },
     {
       "mode": "0755",
+      "path": "onboarding/lib/job-iterator.sh",
+      "sha256": "6647709916e83513588962873a31144375ce73e04cd31bb08cae7e6fd965039a",
+      "size": 5370
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/lib/mcp-registry-probe.sh",
+      "sha256": "1cd4bddf86440343e54e1c31daa9f9ef8edcd1a84ca442161358f5c2df652279",
+      "size": 9183
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/lib/settings-paths-probe.sh",
+      "sha256": "08f974ee7c77fb51840ff9ddcf422c4416026f7e1081467531457bee941661ea",
+      "size": 3901
+    },
+    {
+      "mode": "0755",
       "path": "onboarding/lib/three-step-gate.sh",
       "sha256": "a7903d74239efa4efaaf9b7c1efb00c768d0f806b1fa3a84d7cf1515d0018673",
       "size": 17151
@@ -553,6 +625,78 @@
       "size": 20569
     },
     {
+      "mode": "0644",
+      "path": "onboarding/seed-content/.seedignore.example",
+      "sha256": "91213d138c0a67fe02caf66ead0d255df61587f5ffb8412fadacfe616bef6526",
+      "size": 639
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/format-detector.sh",
+      "sha256": "0c9c397133414191e9074d1cee76f9001db407feaad2b22c671bea3e02783946",
+      "size": 1867
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/format-parsers/llm-export.sh",
+      "sha256": "9ca0d7c4bdabfd38e5d1e1cfb2341c6397013e53b628d48085f9e8c8ba782f70",
+      "size": 572
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/format-parsers/markdown.sh",
+      "sha256": "b3ab324c57da58b17484e5fc7ac524e10899407a3654010ef2303c00c6245521",
+      "size": 443
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/format-parsers/otter-vtt.sh",
+      "sha256": "f7a2edee1290234d16640caa84b3e5e1d06fee329f622a6bc4486b5910ac5790",
+      "size": 304
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/format-parsers/pdf.sh",
+      "sha256": "4f3c97d3c048825b22dd351ae0acded4051af48d996a0e884701ff9ae23c5bc4",
+      "size": 441
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/format-parsers/plaintext.sh",
+      "sha256": "e889baf13ca0f4c77e89ca24c3c145f7c6e4081ad33c2475b773d4f18a6a67a9",
+      "size": 177
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/format-parsers/word.sh",
+      "sha256": "a9536e4da37951451db3e76375fd9b35d39e57e996ea574e39f55da8f9374164",
+      "size": 551
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/format-parsers/zoom-transcript.sh",
+      "sha256": "8b38aedd8e5f1b7ce03e9e63d31e93993f681e33f1a28313de08935ecb0cae73",
+      "size": 358
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/intake.sh",
+      "sha256": "551fa15843475a4aacdd1c0c5778a92ba98a7bda6a5925232de06a6cfff0cf06",
+      "size": 2738
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/ir-builder.sh",
+      "sha256": "664fd12a4639cd617b2b19bcf71e9a60ac85dbb578991a11bc33d031d45f4f06",
+      "size": 3989
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/seed-content/seedignore-filter.sh",
+      "sha256": "ed3f11a785860ce82f987c478be0a4f775648a6f3018fedd7f8915aac31d0f51",
+      "size": 2140
+    },
+    {
       "mode": "0755",
       "path": "onboarding/tests/archetype-inference-test.sh",
       "sha256": "45f95ced75fe1c38b017f0e5f418d3040670f200b9dfcf4c5e6cd87738707292",
@@ -563,6 +707,12 @@
       "path": "onboarding/tests/grep-audit.sh",
       "sha256": "6b1831e747744df9fe761322328f218d10a03cb33772c6376f595e8521bcbfc4",
       "size": 5507
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/ir-builder-test.sh",
+      "sha256": "142c1a283da6105f5800329f4de9115cbeac97005ddb397cb65a27415ef4ae16",
+      "size": 9121
     },
     {
       "mode": "0755",
@@ -578,6 +728,90 @@
     },
     {
       "mode": "0755",
+      "path": "onboarding/tests/seed-content-intake-test.sh",
+      "sha256": "5ce19b01cc3ef2a9c0828861bd9f297ab7b90a90b8300be7c95ab71691950774",
+      "size": 5468
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/seedignore-filter-test.sh",
+      "sha256": "29fae8115d7ec8af7ac31a62c18ed65bb6bd368d21152f34a9b15acfec3f8caa",
+      "size": 5870
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-cluster-test.sh",
+      "sha256": "27c0dfdc457bd5fa033f7c967e079b76e84f6f18c43b3867c09cdba86333b21f",
+      "size": 14694
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-explainer-fragments-test.sh",
+      "sha256": "58350f4bf7deb04c54ef226eff23bad163744f6f8f5f196d8cea895b05e41707",
+      "size": 20539
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-import-plan-test.sh",
+      "sha256": "aa0fc19aafdcebf734a1aea8f5e7dcdd2a9e45737d7771dd37b53e480c47d15f",
+      "size": 17540
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-inbox-disposition-test.sh",
+      "sha256": "e959b85e17a43fba8a43b26f87c1a1596771f44d7e0b31ffa6538bdfe09c38a5",
+      "size": 29586
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-inbox-processor-test.sh",
+      "sha256": "9f9fe7e82531cb0cbcc110ac48eacecc17b17f914fd961a57a5c08592e890f46",
+      "size": 18128
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-meeting-note-ingestor-test.sh",
+      "sha256": "247bcdadb96bde40516b6fdebbd405ceafe0319e1f65705900728fb4f1f1d091",
+      "size": 20276
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-propose-taxonomy-test.sh",
+      "sha256": "42e19d6752599e5e08ccb45dab825fb2bf363f1d3a7d667b937c551401a2f84d",
+      "size": 14179
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-retrofit-existing-test.sh",
+      "sha256": "d5332084cca60bd6566d6664ccc7ecadf5dc3533562e2338480788c3def8103f",
+      "size": 31115
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-review-gate-test.sh",
+      "sha256": "904e46129fad21cd1f0b888ac70f42d81b89e35fff2877b7f76e5a89237175a1",
+      "size": 19359
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-seed-projects-test.sh",
+      "sha256": "aeb1f96b0ce4e7646141428d93824858c1506cf09e63a625c72451928d2407ea",
+      "size": 21981
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-smoke-cross-cutting-test.sh",
+      "sha256": "b1c649d7a89a9a56906d8849d5c8a7ad50908c9782a9837922a559719a99cc4c",
+      "size": 30774
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/sp13-unclassified-pile-ux-test.sh",
+      "sha256": "3b2ed662c109997a4cd0fd837d397e86176ca65ff3a4f05e0357b6f2aac57d5f",
+      "size": 14733
+    },
+    {
+      "mode": "0755",
       "path": "onboarding/ux/render-summary.sh",
       "sha256": "91304672d9dfb52bd730274a15052e9d68cc29fc0d1110168e0481ce62536ef2",
       "size": 28367
@@ -585,8 +819,8 @@
     {
       "mode": "0755",
       "path": "onboarding/ux/section-a.sh",
-      "sha256": "34365e85f74ca3f2537eeee42f34527fb1f72d0d7c0061ab684d70a028bb2e1b",
-      "size": 22944
+      "sha256": "4496a69327d797d25993ad10d64d91f9a8dde4428856ff1eea03cf93c2ff248f",
+      "size": 22946
     },
     {
       "mode": "0755",
@@ -635,6 +869,12 @@
       "path": "orchestrator/cron-wrappers/architect-cron.sh",
       "sha256": "f25820460593469910192cd70e3f608b8e503a65bee89b36301b4f637c93ee5b",
       "size": 4057
+    },
+    {
+      "mode": "0755",
+      "path": "orchestrator/cron-wrappers/inbox-processor-cron.sh",
+      "sha256": "537b07afc0ef78371b4a40d200ce9fe55bfe4552efb168422d764b44759f0bfc",
+      "size": 2769
     },
     {
       "mode": "0644",
@@ -711,8 +951,8 @@
     {
       "mode": "0644",
       "path": "schemas/user-manifest-schema.json",
-      "sha256": "80f9e3b69aa6a9172f25d8af8a3dfea7128e8dd1966d10988cdcf2ac229cd343",
-      "size": 18648
+      "sha256": "e30bad23a26064c4662b292355d5bc95896026988a5350a2f2db998f03827225",
+      "size": 26085
     },
     {
       "mode": "0644",
@@ -723,14 +963,38 @@
     {
       "mode": "0644",
       "path": "skills/adopt/SKILL.md",
-      "sha256": "c45a7e36dca15a4b626a7e7ee06705a28e221a058cd56fc005f137711ec5a8cf",
-      "size": 13014
+      "sha256": "846fef2889d9100cb774e2cb11f98d8b3be3176485c8e019b085b0ba61adeef2",
+      "size": 18493
     },
     {
       "mode": "0755",
       "path": "skills/adopt/adopt.sh",
-      "sha256": "93236fa98cb9b6215eee39a12174fc582c083bf00c950c03009b6ba9a5bcda5c",
-      "size": 15046
+      "sha256": "2357add35c44f8f3094396d18bdc81a5d61ba0a786688f2625087ef72da44251",
+      "size": 20733
+    },
+    {
+      "mode": "0755",
+      "path": "skills/adopt/retrofit-collision-matrix.py",
+      "sha256": "e5f5babb9adf971dd27d8d9115fce5dd8034c0ec0ce4885f13b59457135c8c12",
+      "size": 9696
+    },
+    {
+      "mode": "0755",
+      "path": "skills/adopt/retrofit-collision-matrix.sh",
+      "sha256": "01ee94d09e849d44a79c163c636bb10ed39b151aa782de0ae5d7f10ab93a84df",
+      "size": 1814
+    },
+    {
+      "mode": "0755",
+      "path": "skills/adopt/retrofit-prefilter.py",
+      "sha256": "5af0c4e087fdacc4833b5a93487d58f851a567035605a7d03dcba4951259948c",
+      "size": 18042
+    },
+    {
+      "mode": "0755",
+      "path": "skills/adopt/retrofit.sh",
+      "sha256": "08ca676e4792a7ef25d87de15d9f0a6a083b1423014136d24d2748228c84adeb",
+      "size": 18758
     },
     {
       "mode": "0644",
@@ -755,6 +1019,66 @@
       "path": "skills/backlog-triage/SKILL.md",
       "sha256": "1d60f4d43ee4d2890c08b3d02c2e6d748d851b10bddeaf63d65ec5655e0d6b45",
       "size": 7389
+    },
+    {
+      "mode": "0644",
+      "path": "skills/infer-vault-structure/SKILL.md",
+      "sha256": "12994a31625b98972fd35c9dc7c3629677bb07b057a140447ae2dd2962e72433",
+      "size": 35263
+    },
+    {
+      "mode": "0755",
+      "path": "skills/infer-vault-structure/cluster.py",
+      "sha256": "4f080c3ebb05ecec2f11c0dc9624362592359eeb5304faa9f1ea018d1728864c",
+      "size": 12610
+    },
+    {
+      "mode": "0755",
+      "path": "skills/infer-vault-structure/cluster.sh",
+      "sha256": "fe9445eced6d6ed888dafc31bae44cbc8d54b687e068b2e934b2ecd7a81ec721",
+      "size": 4213
+    },
+    {
+      "mode": "0644",
+      "path": "skills/infer-vault-structure/import-plan.py",
+      "sha256": "c5e71008b1e363987dee4a151de63101e548d4fc76f83878c52ff824ede7e369",
+      "size": 23797
+    },
+    {
+      "mode": "0755",
+      "path": "skills/infer-vault-structure/import-plan.sh",
+      "sha256": "992301ca4f04fc6cb4707cbe8c7a81c98b8a41716f01badc1b6d25f9118de8d8",
+      "size": 3097
+    },
+    {
+      "mode": "0755",
+      "path": "skills/infer-vault-structure/orchestrate.sh",
+      "sha256": "a380a27502131388368b4854024f8cc55b01df3748f477711991c21d3dfb79f2",
+      "size": 14090
+    },
+    {
+      "mode": "0644",
+      "path": "skills/infer-vault-structure/propose-taxonomy.py",
+      "sha256": "ef77e9a54ee329d9663cdb2a847b77df971922229d6417f377b6904d443bad35",
+      "size": 24272
+    },
+    {
+      "mode": "0755",
+      "path": "skills/infer-vault-structure/propose-taxonomy.sh",
+      "sha256": "f66d875c5970b6c701c7a657810b7ec5e96c79a01f4d8f8d5d2719f2f13e4ab1",
+      "size": 5286
+    },
+    {
+      "mode": "0755",
+      "path": "skills/infer-vault-structure/review-gate.sh",
+      "sha256": "31d11d3d6c4e8218f087547f9506d3c3d4c65e88979d13bd6cdc06fce46d7bf5",
+      "size": 12181
+    },
+    {
+      "mode": "0755",
+      "path": "skills/infer-vault-structure/stage-2-5-consultation.sh",
+      "sha256": "403d0f65a5a0f145e6483a7595d00cd2fe91693816431c76eb6701addbd86ea7",
+      "size": 14517
     },
     {
       "mode": "0644",
@@ -819,8 +1143,8 @@
     {
       "mode": "0755",
       "path": "skills/librarian/capabilities/frontmatter-enforce.sh",
-      "sha256": "7690d784c02ac42e033bd57ebdfb6689989176cb37d24de97f75e4f59d790124",
-      "size": 34606
+      "sha256": "323be78b084aa62ba15049641af09cef258ada5bf463d8b21db2f0ce6d68a426",
+      "size": 37020
     },
     {
       "mode": "0755",
@@ -1101,14 +1425,14 @@
     {
       "mode": "0644",
       "path": "skills/onboarder/SKILL.md",
-      "sha256": "4428b3361de7b9f1fc7be674f10f9369d852afccd9264d73c9916bf8330ac2a2",
-      "size": 23049
+      "sha256": "e60b33258ee7b0e664e429dc926d02ffa48b181b0d45261ace7cfd9ec4ed71a9",
+      "size": 27724
     },
     {
       "mode": "0755",
       "path": "skills/onboarder/onboard.sh",
-      "sha256": "8d14f50a3f82b91baa673864cb200a8da1c8d7bda29f50bb05d43aea0310b0ab",
-      "size": 9706
+      "sha256": "f27d77370ca06fc305e3cabe54ea3240effc98b63f595e540b6bb65bf2699661",
+      "size": 17479
     },
     {
       "mode": "0644",
@@ -1136,9 +1460,45 @@
     },
     {
       "mode": "0644",
+      "path": "templates/launchd/calendar-sync.plist.tmpl",
+      "sha256": "a9cc32c545ea81af5926707fe180cf20576b28fa9f7585883fce759b9bd997ef",
+      "size": 1125
+    },
+    {
+      "mode": "0644",
+      "path": "templates/launchd/chat-scrape.plist.tmpl",
+      "sha256": "8d720e2ae21848977d36fcdfd861174130325725db84282457f31207afe8331e",
+      "size": 1115
+    },
+    {
+      "mode": "0644",
+      "path": "templates/launchd/connector-runtime.plist.tmpl",
+      "sha256": "700de06666274bd7030c55b7297d49271875744be92078fe0d7c09100557194d",
+      "size": 1289
+    },
+    {
+      "mode": "0644",
+      "path": "templates/launchd/digest-run.plist.tmpl",
+      "sha256": "104ff945dae7f3d6af7706cc021d4f7aee28b25bac3f3652d6ffe76eac922e66",
+      "size": 1208
+    },
+    {
+      "mode": "0644",
+      "path": "templates/launchd/inbox-processor.plist.tmpl",
+      "sha256": "97b47bf1076196a4d0870e2dfab4298e2695c0df24457a1c1da2b7fb26445274",
+      "size": 1130
+    },
+    {
+      "mode": "0644",
       "path": "templates/launchd/librarian.plist.tmpl",
       "sha256": "25b49197a155f5d50a86531c0401bbc1c5adf549df0db9a9388bf90e42870a3d",
       "size": 1207
+    },
+    {
+      "mode": "0644",
+      "path": "templates/launchd/meeting-processor.plist.tmpl",
+      "sha256": "ef0e98518d695d3d7c7f454ca7f24b830bd4f8640d37effa0cf30b61385d51c2",
+      "size": 1250
     },
     {
       "mode": "0644",
@@ -1183,7 +1543,7 @@
       "size": 5790
     }
   ],
-  "generated_at": "2026-05-03T22:16:29Z",
-  "generator_sha256": "597c6eb9339c97848d1504ee6a213a0561b8392d79d15580fbed95089f38e910",
-  "version": "v2.1.0"
+  "generated_at": "2026-05-05T19:05:37Z",
+  "generator_sha256": "381d002f4e004142c8079a580eb3509fc229a22fb6fd181ef12f299be50613a5",
+  "version": "v2.1.2"
 }
