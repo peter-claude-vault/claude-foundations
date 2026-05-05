@@ -381,6 +381,92 @@
           "description": "How often the standing Inbox processor wakes up. 15 minutes is the default per spec L389 (SP13 T-12 build-decision: cron over SessionStart hook for time-driven autonomy). Range: 5 minutes (very aggressive; only useful for high-velocity capture sessions) to 1440 minutes (daily). Absent or null falls back to the 15-minute default."
         }
       }
+    },
+    "connectors": {
+      "type": "array",
+      "description": "Per-user MCP connector declarations (1.6.0 additive, no const bump, per Plan 71 SP14 T-3). Populated by SP14 connector wizard (T-7..T-11) via three-step gate; SP12 auto-authoring may populate when interview suggests a known connector. Runtime materialization at ~/.claude/connectors/manifest.json (separate Draft-07 schema at schemas/connectors-runtime-schema.json). Empty array (default) means the user has not run the connector wizard yet.",
+      "default": [],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "mcp_server"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Stable per-user connector identifier (e.g., 'granola', 'gcal', 'gmail'). Matches connector entry's launchd Label suffix and the CONNECTOR_ID env var consumed by templates/launchd/connector-runtime.plist.tmpl."
+          },
+          "mcp_server": {
+            "type": "string",
+            "description": "MCP server identifier as registered in ~/.claude/settings.json#/mcpServers (e.g., 'claude_ai_Granola', 'claude_ai_Google_Calendar'). The connector wizard verifies this server is reachable before marking auth_status='connected'."
+          },
+          "auth_status": {
+            "type": ["string", "null"],
+            "enum": ["connected", "pending", "expired", null],
+            "description": "Last-known OAuth/credential health. 'pending' = wizard scheduled this connector but user has not completed Beat 4 (OAuth walk). 'expired' = T-15 auth-expiry detector flipped this; auto-disables runtime until /connectors reconnect. Nullable for connectors that don't expose expiry semantics."
+          },
+          "auth_expires_at": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "description": "ISO-8601 expiry timestamp from the connector's OAuth flow, when the provider exposes it. Nullable when the provider does not expose expiry (some MCP servers refresh transparently)."
+          },
+          "schedule": {
+            "type": ["string", "null"],
+            "description": "Cron-style schedule string (e.g., '0 6 * * *' for daily 06:00) OR null. SP14 wizard Beat 3 confirms schedule per-connector. Schedule is the human-friendly form; orchestration.json's .jobs[] entry derived from this connector carries the launchd-shape (StartCalendarInterval or StartInterval) — see docs/connectors-schema.md for the connector→job derivation contract."
+          },
+          "scope": {
+            "type": ["string", "null"],
+            "default": "read",
+            "description": "Permission scope requested via OAuth. Default 'read'. Higher scopes (e.g., 'write', 'admin') require explicit user opt-in via the SP14 wizard's Beat 4 three-step gate."
+          },
+          "target_vault_path": {
+            "type": ["string", "null"],
+            "description": "Vault subdirectory where this connector's pulled data lands (e.g., 'Inbox/Meetings/' for Granola). Resolved relative to vault.root_directories[0] from this manifest. Nullable for connectors that write outside the vault (e.g., calendar-sync writing to ~/.claude/calendar/)."
+          },
+          "processor_skill": {
+            "type": ["string", "null"],
+            "description": "Skill that processes this connector's pulled data (e.g., 'meeting-processor' for Granola transcripts). The connector-runtime job dispatches to this skill after each pull. Nullable for connectors that are read-only data sources without downstream processing."
+          },
+          "last_run": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "description": "ISO-8601 timestamp of last successful run. Updated by connector-runtime cron-wrapper. Null until first run."
+          },
+          "last_status": {
+            "type": ["string", "null"],
+            "enum": ["ok", "error", "skipped", "no-op", null],
+            "description": "Outcome of the most-recent run. 'ok' = data pulled + processor invoked. 'error' = run failed; details in ~/.claude/connectors/logs/<id>.log. 'skipped' = auth_status flipped to 'expired'; auto-paused. 'no-op' = source-empty (no new data since last_run)."
+          },
+          "failure_mode": {
+            "type": "string",
+            "enum": ["block-and-log", "auto-disable", "backoff-retry", "skip-and-log", "no-op"],
+            "default": "block-and-log",
+            "description": "Per-connector failure-handling policy. Default 'block-and-log' (R-43 standard for foundation-repo skills). Catalog: 'auto-disable' (auth-expired pattern from Zapier — pause runtime + surface to user), 'backoff-retry' (rate-limit pattern — exponential backoff 3x then log), 'skip-and-log' (transient error — skip this run, retry next cycle), 'no-op' (source-empty — log + zero-error rc)."
+          }
+        }
+      }
+    },
+    "connectors_meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Connector-wizard metadata (1.6.0 additive, no const bump, per Plan 71 SP14 T-3). Tracks user-role choice + wizard-version provenance for connectors[] entries. Populated alongside connectors[] by the SP14 wizard.",
+      "properties": {
+        "user_role": {
+          "type": ["string", "null"],
+          "enum": ["consultant", "solo-founder", "engineer", "researcher", "operator", null],
+          "description": "User-role choice from SP14 Beat 1 question. Drives the recommended-connectors subset shown in Beat 2 multiselect. Nullable until the wizard runs."
+        },
+        "wizard_version": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "Semantic version of the SP14 wizard that last populated connectors[]. Used by /connectors --update to detect when the wizard catalog has evolved."
+        },
+        "last_wizard_run": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "ISO-8601 timestamp of the most-recent wizard completion (Beat 4 final-confirm gate). Distinct from connectors[].last_run which tracks per-connector cron execution."
+        }
+      }
     }
   },
   "definitions": {

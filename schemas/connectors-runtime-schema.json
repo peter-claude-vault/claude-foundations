@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Connectors Runtime Manifest",
+  "description": "Runtime artifact at ~/.claude/connectors/manifest.json — the materialized connector wiring consumed by the connector-runtime cron-wrapper, the SP14 wizard's /connectors status command, and T-13/T-14/T-15 reliability infrastructure. Sourced from user-manifest.json#/connectors at install time, then mutated in-place by per-connector runs (last_run / last_status / auth_status updates). Schema mirrors user-manifest-schema.json#/properties/connectors/items but stands alone so consumers can validate against it without loading the full user-manifest schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "user_role", "connectors"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of this runtime schema. 1.0.0 ships with SP14 T-3."
+    },
+    "user_role": {
+      "type": ["string", "null"],
+      "enum": ["consultant", "solo-founder", "engineer", "researcher", "operator", null],
+      "description": "Mirrored from user-manifest.json#/connectors_meta/user_role at install time."
+    },
+    "wizard_version": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "SP14 wizard version that produced this manifest. Mirrored from user-manifest.json#/connectors_meta/wizard_version."
+    },
+    "last_wizard_run": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of last wizard completion."
+    },
+    "connectors": {
+      "type": "array",
+      "description": "Materialized connector entries. Per-entry mutations (last_run, last_status, auth_status) happen here at runtime; user-manifest.json is the seed source-of-truth and is re-read only when /connectors --resync is invoked.",
+      "default": [],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "mcp_server"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Per-user connector identifier; matches user-manifest.json#/connectors[].id."
+          },
+          "mcp_server": {
+            "type": "string",
+            "description": "MCP server identifier as registered in ~/.claude/settings.json#/mcpServers."
+          },
+          "auth_status": {
+            "type": ["string", "null"],
+            "enum": ["connected", "pending", "expired", null]
+          },
+          "auth_expires_at": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "schedule": {
+            "type": ["string", "null"],
+            "description": "Human-friendly cron-style schedule string. Runtime derives orchestration.json .jobs[] schedule shape from this — see docs/connectors-schema.md for the connector→job derivation contract."
+          },
+          "scope": {
+            "type": ["string", "null"],
+            "default": "read"
+          },
+          "target_vault_path": {
+            "type": ["string", "null"]
+          },
+          "processor_skill": {
+            "type": ["string", "null"]
+          },
+          "last_run": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "last_status": {
+            "type": ["string", "null"],
+            "enum": ["ok", "error", "skipped", "no-op", null]
+          },
+          "failure_mode": {
+            "type": "string",
+            "enum": ["block-and-log", "auto-disable", "backoff-retry", "skip-and-log", "no-op"],
+            "default": "block-and-log"
+          },
+          "run_count": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Cumulative successful run count. Maintained by connector-runtime cron-wrapper for T-14 run-history dashboard. Runtime-only — does NOT mirror back to user-manifest.json."
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Run-of-failures counter for the auto-disable threshold (T-15 auth-expiry detector resets to 0 on next successful run). Runtime-only."
+          }
+        }
+      }
+    }
+  }
+}
