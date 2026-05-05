@@ -1,4 +1,4 @@
-# lib/consultation-gate.allowlist — SP15 T-2 (Plan 71 SP15)
+# lib/consultation-gate.allowlist
 #
 # Foundational-decision surface allowlist for consultation_propose.
 #
@@ -8,14 +8,14 @@
 # foundational/structural decisions; per-artifact preview stays on the
 # existing 3-step gate.
 #
-# Modifying this file requires peter_diff_review on the modifying task
-# (SP15 spec L53; tasks.md T-2 AC4).
+# Modifying this file requires deliberate review on the modifying task —
+# the gate's purpose is to prevent surface drift.
 #
 # RATIONALE
 # ---------
-# Consent fatigue (Q4 finding): repeated approval prompts degrade meaningful
-#   sign-off. When gates fire on every action users habituate and rubber-stamp
-#   them, hollowing out the very approval signal the gate was built to capture.
+# Consent fatigue: repeated approval prompts degrade meaningful sign-off.
+#   When gates fire on every action users habituate and rubber-stamp them,
+#   hollowing out the very approval signal the gate was built to capture.
 #   Implication: gate only at structural/foundational decisions; never per-
 #   artifact. Sources:
 #     Secure Privacy — understanding consent fatigue and best practices
@@ -37,16 +37,10 @@
 # Status-quo bias: users develop documented preference for the existing state
 #   over change, even when the existing state is suboptimal — gates therefore
 #   earn their place at decisions where post-hoc edits are expensive AND the
-#   bias against later fixes is documented. This is the SP15 selection
-#   criterion for what enters this allowlist. Source:
+#   bias against later fixes is documented. This is the selection criterion
+#   for what enters this allowlist. Source:
 #     CHI 2024 PMC review — status-quo bias in HCI
 #       https://pmc.ncbi.nlm.nih.gov/articles/PMC11375477/
-#
-# Audit lineage:
-#   spec.md L53 (T-2 description) +
-#   _audit-2026-05-03/11-sp15-spawn-decision.md §"Consent fatigue / override
-#   fatigue", §"Boehm cost-of-change", §"Status-quo bias", §"Mandatory
-#   architectural constraints" item 2.
 #
 # FORMAT: one surface-id per line; exact match (no globs); blank lines and
 # `#`-prefixed comments ignored.
@@ -55,4 +49,4 @@
 surface-3-vault-claude-md
 surface-4-tag-prefixes
 surface-6-frontmatter-enforce
-sp13-stage-2-5-import-plan
+import-plan-consultation

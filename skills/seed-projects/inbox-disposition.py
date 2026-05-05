@@ -386,7 +386,7 @@ def main():
             })
 
     manifest = {
-        "schema_version": "sp13-t10/1",
+        "schema_version": "inbox-disposition/1",
         "surface_id": "inbox-disposition",
         "approved_plan_input": args.approved_plan,
         "vault_root": args.vault_root,

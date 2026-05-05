@@ -63,7 +63,7 @@ GATE_LIB="$ONBOARDING_DIR/lib/three-step-gate.sh"
 # --- defaults + arg parsing ---
 USER_MANIFEST="${USER_MANIFEST:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
 DOC_DEP_FILE="${DOC_DEP_FILE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/config/doc-dependencies.json}"
-SURFACE_ID="sp12-t8"
+SURFACE_ID="surface-5-doc-dependencies"
 GENERATED_FROM="vault-structure-flags+template-table"
 AUTO_APPLY=0
 SKIP_PREVIEW=0
@@ -193,7 +193,7 @@ gen_doc_dependencies() {
 
 # --- main ---
 if [ -z "${TG_STAGE_DIR:-}" ]; then
-  TG_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sp12-t8.XXXXXX")"
+  TG_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/surface-5.XXXXXX")"
   export TG_STAGE_DIR
 fi
 

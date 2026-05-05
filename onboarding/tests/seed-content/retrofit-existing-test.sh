@@ -4,7 +4,7 @@
 # Validates the /adopt --retrofit-existing surface end-to-end against an
 # isolated CLAUDE_HOME under $TMPDIR per feedback_test_isolation_for_hooks_state
 # + feedback_universal_vault_safety:
-#   - $TMPDIR/sp13-t13-test-XXXXXX as $CLAUDE_HOME
+#   - $TMPDIR/retrofit-existing-test-XXXXXX as $CLAUDE_HOME
 #   - parallel test vault under the same tmpdir (NEVER ~/Documents/Obsidian Vault/)
 #   - HOOKS_STATE_OVERRIDE redirected
 #   - ANTHROPIC_API_KEY + VOYAGE_API_KEY unset (forces stub modes)
@@ -46,7 +46,7 @@ MATRIX_PY="$REPO_ROOT/skills/adopt/retrofit-collision-matrix.py"
 MATRIX_SH="$REPO_ROOT/skills/adopt/retrofit-collision-matrix.sh"
 SKILL_MD="$REPO_ROOT/skills/adopt/SKILL.md"
 
-TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/sp13-t13-test-XXXXXX")"
+TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/retrofit-existing-test-XXXXXX")"
 trap 'rm -rf "$TMPROOT"' EXIT INT TERM
 
 # Hermetic env. Test isolation per feedback_test_isolation_for_hooks_state.
@@ -361,8 +361,8 @@ _assert_file_exists "AC3.11 augmented plan"  "$DRY_WORK/import-plan.md"
 _assert_file_exists "AC3.12 idempotency-skip list" "$DRY_WORK/idempotency-skip.list"
 
 # Validate matrix JSON shape.
-if jq -e '.schema_version == "sp13-t13/1"' "$DRY_WORK/retrofit-matrix.json" >/dev/null 2>&1; then
-  _pass "AC3.13 matrix JSON has schema_version sp13-t13/1"
+if jq -e '.schema_version == "retrofit-matrix/1"' "$DRY_WORK/retrofit-matrix.json" >/dev/null 2>&1; then
+  _pass "AC3.13 matrix JSON has schema_version retrofit-matrix/1"
 else
   _fail "AC3.13 matrix JSON schema_version mismatch"
 fi

@@ -20,7 +20,7 @@
 #   AC8  schema_version round-trips through edit (post-edit validation
 #        re-prompts when the user nukes the schema_version anchor)
 #
-# Hermetic: $TMPDIR/sp13-t7-test-XXXXXX. No live writes outside tmpdir.
+# Hermetic: $TMPDIR/review-gate-test-XXXXXX. No live writes outside tmpdir.
 # AUTO_AUTHOR_LOG forced into the tmpdir to keep the foundation-repo's
 # real auto-author-log.jsonl untouched. Bash 3.2 compatible (R-23).
 #
@@ -36,7 +36,7 @@ PROPOSE_SH="$SKILL_DIR/propose-taxonomy.sh"
 IMPORT_SH="$SKILL_DIR/import-plan.sh"
 GATE_LIB="$REPO_ROOT/onboarding/lib/three-step-gate.sh"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t7-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/review-gate-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 # Force stub LLM mode for the upstream T-5 invocation; isolate audit log.

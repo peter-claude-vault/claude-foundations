@@ -3,7 +3,7 @@
 # retrofit-collision-matrix.py.
 #
 # Appends a `## Collision matrix` section to an existing import-plan.md
-# (import-plan/1) using metadata from a retrofit-matrix.json (sp13-t13/1).
+# (import-plan/1) using metadata from a retrofit-matrix.json (retrofit-matrix/1).
 #
 # Usage:
 #   retrofit-collision-matrix.sh --matrix <path> --import-plan <path>

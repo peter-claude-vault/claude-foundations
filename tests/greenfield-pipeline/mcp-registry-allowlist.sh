@@ -30,7 +30,7 @@ FAIL=0
 fail() { printf '  FAIL: %s\n' "$1"; FAIL=$((FAIL + 1)); }
 pass() { printf '  PASS: %s\n' "$1"; PASS=$((PASS + 1)); }
 
-TMPDIR_TEST="$(mktemp -d -t sp16-t5c-XXXXXX)"
+TMPDIR_TEST="$(mktemp -d -t greenfield-mcp-registry-XXXXXX)"
 trap 'rm -rf "$TMPDIR_TEST"' EXIT
 
 # Disabled-bundled fixture so registry-only mode is the sole emission source.

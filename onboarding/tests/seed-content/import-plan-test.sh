@@ -26,10 +26,10 @@
 #   AC9  refinements section renders BOTH string + array shapes for
 #        from / into (oneOf in T-5 schema): split op carries from=string
 #        + into=array; merge op carries from=array + into=string
-#   AC10 hermetic isolation: no writes outside $TMPDIR/sp13-t6-test-*;
+#   AC10 hermetic isolation: no writes outside $TMPDIR/import-plan-test-*;
 #        ANTHROPIC_API_KEY unset for the run; default state/ untouched
 #
-# Hermetic: $TMPDIR/sp13-t6-test-XXXXXX. No live writes.
+# Hermetic: $TMPDIR/import-plan-test-XXXXXX. No live writes.
 # Bash 3.2 compatible (R-23).
 
 set -u
@@ -42,7 +42,7 @@ IMPORT_SH="$SKILL_DIR/import-plan.sh"
 IMPORT_PY="$SKILL_DIR/import-plan.py"
 SCHEMA="$REPO_ROOT/schemas/import-plan-schema.json"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t6-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/import-plan-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 # Force stub LLM mode for the upstream T-5 invocation.

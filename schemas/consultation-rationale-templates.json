@@ -1,7 +1,7 @@
 {
   "schema_version": "consultation-rationale-templates/1",
   "templates": {
-    "sp13-stage-2-5-import-plan": {
+    "import-plan-consultation": {
       "preamble": "Before you review the generated import plan in detail at T-7, ratify the rationale behind the proposed taxonomy. The plan you are about to see is the OUTPUT of density-based clustering (HDBSCAN) followed by LLM-assisted iterative refinement (TnT-LLM pattern: Pass 1 propose, Pass 2 outlier merge/split). This consultation gate surfaces WHY the candidates are grouped and named the way they are, and the tradeoffs the system accepted on your behalf — so you can question the underlying logic before rubber-stamping the plan.",
       "tradeoffs": "Discoverability vs flexibility. Comprehensive coverage vs cognitive cap on top-level structures. Late retrofit of structural decisions (tag prefixes, folder shape, frontmatter contracts) consumes 50-70% of migration project budgets per industry data — favouring a smaller, MECE taxonomy at the cost of some coverage. Status-quo bias avoidance: reviewing the rendered plan WITHOUT ratifying its underlying rationale risks accepting cluster boundaries that don't actually match your work patterns (CHI 2024 PMC review).",
       "citations": [

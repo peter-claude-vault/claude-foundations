@@ -2,7 +2,7 @@
 """
 retrofit-collision-matrix.py — SP13 T-13 collision matrix renderer.
 
-Consumes a retrofit-matrix.json (sp13-t13/1; produced by retrofit-prefilter.py)
+Consumes a retrofit-matrix.json (retrofit-matrix/1; produced by retrofit-prefilter.py)
 plus a target import-plan.md (import-plan/1; produced by import-plan.sh) and
 APPENDS a `## Collision matrix` section to the import-plan.md.
 
@@ -30,7 +30,7 @@ Stdlib only — no pyyaml / requests.
 
 R-43 Output Contract:
   - Files written: import-plan.md is overwritten in place via tmp+rename.
-  - Schema-types: input matrix is sp13-t13/1; input/output plan is import-plan/1.
+  - Schema-types: input matrix is retrofit-matrix/1; input/output plan is import-plan/1.
   - Pre-write validation: schema_version anchors on both inputs; matrix
     schema_version anchor; appended section does not remove existing content.
   - Failure mode: BLOCK AND LOG. Bad input → exit 2. No partial writes.
@@ -44,7 +44,7 @@ import os
 import sys
 
 
-SCHEMA_VERSION_MATRIX_INPUT = "sp13-t13/1"
+SCHEMA_VERSION_MATRIX_INPUT = "retrofit-matrix/1"
 SCHEMA_VERSION_PLAN_INPUT = "import-plan/1"
 ROWS_PER_PAGE = 50
 
@@ -176,7 +176,7 @@ def main():
         description="SP13 T-13 retrofit collision matrix renderer.",
     )
     ap.add_argument("--matrix", required=True,
-                    help="Path to retrofit-matrix.json (sp13-t13/1).")
+                    help="Path to retrofit-matrix.json (retrofit-matrix/1).")
     ap.add_argument("--import-plan", required=True,
                     help="Path to import-plan.md (import-plan/1; appended in place).")
     args = ap.parse_args()

@@ -10,7 +10,7 @@
 #   AC6  docs/seed-content-pipeline.md exists
 #   AC7  directory pattern (trailing /) excludes nested dir contents
 #
-# Hermetic: $TMPDIR/sp13-t2-test-XXXXXX. No live writes.
+# Hermetic: $TMPDIR/seedignore-filter-test-XXXXXX. No live writes.
 # Bash 3.2 compatible (R-23).
 
 set -u
@@ -22,7 +22,7 @@ FILTER="$REPO_ROOT/onboarding/seed-content/seedignore-filter.sh"
 EXAMPLE="$REPO_ROOT/onboarding/seed-content/.seedignore.example"
 DOC="$REPO_ROOT/docs/seed-content-pipeline.md"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t2-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/seedignore-filter-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 pass=0

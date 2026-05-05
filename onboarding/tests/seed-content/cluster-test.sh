@@ -15,10 +15,10 @@
 #        routed) — does NOT silently bucket all 10 as unclassified
 #   AC6  unclassified bucket is a first-class cluster record with confidence
 #        0.0 and a low_confidence flag
-#   AC7  hermetic test isolation: no writes outside $TMPDIR/sp13-t4-test-*;
+#   AC7  hermetic test isolation: no writes outside $TMPDIR/cluster-test-*;
 #        VOYAGE_API_KEY is unset for the run; embedding_mode == "stub"
 #
-# Hermetic: $TMPDIR/sp13-t4-test-XXXXXX. No live writes.
+# Hermetic: $TMPDIR/cluster-test-XXXXXX. No live writes.
 # Bash 3.2 compatible (R-23).
 
 set -u
@@ -30,7 +30,7 @@ CLUSTER_SH="$SKILL_DIR/cluster.sh"
 CLUSTER_PY="$SKILL_DIR/cluster.py"
 SKILL_MD="$SKILL_DIR/SKILL.md"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t4-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/cluster-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 # Force stub embeddings even if a host-level VOYAGE_API_KEY happens to be set.

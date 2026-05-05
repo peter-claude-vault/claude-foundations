@@ -6,7 +6,7 @@
 # (generated_by, generated_from, last_user_edit) emitted FIRST, then R-45.
 #
 # Why: SP12 T-5's mirror collision contract scans seeds for `generated_by:
-# sp11-t3` to route through the UPGRADE path instead of the ABORT path. Seeds
+# memory-bootstrap` to route through the UPGRADE path instead of the ABORT path. Seeds
 # without provenance trigger ABORT in production where SP11 ran first.
 #
 # Both schemas (provenance + R-45) declare additionalProperties:true so the
@@ -106,12 +106,12 @@ else
     fail "provenance fields NOT before R-45 fields (gen_by=$gen_by_line name=$name_line)"
 fi
 
-# 4. generated_by value matches sp11-t3
+# 4. generated_by value matches memory-bootstrap
 val="$(grep '^generated_by: ' "$SEED" | head -1 | sed 's/^generated_by: //')"
-if [ "$val" = "sp11-t3" ]; then
-    pass "generated_by == sp11-t3"
+if [ "$val" = "memory-bootstrap" ]; then
+    pass "generated_by == memory-bootstrap"
 else
-    fail "generated_by mismatch: got '$val' expected 'sp11-t3'"
+    fail "generated_by mismatch: got '$val' expected 'memory-bootstrap'"
 fi
 
 # 5. last_user_edit == null

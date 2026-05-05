@@ -23,10 +23,10 @@
 #   AC8  per-candidate confidence is heuristic, not LLM-self-reported
 #        (typed candidates carry confidence in [0,1]; unclassified pile
 #        carries 0.0; values match dominant-origin-cluster math)
-#   AC9  hermetic test isolation: no writes outside $TMPDIR/sp13-t5-test-*;
+#   AC9  hermetic test isolation: no writes outside $TMPDIR/propose-taxonomy-test-*;
 #        ANTHROPIC_API_KEY unset for the run; llm_mode == "stub"
 #
-# Hermetic: $TMPDIR/sp13-t5-test-XXXXXX. No live writes.
+# Hermetic: $TMPDIR/propose-taxonomy-test-XXXXXX. No live writes.
 # Bash 3.2 compatible (R-23).
 
 set -u
@@ -38,7 +38,7 @@ PROPOSE_SH="$SKILL_DIR/propose-taxonomy.sh"
 PROPOSE_PY="$SKILL_DIR/propose-taxonomy.py"
 SCHEMA="$REPO_ROOT/schemas/propose-taxonomy-schema.json"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t5-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/propose-taxonomy-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 # Force stub LLM mode regardless of host-level ANTHROPIC_API_KEY.

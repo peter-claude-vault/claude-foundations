@@ -121,7 +121,7 @@ jq -e . "$ORCH" >/dev/null || { diag "orchestration seed jq invalid"; exit 2; }
 # Seed SP11 fake done-marker (so surface-2 doesn't clean-halt). Path is
 # isolated under tmpdir; we override the env var so surface-2 reads our fake.
 SP11_FAKE_DONE="$CLAUDE_HOME/sp11-T-3.fake.done"
-printf 'sp11-t3\t%s\tT-3 fake done-marker for T-16 smoke\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$SP11_FAKE_DONE"
+printf 'memory-bootstrap\t%s\tT-3 fake done-marker for T-16 smoke\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$SP11_FAKE_DONE"
 
 # Audit log path (used by all surfaces via three-step gate).
 AUDIT_LOG_PATH="$CLAUDE_HOME/onboarding/auto-author-log.jsonl"
@@ -183,7 +183,7 @@ AUTO_AUTHOR_LOG="$AUDIT_LOG_PATH" \
   bash "$REPO_ROOT/onboarding/auto-author/surface-2-memory-seeds.sh" \
     --user-manifest "$USER_MANIFEST" \
     --memory-dir "$CLAUDE_HOME/projects/test-slug/memory" \
-    --sp11-done-marker "$SP11_FAKE_DONE" \
+    --memory-bootstrap-done-marker "$SP11_FAKE_DONE" \
     --auto-apply --skip-preview \
     --mock-llm
 
@@ -249,11 +249,11 @@ COST_HITS="$(grep -c -F '$5-15' "$LOG" 2>/dev/null || true)"
 COST_HITS="${COST_HITS:-0}"
 APPLY_CENTRAL="$(grep -c '"action":"apply"' "$AUDIT_LOG_PATH" 2>/dev/null || true)"
 APPLY_CENTRAL="${APPLY_CENTRAL:-0}"
-T5_NEW="$(grep -c '"action":"new"' "$CLAUDE_HOME/onboarding/audit/sp12-t5-upgrades.jsonl" 2>/dev/null || true)"
+T5_NEW="$(grep -c '"action":"new"' "$CLAUDE_HOME/onboarding/audit/surface-2-upgrades.jsonl" 2>/dev/null || true)"
 T5_NEW="${T5_NEW:-0}"
-T5_UPGRADE="$(grep -c '"action":"upgrade"' "$CLAUDE_HOME/onboarding/audit/sp12-t5-upgrades.jsonl" 2>/dev/null || true)"
+T5_UPGRADE="$(grep -c '"action":"upgrade"' "$CLAUDE_HOME/onboarding/audit/surface-2-upgrades.jsonl" 2>/dev/null || true)"
 T5_UPGRADE="${T5_UPGRADE:-0}"
-T7_UPDATE="$(grep -c '"action":"update"' "$CLAUDE_HOME/onboarding/audit/sp12-t7-provenance.jsonl" 2>/dev/null || true)"
+T7_UPDATE="$(grep -c '"action":"update"' "$CLAUDE_HOME/onboarding/audit/surface-4-provenance.jsonl" 2>/dev/null || true)"
 T7_UPDATE="${T7_UPDATE:-0}"
 APPLY_AGGREGATE=$((APPLY_CENTRAL + T5_NEW + T5_UPGRADE + T7_UPDATE))
 # Provenance validation across generated artifacts (skip MEMORY.md index).
@@ -441,8 +441,8 @@ TREE_TMP="$TMPCH/tree.txt"
   printf '```\n\n'
   printf '## Audit log record counts\n\n'
   printf -- '- central auto-author-log.jsonl apply records: %s\n' "$APPLY_CENTRAL"
-  printf -- '- sp12-t5-upgrades.jsonl new+upgrade records: %s+%s\n' "$T5_NEW" "$T5_UPGRADE"
-  printf -- '- sp12-t7-provenance.jsonl update records: %s\n' "$T7_UPDATE"
+  printf -- '- surface-2-upgrades.jsonl new+upgrade records: %s+%s\n' "$T5_NEW" "$T5_UPGRADE"
+  printf -- '- surface-4-provenance.jsonl update records: %s\n' "$T7_UPDATE"
   printf -- '- aggregate write records: %s\n\n' "$APPLY_AGGREGATE"
   printf '## Stdout capture (LOG)\n\n```\n'
   cat "$LOG" 2>/dev/null

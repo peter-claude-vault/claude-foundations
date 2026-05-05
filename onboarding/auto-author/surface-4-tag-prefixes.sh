@@ -25,7 +25,7 @@
 # Provenance: vault-schema canonical write goes through the central audit
 # log (lib/three-step-gate.sh) with action "apply"; user-manifest mirror
 # write continues to use the per-surface JSONL sidecar at
-# ${CLAUDE_HOME}/onboarding/audit/sp12-t7-provenance.jsonl with action
+# ${CLAUDE_HOME}/onboarding/audit/surface-4-provenance.jsonl with action
 # "update" (path retained for SP12 T-16 sealed-attestation compatibility,
 # even after the SURFACE_ID rename). Both records carry the SP15 T-3
 # fields `consulted_at` + `consultation_response_hash` when the
@@ -97,18 +97,16 @@ CG_LIB="$REPO_ROOT/lib/consultation-gate.sh"
 # --- defaults + arg parsing ---
 USER_MANIFEST="${USER_MANIFEST:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
 VAULT_SCHEMA="${VAULT_SCHEMA:-${CLAUDE_HOME:-$HOME/.claude}/schemas/vault-schema.json}"
-# SP15 T-5: PROVENANCE_LOG path retained as `sp12-t7-provenance.jsonl` for
-# SP12 T-16 sealed-attestation compatibility, even after the SURFACE_ID
-# rename. The path is a backwards-compat anchor; the SURFACE_ID is the
-# logical identifier inside the JSONL records.
-PROVENANCE_LOG="${PROVENANCE_LOG:-${CLAUDE_HOME:-$HOME/.claude}/onboarding/audit/sp12-t7-provenance.jsonl}"
+# PROVENANCE_LOG: per-surface sidecar audit log. The filename is a stable
+# anchor for downstream consumers; the SURFACE_ID is the logical identifier
+# inside the JSONL records.
+PROVENANCE_LOG="${PROVENANCE_LOG:-${CLAUDE_HOME:-$HOME/.claude}/onboarding/audit/surface-4-provenance.jsonl}"
 ARCHETYPE_OVERRIDE=""
 EVIL_PREFIX_LIST=""
-# SP15 T-5: SURFACE_ID aligned to the consultation-gate allowlist entry
+# SURFACE_ID is aligned to the consultation-gate allowlist entry
 # (`lib/consultation-gate.allowlist`). Same identifier flows through the
 # central audit log (consult + generate + preview + apply via the 3-step
-# gate) AND the mirror's sidecar JSONL records. Mirror precedent for the
-# rename: T-4's `sp12-t6` → `surface-3-vault-claude-md`.
+# gate) AND the per-surface sidecar JSONL records.
 SURFACE_ID="surface-4-tag-prefixes"
 GENERATED_FROM="A-CB-7+vault-archetype-table"
 LLM_MOCK="${AUTO_AUTHOR_MOCK_LLM:-0}"

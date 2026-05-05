@@ -35,12 +35,12 @@
 #   AC10  integration: per-frontmatter-field explainers present for type +
 #         tags + generated_by + generated_from + last_user_edit on stderr
 #   AC12  hermetic isolation: AUTO_AUTHOR_LOG + TG_STAGE_DIR forced into
-#         tmpdir; all writes contained under $TMPDIR/sp13-t9-test-*;
+#         tmpdir; all writes contained under $TMPDIR/explainer-fragments-test-*;
 #         default state/ + foundation-repo auto-author-log.jsonl untouched
 #   AC13  regression: T-8's existing 69-AC suite still passes after T-9
 #         hook lands (no breakage from the print_batched_preview edit)
 #
-# Hermetic: $TMPDIR/sp13-t9-test-XXXXXX. No live writes.
+# Hermetic: $TMPDIR/explainer-fragments-test-XXXXXX. No live writes.
 # Bash 3.2 compatible (R-23).
 
 set -u
@@ -56,7 +56,7 @@ GATE_LIB="$REPO_ROOT/onboarding/lib/three-step-gate.sh"
 IMPORT_SH="$REPO_ROOT/skills/infer-vault-structure/import-plan.sh"
 T8_TEST="$SCRIPT_DIR/sp13-seed-projects-test.sh"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t9-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/explainer-fragments-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 # Hermetic isolation per feedback_test_isolation_for_hooks_state.

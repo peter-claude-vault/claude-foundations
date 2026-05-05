@@ -9,7 +9,7 @@
 #   AC5  onboard.sh --seed-content emits "seed content detected: N items" on stdout
 #   AC6  AC1+intake-exists implicitly covers done-marker pre-condition
 #
-# Hermetic: writes only under $TMPDIR/sp13-t1-test-<random>/ per
+# Hermetic: writes only under $TMPDIR/seed-content-intake-test-<random>/ per
 # feedback_test_isolation_for_hooks_state. No live ~/.claude or vault writes.
 #
 # Bash 3.2 compatible (R-23).
@@ -21,7 +21,7 @@ REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 INTAKE="$REPO_ROOT/onboarding/seed-content/intake.sh"
 ONBOARD="$REPO_ROOT/skills/onboarder/onboard.sh"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t1-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/seed-content-intake-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 pass=0

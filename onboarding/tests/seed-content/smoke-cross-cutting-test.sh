@@ -567,8 +567,8 @@ _assert_grep "AC7.4 retrofit matrix renders tabular section" \
 RETROFIT_MATRIX_JSON="$RETROFIT_WORK/retrofit-matrix.json"
 _assert_file_exists "AC7.5 retrofit matrix JSON exists" "$RETROFIT_MATRIX_JSON"
 if [ -f "$RETROFIT_MATRIX_JSON" ]; then
-  if jq -e '.schema_version == "sp13-t13/1"' "$RETROFIT_MATRIX_JSON" >/dev/null 2>&1; then
-    _pass "AC7.6 retrofit matrix JSON schema_version = sp13-t13/1"
+  if jq -e '.schema_version == "retrofit-matrix/1"' "$RETROFIT_MATRIX_JSON" >/dev/null 2>&1; then
+    _pass "AC7.6 retrofit matrix JSON schema_version = retrofit-matrix/1"
   else
     _fail "AC7.6 retrofit matrix JSON schema_version mismatch"
   fi

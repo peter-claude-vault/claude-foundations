@@ -23,11 +23,11 @@
 #   AC11  /adopt invocation: when approved-import-plan.md is present,
 #         /adopt invokes /seed-projects automatically and reports the
 #         outcome in its summary
-#   AC12  hermetic isolation: no writes outside $TMPDIR/sp13-t8-test-*;
+#   AC12  hermetic isolation: no writes outside $TMPDIR/seed-projects-test-*;
 #         AUTO_AUTHOR_LOG + TG_STAGE_DIR forced into tmpdir; default
 #         state/ + foundation-repo auto-author-log.jsonl untouched
 #
-# Hermetic: $TMPDIR/sp13-t8-test-XXXXXX. No live writes.
+# Hermetic: $TMPDIR/seed-projects-test-XXXXXX. No live writes.
 # Bash 3.2 compatible (R-23).
 
 set -u
@@ -45,7 +45,7 @@ GATE_LIB="$REPO_ROOT/onboarding/lib/three-step-gate.sh"
 PROVENANCE_SCHEMA="$REPO_ROOT/schemas/provenance-frontmatter-schema.json"
 IMPORT_SH="$REPO_ROOT/skills/infer-vault-structure/import-plan.sh"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t8-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/seed-projects-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 # Hermetic isolation per feedback_test_isolation_for_hooks_state.
@@ -265,7 +265,7 @@ echo "AC4 — pre-flight aborts on schema_version mismatch"
 BAD_PLAN="$TMPROOT/bad-version.md"
 {
   echo '---'
-  echo 'schema_version: sp13-t6/0'
+  echo 'schema_version: bogus-version/0'
   echo '---'
 } > "$BAD_PLAN"
 out=$( "$SEED_SH" \

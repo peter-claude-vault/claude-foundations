@@ -85,7 +85,7 @@ TARGET="${CLAUDE_HOME_CLAUDE_MD:-${CLAUDE_HOME:-$HOME/.claude}/CLAUDE.md}"
 USER_MANIFEST="${USER_MANIFEST:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
 INPUTS_DIR="${INPUTS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/onboarding}"
 TEMPLATE_PATH="${TEMPLATE_PATH:-$REPO_ROOT/templates/claude-home-claude-md-template.md}"
-SURFACE_ID="sp12-t4"
+SURFACE_ID="surface-1-claude-home"
 GENERATED_FROM="section-a+claude-md-template"
 LLM_MOCK="${AUTO_AUTHOR_MOCK_LLM:-0}"
 ACCEPT_USER_AUTHORED=0
@@ -263,7 +263,7 @@ gen_claude_home() {
 
 # --- main ---
 if [ -z "${TG_STAGE_DIR:-}" ]; then
-  TG_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sp12-t4.XXXXXX")"
+  TG_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/surface-1.XXXXXX")"
   export TG_STAGE_DIR
 fi
 

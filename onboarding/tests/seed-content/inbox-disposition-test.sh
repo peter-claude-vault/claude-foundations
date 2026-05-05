@@ -36,7 +36,7 @@
 #   AC11  regression: T-8's 69-AC suite + T-9's 90-AC suite both still
 #         pass after T-10 plumbing lands
 #
-# Hermetic: $TMPDIR/sp13-t10-test-XXXXXX. No live ~/.claude/ or
+# Hermetic: $TMPDIR/inbox-disposition-test-XXXXXX. No live ~/.claude/ or
 # foundation-repo writes. Bash 3.2 compatible (R-23).
 
 set -u
@@ -58,7 +58,7 @@ IMPORT_SH="$REPO_ROOT/skills/infer-vault-structure/import-plan.sh"
 T8_TEST="$SCRIPT_DIR/sp13-seed-projects-test.sh"
 T9_TEST="$SCRIPT_DIR/sp13-explainer-fragments-test.sh"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t10-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/inbox-disposition-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 # Hermetic isolation per feedback_test_isolation_for_hooks_state.
@@ -396,7 +396,7 @@ DISPO_MANIFEST="$TMPROOT/dispo-manifest.json"
   > "$DISPO_MANIFEST" 2>"$TMPROOT/dispo-direct.stderr"
 dispo_rc=$?
 assert_eq "inbox-disposition direct rc=0" "0" "$dispo_rc"
-assert_grep "dispo manifest schema_version" '"schema_version": "sp13-t10/1"' "$DISPO_MANIFEST"
+assert_grep "dispo manifest schema_version" '"schema_version": "inbox-disposition/1"' "$DISPO_MANIFEST"
 
 INBOX_DIR="$DISPO_STAGE/seed-projects/Inbox"
 inbox_file_count=$(find "$INBOX_DIR" -type f -name '*.md' 2>/dev/null | wc -l | tr -d ' ')

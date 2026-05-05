@@ -14,7 +14,7 @@
 #     - MEMORY.md index entries appended for newly-written seeds (existing
 #       SP11-authored entries preserved).
 #     - Per-file decision audit JSONL at
-#       $CLAUDE_HOME/onboarding/audit/sp12-t5-upgrades.jsonl
+#       $CLAUDE_HOME/onboarding/audit/surface-2-upgrades.jsonl
 #       (action ∈ {new, upgrade, skip-user-edited, abort-no-provenance}).
 #   Schema-types declared:
 #     - Seed-file frontmatter combines provenance-frontmatter-schema.json
@@ -29,9 +29,9 @@
 #
 # Mirror Collision Contract (per spec L156-162):
 #   1. Detection: scan $MEMORY_DIR for *.md files with provenance frontmatter
-#      `generated_by: sp11-t3*`.
+#      `generated_by: memory-bootstrap*`.
 #   2. UPGRADE: SP11 seed found with provenance → upgrade in place; preserve
-#      lineage via `superseded_by: sp12-t5` + `original_sha256: <pre-bytes>`.
+#      lineage via `superseded_by: surface-2-memory-seeds` + `original_sha256: <pre-bytes>`.
 #   3. NEW: target path absent → standard provenance write.
 #   4. SKIP: SP11 seed where last_user_edit > generated_by timestamp → preserve
 #      user edits; audit-log skip-user-edited; do NOT overwrite.
@@ -44,7 +44,7 @@
 #   where SP11 ran first, T-5's collision-scan would trigger the ABORT path
 #   for every SP11 seed. Resolution requires an SP11 amendment to prepend
 #   provenance frontmatter (or T-5 relaxation to recognize R-45-only as
-#   sp11-t3-implicit). Tracked as a close-out CFF; documented in handoff.md.
+#   memory-bootstrap-implicit). Tracked as a close-out CFF; documented in handoff.md.
 #
 # CONSTRAINTS (R-23): bash 3.2 — no `declare -A`, no `mapfile`, no `${var,,}`.
 # `jq` REQUIRED on PATH. lib/three-step-gate.sh + lib/provenance-frontmatter.sh
@@ -55,7 +55,7 @@
 #     [--user-manifest PATH]
 #     [--memory-dir DIR]
 #     [--inputs-dir DIR]
-#     [--sp11-done-marker PATH]
+#     [--memory-bootstrap-done-marker PATH]
 #     [--upgrades-log PATH]
 #     [--mock-llm]
 #     [--auto-apply] [--skip-preview] [--dry-run]
@@ -91,8 +91,8 @@ INPUTS_DIR="${INPUTS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/onboarding}"
 MEMORY_BASE="${CLAUDE_HOME:-$HOME/.claude}"
 MEMORY_DIR_OVERRIDE=""
 SP11_DONE_MARKER="${SP11_DONE_MARKER:-${PLANS_HOME:-$HOME/.claude-plans}/71-claude-foundations-engine-v2/11-memory-bootstrap/state/T-3.done}"
-UPGRADES_LOG="${UPGRADES_LOG:-$INPUTS_DIR/audit/sp12-t5-upgrades.jsonl}"
-SURFACE_ID="sp12-t5"
+UPGRADES_LOG="${UPGRADES_LOG:-$INPUTS_DIR/audit/surface-2-upgrades.jsonl}"
+SURFACE_ID="surface-2-memory-seeds"
 LLM_MOCK="${AUTO_AUTHOR_MOCK_LLM:-0}"
 AUTO_APPLY=0
 SKIP_PREVIEW=0
@@ -102,7 +102,7 @@ while [ $# -gt 0 ]; do
     --user-manifest)     USER_MANIFEST="$2"; shift 2 ;;
     --memory-dir)        MEMORY_DIR_OVERRIDE="$2"; shift 2 ;;
     --inputs-dir)        INPUTS_DIR="$2"; shift 2 ;;
-    --sp11-done-marker)  SP11_DONE_MARKER="$2"; shift 2 ;;
+    --memory-bootstrap-done-marker)  SP11_DONE_MARKER="$2"; shift 2 ;;
     --upgrades-log)      UPGRADES_LOG="$2"; shift 2 ;;
     --mock-llm)          LLM_MOCK=1; shift ;;
     --auto-apply)        AUTO_APPLY=1; shift ;;
@@ -351,7 +351,7 @@ EOF
 )"
 
 # --- collision-contract scan ---
-DECISIONS_FILE="$(mktemp "${TMPDIR:-/tmp}/sp12-t5-decisions.XXXXXX")"
+DECISIONS_FILE="$(mktemp "${TMPDIR:-/tmp}/surface-2-decisions.XXXXXX")"
 ABORT_DETECTED=0
 
 while IFS='|' read -r seed_path seed_type seed_name seed_desc seed_from composer_fn; do
@@ -365,7 +365,7 @@ while IFS='|' read -r seed_path seed_type seed_name seed_desc seed_from composer
       gen_by="$(printf '%s\n' "$fm" | awk -F': ' '/^generated_by:/ {print $2; exit}' | tr -d ' "')"
       lue="$(printf '%s\n' "$fm" | awk -F': ' '/^last_user_edit:/ {print $2; exit}' | tr -d ' "')"
       case "$gen_by" in
-        sp11-t3*)
+        memory-bootstrap*)
           if [ -z "$lue" ] || [ "$lue" = "null" ]; then
             decision="UPGRADE"
             pre_sha="$(sha256_of "$seed_path")"
@@ -374,10 +374,10 @@ while IFS='|' read -r seed_path seed_type seed_name seed_desc seed_from composer
             reason="last_user_edit=$lue (user-edited, contract-preserved)"
           fi
           ;;
-        sp12-t5*)
+        surface-2-memory-seeds*|sp12-t5*)
           decision="UPGRADE"
           pre_sha="$(sha256_of "$seed_path")"
-          reason="re-running T-5 against prior T-5 output (idempotent)"
+          reason="re-running surface against its own prior output (idempotent; sp12-t5* match is back-compat for files written by earlier foundation versions)"
           ;;
         *)
           decision="SKIP"
@@ -408,8 +408,8 @@ if [ "$ABORT_DETECTED" = "1" ]; then
 fi
 
 # --- stage seed bodies ---
-STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sp12-t5-stage.XXXXXX")"
-APPLY_PLAN_FILE="$(mktemp "${TMPDIR:-/tmp}/sp12-t5-apply.XXXXXX")"
+STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/surface-2-stage.XXXXXX")"
+APPLY_PLAN_FILE="$(mktemp "${TMPDIR:-/tmp}/surface-2-apply.XXXXXX")"
 
 while IFS=$'\t' read -r seed_path seed_type seed_name seed_desc seed_from composer_fn decision pre_sha reason; do
   [ -z "$seed_path" ] && continue
@@ -461,7 +461,7 @@ preview_index_update() {
 render_preview() {
   # APPLY_PLAN_FILE format: decision \t target \t stage \t type \t name \t desc \t pre_sha
   local decision target stage seed_type seed_name seed_desc pre_sha
-  printf '\n=== sp12-t5: BATCHED PREVIEW (memory-seeds auto-author) ===\n\n' >&2
+  printf '\n=== surface-2-memory-seeds: BATCHED PREVIEW ===\n\n' >&2
   printf 'Memory dir: %s\n' "$MEMORY_DIR" >&2
   printf '\n' >&2
   while IFS=$'\t' read -r decision target stage seed_type seed_name seed_desc pre_sha; do

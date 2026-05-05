@@ -65,7 +65,7 @@ T7_RESULT=""
 
 # --- Hermetic test sandbox (orchestrator-local probes) ---
 
-T9_TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sp15-t9-$$.XXXXXX")"
+T9_TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/consultation-cross-cutting-$$.XXXXXX")"
 trap 'rm -rf "$T9_TEST_DIR" 2>/dev/null' EXIT INT TERM
 
 export CLAUDE_HOME="$T9_TEST_DIR/claude"
@@ -175,7 +175,7 @@ fi
 # byte-equivalence with pre-T-3 callers.
 
 P3_FAIL_COUNT=0
-for sid_pair in "sp12-t4 surface-1-claude-home" "sp12-t5 surface-2-memory-seeds" "sp12-t8 surface-5-doc-dependencies" "sp12-t10 surface-9-architect-prior-seed"; do
+for sid_pair in "surface-1-claude-home test-fixture" "surface-2-memory-seeds test-fixture" "surface-5-doc-dependencies test-fixture" "surface-9-architect-prior-seed test-fixture"; do
   set -- $sid_pair
   sid="$1"
   gfrom="$2"
@@ -310,7 +310,7 @@ fi
 
 if [ "$PROBE_FAIL" -eq 0 ]; then
   # If we got here, P1..P8 all passed.
-  pass_probe "P9 audit log consult action shape verified across surface-3 / surface-4 / surface-6 / sp13-stage-2-5 (transitive via P4..P8 each covering its surface's consult-record AC)"
+  pass_probe "P9 audit log consult action shape verified across surface-3 / surface-4 / surface-6 / import-plan-consultation (transitive via P4..P8 each covering its surface's consult-record AC)"
 else
   fail_probe "P9 NOT EVALUATED — upstream probes failed; audit log shape coverage incomplete"
 fi

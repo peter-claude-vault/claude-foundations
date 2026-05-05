@@ -25,7 +25,7 @@
 #         line preserved.
 #   AC7 — User-reject → rc=1; consulted-import-plan.md NOT written;
 #         audit log records consult/reject with surface_id =
-#         sp13-stage-2-5-import-plan.
+#         import-plan-consultation.
 #   AC8 — Audit-log ordering: consult/accept appears BEFORE generate +
 #         apply records for the same surface.
 #   AC9 — Real-T-6 round-trip: synthetic propose-taxonomy fixture → real
@@ -92,7 +92,7 @@ else
   if [ "$rc" = "77" ]; then
     # jq fallback if jsonschema not installed.
     if jq -e '.schema_version == "consultation-rationale-templates/1"' "$TEMPLATES" >/dev/null 2>&1 && \
-       jq -e '.templates["sp13-stage-2-5-import-plan"].citations | length >= 4' "$TEMPLATES" >/dev/null 2>&1; then
+       jq -e '.templates["import-plan-consultation"].citations | length >= 4' "$TEMPLATES" >/dev/null 2>&1; then
       pass "AC10 templates config validates (jq fallback; jsonschema unavailable)"
     else
       fail "AC10 templates config validation failed (jq fallback)"
@@ -106,7 +106,7 @@ fi
 
 # --- Hermetic test sandbox ---
 
-T7_TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sp15-t7-$$.XXXXXX")"
+T7_TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/consultation-stage-2-5-$$.XXXXXX")"
 trap 'rm -rf "$T7_TEST_DIR" 2>/dev/null' EXIT INT TERM
 
 export CLAUDE_HOME="$T7_TEST_DIR/claude"
@@ -116,7 +116,7 @@ export TG_STAGE_DIR="$T7_TEST_DIR/stage"
 export EDITOR=":"
 mkdir -p "$CLAUDE_HOME/onboarding/audit" "$HOOKS_STATE_OVERRIDE" "$TG_STAGE_DIR"
 
-# Production allowlist contains sp13-stage-2-5-import-plan; defaults will
+# Production allowlist contains import-plan-consultation; defaults will
 # resolve fine. No CG_ALLOWLIST_PATH override needed.
 
 # --- Synthetic import-plan.md fixture ---
@@ -227,7 +227,7 @@ set -e
 
 # (c) templates missing the surface-id entry
 NOSID_TEMPL="$T7_TEST_DIR/nosid-templates.json"
-jq 'del(.templates["sp13-stage-2-5-import-plan"]) | .templates["other-surface"] = {"preamble":"x","tradeoffs":"y","citations":[]}' "$TEMPLATES" > "$NOSID_TEMPL"
+jq 'del(.templates["import-plan-consultation"]) | .templates["other-surface"] = {"preamble":"x","tradeoffs":"y","citations":[]}' "$TEMPLATES" > "$NOSID_TEMPL"
 set +e
 "$STAGE25" --import-plan "$INPUT" --out "$OUT" --templates "$NOSID_TEMPL" \
   >"$T7_TEST_DIR/ac4c.out" 2>"$T7_TEST_DIR/ac4c.err"
@@ -315,11 +315,11 @@ fi
 # --- AC8: audit-log ordering — consult/accept BEFORE generate + apply ---
 
 # Filter to records for our surface, find line numbers of accept + generate + apply.
-consult_line="$(grep -n '"surface_id":"sp13-stage-2-5-import-plan"' "$AUTO_AUTHOR_LOG" \
+consult_line="$(grep -n '"surface_id":"import-plan-consultation"' "$AUTO_AUTHOR_LOG" \
   | grep '"action":"consult"' | grep '"response":"accept"' | head -1 | cut -d: -f1)"
-generate_line="$(grep -n '"surface_id":"sp13-stage-2-5-import-plan"' "$AUTO_AUTHOR_LOG" \
+generate_line="$(grep -n '"surface_id":"import-plan-consultation"' "$AUTO_AUTHOR_LOG" \
   | grep '"action":"generate"' | head -1 | cut -d: -f1)"
-apply_line="$(grep -n '"surface_id":"sp13-stage-2-5-import-plan"' "$AUTO_AUTHOR_LOG" \
+apply_line="$(grep -n '"surface_id":"import-plan-consultation"' "$AUTO_AUTHOR_LOG" \
   | grep '"action":"apply"' | head -1 | cut -d: -f1)"
 if [ -n "$consult_line" ] && [ -n "$generate_line" ] && [ -n "$apply_line" ] && \
    [ "$consult_line" -lt "$generate_line" ] && [ "$generate_line" -lt "$apply_line" ]; then
@@ -349,7 +349,7 @@ else
   fail "AC7 reject leaked consulted plan to $OUT"
 fi
 # Audit log carries consult/reject for the surface, NO generate/apply.
-if grep -q '"surface_id":"sp13-stage-2-5-import-plan"' "$AUTO_AUTHOR_LOG" && \
+if grep -q '"surface_id":"import-plan-consultation"' "$AUTO_AUTHOR_LOG" && \
    grep -q '"action":"consult"' "$AUTO_AUTHOR_LOG" && \
    grep -q '"response":"reject"' "$AUTO_AUTHOR_LOG"; then
   if ! grep -q '"action":"generate"' "$AUTO_AUTHOR_LOG" && \

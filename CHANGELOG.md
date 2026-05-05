@@ -21,7 +21,7 @@ Greenfield content seeding now actually runs end-to-end.
 ### Added
 
 - **`infer-vault-structure` skill is now installed.** The four-stage cluster → propose → import-plan → review-gate chain ships to `~/.claude/skills/infer-vault-structure/`. Earlier 2.1.x releases left this directory off the install allowlist.
-- **End-to-end greenfield test.** A new test driver (`tests/sp16/greenfield-end-to-end.sh` in this release; the path will likely move to `tests/greenfield-pipeline/` in a future release) drives the full intake → 7-surface auto-author → 4-stage orchestrator pipeline against a sandboxed `$HOME` and asserts on auto-author log records, the approved import plan, consultation records, and identity-token leakage.
+- **End-to-end greenfield test.** `tests/greenfield-pipeline/greenfield-end-to-end.sh` drives the full intake → 7-surface auto-author → 4-stage orchestrator pipeline against a sandboxed `$HOME` and asserts on auto-author log records, the approved import plan, consultation records, and identity-token leakage.
 
 ## [v2.1.0] — 2026-05-05
 

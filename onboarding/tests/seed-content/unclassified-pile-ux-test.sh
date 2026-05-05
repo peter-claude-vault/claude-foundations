@@ -15,7 +15,7 @@
 #       algorithm jargon in user-facing copy.
 #
 # Per feedback_test_isolation_for_hooks_state + feedback_universal_vault_safety:
-#   - $TMPDIR/sp13-t15-XXXXXX as $CLAUDE_HOME (hermetic; never live ~/.claude/)
+#   - $TMPDIR/unclassified-pile-ux-test-XXXXXX as $CLAUDE_HOME (hermetic; never live ~/.claude/)
 #   - parallel test "vault" tmpdir (never ~/Documents/Obsidian Vault/)
 #   - HOOKS_STATE_OVERRIDE redirected to tmpdir
 #   - ANTHROPIC_API_KEY + VOYAGE_API_KEY unset (forces stub modes; no API)
@@ -62,7 +62,7 @@ FIXTURE_PY="$REPO_ROOT/tests/fixtures/sp13-unclassified/corpus.py"
 
 # ----- Hermetic isolation ---------------------------------------------------
 
-TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/sp13-t15-XXXXXX")"
+TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/unclassified-pile-ux-test-XXXXXX")"
 KEEP_TMP="${SP13_T15_KEEP_TMP:-}"
 if [ -z "$KEEP_TMP" ]; then
   trap 'rm -rf "$TMPROOT"' EXIT INT TERM

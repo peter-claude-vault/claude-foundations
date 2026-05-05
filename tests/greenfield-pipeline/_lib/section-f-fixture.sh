@@ -37,7 +37,7 @@ fail() { FAIL_COUNT=$((FAIL_COUNT + 1)); printf 'FAIL — %s\n' "$1" >&2; }
 #               STUB_SURFACE_DIR, AUTO_AUTHOR_LOG, SECTION_F_STATE_DIR
 make_sandbox() {
   _name="$1"
-  TEST_DIR=$(mktemp -d "${TMPDIR:-/tmp}/sp16-t2-${_name}-$$.XXXXXX")
+  TEST_DIR=$(mktemp -d "${TMPDIR:-/tmp}/greenfield-section-f-${_name}-$$.XXXXXX")
   trap '[ -n "${TEST_DIR:-}" ] && [ -d "$TEST_DIR" ] && rm -rf "$TEST_DIR" 2>/dev/null' EXIT INT TERM
 
   export CLAUDE_HOME="$TEST_DIR/claude-home"

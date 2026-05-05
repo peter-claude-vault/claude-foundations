@@ -368,11 +368,11 @@ if [ "${BASH_SOURCE[0]:-$0}" = "$0" ]; then
       pf_validate "$_block" || { echo "FAIL: pf_validate on basic block" >&2; exit 1; }
 
       _block_iso="$_PF_TEST_DIR/block-iso.yml"
-      pf_emit "sp12-t5" "section-a-priorities" "2026-05-04T13:22:08Z" > "$_block_iso" || { echo "FAIL: pf_emit iso" >&2; exit 1; }
+      pf_emit "surface-2-memory-seeds" "section-a-priorities" "2026-05-04T13:22:08Z" > "$_block_iso" || { echo "FAIL: pf_emit iso" >&2; exit 1; }
       pf_validate "$_block_iso" || { echo "FAIL: pf_validate on iso block" >&2; exit 1; }
 
       _block_lineage="$_PF_TEST_DIR/block-lineage.yml"
-      pf_emit_with_lineage "sp12-t5" "section-a-priorities" "sp12-t5" \
+      pf_emit_with_lineage "surface-2-memory-seeds" "section-a-priorities" "surface-2-memory-seeds" \
         "a7b43e5e4b0d6e3f5b31d6a0e29c8b8b4e9c5f3c2a1d8b7e6f5d4c3b2a1908f7" \
         > "$_block_lineage" || { echo "FAIL: pf_emit_with_lineage" >&2; exit 1; }
       pf_validate "$_block_lineage" || { echo "FAIL: pf_validate on lineage block" >&2; exit 1; }

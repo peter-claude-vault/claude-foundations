@@ -21,7 +21,7 @@
 # Three-step gate (single-target via gate_generate + gate_apply against
 # user-manifest). Provenance recorded at file-level via _provenance fields
 # would pollute the schema — instead, each composed entry is namespaced with
-# a leading source marker (`[sp12-t10:<industry>] `) for downstream auditing.
+# a leading source marker (`[architect-prior-seed:<industry>] `) for downstream auditing.
 #
 # OUTPUT CONTRACT (R-43):
 #   Files written:
@@ -61,7 +61,7 @@ GATE_LIB="$ONBOARDING_DIR/lib/three-step-gate.sh"
 # --- defaults + arg parsing ---
 USER_MANIFEST="${USER_MANIFEST:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
 INDUSTRY_OVERRIDE=""
-SURFACE_ID="sp12-t10"
+SURFACE_ID="surface-9-architect-prior-seed"
 GENERATED_FROM="identity.industry+architect-concerns-interview"
 AUTO_APPLY=0
 SKIP_PREVIEW=0
@@ -99,41 +99,41 @@ EXISTING_RESEARCH_TOPICS_JSON="$(jq -c '.architect.research_topics // []' "$USER
 prior_seed_for_industry() {
   case "$1" in
     consulting|management-consulting)
-      printf '[sp12-t10:consulting] engagement-cluster drift across overlapping client portfolios\n'
-      printf '[sp12-t10:consulting] under-documented decision history in long-running engagements\n'
-      printf '[sp12-t10:consulting] meeting-output-to-deliverable cascade gaps (notes never become PRDs)\n'
-      printf '[sp12-t10:consulting] stakeholder-context churn (people files outdated by reorg)\n'
+      printf '[architect-prior-seed:consulting] engagement-cluster drift across overlapping client portfolios\n'
+      printf '[architect-prior-seed:consulting] under-documented decision history in long-running engagements\n'
+      printf '[architect-prior-seed:consulting] meeting-output-to-deliverable cascade gaps (notes never become PRDs)\n'
+      printf '[architect-prior-seed:consulting] stakeholder-context churn (people files outdated by reorg)\n'
       ;;
     academic-research|research|academia)
-      printf '[sp12-t10:research] dataset-version skew between draft and submission revisions\n'
-      printf '[sp12-t10:research] citation graph drift (works-cited entries that vanish from notes)\n'
-      printf '[sp12-t10:research] reproducibility gaps between method-section claims and code\n'
-      printf '[sp12-t10:research] under-linked literature reviews (orphaned paper notes)\n'
+      printf '[architect-prior-seed:research] dataset-version skew between draft and submission revisions\n'
+      printf '[architect-prior-seed:research] citation graph drift (works-cited entries that vanish from notes)\n'
+      printf '[architect-prior-seed:research] reproducibility gaps between method-section claims and code\n'
+      printf '[architect-prior-seed:research] under-linked literature reviews (orphaned paper notes)\n'
       ;;
     software|engineering|software-engineering|tech)
-      printf '[sp12-t10:software] decision-record decay (ADRs that no longer match the codebase)\n'
-      printf '[sp12-t10:software] stale postmortem context (incident notes lose their tickets)\n'
-      printf '[sp12-t10:software] feature-flag debt accumulation in long-running projects\n'
-      printf '[sp12-t10:software] under-linked library/API references in implementation notes\n'
+      printf '[architect-prior-seed:software] decision-record decay (ADRs that no longer match the codebase)\n'
+      printf '[architect-prior-seed:software] stale postmortem context (incident notes lose their tickets)\n'
+      printf '[architect-prior-seed:software] feature-flag debt accumulation in long-running projects\n'
+      printf '[architect-prior-seed:software] under-linked library/API references in implementation notes\n'
       ;;
     education|teaching)
-      printf '[sp12-t10:education] curriculum-version drift between syllabus and module content\n'
-      printf '[sp12-t10:education] under-tracked student-query patterns across cohorts\n'
-      printf '[sp12-t10:education] orphaned reference materials between term boundaries\n'
-      printf '[sp12-t10:education] assessment-feedback cascade gaps (rubric-to-grade traceability)\n'
+      printf '[architect-prior-seed:education] curriculum-version drift between syllabus and module content\n'
+      printf '[architect-prior-seed:education] under-tracked student-query patterns across cohorts\n'
+      printf '[architect-prior-seed:education] orphaned reference materials between term boundaries\n'
+      printf '[architect-prior-seed:education] assessment-feedback cascade gaps (rubric-to-grade traceability)\n'
       ;;
     product|product-management|design)
-      printf '[sp12-t10:product] PRD-vs-shipped-feature drift (specs that no longer match)\n'
-      printf '[sp12-t10:product] customer-feedback orphaning (themes never reconciled with roadmap)\n'
-      printf '[sp12-t10:product] competitor-research staleness in long-running positioning docs\n'
-      printf '[sp12-t10:product] design-decision rationale that decays without artifact links\n'
+      printf '[architect-prior-seed:product] PRD-vs-shipped-feature drift (specs that no longer match)\n'
+      printf '[architect-prior-seed:product] customer-feedback orphaning (themes never reconciled with roadmap)\n'
+      printf '[architect-prior-seed:product] competitor-research staleness in long-running positioning docs\n'
+      printf '[architect-prior-seed:product] design-decision rationale that decays without artifact links\n'
       ;;
     *)
       # Fallback for unknown/empty industries — generic-but-structured.
-      printf '[sp12-t10:generic] decision-record drift over time (rationale becomes orphaned)\n'
-      printf '[sp12-t10:generic] under-linked reference material accumulating in capture buffers\n'
-      printf '[sp12-t10:generic] stakeholder/context-file staleness as priorities shift\n'
-      printf '[sp12-t10:generic] orphaned long-running notes that never reconcile with deliverables\n'
+      printf '[architect-prior-seed:generic] decision-record drift over time (rationale becomes orphaned)\n'
+      printf '[architect-prior-seed:generic] under-linked reference material accumulating in capture buffers\n'
+      printf '[architect-prior-seed:generic] stakeholder/context-file staleness as priorities shift\n'
+      printf '[architect-prior-seed:generic] orphaned long-running notes that never reconcile with deliverables\n'
       ;;
   esac
 }
@@ -141,34 +141,34 @@ prior_seed_for_industry() {
 research_topics_for_industry() {
   case "$1" in
     consulting|management-consulting)
-      printf '[sp12-t10:consulting] PKM patterns for client-engagement vaults — structure, frequency, retrieval\n'
-      printf '[sp12-t10:consulting] meeting-note-to-deliverable cascade tooling for consulting workflows\n'
-      printf '[sp12-t10:consulting] cross-engagement knowledge transfer techniques in professional services\n'
+      printf '[architect-prior-seed:consulting] PKM patterns for client-engagement vaults — structure, frequency, retrieval\n'
+      printf '[architect-prior-seed:consulting] meeting-note-to-deliverable cascade tooling for consulting workflows\n'
+      printf '[architect-prior-seed:consulting] cross-engagement knowledge transfer techniques in professional services\n'
       ;;
     academic-research|research|academia)
-      printf '[sp12-t10:research] literature-review knowledge management for graduate research\n'
-      printf '[sp12-t10:research] dataset-versioning best practices in computational research\n'
-      printf '[sp12-t10:research] PKM patterns for thesis-in-progress writing surfaces\n'
+      printf '[architect-prior-seed:research] literature-review knowledge management for graduate research\n'
+      printf '[architect-prior-seed:research] dataset-versioning best practices in computational research\n'
+      printf '[architect-prior-seed:research] PKM patterns for thesis-in-progress writing surfaces\n'
       ;;
     software|engineering|software-engineering|tech)
-      printf '[sp12-t10:software] ADR drift detection patterns in long-running codebases\n'
-      printf '[sp12-t10:software] postmortem-knowledge retention across team rotations\n'
-      printf '[sp12-t10:software] feature-flag lifecycle management documentation patterns\n'
+      printf '[architect-prior-seed:software] ADR drift detection patterns in long-running codebases\n'
+      printf '[architect-prior-seed:software] postmortem-knowledge retention across team rotations\n'
+      printf '[architect-prior-seed:software] feature-flag lifecycle management documentation patterns\n'
       ;;
     education|teaching)
-      printf '[sp12-t10:education] curriculum-versioning patterns for multi-cohort instruction\n'
-      printf '[sp12-t10:education] cross-term student-feedback synthesis workflows\n'
-      printf '[sp12-t10:education] reference-material lifecycle in evergreen courses\n'
+      printf '[architect-prior-seed:education] curriculum-versioning patterns for multi-cohort instruction\n'
+      printf '[architect-prior-seed:education] cross-term student-feedback synthesis workflows\n'
+      printf '[architect-prior-seed:education] reference-material lifecycle in evergreen courses\n'
       ;;
     product|product-management|design)
-      printf '[sp12-t10:product] PRD-vs-shipped reconciliation tooling for product teams\n'
-      printf '[sp12-t10:product] customer-discovery synthesis patterns at scale\n'
-      printf '[sp12-t10:product] competitor-tracking knowledge bases — refresh cadence + structure\n'
+      printf '[architect-prior-seed:product] PRD-vs-shipped reconciliation tooling for product teams\n'
+      printf '[architect-prior-seed:product] customer-discovery synthesis patterns at scale\n'
+      printf '[architect-prior-seed:product] competitor-tracking knowledge bases — refresh cadence + structure\n'
       ;;
     *)
-      printf '[sp12-t10:generic] PKM best practices for the user-declared workflow\n'
-      printf '[sp12-t10:generic] decision-record retention patterns across long-running projects\n'
-      printf '[sp12-t10:generic] reference-material organization techniques for multi-context vaults\n'
+      printf '[architect-prior-seed:generic] PKM best practices for the user-declared workflow\n'
+      printf '[architect-prior-seed:generic] decision-record retention patterns across long-running projects\n'
+      printf '[architect-prior-seed:generic] reference-material organization techniques for multi-context vaults\n'
       ;;
   esac
 }
@@ -203,7 +203,7 @@ gen_user_manifest() {
 
 # --- main ---
 if [ -z "${TG_STAGE_DIR:-}" ]; then
-  TG_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sp12-t10.XXXXXX")"
+  TG_STAGE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/surface-9.XXXXXX")"
   export TG_STAGE_DIR
 fi
 

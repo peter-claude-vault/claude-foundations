@@ -81,7 +81,7 @@ TEMPLATES="$DEFAULT_TEMPLATES"
 CG_LIB="$DEFAULT_CG_LIB"
 AUTO_APPLY=0
 
-SURFACE_ID="sp13-stage-2-5-import-plan"
+SURFACE_ID="import-plan-consultation"
 TEMPLATES_SCHEMA_VERSION="consultation-rationale-templates/1"
 INPUT_SCHEMA_VERSION="import-plan/1"
 

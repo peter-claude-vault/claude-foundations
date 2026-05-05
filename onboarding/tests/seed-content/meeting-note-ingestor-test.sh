@@ -6,7 +6,7 @@
 # (skills/meeting-note-ingestor-granola/).
 #
 # Hermetic isolation per feedback_test_isolation_for_hooks_state:
-#   - $TMPDIR/sp13-t11-test-XXXXXX
+#   - $TMPDIR/meeting-note-ingestor-test-XXXXXX
 #   - ANTHROPIC_API_KEY + VOYAGE_API_KEY unset
 #   - PROVENANCE_SCHEMA explicit env var (lib path resolution from arbitrary cwd)
 #   - $HOOKS_STATE not touched (skill performs zero ~/.claude/ writes)
@@ -24,7 +24,7 @@ CONNECTOR_SKILL_MD="$REPO_ROOT/skills/meeting-note-ingestor-granola/SKILL.md"
 PF_LIB="$REPO_ROOT/lib/provenance-frontmatter.sh"
 PROV_SCHEMA="$REPO_ROOT/schemas/provenance-frontmatter-schema.json"
 
-TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/sp13-t11-test-XXXXXX")"
+TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/meeting-note-ingestor-test-XXXXXX")"
 trap 'rm -rf "$TMPROOT"' EXIT INT TERM
 
 # Hermetic env. Test isolation per feedback_test_isolation_for_hooks_state.

@@ -338,7 +338,7 @@ def main():
         manifest_writes.extend(triad)
 
     manifest = {
-        "schema_version": "sp13-t8/1",
+        "schema_version": "seed-projects/1",
         "surface_id": "seed-projects",
         "approved_plan_input": args.approved_plan,
         "vault_root": args.vault_root,

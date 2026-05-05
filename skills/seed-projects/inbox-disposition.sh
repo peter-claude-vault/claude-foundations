@@ -14,7 +14,7 @@
 #     - $STAGE_DIR/seed-projects/Inbox/<date>-<slug>.md per non-project
 #       source_item (only on staging — no vault writes from this script;
 #       seed.sh's apply path copies them in).
-#     - manifest JSON on stdout (sp13-t10/1).
+#     - manifest JSON on stdout (inbox-disposition/1).
 #   Schema-types:
 #     - Input: import-plan/1 (validated by h3_walker via inbox-disposition.py).
 #     - Output staged files carry SP12 provenance frontmatter.

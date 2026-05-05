@@ -36,7 +36,7 @@ HARNESS
     bash "$harness"
 }
 
-TMP="$(mktemp -d -t sp12-t13-test.XXXXXX)"
+TMP="$(mktemp -d -t context-pressure-test.XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 
 # === State 1: custom thresholds set ===

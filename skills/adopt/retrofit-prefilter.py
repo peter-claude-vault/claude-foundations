@@ -11,7 +11,7 @@ plus the vault root, and emits two artifacts:
        must not re-scaffold these. The dropped candidates surface in the matrix
        as `keep` rows (advisory).
 
-  2. retrofit-matrix.json (sp13-t13/1; consumed by retrofit-collision-matrix.py)
+  2. retrofit-matrix.json (retrofit-matrix/1; consumed by retrofit-collision-matrix.py)
        Full retrofit metadata: per-IR-record action enum, dropped-candidate
        record, idempotency-skip record. The collision-matrix renderer walks
        this file to produce the markdown appendix.
@@ -41,7 +41,7 @@ R-43 Output Contract:
   - Files written: retrofit-filtered-taxonomy.json + retrofit-matrix.json
     at $stage_dir.
   - Schema-types: filtered-taxonomy is propose-taxonomy/1 (drop-only filter; same
-    shape); matrix is sp13-t13/1 (declared inline in this file's emission).
+    shape); matrix is retrofit-matrix/1 (declared inline in this file's emission).
   - Pre-write validation: input schema_version anchor on propose-taxonomy
     + IR; vault-root must be a directory.
   - Failure mode: BLOCK AND LOG. Bad input → exit 2. No partial writes.
@@ -57,7 +57,7 @@ from collections import Counter
 
 
 SCHEMA_VERSION_TAXONOMY_INPUT = "propose-taxonomy/1"
-SCHEMA_VERSION_MATRIX_OUTPUT = "sp13-t13/1"
+SCHEMA_VERSION_MATRIX_OUTPUT = "retrofit-matrix/1"
 RETROFIT_VERSION = "v2.1.0"
 DEFAULT_KEEP_THRESHOLD = 0.8
 
@@ -249,7 +249,7 @@ def main():
                          "(propose-taxonomy/1; consumed by import-plan.sh).")
     ap.add_argument("--matrix-out", required=True,
                     help="Output path for retrofit matrix metadata "
-                         "(sp13-t13/1; consumed by retrofit-collision-matrix).")
+                         "(retrofit-matrix/1; consumed by retrofit-collision-matrix).")
     ap.add_argument("--idempotency-skip-list", default="",
                     help="Optional path to a newline-separated list of files "
                          "that retrofit.sh skipped at intake time because they "

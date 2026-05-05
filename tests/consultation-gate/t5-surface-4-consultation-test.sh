@@ -63,7 +63,7 @@ done
 # Test vault under tmpdir per feedback_universal_vault_safety. Audit log,
 # stage dir, allowlist all isolated.
 
-T5_TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sp15-t5-$$.XXXXXX")"
+T5_TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/consultation-surface-4-$$.XXXXXX")"
 trap 'rm -rf "$T5_TEST_DIR" 2>/dev/null' EXIT INT TERM
 
 export CLAUDE_HOME="$T5_TEST_DIR/claude"

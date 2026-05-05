@@ -24,7 +24,7 @@
 #
 # Surface-6 writes JSON (user-manifest.json), so AC5 provenance recording
 # uses a surface-local sidecar JSONL (`_s6_provenance_log_append`) at
-# ${CLAUDE_HOME}/onboarding/audit/sp12-t9-provenance.jsonl — mirrors the
+# ${CLAUDE_HOME}/onboarding/audit/surface-6-provenance.jsonl — mirrors the
 # SP15 T-5 surface-4 sidecar pattern (path-as-anchor / SURFACE_ID-as-
 # logical-identifier separation). β-shape per SP15 T-6 design call. The
 # v2.x charter row "provenance-shape-unification" tracks the eventual
@@ -105,20 +105,17 @@ CG_LIB="$REPO_ROOT/lib/consultation-gate.sh"
 
 # --- defaults + arg parsing ---
 USER_MANIFEST="${USER_MANIFEST:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
-# SP15 T-6: PROVENANCE_LOG path retained as `sp12-t9-provenance.jsonl` for
-# SP12 T-16 sealed-attestation compatibility, even after the SURFACE_ID
-# rename. Path-is-anchor / SURFACE_ID-is-logical-identifier separation —
-# mirrors T-5's `sp12-t7-provenance.jsonl` precedent.
-PROVENANCE_LOG="${PROVENANCE_LOG:-${CLAUDE_HOME:-$HOME/.claude}/onboarding/audit/sp12-t9-provenance.jsonl}"
+# PROVENANCE_LOG: per-surface sidecar audit log. The filename is a stable
+# anchor for downstream consumers; the SURFACE_ID is the logical identifier
+# inside the JSONL records.
+PROVENANCE_LOG="${PROVENANCE_LOG:-${CLAUDE_HOME:-$HOME/.claude}/onboarding/audit/surface-6-provenance.jsonl}"
 PROJECTS_ROOT_OVERRIDE=""
 EVIL_FIELDS_LIST=""
-# SP15 T-6: SURFACE_ID aligned to the consultation-gate allowlist entry
+# SURFACE_ID is aligned to the consultation-gate allowlist entry
 # (`lib/consultation-gate.allowlist`). Same identifier flows through (a)
 # consultation_propose's audit-log `consult` records, (b) gate_generate /
 # gate_preview / gate_apply records (via the staging filename basename),
-# and (c) the surface-local provenance sidecar JSONL. Mirror precedent for
-# the rename: T-4's `sp12-t6` → `surface-3-vault-claude-md` and T-5's
-# `sp12-t7` → `surface-4-tag-prefixes`.
+# and (c) the surface-local provenance sidecar JSONL.
 SURFACE_ID="surface-6-frontmatter-enforce"
 GENERATED_FROM="vault-projects-structure-interview+default-table"
 AUTO_APPLY=0

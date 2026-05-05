@@ -62,7 +62,7 @@ done
 # CLAUDE_HOME under tmpdir per feedback_test_isolation_for_hooks_state.
 # Audit log, stage dir, sidecar log, allowlist all isolated.
 
-T6_TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sp15-t6-$$.XXXXXX")"
+T6_TEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/consultation-surface-6-$$.XXXXXX")"
 trap 'rm -rf "$T6_TEST_DIR" 2>/dev/null' EXIT INT TERM
 
 export CLAUDE_HOME="$T6_TEST_DIR/claude"

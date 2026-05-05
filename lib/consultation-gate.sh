@@ -404,7 +404,7 @@ self-test
 surface-3-vault-claude-md
 surface-4-tag-prefixes
 surface-6-frontmatter-enforce
-sp13-stage-2-5-import-plan
+import-plan-consultation
 ALLOWLIST
 
       # Mock rationale_fn: emits canned proposal + citation block on stdout.

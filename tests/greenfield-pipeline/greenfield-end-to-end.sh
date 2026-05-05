@@ -182,7 +182,7 @@ cp "$FIXTURE_DIR/seed-orchestration.json" "$CLAUDE_HOME/orchestration.json" \
 NOW_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 SP11_DONE="$HOME/.claude-plans/71-claude-foundations-engine-v2/11-memory-bootstrap/state/T-3.done"
-printf 'sp11-t3\t%s\tT-3 fake done-marker for SP16 T-3 greenfield smoke\n' \
+printf 'memory-bootstrap\t%s\tT-3 fake done-marker for SP16 T-3 greenfield smoke\n' \
   "$NOW_TS" > "$SP11_DONE"
 export SP11_DONE_MARKER="$SP11_DONE"
 

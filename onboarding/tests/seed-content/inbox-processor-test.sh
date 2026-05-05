@@ -4,7 +4,7 @@
 # Validates the standing-Inbox processor end-to-end against an isolated
 # CLAUDE_HOME under $TMPDIR per feedback_test_isolation_for_hooks_state +
 # feedback_universal_vault_safety:
-#   - $TMPDIR/sp13-t12-test-XXXXXX as $CLAUDE_HOME
+#   - $TMPDIR/inbox-processor-test-XXXXXX as $CLAUDE_HOME
 #   - parallel test vault under the same tmpdir
 #   - HOOKS_STATE_OVERRIDE used elsewhere (this skill performs zero
 #     ~/.claude/ writes; we still snapshot the live G1 override-log to
@@ -47,7 +47,7 @@ INGESTOR="$REPO_ROOT/skills/meeting-note-ingestor/ingest.sh"
 PF_LIB="$REPO_ROOT/lib/provenance-frontmatter.sh"
 FORMAT_DETECTOR="$REPO_ROOT/onboarding/seed-content/format-detector.sh"
 
-TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/sp13-t12-test-XXXXXX")"
+TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/inbox-processor-test-XXXXXX")"
 trap 'rm -rf "$TMPROOT"' EXIT INT TERM
 
 # Hermetic env. Test isolation per feedback_test_isolation_for_hooks_state.

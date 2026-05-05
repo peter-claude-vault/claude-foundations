@@ -13,7 +13,7 @@
   "properties": {
     "generated_by": {
       "type": "string",
-      "description": "Identifier for the surface generator + version that produced the artifact. Format: <surface-id>@<version> (e.g. 'onboarder@v2.0.0-pre', 'sp12-t5'). Lets downstream regen-decisions key on the generator that owns the file.",
+      "description": "Identifier for the surface generator + version that produced the artifact. Format: <surface-id>@<version> (e.g. 'onboarder@v2.0.0-pre', 'meeting-note-ingestor'). Lets downstream regen-decisions key on the generator that owns the file.",
       "pattern": "^[a-z0-9][a-z0-9._@/-]*$",
       "minLength": 2
     },
@@ -60,10 +60,10 @@
       "last_user_edit": null
     },
     {
-      "generated_by": "sp12-t5",
+      "generated_by": "surface-2-memory-seeds",
       "generated_from": "section-a-priorities",
       "last_user_edit": "2026-05-04T13:22:08Z",
-      "superseded_by": "sp12-t5",
+      "superseded_by": "surface-2-memory-seeds",
       "original_sha256": "a7b43e5e4b0d6e3f5b31d6a0e29c8b8b4e9c5f3c2a1d8b7e6f5d4c3b2a1908f7"
     }
   ]

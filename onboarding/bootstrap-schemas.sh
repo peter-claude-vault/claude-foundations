@@ -305,7 +305,7 @@ seed_memories() {
         local tmp="$fp.tmp.$$"
         {
             printf '%s\n' '---'
-            printf 'generated_by: %s\n' 'sp11-t3'
+            printf 'generated_by: %s\n' 'memory-bootstrap'
             printf 'generated_from: %s\n' 'section-a-c-d-derivation'
             printf 'last_user_edit: %s\n' 'null'
             printf 'name: %s\n' "$nm"

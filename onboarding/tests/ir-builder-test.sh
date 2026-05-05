@@ -13,7 +13,7 @@
 #   AC7  every IR record validates structurally against the schema (jq probe)
 #   AC8  onboard.sh threads --seed-batch-cap into ir-builder
 #
-# Hermetic: $TMPDIR/sp13-t3-test-XXXXXX. No live writes.
+# Hermetic: $TMPDIR/ir-builder-test-XXXXXX. No live writes.
 # Bash 3.2 compatible (R-23).
 
 set -u
@@ -27,7 +27,7 @@ IR_BUILDER="$REPO_ROOT/onboarding/seed-content/ir-builder.sh"
 SCHEMA="$REPO_ROOT/schemas/seed-content-ir-schema.json"
 ONBOARD="$REPO_ROOT/skills/onboarder/onboard.sh"
 
-TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/sp13-t3-test-XXXXXX")
+TMPROOT=$(mktemp -d "${TMPDIR:-/tmp}/ir-builder-test-XXXXXX")
 trap 'rm -rf "$TMPROOT"' EXIT
 
 pass=0

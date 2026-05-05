@@ -51,7 +51,7 @@
 #     - $WORK_DIR/cluster-output.json       (T-4)
 #     - $WORK_DIR/propose-taxonomy-output.json  (T-5)
 #     - $WORK_DIR/retrofit-filtered-taxonomy.json (propose-taxonomy/1; retrofit-prefilter)
-#     - $WORK_DIR/retrofit-matrix.json      (sp13-t13/1; retrofit-prefilter)
+#     - $WORK_DIR/retrofit-matrix.json      (retrofit-matrix/1; retrofit-prefilter)
 #     - $WORK_DIR/import-plan.md            (T-6 + collision matrix appendix)
 #     - $WORK_DIR/idempotency-skip.list     (newline-separated; populated by intake)
 #     - vault writes (Stage 3): only on user [a]pply; only for truly-new candidates.

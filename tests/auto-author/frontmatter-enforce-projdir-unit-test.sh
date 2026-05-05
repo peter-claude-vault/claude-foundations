@@ -27,7 +27,7 @@ else
 fi
 
 # Run detection harness with default proj_dir (Engagements).
-TMP="$(mktemp -d -t sp12-t9-test.XXXXXX)"
+TMP="$(mktemp -d -t frontmatter-enforce-projdir-test.XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 
 run_detect() {
