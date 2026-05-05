@@ -80,14 +80,14 @@ End of night: production system intact and cleaner than before.
 
 `install.sh` detects when `$CLAUDE_HOME` resolves to the canonical real-home path (`$HOME/.claude` on macOS) and the directory contains non-foundation content. The detection is invariant — it doesn't matter what env var you set or didn't set. If the resolved write target is `$HOME/.claude` and it already contains non-foundation artifacts, the script halts.
 
-### `--force-install` plus `I-UNDERSTAND-APRIL-13` sentinel
+### `--force-install` plus `I-UNDERSTAND-OVERWRITE-RISK` sentinel
 
 The only way to bypass the equality guard is two physical actions:
 
 1. Pass `--force-install` on the command line.
-2. Pipe the literal string `I-UNDERSTAND-APRIL-13` to stdin.
+2. Pipe the literal string `I-UNDERSTAND-OVERWRITE-RISK` to stdin.
 
-The script reads stdin once, compares against the sentinel, and refuses if absent. There is no way to express "yes, overwrite my live `~/.claude/`" except by typing that string. The date is the canonical bypass authorization — the name itself is a memory of why the gate exists.
+The script reads stdin once, compares against the sentinel, and refuses if absent. There is no way to express "yes, overwrite my live `~/.claude/`" except by typing that string. The phrase is structural: it forces the operator to acknowledge the action rather than make it a typo-away from happening.
 
 ### Hermetic test harness
 

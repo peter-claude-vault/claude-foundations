@@ -1,6 +1,6 @@
 # April 13, 2026 — Foundation Install Corruption
 
-**Memorial document.** This is the incident that ended Plan 38 and forced the Plan 71 rewrite. Every guard in v2 — G1-main install-side gate, the `I-UNDERSTAND-APRIL-13` sentinel, R-55 live-mutation containment, the `--force-install` flag — exists because of what happened that night.
+**Memorial document.** This is the incident that ended Plan 38 and forced the Plan 71 rewrite. Every guard in v2 — G1-main install-side gate, the `I-UNDERSTAND-OVERWRITE-RISK` sentinel, R-55 live-mutation containment, the `--force-install` flag — exists because of what happened that night.
 
 ---
 
@@ -68,11 +68,11 @@ End of night: production system intact and cleaner than before. Plan 38 dead.
 ### G1-main install-side guard
 `install.sh` detects when `$CLAUDE_HOME` resolves to the canonical real-home path (`$HOME/.claude` on macOS) and refuses to proceed without explicit acknowledgement. The detection is invariant — it doesn't matter what env var you set or didn't set. If the resolved write target is `$HOME/.claude` and it already contains foundation artifacts, the script halts.
 
-### `--force-install` + `I-UNDERSTAND-APRIL-13` sentinel
+### `--force-install` + `I-UNDERSTAND-OVERWRITE-RISK` sentinel
 The only way to bypass G1-main is two physical actions:
 
 1. Pass `--force-install` on the command line.
-2. Pipe the literal string `I-UNDERSTAND-APRIL-13` to stdin.
+2. Pipe the literal string `I-UNDERSTAND-OVERWRITE-RISK` to stdin.
 
 The script reads stdin once, compares against the sentinel, and refuses if absent. There is no way to express "yes, overwrite my live `~/.claude/`" except by typing that string. The April 13 incident is the canonical bypass authorization — the name itself is a memory of why the gate exists.
 

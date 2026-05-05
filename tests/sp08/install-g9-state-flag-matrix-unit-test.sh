@@ -237,7 +237,7 @@ t7_rc=0
 # additionally promotes cp -n → cp -f.
 ( HOME="$t7_home" CLAUDE_HOME="$t7_claude" SOURCE_REPO="$REPO_ROOT" \
   bash "$INSTALL_SH" --force-install --force-all --apply 2>"$t7_stderr" >/dev/null \
-  <<<"I-UNDERSTAND-APRIL-13" ) || t7_rc=$?
+  <<<"I-UNDERSTAND-OVERWRITE-RISK" ) || t7_rc=$?
 assert_eq "0" "$t7_rc" "T7.1: --force-all + --force-install + sentinel → exit 0"
 # After install, pre-write-guard.sh should match foundation baseline (user marker gone)
 if grep -q "USER-EDITED VARIANT" "$t7_claude/hooks/pre-write-guard.sh" 2>/dev/null; then

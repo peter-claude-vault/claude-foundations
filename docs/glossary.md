@@ -104,7 +104,7 @@ Every term used in claude-stem documentation, defined in one sentence. Where a t
 
 - **G1, G1-pre, G1-main** — install-script guards. G1-main is the existing-`~/.claude/` clobber refusal; G1-pre is the `$CLAUDE_HOME` env-var presence check.
 
-- **`I-UNDERSTAND-APRIL-13` sentinel** — the literal confirmation phrase the installer demands before overwriting an existing `~/.claude/`. Named after the date of the install-corruption incident; documented at [`install-corruption-incident.md`](install-corruption-incident.md).
+- **`I-UNDERSTAND-OVERWRITE-RISK` sentinel** — the literal confirmation phrase the installer demands before overwriting an existing `~/.claude/`. Typing the phrase is the only way to express "yes, replace my existing configuration." See [`install-corruption-incident.md`](install-corruption-incident.md) for why the gate exists.
 
 - **CFF (Cross-File Findings)** — internal terminology for a librarian finding that spans multiple files (e.g. provides-canonicality drift). You'll see the codes in finding output.
 

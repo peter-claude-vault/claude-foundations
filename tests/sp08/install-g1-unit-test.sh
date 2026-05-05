@@ -4,7 +4,7 @@
 # Synthetic unit test for SP08 T-1 follow-up (S60) — G1 firewall family:
 #   T1: G1-pre exit-code + diagnostic + 100ms timing + write-suppression
 #   T2: G1-main equality + non-foundation content + no --force-install → exit 51
-#   T3: G1-main + --force-install + correct I-UNDERSTAND-APRIL-13 sentinel → exit 0
+#   T3: G1-main + --force-install + correct I-UNDERSTAND-OVERWRITE-RISK sentinel → exit 0
 #   T4: G1-main + --force-install + wrong sentinel → exit 51
 #   T5: G1-main + --force-install + sentinel + foundation-only content → exit 0
 #   T6: G1-main NOT triggered when CLAUDE_HOME != $HOME/.claude (regression sanity)
@@ -141,7 +141,7 @@ t2_rc=0
   bash "$INSTALL_SH" >/dev/null 2>"$t2_stderr" ) || t2_rc=$?
 assert_eq "51" "$t2_rc" "T2.1: non-foundation + no --force-install → exit 51"
 assert_grep "G1-main fired" "$t2_stderr" "T2.2: G1-main diagnostic emitted"
-assert_grep "I-UNDERSTAND-APRIL-13" "$t2_stderr" "T2.3: G1-main diagnostic names sentinel"
+assert_grep "I-UNDERSTAND-OVERWRITE-RISK" "$t2_stderr" "T2.3: G1-main diagnostic names sentinel"
 
 printf '\n=== T3: G1-main + --force-install + correct sentinel → exit 0 ===\n'
 
@@ -153,7 +153,7 @@ t3_stdout="$t3_home/stdout.log"
 t3_rc=0
 ( HOME="$t3_home" CLAUDE_HOME="$t3_home/.claude" SOURCE_REPO="$REPO_ROOT" \
   bash "$INSTALL_SH" --force-install --apply >"$t3_stdout" 2>"$t3_stderr" \
-  <<<"I-UNDERSTAND-APRIL-13" ) || t3_rc=$?
+  <<<"I-UNDERSTAND-OVERWRITE-RISK" ) || t3_rc=$?
 assert_eq "0" "$t3_rc" "T3.1: correct sentinel + --force-install → exit 0"
 assert_grep "sentinel verified" "$t3_stdout" "T3.2: sentinel-verified info line emitted (stdout)"
 # Verify install actually proceeded (provenance log written)
@@ -199,7 +199,7 @@ t5_stderr="$t5_home/stderr.log"
 t5_rc=0
 ( HOME="$t5_home" CLAUDE_HOME="$t5_home/.claude" SOURCE_REPO="$REPO_ROOT" \
   bash "$INSTALL_SH" --force-install --apply >/dev/null 2>"$t5_stderr" \
-  <<<"I-UNDERSTAND-APRIL-13" ) || t5_rc=$?
+  <<<"I-UNDERSTAND-OVERWRITE-RISK" ) || t5_rc=$?
 assert_eq "0" "$t5_rc" "T5.1: foundation-only content → exit 0"
 # Note: g1_main_has_non_foundation_content returns 1 for foundation-only,
 # so G1-main is skipped entirely; sentinel handshake is a no-op (no prompt

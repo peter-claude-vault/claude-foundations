@@ -4,7 +4,7 @@
 # Slice scope (S59 + S60 + S62 + S64 + S65 + S66 cumulative):
 #   - CLAUDE_HOME-first resolution (R-55 invariant; AC #1)
 #   - G1-pre 100ms preflight (no FS writes; AC #2)              [S60]
-#   - G1-main $HOME/.claude equality gate + I-UNDERSTAND-APRIL-13
+#   - G1-main $HOME/.claude equality gate + I-UNDERSTAND-OVERWRITE-RISK
 #     sentinel + --force-install flag (AC #3)                    [S60]
 #   - G2 foreign-content detector — sha256 drift in foundation files  [S64]
 #     against $SOURCE_REPO/foundation-manifest.json baseline; refuse
@@ -69,9 +69,9 @@
 #   30  schema parse failure (post-install)
 #   40  settings.json merge conflict requires human resolution (jq error)
 #   51  G1-main fired ($HOME/.claude equality + non-foundation content,    [S60]
-#       missing --force-install or I-UNDERSTAND-APRIL-13 sentinel)
+#       missing --force-install or I-UNDERSTAND-OVERWRITE-RISK sentinel)
 #   52  G2 fired (foreign-content sha256 drift in foundation files,        [S64]
-#       missing --force-install or I-UNDERSTAND-APRIL-13 sentinel)
+#       missing --force-install or I-UNDERSTAND-OVERWRITE-RISK sentinel)
 #   53  G3 fired (backup proof-of-life: --backup-dir absent when           [S65]
 #       destructive op pending; or supplied --backup-dir not writable
 #       or round-trip-broken)
@@ -140,7 +140,7 @@ if [ "$NO_PRESERVE_CONFIG" = "1" ] && [ "$FORCE_INSTALL" != "1" ]; then
 fi
 
 # --- sentinel-verified flag (G1-main + G2 share single ceremony per S64) ---
-# Set to 1 after the first successful I-UNDERSTAND-APRIL-13 prompt; later
+# Set to 1 after the first successful I-UNDERSTAND-OVERWRITE-RISK prompt; later
 # guards consult it to avoid re-prompting in the same install invocation.
 sentinel_verified=0
 
@@ -217,7 +217,7 @@ fi
 
 # --- G1-main: $HOME/.claude equality gate (AC #3; spec.md L75) ---
 # Refuse if $CLAUDE_HOME == $HOME/.claude AND target exists with non-foundation
-# content, unless --force-install AND I-UNDERSTAND-APRIL-13 sentinel typed.
+# content, unless --force-install AND I-UNDERSTAND-OVERWRITE-RISK sentinel typed.
 # String comparison (not resolution) per R-55 carve-out.
 foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json foundation-manifest.json"
 
@@ -245,17 +245,17 @@ g1_main_has_non_foundation_content() {
 if [ "$CLAUDE_HOME" = "$HOME/.claude" ] && [ -d "$CLAUDE_HOME" ]; then
   if g1_main_has_non_foundation_content "$CLAUDE_HOME"; then
     if [ "$FORCE_INSTALL" != "1" ]; then
-      diag "G1-main fired: \$CLAUDE_HOME equals \$HOME/.claude AND target contains non-foundation content. Pass --force-install AND type I-UNDERSTAND-APRIL-13 sentinel to proceed (April-13 protection)."
+      diag "G1-main fired: \$CLAUDE_HOME equals \$HOME/.claude AND target contains non-foundation content. Pass --force-install AND type I-UNDERSTAND-OVERWRITE-RISK sentinel to proceed (April-13 protection)."
       exit 51
     fi
-    printf 'install: type I-UNDERSTAND-APRIL-13 to confirm: ' >&2
+    printf 'install: type I-UNDERSTAND-OVERWRITE-RISK to confirm: ' >&2
     sentinel=""
     if ! IFS= read -r sentinel; then
       diag "G1-main fired: sentinel not provided (stdin EOF). Aborting."
       exit 51
     fi
-    if [ "$sentinel" != "I-UNDERSTAND-APRIL-13" ]; then
-      diag "G1-main fired: sentinel mismatch. Expected literal 'I-UNDERSTAND-APRIL-13'. Aborting."
+    if [ "$sentinel" != "I-UNDERSTAND-OVERWRITE-RISK" ]; then
+      diag "G1-main fired: sentinel mismatch. Expected literal 'I-UNDERSTAND-OVERWRITE-RISK'. Aborting."
       exit 51
     fi
     sentinel_verified=1
@@ -313,7 +313,7 @@ info "SOURCE_REPO=$SOURCE_REPO"
 # are not violations — cp -n preserves them naturally.
 #
 # Refuses install on any violation unless --force-install AND
-# I-UNDERSTAND-APRIL-13 sentinel typed (sentinel reused from G1-main if
+# I-UNDERSTAND-OVERWRITE-RISK sentinel typed (sentinel reused from G1-main if
 # both fire in the same session; single ceremony per session).
 #
 # Skip conditions (G2 is a no-op):
@@ -392,20 +392,20 @@ if [ "$g2_violation_count" -gt 0 ]; then
     [ -z "$p" ] || printf '  %s\n' "$p" >&2
   done
   if [ "$FORCE_INSTALL" != "1" ]; then
-    diag "Pass --force-install AND type I-UNDERSTAND-APRIL-13 sentinel to proceed (cp -n preserves your edits; April-13 protection)."
+    diag "Pass --force-install AND type I-UNDERSTAND-OVERWRITE-RISK sentinel to proceed (cp -n preserves your edits; April-13 protection)."
     exit 52
   fi
   if [ "$sentinel_verified" = "1" ]; then
     info "G2: sentinel reused from G1-main; proceeding under --force-install"
   else
-    printf 'install: type I-UNDERSTAND-APRIL-13 to confirm G2 override: ' >&2
+    printf 'install: type I-UNDERSTAND-OVERWRITE-RISK to confirm G2 override: ' >&2
     sentinel=""
     if ! IFS= read -r sentinel; then
       diag "G2 fired: sentinel not provided (stdin EOF). Aborting."
       exit 52
     fi
-    if [ "$sentinel" != "I-UNDERSTAND-APRIL-13" ]; then
-      diag "G2 fired: sentinel mismatch. Expected literal 'I-UNDERSTAND-APRIL-13'. Aborting."
+    if [ "$sentinel" != "I-UNDERSTAND-OVERWRITE-RISK" ]; then
+      diag "G2 fired: sentinel mismatch. Expected literal 'I-UNDERSTAND-OVERWRITE-RISK'. Aborting."
       exit 52
     fi
     sentinel_verified=1
@@ -702,7 +702,7 @@ fi
 # the template's "What install.sh did" section instructs a re-run after /onboard.
 #
 # Clobber-protection (G-rule symmetry with G1-main + G2): existing CLAUDE.md is
-# preserved unless --force-install AND I-UNDERSTAND-APRIL-13 sentinel verified.
+# preserved unless --force-install AND I-UNDERSTAND-OVERWRITE-RISK sentinel verified.
 # If --force-install was passed but no upstream gate (G1-main / G2) prompted for
 # the sentinel, we prompt explicitly here. EOF / mismatch on the prompt
 # preserves the existing file (fail-closed; no silent clobber).
@@ -733,15 +733,15 @@ else
   proceed_with_seed=1
   if [ -f "$target_claude_md" ]; then
     if [ "$FORCE_INSTALL" != "1" ]; then
-      info "claude-home CLAUDE.md exists at $target_claude_md — preserving (re-run with --force-install + I-UNDERSTAND-APRIL-13 sentinel to re-seed)"
+      info "claude-home CLAUDE.md exists at $target_claude_md — preserving (re-run with --force-install + I-UNDERSTAND-OVERWRITE-RISK sentinel to re-seed)"
       proceed_with_seed=0
     elif [ "$sentinel_verified" != "1" ]; then
-      printf 'install: type I-UNDERSTAND-APRIL-13 to confirm CLAUDE.md re-seed: ' >&2
+      printf 'install: type I-UNDERSTAND-OVERWRITE-RISK to confirm CLAUDE.md re-seed: ' >&2
       cm_sentinel=""
       if ! IFS= read -r cm_sentinel; then
         info "claude-home CLAUDE.md re-seed: sentinel not provided (stdin EOF) — preserving existing"
         proceed_with_seed=0
-      elif [ "$cm_sentinel" != "I-UNDERSTAND-APRIL-13" ]; then
+      elif [ "$cm_sentinel" != "I-UNDERSTAND-OVERWRITE-RISK" ]; then
         info "claude-home CLAUDE.md re-seed: sentinel mismatch — preserving existing"
         proceed_with_seed=0
       else
@@ -950,7 +950,7 @@ log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
     done
   fi
   printf 'g8_uid: %s\n' "$g8_uid"
-  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + G2 foreign-content detector + I-UNDERSTAND-APRIL-13 sentinel (single-ceremony G1+G2) + G3 backup proof-of-life + G4 vault-symlink check + G5 plans-dir guard + G8 UID-0 refuse + G9 dry-run-as-default (--apply transitions out) + state classification (fresh|foundation-only|mixed|user-only; user-only refuse at 21) + --force-all flag (cp -n→cp -f for foundation files) + --no-preserve-config flag (gated on --force-install) + G10 provenance-write-failure-as-11 + foundation-manifest.json baseline copy (T-5)\n'
+  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + G2 foreign-content detector + I-UNDERSTAND-OVERWRITE-RISK sentinel (single-ceremony G1+G2) + G3 backup proof-of-life + G4 vault-symlink check + G5 plans-dir guard + G8 UID-0 refuse + G9 dry-run-as-default (--apply transitions out) + state classification (fresh|foundation-only|mixed|user-only; user-only refuse at 21) + --force-all flag (cp -n→cp -f for foundation files) + --no-preserve-config flag (gated on --force-install) + G10 provenance-write-failure-as-11 + foundation-manifest.json baseline copy (T-5)\n'
   printf 'deferred: G6 install-side explicit label sentinel (transitively preserved); claude-mem preservation full implementation (T-1.5 bundle); top-level exit codes 20 (conflict-manifest v2.1) / 22 (rsync-backup v2.1) / 60 (grep-audit consumer v2.1)\n'
 } > "$log_path" || { diag "G10: provenance log write failed at $log_path"; exit 11; }
 

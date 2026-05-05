@@ -149,7 +149,7 @@ ln -s "$t4_fake_vault/Plans" "$t4_claude/Plans"
 t4_stderr="$t4_home/stderr.log"
 t4_rc=0
 ( HOME="$t4_home" CLAUDE_HOME="$t4_claude" SOURCE_REPO="$REPO_ROOT" \
-  bash "$INSTALL_SH" --force-install 2>"$t4_stderr" <<<"I-UNDERSTAND-APRIL-13" ) || t4_rc=$?
+  bash "$INSTALL_SH" --force-install 2>"$t4_stderr" <<<"I-UNDERSTAND-OVERWRITE-RISK" ) || t4_rc=$?
 assert_eq "54" "$t4_rc" "T4.1: vault symlink under \$CLAUDE_HOME + --force-install → exit 54 (NO override)"
 assert_grep "G4 fired" "$t4_stderr" "T4.2: G4 diagnostic emitted"
 assert_grep "Plans -> .*Obsidian Vault" "$t4_stderr" "T4.3: G4 per-violation symlink path listed"

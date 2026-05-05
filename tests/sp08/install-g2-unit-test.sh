@@ -6,7 +6,7 @@
 #       + provenance g2_violation_count=0 (no g2_violations: block)
 #   T2: pre-seed edited foundation file (hooks/pre-write-guard.sh sha256 drift)
 #       + no --force-install → exit 52 + per-violation diagnostic + path on stderr
-#   T3: same pre-seed + --force-install + correct I-UNDERSTAND-APRIL-13 sentinel
+#   T3: same pre-seed + --force-install + correct I-UNDERSTAND-OVERWRITE-RISK sentinel
 #       → exit 0 + sentinel-verified info + cp -n preserves user edit byte-identical
 #       + provenance g2_violation_count > 0 with g2_violations: listing
 #   T4: same pre-seed + --force-install + EOF stdin → exit 52 + EOF diagnostic
@@ -143,7 +143,7 @@ t3_stdout="$t3_home/stdout.log"
 t3_rc=0
 ( HOME="$t3_home" CLAUDE_HOME="$t3_claude" SOURCE_REPO="$REPO_ROOT" \
   bash "$INSTALL_SH" --force-install --apply >"$t3_stdout" 2>"$t3_stderr" \
-  <<<"I-UNDERSTAND-APRIL-13" ) || t3_rc=$?
+  <<<"I-UNDERSTAND-OVERWRITE-RISK" ) || t3_rc=$?
 assert_eq "0" "$t3_rc" "T3.1: drift + --force-install + sentinel → exit 0"
 assert_grep "G2 sentinel verified" "$t3_stdout" "T3.2: G2 sentinel-verified info emitted"
 t3_post_sha="$(shasum -a 256 "$t3_claude/hooks/pre-write-guard.sh" | awk '{print $1}')"

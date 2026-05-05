@@ -56,7 +56,7 @@ The default dry-run path is the safe entry point. It emits a JSON document on st
 | 21   | state                | `$CLAUDE_HOME` contains only non-foundation content without `--force-install`.              |
 | 30   | schema parse         | Post-install schema parse failure.                                                          |
 | 40   | settings.json merge  | jq merge conflict requires human resolution.                                                |
-| 51   | G1-main              | `$HOME/.claude` equality + non-foundation content; missing `--force-install` or `I-UNDERSTAND-APRIL-13` sentinel.|
+| 51   | G1-main              | `$HOME/.claude` equality + non-foundation content; missing `--force-install` or `I-UNDERSTAND-OVERWRITE-RISK` sentinel.|
 | 52   | G2                   | Foreign-content sha256 drift in foundation files; missing `--force-install` or sentinel.    |
 | 53   | G3                   | Backup proof-of-life failed.                                                                |
 | 54   | G4                   | Vault-symlink reachable under `$CLAUDE_HOME` (no override).                                 |
@@ -94,7 +94,7 @@ The default dry-run path is the safe entry point. It emits a JSON document on st
 | G9    | dry-run posture               | Reserved — `--apply` is required to leave dry-run; G9 fires only on tamper detection.            |
 | G10   | provenance write              | The provenance log under `$CLAUDE_HOME/logs/` cannot be written.                                 |
 
-The `I-UNDERSTAND-APRIL-13` sentinel is shared between G1-main and G2: a single ceremony per install invocation. Set the sentinel at the prompt — do not commit it. See [install-corruption-incident.md](install-corruption-incident.md) for the origin of the name.
+The `I-UNDERSTAND-OVERWRITE-RISK` sentinel is shared between G1-main and G2: a single ceremony per install invocation. Set the sentinel at the prompt — do not commit it. See [install-corruption-incident.md](install-corruption-incident.md) for the origin of the name.
 
 ---
 
