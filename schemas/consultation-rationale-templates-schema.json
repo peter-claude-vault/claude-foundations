@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claude-foundations-v2/schemas/consultation-rationale-templates-schema.json",
+  "title": "Consultation Rationale Templates (SP15 T-7)",
+  "description": "Adopter-editable templates consumed by SP15 consultation surfaces. Per surface-id: a static preamble + tradeoffs prose + citation block. Dynamic per-run data (cluster counts, confidence, alternatives) is composed inline in the consumer script and merged with these static templates at rationale-render time. Initial consumer: skills/infer-vault-structure/stage-2-5-consultation.sh (sp13-stage-2-5-import-plan). Future v2.x consultation-rationale-config-unification will retrofit surfaces 3/4/6 to the same shape.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "templates"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "sp15-t7/1",
+      "description": "Schema version anchor. Bump on breaking shape changes."
+    },
+    "templates": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Map of surface-id to per-surface rationale template. Surface-ids must match entries on lib/consultation-gate.allowlist.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["preamble", "tradeoffs", "citations"],
+        "properties": {
+          "preamble": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opening prose framing what the user is being asked to ratify."
+          },
+          "tradeoffs": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Prose enumerating the tradeoffs the system accepted on the user's behalf."
+          },
+          "citations": {
+            "type": "array",
+            "minItems": 4,
+            "description": "Research citations supporting the proposal. SP15 T-7 mandates ≥4 (Cowan-4, PARA-4, Luhmann-11, Hick's Law) per spec L40 + brief.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["author", "year", "title", "url", "claim"],
+              "properties": {
+                "author": {"type": "string", "minLength": 1},
+                "year": {"type": "string", "minLength": 4},
+                "title": {"type": "string", "minLength": 1},
+                "url": {"type": "string", "format": "uri", "pattern": "^https?://"},
+                "claim": {"type": "string", "minLength": 1}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

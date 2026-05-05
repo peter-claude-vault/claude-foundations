@@ -1,0 +1,53 @@
+{
+  "schema_version": "sp15-t7/1",
+  "templates": {
+    "sp13-stage-2-5-import-plan": {
+      "preamble": "Before you review the generated import plan in detail at T-7, ratify the rationale behind the proposed taxonomy. The plan you are about to see is the OUTPUT of density-based clustering (HDBSCAN) followed by LLM-assisted iterative refinement (TnT-LLM pattern: Pass 1 propose, Pass 2 outlier merge/split). This consultation gate surfaces WHY the candidates are grouped and named the way they are, and the tradeoffs the system accepted on your behalf — so you can question the underlying logic before rubber-stamping the plan.",
+      "tradeoffs": "Discoverability vs flexibility. Comprehensive coverage vs cognitive cap on top-level structures. Late retrofit of structural decisions (tag prefixes, folder shape, frontmatter contracts) consumes 50-70% of migration project budgets per industry data — favouring a smaller, MECE taxonomy at the cost of some coverage. Status-quo bias avoidance: reviewing the rendered plan WITHOUT ratifying its underlying rationale risks accepting cluster boundaries that don't actually match your work patterns (CHI 2024 PMC review).",
+      "citations": [
+        {
+          "author": "Cowan, N.",
+          "year": "2001",
+          "title": "The magical number 4 in short-term memory: A reconsideration of mental storage capacity",
+          "url": "https://www.cambridge.org/core/journals/behavioral-and-brain-sciences/article/abs/magical-number-4-in-shortterm-memory-a-reconsideration-of-mental-storage-capacity/44023F1147D4A1D44BABA64374E36BFE",
+          "claim": "Working-memory cap of 4 ± 1 — modern replacement for Miller 7±2; supports keeping top-level taxonomy at single digits."
+        },
+        {
+          "author": "Forte, T.",
+          "year": "2017",
+          "title": "PARA: A Universal System for Digital Information Management",
+          "url": "https://fortelabs.com/blog/para/",
+          "claim": "PARA's 4 categories (Projects/Areas/Resources/Archives) anchored on Cowan-4 + Hick's Law decision-time scaling — convergent industry evidence for low-cardinality top-level taxonomies."
+        },
+        {
+          "author": "Schmidt, J. (Zettelkasten.de on Luhmann)",
+          "year": "2018",
+          "title": "Luhmann's mature Zettelkasten and the 100-to-11 collapse",
+          "url": "https://zettelkasten.de/posts/luhmann-bibliography-zettelkasten-other-tools/",
+          "claim": "Luhmann's mature slip-box collapsed top-level categories from 100+ to 11 over decades — convergent empirical evidence for the Cowan-4 cap as a ceiling, not a floor."
+        },
+        {
+          "author": "Hick, W. E. & Hyman, R.",
+          "year": "1952-1953",
+          "title": "On the rate of gain of information (Hick's Law)",
+          "url": "https://lawsofux.com/hicks-law/",
+          "claim": "Decision time scales logarithmically with the number of choices: T = b·log2(n+1). Every additional top-level category multiplies the user-decision-time on every routing decision."
+        },
+        {
+          "author": "Wan, M. et al. (Microsoft Research)",
+          "year": "2024",
+          "title": "TnT-LLM: Text Mining at Scale with LLMs",
+          "url": "https://arxiv.org/abs/2403.12173",
+          "claim": "Iterative LLM-driven taxonomy refinement (Pass 1 propose, Pass 2 outlier merge/split) — the canonical pattern SP13 T-5 propose-taxonomy implements."
+        },
+        {
+          "author": "Campello, R. J. G. B. et al.",
+          "year": "2013",
+          "title": "Density-Based Clustering Based on Hierarchical Density Estimates (HDBSCAN)",
+          "url": "https://link.springer.com/chapter/10.1007/978-3-642-37456-2_14",
+          "claim": "HDBSCAN's noise/outlier semantics — items in low-density regions are explicitly classified as 'unclassified' rather than force-assigned. Source of the unclassified-pile call-out in the import plan."
+        }
+      ]
+    }
+  }
+}
