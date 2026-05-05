@@ -103,8 +103,15 @@ emit_bundled() {
 }
 
 # --- Registry fetch (graceful-degrade) ---
+# SP16 T-5c (closes audit S-3 LOW + B5): response-shape allowlist.
+# REGISTRY_URL pins to canonical https://registry.modelcontextprotocol.io by
+# default (line 48 above); MCP_REGISTRY_URL env retained for offline-degrade
+# testing + adopter override of mirror endpoints. Defense-in-depth: each
+# returned record must carry a resolvable id, display_name, and mcp_server_id.
+# Records failing the allowlist are dropped + logged to STDERR; the probe
+# continues with the validated subset (graceful-degrade preserved).
 emit_registry() {
-  local payload
+  local payload tmp valid_count rejected_count
   payload=$(curl -m 10 --silent --fail "$REGISTRY_URL" 2>/dev/null) || {
     _warn "Registry fetch failed ($REGISTRY_URL); proceeding without Registry contributions"
     return 0
@@ -113,19 +120,65 @@ emit_registry() {
     _warn "Registry returned empty payload; skipping"
     return 0
   fi
+
+  tmp=$(mktemp -t mcp-reg-validate-XXXXXX) || { _diag "mktemp failed"; return 3; }
+
+  # Emit one tagged JSON record per server: _shape is "valid" or "rejected".
+  # Rejection reasons are reported individually so adopters can reason about
+  # why a record was dropped (missing-id, missing-display-name, missing-mcp-server-id).
+  #
+  # Canonical registry payload shape (https://registry.modelcontextprotocol.io/v0/servers
+  # as of MCP server.schema.json/2025-12-11): {"servers": [{"server": {...}, "_meta": {...}}, ...]}
+  # — fields like name/title live under each record's `.server` object. Older
+  # mirror shapes emit fields at the top level. The (.server // .) fallback
+  # accepts both: descends to `.server` if present, else treats the record as
+  # the inner payload.
   printf '%s' "$payload" | jq -c '
-    (.servers // .) as $servers
-    | if ($servers | type) == "array" then
+    (if type == "object" then (.servers // .) else . end) as $servers
+    | if ($servers | type) != "array" then empty
+      else
         $servers[]
-        | {id: (.name // .id // "<unknown>"),
-           source: "registry",
-           display_name: (.display_name // .name // .title // "<unnamed>"),
-           mcp_server_id: (.id // .name // null)}
-      else empty end
-  ' 2>/dev/null || {
+        | (.server // .) as $s
+        | ($s.name // $s.id // "") as $rid
+        | ($s.display_name // $s.title // $s.name // "") as $rdisplay
+        | ($s.id // $s.name // null) as $rmcp
+        | (if ($rid | type) != "string" or ($rid | length) == 0 then "missing-id"
+           elif ($rdisplay | type) != "string" or ($rdisplay | length) == 0 then "missing-display-name"
+           elif $rmcp == null then "missing-mcp-server-id"
+           else "" end) as $reason
+        | if $reason == "" then
+            {_shape: "valid", id: $rid, source: "registry",
+             display_name: $rdisplay, mcp_server_id: $rmcp}
+          else
+            {_shape: "rejected", reason: $reason,
+             observed_id: ($rid // null),
+             observed_display: ($rdisplay // null)}
+          end
+      end
+  ' 2>/dev/null > "$tmp" || {
     _warn "Registry payload jq parse failed; skipping"
+    rm -f "$tmp"
     return 0
   }
+
+  rejected_count=$(grep -c '"_shape":"rejected"' "$tmp" 2>/dev/null || true)
+  rejected_count=${rejected_count:-0}
+  valid_count=$(grep -c '"_shape":"valid"' "$tmp" 2>/dev/null || true)
+  valid_count=${valid_count:-0}
+
+  if [ "$rejected_count" -gt 0 ]; then
+    _warn "Registry response-shape allowlist rejected $rejected_count record(s); see diagnostics below"
+    grep '"_shape":"rejected"' "$tmp" | while IFS= read -r r; do
+      _warn "  rejected: $r"
+    done
+  fi
+
+  # Emit valid records with the _shape discriminator stripped.
+  if [ "$valid_count" -gt 0 ]; then
+    grep '"_shape":"valid"' "$tmp" | jq -c 'del(._shape)'
+  fi
+
+  rm -f "$tmp"
 }
 
 # --- merge logic: catalog > bundled > registry; dedup by id ---
