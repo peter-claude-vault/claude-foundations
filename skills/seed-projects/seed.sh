@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# seed.sh — SP13 T-8 Stage 3 GENERATE-WITH-GATE: scaffold PRD/Context/Updates
+# seed.sh — Stage 3 generate-with-gate: scaffold PRD/Context/Updates
 # triads from a user-approved import plan.
 #
-# Consumes T-7 output (state/approved-import-plan.md; import-plan/1). For each
+# Consumes the review-gate output (state/approved-import-plan.md;
+# import-plan/1). For each
 # project candidate, stages a folder + PRD.md + Context.md + Updates.md
 # under a staging dir; renders a SINGLE batched preview of all 15 staged
 # files diffed against any pre-existing target files; surfaces ONE user
@@ -26,16 +27,14 @@
 #   Files written:
 #     - $VAULT_ROOT/<proposed_path>/{PRD,Context,Updates}.md per project
 #       candidate (only on `apply` choice)
-#     - audit log entries appended to SP12's auto-author-log.jsonl stream
+#     - audit log entries appended to the auto-author-log.jsonl stream
 #       (or $AUTO_AUTHOR_LOG override)
 #   Schema-types:
-#     - Input: T-7 approved-import-plan.md (`schema_version: import-plan/1`)
-#       — validated by seed.py before staging
-#     - Per-file output: SP12 provenance frontmatter (validated against
+#     - Input: review-gate output approved-import-plan.md
+#       (`schema_version: import-plan/1`) — validated by seed.py before staging
+#     - Per-file output: provenance frontmatter (validated against
 #       schemas/provenance-frontmatter-schema.json via pf_validate)
 #   Pre-write validation:
-#     - SP12 T-2 done-marker present (dev-mode only — production adopters
-#       have no plan tree, check is no-op)
 #     - approved-import-plan.md exists + carries import-plan/1
 #     - Templates exist (prd / context / updates)
 #     - lib/provenance-frontmatter.sh exists + sourceable
@@ -65,7 +64,6 @@ DEFAULT_PF_LIB="$REPO_ROOT/lib/provenance-frontmatter.sh"
 DEFAULT_GATE_LIB="$REPO_ROOT/onboarding/lib/three-step-gate.sh"
 DEFAULT_EXPLAINER_LIB="$SCRIPT_DIR/explainer-fragments.sh"
 DEFAULT_INBOX_DISPO_SH="$SCRIPT_DIR/inbox-disposition.sh"
-DEFAULT_PLAN_TREE="$HOME/.claude-plans/71-claude-foundations-engine-v2"
 
 APPROVED_PLAN="$DEFAULT_APPROVED_PLAN"
 VAULT_ROOT=""
@@ -74,7 +72,6 @@ PF_LIB="$DEFAULT_PF_LIB"
 GATE_LIB="$DEFAULT_GATE_LIB"
 EXPLAINER_LIB="$DEFAULT_EXPLAINER_LIB"
 INBOX_DISPO_SH="$DEFAULT_INBOX_DISPO_SH"
-PLAN_TREE="$DEFAULT_PLAN_TREE"
 ACCEPT_ON_EOF="${SEED_PROJECTS_ACCEPT_ON_EOF:-0}"
 PROMPT_CHOICE="${SEED_PROJECTS_PROMPT_CHOICE:-}"
 GENERATED_AT="${SEED_PROJECTS_GENERATED_AT:-}"
@@ -82,12 +79,12 @@ AUDIENCE="self"
 
 usage() {
   cat <<EOF
-seed.sh — SP13 T-8 Stage 3 PRD/Context/Updates scaffolder.
+seed.sh — Stage 3 PRD/Context/Updates scaffolder.
 
 Usage:
   seed.sh --vault-root PATH [--approved-plan PATH] [--templates-dir PATH]
           [--pf-lib PATH] [--gate-lib PATH] [--explainer-lib PATH]
-          [--inbox-dispo-sh PATH] [--plan-tree PATH]
+          [--inbox-dispo-sh PATH]
           [--audience SELF|TEAM|...] [--accept-on-eof]
 
 Required:
@@ -100,23 +97,19 @@ Defaults:
   --gate-lib               $DEFAULT_GATE_LIB
   --explainer-lib          $DEFAULT_EXPLAINER_LIB
   --inbox-dispo-sh         $DEFAULT_INBOX_DISPO_SH
-  --plan-tree              $DEFAULT_PLAN_TREE
-                           (used only to detect dev-mode SP12 T-2 + T-11
-                            done-markers; absent → checks are no-op for
-                            production adopters)
   --audience               self
 
 Env hooks (test-only):
   SEED_PROJECTS_ACCEPT_ON_EOF=1   treat EOF on stdin as 'apply' (smoke tests)
   SEED_PROJECTS_PROMPT_CHOICE=X   pre-canned single choice (smoke tests)
   SEED_PROJECTS_GENERATED_AT=ISO  reproducible-test timestamp override
-  AUTO_AUTHOR_LOG=PATH            override audit-log path (default: SP12)
+  AUTO_AUTHOR_LOG=PATH            override audit-log path
   TG_STAGE_DIR=PATH               override staging dir (default: mktemp)
 
 Exit codes:
   0   apply or skip (intentional, no error)
   1   user abort
-  2   pre-flight failure (SP12 done-marker, missing input, schema mismatch)
+  2   pre-flight failure (missing input, schema mismatch)
   3   apply-time copy error (partial state; re-run safe after fix)
 EOF
 }
@@ -130,7 +123,6 @@ while [ $# -gt 0 ]; do
     --gate-lib) GATE_LIB="$2"; shift 2 ;;
     --explainer-lib) EXPLAINER_LIB="$2"; shift 2 ;;
     --inbox-dispo-sh) INBOX_DISPO_SH="$2"; shift 2 ;;
-    --plan-tree) PLAN_TREE="$2"; shift 2 ;;
     --audience) AUDIENCE="$2"; shift 2 ;;
     --accept-on-eof) ACCEPT_ON_EOF=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -147,27 +139,6 @@ if [ -z "$VAULT_ROOT" ]; then
 fi
 if [ ! -d "$VAULT_ROOT" ]; then
   printf 'seed.sh: vault-root does not exist (caller must scaffold it first): %s\n' "$VAULT_ROOT" >&2
-  exit 2
-fi
-
-# ----- pre-flight: SP12 T-2 done-marker (dev-mode only) -----
-
-SP12_DONE_RELPATH="12-auto-authored-personalization/state/T-2.done"
-SP12_DONE="$PLAN_TREE/$SP12_DONE_RELPATH"
-if [ -d "$PLAN_TREE" ] && [ ! -f "$SP12_DONE" ]; then
-  cat <<EOF >&2
-seed.sh: HARD ABORT — SP12 T-2 done-marker not found.
-  Expected at: $SP12_DONE
-  Plan tree:   $PLAN_TREE
-
-SP12 T-2 ships lib/provenance-frontmatter.sh (pf_emit) which T-8 consumes
-to prepend conformant provenance frontmatter to every generated triad.
-Cannot proceed until SP12 T-2 closes and the done-marker exists.
-
-Production adopters with no plan tree skip this check automatically —
-the absence of the plan tree directory is the signal that this is a
-runtime adopter context, not a Plan 71 dev session.
-EOF
   exit 2
 fi
 
@@ -212,29 +183,7 @@ fi
 # shellcheck disable=SC1090
 . "$GATE_LIB" || { printf 'seed.sh: failed to source gate lib\n' >&2; exit 2; }
 
-# ----- pre-flight: SP12 T-11 done-marker (dev-mode only — T-9 anchor) -----
-
-SP12_T11_RELPATH="12-auto-authored-personalization/state/T-11.done"
-SP12_T11_DONE="$PLAN_TREE/$SP12_T11_RELPATH"
-if [ -d "$PLAN_TREE" ] && [ ! -f "$SP12_T11_DONE" ]; then
-  cat <<EOF >&2
-seed.sh: HARD ABORT — SP12 T-11 done-marker not found.
-  Expected at: $SP12_T11_DONE
-  Plan tree:   $PLAN_TREE
-
-SP12 T-11 ships docs/personalization-model.md, which the T-9 inline
-explainer block cites at the gate_preview surface (see
-explainer-fragments.sh). The block is a hard pre-flight requirement:
-without the doc, the citations would dangle.
-
-Production adopters with no plan tree skip this check automatically —
-the absence of the plan tree directory is the signal that this is a
-runtime adopter context, not a Plan 71 dev session.
-EOF
-  exit 2
-fi
-
-# ----- pre-flight: explainer-fragments lib (T-9) -----
+# ----- pre-flight: explainer-fragments lib -----
 
 if [ ! -f "$EXPLAINER_LIB" ]; then
   printf 'seed.sh: explainer-lib not found: %s\n' "$EXPLAINER_LIB" >&2

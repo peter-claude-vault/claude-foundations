@@ -34,9 +34,6 @@
 #         even with many concrete tags)
 #   AC10  integration: per-frontmatter-field explainers present for type +
 #         tags + generated_by + generated_from + last_user_edit on stderr
-#   AC11  pre-flight: missing SP12 T-11 done-marker (synthetic plan-tree
-#         path with T-2.done but no T-11.done) → seed.sh hard-aborts rc=2
-#         with structured stderr; no audit record written
 #   AC12  hermetic isolation: AUTO_AUTHOR_LOG + TG_STAGE_DIR forced into
 #         tmpdir; all writes contained under $TMPDIR/sp13-t9-test-*;
 #         default state/ + foundation-repo auto-author-log.jsonl untouched
@@ -283,12 +280,6 @@ if ! "$IMPORT_SH" \
   exit 1
 fi
 
-# Synthetic plan-tree with BOTH SP12 T-2 and T-11 done-markers (happy path).
-SYNTH_PLAN_TREE="$TMPROOT/synth-plan-tree"
-mkdir -p "$SYNTH_PLAN_TREE/12-auto-authored-personalization/state"
-echo "T-2 ok"  > "$SYNTH_PLAN_TREE/12-auto-authored-personalization/state/T-2.done"
-echo "T-11 ok" > "$SYNTH_PLAN_TREE/12-auto-authored-personalization/state/T-11.done"
-
 VAULT_ROOT="$TMPROOT/vault"
 mkdir -p "$VAULT_ROOT"
 
@@ -303,7 +294,6 @@ SEED_PROJECTS_PROMPT_CHOICE="s" \
     --pf-lib "$PF_LIB" \
     --gate-lib "$GATE_LIB" \
     --explainer-lib "$EXPLAINER_LIB" \
-    --plan-tree "$SYNTH_PLAN_TREE" \
     --audience self \
   >/dev/null 2>"$PREVIEW_STDERR"
 seed_rc=$?
@@ -373,30 +363,6 @@ assert_grep "explainer covers generated_by field"   '`generated_by`'   "$EXPLAIN
 assert_grep "explainer covers generated_from field" '`generated_from`' "$EXPLAINER_BLOCK"
 assert_grep "explainer covers last_user_edit field" '`last_user_edit`' "$EXPLAINER_BLOCK"
 
-# ---------- AC11 — pre-flight aborts on missing SP12 T-11 done-marker ----------
-echo "AC11 — missing SP12 T-11 → hard abort"
-NO_T11_PLAN_TREE="$TMPROOT/no-t11-plan-tree"
-mkdir -p "$NO_T11_PLAN_TREE/12-auto-authored-personalization/state"
-echo "T-2 ok" > "$NO_T11_PLAN_TREE/12-auto-authored-personalization/state/T-2.done"
-# (deliberately NO T-11.done)
-NO_T11_VAULT="$TMPROOT/no-t11-vault"
-mkdir -p "$NO_T11_VAULT"
-ABORT_STDERR="$TMPROOT/no-t11.stderr"
-"$SEED_SH" \
-  --vault-root "$NO_T11_VAULT" \
-  --approved-plan "$APPROVED_PLAN" \
-  --templates-dir "$TEMPLATES_DIR" \
-  --pf-lib "$PF_LIB" \
-  --gate-lib "$GATE_LIB" \
-  --explainer-lib "$EXPLAINER_LIB" \
-  --plan-tree "$NO_T11_PLAN_TREE" \
-  --audience self \
-  >/dev/null 2>"$ABORT_STDERR"
-abort_rc=$?
-assert_eq "missing T-11.done → seed.sh rc=2" "2" "$abort_rc"
-assert_grep "abort stderr names SP12 T-11 done-marker" \
-  'SP12 T-11 done-marker not found' "$ABORT_STDERR"
-
 # ---------- AC12 — hermetic isolation ----------
 echo "AC12 — hermetic isolation"
 case "$AUTO_AUTHOR_LOG" in
@@ -428,7 +394,6 @@ if [ -f "$DEFAULT_AUDIT" ]; then
       --pf-lib "$PF_LIB" \
       --gate-lib "$GATE_LIB" \
       --explainer-lib "$EXPLAINER_LIB" \
-      --plan-tree "$SYNTH_PLAN_TREE" \
       --audience self \
     >/dev/null 2>/dev/null
   default_size_after=$(wc -c < "$DEFAULT_AUDIT" | tr -d ' ')

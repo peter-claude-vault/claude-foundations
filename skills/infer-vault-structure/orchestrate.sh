@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# orchestrate.sh — SP16 T-1. Deterministic 4-stage Stage-2/Stage-3 chain.
+# orchestrate.sh — Deterministic 4-stage Stage-2/Stage-3 chain.
 #
 # Wraps cluster.sh → propose-taxonomy.sh → import-plan.sh → review-gate.sh in
 # a single composition. Idempotent: each stage skipped if its done-marker
@@ -8,9 +8,8 @@
 # orchestrator writes state/review-pending.flag and exits 64 (EX_USAGE)
 # before invoking review-gate; user reviews, then re-invokes with --resume.
 #
-# COMPOSITION-NOT-FORK contract (SP16 ideation brief #Hard constraint 1):
-# the four wrapped scripts are CONSUMED UNCHANGED. orchestrate.sh adds only
-# the chain + state-marker + halt-resume layer.
+# Composition-not-fork: the four wrapped scripts are consumed unchanged.
+# orchestrate.sh adds only the chain + state-marker + halt-resume layer.
 #
 # Usage:
 #   orchestrate.sh --slug <slug> [--ir-path <ir.jsonl>] [--resume]
@@ -20,7 +19,6 @@
 #                  [--min-cluster-size N]
 #                  [--state-dir <path>]
 #                  [--gate-lib <path>]
-#                  [--plan-tree <path>]
 #
 # Required:
 #   --slug <slug>      — namespace under $CLAUDE_HOME/projects/<slug>/inferred
@@ -35,7 +33,6 @@
 #   embedding-mode     = auto (forwarded to cluster.sh)
 #   min-cluster-size   = 3
 #   gate-lib           = $REPO_ROOT/onboarding/lib/three-step-gate.sh
-#   plan-tree          = $HOME/.claude-plans/71-claude-foundations-engine-v2
 #
 # State layout (under state-dir):
 #   cluster-output.json                  ← stage 1 output
@@ -73,7 +70,6 @@ IMPORT_SH="$SELF_DIR/import-plan.sh"
 REVIEW_SH="$SELF_DIR/review-gate.sh"
 
 DEFAULT_GATE_LIB="$REPO_ROOT/onboarding/lib/three-step-gate.sh"
-DEFAULT_PLAN_TREE="$HOME/.claude-plans/71-claude-foundations-engine-v2"
 
 SLUG=""
 IR_PATH=""
@@ -84,7 +80,6 @@ EMBEDDING_MODE="auto"
 MIN_CLUSTER_SIZE="3"
 STATE_DIR_OVERRIDE=""
 GATE_LIB="$DEFAULT_GATE_LIB"
-PLAN_TREE="$DEFAULT_PLAN_TREE"
 
 usage() {
   sed -n '2,60p' "$0" | sed 's/^# \{0,1\}//'
@@ -132,11 +127,6 @@ while [ $# -gt 0 ]; do
       shift
       [ $# -gt 0 ] || { echo "orchestrate.sh: --gate-lib requires a path" >&2; exit 2; }
       GATE_LIB="$1"
-      ;;
-    --plan-tree)
-      shift
-      [ $# -gt 0 ] || { echo "orchestrate.sh: --plan-tree requires a path" >&2; exit 2; }
-      PLAN_TREE="$1"
       ;;
     -h|--help)
       usage
@@ -403,8 +393,7 @@ _t0=$(ms_now)
 "$REVIEW_SH" \
   --import-plan "$IMPORT_OUT" \
   --approved-out "$APPROVED_OUT" \
-  --gate-lib "$GATE_LIB" \
-  --plan-tree "$PLAN_TREE"
+  --gate-lib "$GATE_LIB"
 _rc=$?
 _t1=$(ms_now)
 _dur=$(( _t1 - _t0 ))

@@ -4,8 +4,6 @@
 # Covers Stage 3 PRD/Context/Updates triple generator + /adopt invocation:
 #   AC1   skills/seed-projects/SKILL.md + seed.sh + seed.py + 3 templates
 #         all exist; bash -n / ast.parse / template-presence clean
-#   AC2   pre-flight aborts cleanly when SP12 T-2 done-marker is missing
-#         (synthetic plan-tree path with no T-2.done)
 #   AC3   pre-flight aborts cleanly when approved plan is missing
 #   AC4   pre-flight aborts cleanly when approved plan has wrong schema_version
 #   AC5   apply path: 5-project fixture → 5 dirs + 15 files (PRD/Context/
@@ -248,42 +246,15 @@ if ! grep -q '^schema_version: import-plan/1$' "$APPROVED_PLAN"; then
   exit 1
 fi
 
-# Synthesize a dev-mode plan tree with SP12 T-2 done-marker present (so
-# pre-flight passes the dev-mode check).
-DEV_PLAN_TREE="$TMPROOT/devplan"
-mkdir -p "$DEV_PLAN_TREE/12-auto-authored-personalization/state"
-echo "T-2 done synthetic"  > "$DEV_PLAN_TREE/12-auto-authored-personalization/state/T-2.done"
-# T-9 (2026-05-04) added a SP12 T-11 done-marker pre-flight check —
-# seed.sh sources explainer-fragments.sh which cites
-# docs/personalization-model.md (SP12 T-11). All happy-path invocations
-# below need both markers present in the synthetic plan tree.
-echo "T-11 done synthetic" > "$DEV_PLAN_TREE/12-auto-authored-personalization/state/T-11.done"
-
 # Vault root for tests.
 VAULT_ROOT="$TMPROOT/vault"
 mkdir -p "$VAULT_ROOT"
-
-# ---------- AC2 — pre-flight aborts when SP12 T-2 done-marker missing ----------
-echo "AC2 — pre-flight aborts when SP12 T-2 done-marker missing"
-NO_T2_TREE="$TMPROOT/devplan-no-t2"
-mkdir -p "$NO_T2_TREE/12-auto-authored-personalization"
-out=$( "$SEED_SH" \
-  --vault-root "$VAULT_ROOT" \
-  --approved-plan "$APPROVED_PLAN" \
-  --plan-tree "$NO_T2_TREE" \
-  </dev/null 2>&1 ); rc=$?
-assert_eq "rc=2 on missing SP12 T-2 done-marker" "2" "$rc"
-echo "$out" | grep -q "HARD ABORT" && record_pass "stderr mentions HARD ABORT" \
-  || record_fail "HARD ABORT message" "present" "absent"
-echo "$out" | grep -q "T-2 done-marker not found" && record_pass "stderr cites T-2 done-marker" \
-  || record_fail "T-2 reference" "present" "absent"
 
 # ---------- AC3 — pre-flight aborts when approved plan missing ----------
 echo "AC3 — pre-flight aborts when approved plan missing"
 out=$( "$SEED_SH" \
   --vault-root "$VAULT_ROOT" \
   --approved-plan "$TMPROOT/missing.md" \
-  --plan-tree "$DEV_PLAN_TREE" \
   </dev/null 2>&1 ); rc=$?
 assert_eq "rc=2 on missing approved plan" "2" "$rc"
 echo "$out" | grep -q "approved plan not found" && record_pass "stderr cites missing-input" \
@@ -300,7 +271,6 @@ BAD_PLAN="$TMPROOT/bad-version.md"
 out=$( "$SEED_SH" \
   --vault-root "$VAULT_ROOT" \
   --approved-plan "$BAD_PLAN" \
-  --plan-tree "$DEV_PLAN_TREE" \
   </dev/null 2>&1 ); rc=$?
 assert_eq "rc=2 on schema_version mismatch" "2" "$rc"
 echo "$out" | grep -q "schema_version mismatch" && record_pass "stderr cites schema mismatch" \
@@ -313,7 +283,6 @@ mkdir -p "$APPLY_VAULT"
 echo "a" | "$SEED_SH" \
   --vault-root "$APPLY_VAULT" \
   --approved-plan "$APPROVED_PLAN" \
-  --plan-tree "$DEV_PLAN_TREE" \
   --accept-on-eof \
   >"$TMPROOT/apply-stdout.log" 2>"$TMPROOT/apply-stderr.log"
 rc=$?
@@ -415,7 +384,6 @@ AUTO_AUTHOR_LOG="$SKIP_AUDIT" SEED_PROJECTS_PROMPT_CHOICE="s" \
   "$SEED_SH" \
     --vault-root "$SKIP_VAULT" \
     --approved-plan "$APPROVED_PLAN" \
-    --plan-tree "$DEV_PLAN_TREE" \
     --accept-on-eof \
     >/dev/null 2>"$TMPROOT/skip-stderr.log"
 rc=$?
@@ -434,7 +402,6 @@ AUTO_AUTHOR_LOG="$ABORT_AUDIT" SEED_PROJECTS_PROMPT_CHOICE="b" \
   "$SEED_SH" \
     --vault-root "$ABORT_VAULT" \
     --approved-plan "$APPROVED_PLAN" \
-    --plan-tree "$DEV_PLAN_TREE" \
     --accept-on-eof \
     >/dev/null 2>"$TMPROOT/abort-stderr.log"
 rc=$?

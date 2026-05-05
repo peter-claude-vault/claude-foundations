@@ -462,15 +462,10 @@ fi
 
 # Step 4: real SP13 T-7 review-gate.sh consumes the consulted plan.
 APPROVED_OUT="$T7_TEST_DIR/state/approved-import-plan.md"
-# review-gate.sh has a SP12 T-1 done-marker pre-flight check that fires only
-# when --plan-tree directory exists. Point it at a non-existent dir so the
-# check is skipped (production-adopter mode).
-NO_PLAN_TREE="$T7_TEST_DIR/no-plan-tree-here"
 "$REVIEW_GATE_SH" \
   --import-plan "$T25_OUT" \
   --approved-out "$APPROVED_OUT" \
   --gate-lib "$REPO_ROOT/onboarding/lib/three-step-gate.sh" \
-  --plan-tree "$NO_PLAN_TREE" \
   --accept-on-eof \
   >"$T7_TEST_DIR/rg.out" 2>"$T7_TEST_DIR/rg.err" </dev/null
 rg_rc=$?

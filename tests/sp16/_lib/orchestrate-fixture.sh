@@ -77,7 +77,6 @@ invoke_orchestrate_stub() {
     --llm-mode stub \
     --embedding-mode stub \
     --min-cluster-size 2 \
-    --plan-tree "$TEST_DIR/no-plan-tree" \
     "$@"
 }
 

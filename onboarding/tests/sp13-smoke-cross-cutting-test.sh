@@ -292,7 +292,6 @@ GATE_ERR="$TMPROOT/review-gate.err"
 if bash "$REVIEW_GATE_SH" \
      --import-plan "$IMPORT_PLAN" \
      --approved-out "$APPROVED_PLAN" \
-     --plan-tree "$TMPROOT/no-plan-tree" \
      --accept-on-eof \
      </dev/null \
      >"$GATE_OUT" 2>"$GATE_ERR"; then
@@ -318,7 +317,6 @@ SEED_ERR="$TMPROOT/seed.err"
 if bash "$SEED_SH" \
      --vault-root "$VAULT" \
      --approved-plan "$APPROVED_PLAN" \
-     --plan-tree "$TMPROOT/no-plan-tree" \
      --accept-on-eof \
      </dev/null \
      >"$SEED_OUT" 2>"$SEED_ERR"; then

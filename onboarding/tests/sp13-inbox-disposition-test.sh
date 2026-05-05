@@ -309,12 +309,6 @@ if ! "$IMPORT_SH" \
   exit 1
 fi
 
-# Synthetic plan-tree with BOTH SP12 T-2 and T-11 done-markers (happy path).
-SYNTH_PLAN_TREE="$TMPROOT/synth-plan-tree"
-mkdir -p "$SYNTH_PLAN_TREE/12-auto-authored-personalization/state"
-echo "T-2 ok"  > "$SYNTH_PLAN_TREE/12-auto-authored-personalization/state/T-2.done"
-echo "T-11 ok" > "$SYNTH_PLAN_TREE/12-auto-authored-personalization/state/T-11.done"
-
 # ---------- AC2 — inbox-disposition.sh pre-flight aborts ----------
 echo "AC2 — inbox-disposition.sh pre-flight"
 MISSING_PLAN_STDERR="$TMPROOT/missing-plan.stderr"
@@ -501,7 +495,6 @@ SEED_PROJECTS_PROMPT_CHOICE="s" SEED_PROJECTS_GENERATED_AT="2026-05-04T18:00:00Z
     --gate-lib "$GATE_LIB" \
     --explainer-lib "$EXPLAINER_LIB" \
     --inbox-dispo-sh "$DISPO_SH" \
-    --plan-tree "$SYNTH_PLAN_TREE" \
     --audience self \
   >/dev/null 2>"$SEEDSH_PREVIEW"
 seedsh_skip_rc=$?
@@ -551,7 +544,6 @@ SEED_PROJECTS_ACCEPT_ON_EOF=1 SEED_PROJECTS_GENERATED_AT="2026-05-04T18:00:00Z" 
     --gate-lib "$GATE_LIB" \
     --explainer-lib "$EXPLAINER_LIB" \
     --inbox-dispo-sh "$DISPO_SH" \
-    --plan-tree "$SYNTH_PLAN_TREE" \
     --audience self \
   </dev/null >/dev/null 2>"$APPLY_PREVIEW"
 apply_rc=$?

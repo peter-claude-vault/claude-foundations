@@ -2,7 +2,6 @@
 # sp13-review-gate-test.sh — SP13 T-7 unit tests
 #
 # Covers Stage 2 review-gate acceptance criteria (spec L234-241):
-#   AC1  SP12 T-1 done-marker absent → review-gate.sh exits 2 with message
 #   AC2  review-gate.sh exists; bash -n clean
 #   AC3  apply path: writes approved plan; rc=0
 #        skip path:  target NOT written; rc=0
@@ -188,37 +187,12 @@ record_pass "fixture build: upstream T-5 + T-6 produced import-plan.md"
 [ -s "$IMPORT_MD" ] && record_pass "fixture build: import-plan.md non-empty" \
   || record_fail "import-plan.md" "non-empty" "missing-or-empty"
 
-# Provision a fake plan-tree with SP12 T-1 done-marker present (most tests).
-PLAN_TREE_OK="$TMPROOT/plan-tree-ok"
-mkdir -p "$PLAN_TREE_OK/12-auto-authored-personalization/state"
-printf 'T-1\t2026-05-03T14:55:05Z\tfixture\n' \
-  > "$PLAN_TREE_OK/12-auto-authored-personalization/state/T-1.done"
-
-# ---------- AC1 — SP12 T-1 absent triggers HARD ABORT ----------
-echo "AC1 — SP12 T-1 done-marker absent → exit 2 (clean halt)"
-PLAN_TREE_BAD="$TMPROOT/plan-tree-bad"
-mkdir -p "$PLAN_TREE_BAD/12-auto-authored-personalization/state"
-# directory exists but T-1.done is absent → HARD ABORT
-APPROVED="$TMPROOT/approved-no-sp12.md"
-"$REVIEW_SH" --import-plan "$IMPORT_MD" \
-  --approved-out "$APPROVED" \
-  --gate-lib "$GATE_LIB" \
-  --plan-tree "$PLAN_TREE_BAD" \
-  --accept-on-eof \
-  >/dev/null 2>"$TMPROOT/abort-sp12.stderr"
-rc=$?
-assert_eq "AC1: rc=2 when SP12 T-1 absent" "2" "$rc"
-assert_grep_file "AC1: stderr says 'SP12 T-1 done-marker not found'" \
-  "SP12 T-1 done-marker not found" "$TMPROOT/abort-sp12.stderr"
-assert_no_file "AC1: approved plan NOT written" "$APPROVED"
-
 # ---------- AC0a — missing input plan → exit 2 ----------
 echo "AC0a — missing input plan → exit 2"
 APPROVED="$TMPROOT/approved-no-input.md"
 "$REVIEW_SH" --import-plan "$TMPROOT/does-not-exist.md" \
   --approved-out "$APPROVED" \
   --gate-lib "$GATE_LIB" \
-  --plan-tree "$PLAN_TREE_OK" \
   --accept-on-eof \
   >/dev/null 2>"$TMPROOT/abort-input.stderr"
 rc=$?
@@ -239,7 +213,6 @@ APPROVED="$TMPROOT/approved-bad-input.md"
 "$REVIEW_SH" --import-plan "$BAD_PLAN" \
   --approved-out "$APPROVED" \
   --gate-lib "$GATE_LIB" \
-  --plan-tree "$PLAN_TREE_OK" \
   --accept-on-eof \
   >/dev/null 2>"$TMPROOT/abort-schema.stderr"
 rc=$?
@@ -253,7 +226,6 @@ APPROVED="$TMPROOT/approved-no-gate.md"
 "$REVIEW_SH" --import-plan "$IMPORT_MD" \
   --approved-out "$APPROVED" \
   --gate-lib "$TMPROOT/no-such-gate-lib.sh" \
-  --plan-tree "$PLAN_TREE_OK" \
   --accept-on-eof \
   >/dev/null 2>"$TMPROOT/abort-gate.stderr"
 rc=$?
@@ -269,7 +241,6 @@ REVIEW_GATE_PROMPT_CHOICE=a "$REVIEW_SH" \
   --import-plan "$IMPORT_MD" \
   --approved-out "$APPROVED" \
   --gate-lib "$GATE_LIB" \
-  --plan-tree "$PLAN_TREE_OK" \
   --accept-on-eof \
   >"$TMPROOT/apply.stdout" 2>"$TMPROOT/apply.stderr"
 rc=$?
@@ -329,7 +300,6 @@ REVIEW_GATE_PROMPT_CHOICE=s "$REVIEW_SH" \
   --import-plan "$IMPORT_MD" \
   --approved-out "$APPROVED" \
   --gate-lib "$GATE_LIB" \
-  --plan-tree "$PLAN_TREE_OK" \
   --accept-on-eof \
   >/dev/null 2>"$TMPROOT/skip.stderr"
 rc=$?
@@ -349,7 +319,6 @@ REVIEW_GATE_PROMPT_CHOICE=b "$REVIEW_SH" \
   --import-plan "$IMPORT_MD" \
   --approved-out "$APPROVED" \
   --gate-lib "$GATE_LIB" \
-  --plan-tree "$PLAN_TREE_OK" \
   --accept-on-eof \
   >/dev/null 2>"$TMPROOT/abort-user.stderr"
 rc=$?
@@ -398,7 +367,6 @@ EDITOR="$FAKE_EDITOR" REVIEW_GATE_PROMPT_CHOICE=e "$REVIEW_SH" \
   --import-plan "$IMPORT_MD" \
   --approved-out "$APPROVED" \
   --gate-lib "$GATE_LIB" \
-  --plan-tree "$PLAN_TREE_OK" \
   --accept-on-eof \
   </dev/null \
   >/dev/null 2>"$TMPROOT/edit.stderr"
@@ -439,7 +407,6 @@ EDITOR="$DESTRUCTIVE_EDITOR" REVIEW_GATE_PROMPT_CHOICE=e "$REVIEW_SH" \
   --import-plan "$IMPORT_MD" \
   --approved-out "$APPROVED" \
   --gate-lib "$GATE_LIB" \
-  --plan-tree "$PLAN_TREE_OK" \
   >/dev/null 2>"$TMPROOT/destructive.stderr" \
   <<EOF
 a
@@ -458,17 +425,11 @@ REVIEW_GATE_PROMPT_CHOICE=s "$REVIEW_SH" \
   --import-plan "$IMPORT_MD" \
   --approved-out "$APPROVED" \
   --gate-lib "$GATE_LIB" \
-  --plan-tree "$TMPROOT/no-plan-tree-here" \
   --accept-on-eof \
   >/dev/null 2>"$TMPROOT/prod.stderr"
 rc=$?
 assert_eq "AC9: rc=0 in production-mode (no plan tree, skip)" "0" "$rc"
-# stderr should NOT contain the SP12 hard-abort message
-if ! grep -q "SP12 T-1 done-marker not found" "$TMPROOT/prod.stderr"; then
-  record_pass "AC9: SP12 check skipped when plan tree dir absent"
-else
-  record_fail "AC9: SP12 check skip" "no message" "message present"
-fi
+# (SP12 done-marker probe was removed from the runtime; nothing further to check.)
 
 # ---------- AC10 — hermetic isolation: no writes outside tmpdir ----------
 echo "AC10 — hermetic isolation"
