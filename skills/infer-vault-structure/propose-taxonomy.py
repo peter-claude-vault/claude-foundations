@@ -169,7 +169,7 @@ def stub_pass1(cluster_output):
         "proposed_path": "",
         "metadata": {
             "summary": "items the upstream cluster step could not bucket; "
-                       "T-7 review gate surfaces these for user disposition",
+                       "the review gate surfaces these for user disposition",
             "tags": ["#unclassified"],
             "rationale": "noise bucket from sp13-t4/1 cluster output",
         },
@@ -203,7 +203,7 @@ def stub_pass2(candidates, cluster_output):
                 "from": cand["candidate_id"],
                 "into": [cand["candidate_id"]],
                 "rationale": "low-confidence origin cluster — surfaced for "
-                             "user merge/split at T-7 review gate",
+                             "user merge/split at the review gate",
             })
 
     by_label_token = {}
@@ -219,7 +219,7 @@ def stub_pass2(candidates, cluster_output):
                 "from": ids,
                 "into": ids[0],
                 "rationale": "overlapping label token %r — candidate for "
-                             "user-confirmed merge at T-7" % token,
+                             "user-confirmed merge at the review gate" % token,
             })
 
     return ops
@@ -393,7 +393,7 @@ def live_pass1(cluster_output, ir_by_hash, api_key, model):
         "proposed_path": "",
         "metadata": {
             "summary": "items the upstream cluster step could not bucket; "
-                       "T-7 review gate surfaces these for user disposition",
+                       "the review gate surfaces these for user disposition",
             "tags": ["#unclassified"],
             "rationale": "noise bucket from sp13-t4/1 cluster output",
         },

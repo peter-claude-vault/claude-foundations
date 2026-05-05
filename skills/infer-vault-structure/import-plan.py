@@ -221,14 +221,16 @@ def build_unclassified_callout(candidates):
     n = len(unc.get("source_items", []))
     if n == 0:
         return {"present": False, "count": 0, "copy": ""}
+    noun = "item" if n == 1 else "items"
+    pronoun = "it" if n == 1 else "them"
     copy = (
-        "%d items did not fit any cluster. Scroll to the "
-        "\"Doesn't fit any project\" section below to triage them — "
+        "%d %s did not fit any cluster. Scroll to the "
+        "\"Doesn't fit any project\" section below to triage %s — "
         "no item is silently dropped. For each one you can: "
         "route it to Inbox/ (default — your standing inbox processor "
         "will revisit when more context exists), merge it into an "
         "existing candidate by editing its candidate_id, or remove it "
-        "from the plan entirely." % n
+        "from the plan entirely." % (n, noun, pronoun)
     )
     return {"present": True, "count": n, "copy": copy}
 
@@ -429,7 +431,7 @@ def render_project_section(blocks):
         return "\n".join(lines)
     lines.append(
         "Each project becomes a folder under `Engagements/` with a "
-        "PRD/Context/Updates triad scaffolded at Stage 3 (T-8). Edit any "
+        "PRD/Context/Updates triad scaffolded at Stage 3. Edit any "
         "field in the `yaml` block to refine before approval."
     )
     lines.append("")
@@ -482,7 +484,8 @@ def render_non_project_section(blocks):
         "Each routes to its declared `proposed_path` instead — a reference "
         "doc folder, a meeting note folder, or `Inbox/` for the "
         "unclassified pile. Edit `type` to promote a candidate into a "
-        "project (it will move to **Project candidates** at T-7 reassembly)."
+        "project (it will move to **Project candidates** when you re-run "
+        "the review gate)."
     )
     lines.append("")
     for block in blocks:
@@ -499,7 +502,7 @@ def render_refinements(refinements):
     lines.append(
         "Operations the LLM flagged during pass-2 (or pass-3) review of "
         "outliers. NOT auto-applied — you decide whether to accept each "
-        "one at the T-7 review gate. `from` / `into` may be a single id "
+        "one at the review gate. `from` / `into` may be a single id "
         "(string) or a list of ids (array); both shapes round-trip."
     )
     lines.append("")
@@ -519,9 +522,11 @@ def render_intro(unclassified_present):
         "where you accept, edit, or reject the proposal before Stage 3 "
         "scaffolds the vault.",
         "",
-        "**To approve as-is:** run T-7 (`review-gate.sh`) with no edits.",
+        "**To approve as-is:** run the review gate (`review-gate.sh`) "
+        "with no edits.",
         "**To edit:** open this file in your editor, change the YAML blocks "
-        "and the routing table inline, save, then re-run T-7 — your edits "
+        "and the routing table inline, save, then re-run the review gate "
+        "— your edits "
         "are what Stage 3 consumes.",
         "**To abort:** exit the gate without applying. No vault writes occur.",
         "",
