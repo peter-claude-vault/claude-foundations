@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
-# skills/inbox-processor/process.sh — SP13 T-12 standing-Inbox processor.
+# skills/inbox-processor/process.sh — standing-Inbox processor.
 #
 # Per-tick batch: enumerate <vault>/Inbox/, single-pass classify each file,
 # route to vault placement OR leave in-place with appended frontmatter.
 #
-# Bash 3.2 compatible (R-23). jq REQUIRED. python3 REQUIRED for atomic
-# YAML frontmatter parse + amend (no PyYAML; line-scanning).
-#
-# Author: Claude Opus 4.7 — Plan 71 SP13 Session 10 (T-12).
+# bash 3.2 compatible. jq REQUIRED. python3 REQUIRED for atomic YAML
+# frontmatter parse + amend (no PyYAML; line-scanning).
 
 set -u
 
@@ -30,11 +28,11 @@ MEETINGS_SUBDIR="Meetings"
 REFERENCE_SUBDIR="Reference"
 GATE_EACH_ITEM=0
 DRY_RUN=0
-SURFACE_ID="sp13-t12/1"
+SURFACE_ID="inbox-processor"
 
 usage() {
   cat <<EOF
-process.sh — SP13 T-12 inbox-processor.
+process.sh — inbox-processor.
 
 Usage:
   process.sh --vault-root PATH [--audit-log PATH] [--state-file PATH]
@@ -151,12 +149,12 @@ if [ "$DRY_RUN" = "0" ]; then
 fi
 
 if [ ! -f "$STATE_FILE" ]; then
-  STATE_JSON='{"version":"sp13-t12/1","items":{}}'
+  STATE_JSON='{"version":"inbox-processor/1","items":{}}'
 else
-  STATE_JSON=$(cat "$STATE_FILE" 2>/dev/null || echo '{"version":"sp13-t12/1","items":{}}')
+  STATE_JSON=$(cat "$STATE_FILE" 2>/dev/null || echo '{"version":"inbox-processor/1","items":{}}')
   if ! printf '%s' "$STATE_JSON" | jq empty >/dev/null 2>&1; then
     printf 'process.sh: state file unparseable; reinitializing: %s\n' "$STATE_FILE" >&2
-    STATE_JSON='{"version":"sp13-t12/1","items":{}}'
+    STATE_JSON='{"version":"inbox-processor/1","items":{}}'
   fi
 fi
 
@@ -354,8 +352,8 @@ route_meeting() {
 }
 
 # Route a reference-shape file as a normalized markdown copy under
-# <vault>/<reference-subdir>/. Frontmatter: provenance (sp13-t12/1) +
-# disposition: reference + tag #reference.
+# <vault>/<reference-subdir>/. Frontmatter: provenance (generated_by:
+# inbox-processor) + disposition: reference + tag #reference.
 route_reference() {
   # $1 src_path
   local src="$1" out_dir out_path base body_tmp combined_tmp

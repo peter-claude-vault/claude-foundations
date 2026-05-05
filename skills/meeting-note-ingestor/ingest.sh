@@ -53,9 +53,9 @@ Options:
   --output PATH|-           Write structured note to PATH; - = stdout (default).
   --title STR               Override extracted/derived title.
   --date YYYY-MM-DD         Override extracted/derived date.
-  --surface-id ID           Provenance surface_id (default: sp13-t11/1).
-  --seed-parsers-dir PATH   Override T-3 format-parsers dir.
-  --format-detector PATH    Override T-3 format-detector.sh path.
+  --surface-id ID           Provenance surface_id (default: meeting-note-ingestor).
+  --seed-parsers-dir PATH   Override format-parsers dir.
+  --format-detector PATH    Override format-detector.sh path.
   --ingestor-parsers-dir PATH  Override co-located parsers dir (granola.sh lives here).
   --pf-lib PATH             Override lib/provenance-frontmatter.sh path.
   -h|--help                 Show this help.
@@ -74,7 +74,7 @@ FMT_OVERRIDE=""
 OUTPUT="-"
 TITLE_OVERRIDE=""
 DATE_OVERRIDE=""
-SURFACE_ID="sp13-t11/1"
+SURFACE_ID="meeting-note-ingestor"
 SEED_PARSERS_DIR="$REPO_ROOT/onboarding/seed-content/format-parsers"
 FORMAT_DETECTOR="$REPO_ROOT/onboarding/seed-content/format-detector.sh"
 INGESTOR_PARSERS_DIR="$SCRIPT_DIR/parsers"

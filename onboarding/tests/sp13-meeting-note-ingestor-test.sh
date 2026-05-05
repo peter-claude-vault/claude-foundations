@@ -286,7 +286,7 @@ else
   _fail "AC6.3 connector output diverges from direct invocation"
 fi
 _assert_match "AC6.4 connector source_format" "source_format: granola"        "$CONN_OUT"
-_assert_match "AC6.5 connector pf surface_id" "generated_by: sp13-t11/1"      "$CONN_OUT"
+_assert_match "AC6.5 connector pf surface_id" "generated_by: meeting-note-ingestor" "$CONN_OUT"
 
 # ============================================================================
 # AC7 — JSON-shape sniff promotes llm-export → granola when shape matches.

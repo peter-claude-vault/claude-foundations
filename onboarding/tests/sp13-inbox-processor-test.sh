@@ -158,11 +158,13 @@ if [ "$routed_count" -ge 1 ]; then _pass "AC2.3 Meetings/ has routed note (n=$ro
 else _fail "AC2.3 Meetings/ has no routed note"
 fi
 
-# Routed file carries T-11 provenance.
+# Routed file carries meeting-note-ingestor provenance (the inbox-processor
+# delegated transcript classification to meeting-note-ingestor, so the
+# generated_by is the ingestor's surface_id).
 routed_file=$(find "$VAULT/Meetings" -name '*.md' -type f 2>/dev/null | head -1)
 if [ -n "$routed_file" ]; then
-  _assert_grep "AC2.4 routed file has sp13-t11/1 provenance" 'generated_by:[[:space:]]*sp13-t11/1' "$routed_file"
-  _assert_grep "AC2.5 routed file has source_format vtt"      'source_format:[[:space:]]*otter-vtt' "$routed_file"
+  _assert_grep "AC2.4 routed file has meeting-note-ingestor provenance" 'generated_by:[[:space:]]*meeting-note-ingestor' "$routed_file"
+  _assert_grep "AC2.5 routed file has source_format vtt"                 'source_format:[[:space:]]*otter-vtt' "$routed_file"
 fi
 
 # ============================================================================
@@ -193,7 +195,7 @@ else _fail "AC3.3 Reference/ has no routed file"
 fi
 ref_file=$(find "$VAULT/Reference" -name 'README*' -type f 2>/dev/null | head -1)
 if [ -n "$ref_file" ]; then
-  _assert_grep "AC3.4 ref file has provenance frontmatter" 'generated_by:[[:space:]]*sp13-t12/1' "$ref_file"
+  _assert_grep "AC3.4 ref file has provenance frontmatter" 'generated_by:[[:space:]]*inbox-processor' "$ref_file"
   _assert_grep "AC3.5 ref file has disposition: reference"  'disposition:[[:space:]]*reference' "$ref_file"
 fi
 
