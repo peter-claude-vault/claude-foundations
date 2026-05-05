@@ -7,7 +7,7 @@ type: fixture
 
 A synthetic vault used to test the `/onboard --seed-content <path>` greenfield pipeline end-to-end. Drives intake → IR build → past-section resume → finalize → Section F seven-surface auto-author → four-stage infer-vault orchestrator under stub mode.
 
-> **Note for Phase 5 placement.** The parent directory of this README will move out from under `tests/sp16/fixtures/` to a final path that drops the plan-code prefix. Internal cross-links pointing at `tests/sp16/fixtures/greenfield-seed/` will need a sweep when the rename lands.
+> **Note for Phase 5 placement.** The parent directory of this README will move out from under `tests/greenfield-pipeline/fixtures/` to a final path that drops the plan-code prefix. Internal cross-links pointing at `tests/greenfield-pipeline/fixtures/greenfield-seed/` will need a sweep when the rename lands.
 
 <!-- TODO: Peter — confirm final path under tests/ for this fixture -->
 
@@ -38,4 +38,4 @@ Earlier seed-content tests stop at the Section F dispatch boundary; this one dri
 
 To exercise the full greenfield wiring chain, including `intake.sh` → `format-detector.sh` → `ir-builder.sh`. A pre-baked IR would short-circuit the part of the pipeline whose job is to build the IR from raw Markdown.
 
-The synthetic-IR helper at `tests/sp16/_lib/section-f-fixture.sh::emit_synthetic_ir()` is reused by other tests for orchestrator-only path-coverage assertions, but the IR consumed by the full pipeline here comes from `ir-builder.sh` walking `vault-content/`.
+The synthetic-IR helper at `tests/greenfield-pipeline/_lib/section-f-fixture.sh::emit_synthetic_ir()` is reused by other tests for orchestrator-only path-coverage assertions, but the IR consumed by the full pipeline here comes from `ir-builder.sh` walking `vault-content/`.

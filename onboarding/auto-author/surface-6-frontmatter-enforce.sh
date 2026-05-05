@@ -44,7 +44,7 @@
 #     - Default fallback ("Engagements") preserves backward compatibility for
 #       users who never declared the field.
 #     - Verified: grep -c 'Engagements/' frontmatter-enforce.sh -> 0.
-#     - Verified: tests/sp12/frontmatter-enforce-projdir-unit-test.sh -> 12/12 PASS.
+#     - Verified: tests/auto-author/frontmatter-enforce-projdir-unit-test.sh -> 12/12 PASS.
 #
 #   REJECTED: DEFER path would require SP10 reopen + remove the contingent
 #   "frontmatter-enforce-12-regex-removal" v2.1 charter row. Higher friction,

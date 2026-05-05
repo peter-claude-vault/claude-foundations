@@ -55,7 +55,7 @@
 #   2  bad invocation / missing dependency
 #   3  write error
 #
-# (See SP07 T-10 spec + tests/sp07/checkpoint-resume-unit-test.sh for the
+# (See SP07 T-10 spec + tests/onboarder/checkpoint-resume-unit-test.sh for the
 # 5-AC contract this script ships against.)
 
 set -u

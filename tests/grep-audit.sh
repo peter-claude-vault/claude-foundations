@@ -62,7 +62,7 @@ command -v python3 >/dev/null 2>&1 || { err "python3 required"; exit 7; }
 # the form `path:lineno:content`, so filename excludes must end in `:`
 # (the path→lineno separator) or `/` (for directories). `$` anchors
 # end-of-line and does not match mid-line path segments — do not use.
-EXCLUDE_RE='/\.git/|/node_modules/|/file-history/|/grep-audit-patterns/|/grep-audit-fixtures/|/\.self-verify/|/grep-audit\.sh:|/grep-audit-unit-test\.sh:|/CHANGELOG\.md:|/README\.md:|/docs/april-13-autopsy\.md:|/install\.sh:|/uninstall\.sh:|/skills/adopt/SKILL\.md:|/skills/adopt/adopt\.sh:|/onboarding/onboarder-design\.md:|/tests/e2e-lima-dogfood\.sh:|/tests/e2e-scenario\.sh:|/tests/sp08/install-g3-g10-unit-test\.sh:|/tests/sp08/adopt-unit-test\.sh:|/tests/sp07/.*-unit-test\.sh:|/tests/sp09-bootstrap-validation\.sh:|/tests/sp1[12]/.*\.sh:|/RELEASE_CHECKLIST\.md:|/LICENSE:'
+EXCLUDE_RE='/\.git/|/node_modules/|/file-history/|/grep-audit-patterns/|/grep-audit-fixtures/|/\.self-verify/|/grep-audit\.sh:|/grep-audit-unit-test\.sh:|/CHANGELOG\.md:|/README\.md:|/docs/april-13-autopsy\.md:|/install\.sh:|/uninstall\.sh:|/skills/adopt/SKILL\.md:|/skills/adopt/adopt\.sh:|/onboarding/onboarder-design\.md:|/tests/e2e-lima-dogfood\.sh:|/tests/e2e-scenario\.sh:|/tests/installer/install-g3-g10-unit-test\.sh:|/tests/installer/adopt-unit-test\.sh:|/tests/onboarder/.*-unit-test\.sh:|/tests/foundation-bootstrap-validation\.sh:|/tests/sp1[12]/.*\.sh:|/RELEASE_CHECKLIST\.md:|/LICENSE:'
 
 # --- Stage Python helpers to a trap-cleaned tmpdir ---
 PY_TMP=$(mktemp -d -t grep-audit-py.XXXXXX)

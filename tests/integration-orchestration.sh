@@ -365,7 +365,7 @@ run_fixture_e2e() {
   # Compose installed orchestrator/lib/{claude-p.sh,idle-watchdog.sh} against a
   # synthetic hung sleeper; assert SIGTERM→SIGKILL escalation (rc=124) + the
   # post-kill classifier emits a `classification:` line into the watchdog log.
-  # Mirrors tests/sp03/idle-watchdog-unit-test.sh test_hung_process_fires().
+  # Mirrors tests/orchestrator/idle-watchdog-unit-test.sh test_hung_process_fires().
   claude_p_lib="$CH/orchestrator/lib/claude-p.sh"
   watchdog_lib="$CH/orchestrator/lib/idle-watchdog.sh"
   if [ -r "$claude_p_lib" ] && [ -r "$watchdog_lib" ]; then

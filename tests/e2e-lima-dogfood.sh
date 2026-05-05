@@ -166,7 +166,7 @@ if [ "$SV_FRESH" = '1' ]; then
   SV_RC=0
 else
   printf 'sp00-self-verify: running fresh\n' | tee -a "$RESULTS/sp00-self-verify.log"
-  bash "$REPO/tests/sp00-self-verify.sh" >> "$RESULTS/sp00-self-verify.log" 2>&1
+  bash "$REPO/tests/isolation-self-verify.sh" >> "$RESULTS/sp00-self-verify.log" 2>&1
   SV_RC=$?
 fi
 ph0 "sp00_self_verify_green" "[ \"$SV_RC\" = \"0\" ]"

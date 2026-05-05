@@ -17,7 +17,7 @@
 # unless GITHUB_ACTIONS=true OR MACOS_SMOKE_ALLOW_HOST_LAUNCHD=1. Real
 # launchctl bootstrap mutates the live user launchd domain (gui/$UID); this
 # guard prevents accidental host execution. The L1 unit test
-# (tests/sp08/installer-macos-smoke-unit-test.sh) covers all filesystem
+# (tests/installer/installer-macos-smoke-unit-test.sh) covers all filesystem
 # isolation surfaces with PATH-injected mock-launchctl; this driver is
 # specifically the layer that requires real launchctl + ephemeral host.
 #

@@ -15,8 +15,14 @@
     {
       "mode": "0644",
       "path": "hooks/README.md",
-      "sha256": "14bd7e49c453d2d357bf6d4935ab28137f9e803165aa559b9bafc28a105146b3",
-      "size": 4256
+      "sha256": "914912ffadc8c4a35274fcd17b659dcdded2b760b60fb25355b254bba5504af0",
+      "size": 5957
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/RULES.md",
+      "sha256": "090c2313dbe52892d979db773670b6f8a3e258eab7391898df2de612ddac9244",
+      "size": 7437
     },
     {
       "mode": "0755",
@@ -141,8 +147,8 @@
     {
       "mode": "0755",
       "path": "hooks/prompt-context.sh",
-      "sha256": "95cc2b343a001d6ea3aae5b742479e7ceae14865cd525e16a4fa3a8d36cc53ad",
-      "size": 7243
+      "sha256": "7a03e5354fcf67a6564bd47501e0fd7aaf7f7fc35ae98cdfc34eb9780f47d139",
+      "size": 7275
     },
     {
       "mode": "0755",
@@ -165,8 +171,8 @@
     {
       "mode": "0755",
       "path": "hooks/session-register.sh",
-      "sha256": "45d48a61f876b83b44d70d44b7ebcb073f648558e702fd2bb1532a64feb3e528",
-      "size": 3348
+      "sha256": "a8f9295e7a0f1a67b9225683305c03da0cff80aa466d9fefa35ea7aa7594cfc0",
+      "size": 3380
     },
     {
       "mode": "0755",
@@ -183,8 +189,8 @@
     {
       "mode": "0755",
       "path": "hooks/stop-checkpoint-check.sh",
-      "sha256": "fa27118b925e07556310b7e69fa92ddacea73e501f412b2edab7c1a81d857fe4",
-      "size": 1741
+      "sha256": "7258fc36e4b875cb6e448824c2705e9b811ee64ddaead76ab351c484b4cbb88d",
+      "size": 1773
     },
     {
       "mode": "0755",
@@ -207,14 +213,14 @@
     {
       "mode": "0755",
       "path": "hooks/worker-statusline.sh",
-      "sha256": "c583c0e81766ddd3560ccb37920a6b0fdaacb99c08445bfa4eeb7d045cacf951",
-      "size": 1052
+      "sha256": "ca52d214e4d529ce29001e727a8aebf8db2cad6fdfd302e1ce60ca7c0987dedf",
+      "size": 1084
     },
     {
       "mode": "0644",
       "path": "installer/README.md",
-      "sha256": "bb306dca4faa508b2a1c107a2bfb38dc409455bf143af733baa939ff64743ab7",
-      "size": 94
+      "sha256": "c157b721843e734009a8fd13bbe89695ab3ac28062af0e1d46e93a30a23b4492",
+      "size": 1853
     },
     {
       "mode": "0755",
@@ -249,14 +255,14 @@
     {
       "mode": "0644",
       "path": "onboarding/README.md",
-      "sha256": "1ff0598c2c1b89f4493162e72a16c3a03e904666e352381544e4690501d11cf5",
-      "size": 95
+      "sha256": "89ad42ccb3764e08ed567e72f964c6294257904bac3807a4fb317ac368e6e7b7",
+      "size": 4305
     },
     {
       "mode": "0644",
       "path": "onboarding/SKILL.md",
-      "sha256": "df826abc9b52a24916c3ecb6ddef8f6ce10a408d3d56378ae3307b04d38e6fc7",
-      "size": 8259
+      "sha256": "a5c9455d5f466b73a4112a52fc1175e0696f7c6fcdc531aa2f8ead163a449679",
+      "size": 8739
     },
     {
       "mode": "0755",
@@ -269,6 +275,12 @@
       "path": "onboarding/archetype-keywords.json",
       "sha256": "0e1cee7d3ac8af07d683f2f2f1016ffcfef07f62fd1705d5e20c70a7bd2d0b35",
       "size": 3692
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/auto-author-log.jsonl",
+      "sha256": "11912ed1a75a43cf641b4ed87be8bebf88ede9b2f38d901a3281f14637b2aa24",
+      "size": 3988
     },
     {
       "mode": "0755",
@@ -303,8 +315,8 @@
     {
       "mode": "0755",
       "path": "onboarding/auto-author/surface-6-frontmatter-enforce.sh",
-      "sha256": "8a41456abd98a179a355c6e1b6dc899ce493d9a202b7ff0b7520a56e25265982",
-      "size": 30830
+      "sha256": "3c2e16251d22d1601c4ffb92517f3cd49469c8e8b3afc2c85f5bf50d4d584a1e",
+      "size": 30837
     },
     {
       "mode": "0755",
@@ -321,8 +333,8 @@
     {
       "mode": "0755",
       "path": "onboarding/checkpoint.sh",
-      "sha256": "b4e19167eb2dcf0ac0c82e2d9d3a8bdef7852905a831ef3caff88da5c439db9c",
-      "size": 7162
+      "sha256": "01f0360f6d82cae61e5f9d5a521aa5527328af080ec7fa9be2f606a13cf67c03",
+      "size": 7167
     },
     {
       "mode": "0755",
@@ -369,32 +381,32 @@
     {
       "mode": "0644",
       "path": "onboarding/extraction-prompts/section-A.md",
-      "sha256": "fb45591bf9ab74b6e654d259fb042bcf785c4c20c02089cbdd364c4aa6097caa",
-      "size": 3728
+      "sha256": "3ced474d06b2f502ecbcec76c0cab574f720d6429cb8487938741715763d8fa7",
+      "size": 3584
     },
     {
       "mode": "0644",
       "path": "onboarding/extraction-prompts/section-B.md",
-      "sha256": "0c41b5e1cf8466ae0ad42757df3fccf6ecb42560fd39a8206a93c4c2c7558966",
-      "size": 7314
+      "sha256": "6a918f9d5ba61999693a051054004bc80c9fca2c45150df1ee0e74a002b8038e",
+      "size": 7036
     },
     {
       "mode": "0644",
       "path": "onboarding/extraction-prompts/section-C.md",
-      "sha256": "0b2f5b359949235a12fc278a895582306890b1ce9784ec812fc1650d240f3f0c",
-      "size": 8303
+      "sha256": "d0180974abf6e08a54a9e592ea85d09a9d9d9a4352b212768d814205d3544ca0",
+      "size": 8014
     },
     {
       "mode": "0644",
       "path": "onboarding/extraction-prompts/section-D.md",
-      "sha256": "4606f199ff042c98d6670c520ee78d44ac873d87474007a1965460ba6828180b",
-      "size": 9894
+      "sha256": "6f61e14c9ce4003b9e4a3faa58bd2090327b0e12f8cb12f552858e4d8c500484",
+      "size": 9625
     },
     {
       "mode": "0644",
       "path": "onboarding/extraction-prompts/section-E.md",
-      "sha256": "05337d7f249e7f3cde8a121542e3049d993069ae9f450e6e266c605ac427c5f6",
-      "size": 3696
+      "sha256": "6765bb331013b096f7d94764c88bfd561562733773aa3e19905d588db66624ca",
+      "size": 3552
     },
     {
       "mode": "0755",
@@ -513,8 +525,8 @@
     {
       "mode": "0644",
       "path": "onboarding/initial-job-setup-flow.md",
-      "sha256": "b8437c5d631d0e6f65b26aa228f2baffbb6ad23edfefcc8300415c26c2953527",
-      "size": 17053
+      "sha256": "9cbb509fa92ae869047c86c85a347e37b9ce026e04c2edcba3e6b014cd4df339",
+      "size": 13493
     },
     {
       "mode": "0755",
@@ -549,8 +561,8 @@
     {
       "mode": "0644",
       "path": "onboarding/onboarder-design.md",
-      "sha256": "18258844b22afb8d37bbbd482cafd8c6f4279cc07d3871ab0bf770ea55439192",
-      "size": 20860
+      "sha256": "9665dd9911aeccdab7a81603a71f79fb9086212ef3b413ddc42f1d5d12300ba7",
+      "size": 19898
     },
     {
       "mode": "0755",
@@ -734,81 +746,81 @@
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/seedignore-filter-test.sh",
-      "sha256": "29fae8115d7ec8af7ac31a62c18ed65bb6bd368d21152f34a9b15acfec3f8caa",
-      "size": 5870
-    },
-    {
-      "mode": "0755",
-      "path": "onboarding/tests/sp13-cluster-test.sh",
+      "path": "onboarding/tests/seed-content/cluster-test.sh",
       "sha256": "27c0dfdc457bd5fa033f7c967e079b76e84f6f18c43b3867c09cdba86333b21f",
       "size": 14694
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-explainer-fragments-test.sh",
-      "sha256": "58350f4bf7deb04c54ef226eff23bad163744f6f8f5f196d8cea895b05e41707",
-      "size": 20539
+      "path": "onboarding/tests/seed-content/explainer-fragments-test.sh",
+      "sha256": "980027740a797312d0b4f43023161cd24a98f375f6c990c8cfd36c183c287b7a",
+      "size": 18973
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-import-plan-test.sh",
-      "sha256": "aa0fc19aafdcebf734a1aea8f5e7dcdd2a9e45737d7771dd37b53e480c47d15f",
-      "size": 17540
+      "path": "onboarding/tests/seed-content/import-plan-test.sh",
+      "sha256": "ad7a869e1da7232f2fe1b37a840a28d3dc48ed28fe6cd4517ad507e228c39cfc",
+      "size": 17631
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-inbox-disposition-test.sh",
-      "sha256": "e959b85e17a43fba8a43b26f87c1a1596771f44d7e0b31ffa6538bdfe09c38a5",
-      "size": 29586
+      "path": "onboarding/tests/seed-content/inbox-disposition-test.sh",
+      "sha256": "3b10197f98a178f0ce093ee6fd7ed471d9a60120f511b7f7d9bbfa4879e8f5b1",
+      "size": 29185
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-inbox-processor-test.sh",
-      "sha256": "9f9fe7e82531cb0cbcc110ac48eacecc17b17f914fd961a57a5c08592e890f46",
-      "size": 18128
+      "path": "onboarding/tests/seed-content/inbox-processor-test.sh",
+      "sha256": "45e677cda56ea59377b617cf617d5b8af5a53eec894310231ff62af2b3a4ba39",
+      "size": 18328
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-meeting-note-ingestor-test.sh",
-      "sha256": "247bcdadb96bde40516b6fdebbd405ceafe0319e1f65705900728fb4f1f1d091",
-      "size": 20276
+      "path": "onboarding/tests/seed-content/meeting-note-ingestor-test.sh",
+      "sha256": "c43a59be7cefb3ff0d81c26795441e13aaa0ecbef01c454b77b44f759285691f",
+      "size": 20290
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-propose-taxonomy-test.sh",
-      "sha256": "42e19d6752599e5e08ccb45dab825fb2bf363f1d3a7d667b937c551401a2f84d",
-      "size": 14179
+      "path": "onboarding/tests/seed-content/propose-taxonomy-test.sh",
+      "sha256": "aa00bb213be254a78458cdc0a590dc05d865127e761201e6ecd6e8dcc800772b",
+      "size": 14249
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-retrofit-existing-test.sh",
-      "sha256": "d5332084cca60bd6566d6664ccc7ecadf5dc3533562e2338480788c3def8103f",
-      "size": 31115
+      "path": "onboarding/tests/seed-content/retrofit-existing-test.sh",
+      "sha256": "044280fcc2e8bb1e6377b1944e2adc6a88cfb7f12645fad28dbea734daf7496e",
+      "size": 31136
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-review-gate-test.sh",
-      "sha256": "904e46129fad21cd1f0b888ac70f42d81b89e35fff2877b7f76e5a89237175a1",
-      "size": 19359
+      "path": "onboarding/tests/seed-content/review-gate-test.sh",
+      "sha256": "76ae507e34b98d191615a123a441e1248e5d4c93af483be4f36569913c49ecaf",
+      "size": 17727
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-seed-projects-test.sh",
-      "sha256": "aeb1f96b0ce4e7646141428d93824858c1506cf09e63a625c72451928d2407ea",
-      "size": 21981
+      "path": "onboarding/tests/seed-content/seed-projects-test.sh",
+      "sha256": "1722decdef2ccf981baad5bbb4b44b50c68053778973e24ab6df28515b235b9d",
+      "size": 20321
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-smoke-cross-cutting-test.sh",
-      "sha256": "b1c649d7a89a9a56906d8849d5c8a7ad50908c9782a9837922a559719a99cc4c",
-      "size": 30774
+      "path": "onboarding/tests/seed-content/smoke-cross-cutting-test.sh",
+      "sha256": "41f1d23276269f1598aaf734e54b7574c8f7682fc1886a51884dbcfb84bc44c6",
+      "size": 30708
     },
     {
       "mode": "0755",
-      "path": "onboarding/tests/sp13-unclassified-pile-ux-test.sh",
-      "sha256": "3b2ed662c109997a4cd0fd837d397e86176ca65ff3a4f05e0357b6f2aac57d5f",
-      "size": 14733
+      "path": "onboarding/tests/seed-content/unclassified-pile-ux-test.sh",
+      "sha256": "bc5308e26cc96b14d96b428e1b04e71253052c8780d7a7c3ee278bbe5adcfa68",
+      "size": 14745
+    },
+    {
+      "mode": "0755",
+      "path": "onboarding/tests/seedignore-filter-test.sh",
+      "sha256": "29fae8115d7ec8af7ac31a62c18ed65bb6bd368d21152f34a9b15acfec3f8caa",
+      "size": 5870
     },
     {
       "mode": "0755",
@@ -861,8 +873,8 @@
     {
       "mode": "0644",
       "path": "orchestrator/README.md",
-      "sha256": "07ac75f66ac0b038d362031fafb8e55cdcc41371027e2603947b006859d545b5",
-      "size": 97
+      "sha256": "aca2d8fd870466de1f9556fe3ad11f0a77504aa25d8f571b2a1f69373f1a156e",
+      "size": 2607
     },
     {
       "mode": "0644",
@@ -921,8 +933,8 @@
     {
       "mode": "0644",
       "path": "schemas/README.md",
-      "sha256": "5b69e66fb9bf43368adca9d8dd278eba060971e4f3f30a354adf71cd1c3dd9f0",
-      "size": 4235
+      "sha256": "844773e49bc8b66a118ccd5d8d36e146e67b84d64fecab591d91aedd654b7eba",
+      "size": 3904
     },
     {
       "mode": "0644",
@@ -933,8 +945,8 @@
     {
       "mode": "0644",
       "path": "schemas/orchestration-schema.json",
-      "sha256": "3508661e7180daf335bf9133d39e090b8cd8c6e7832402f39c140c4c7a2ab541",
-      "size": 4531
+      "sha256": "da9f3f2812a30fe855db3407b292b03887ef13b9f2cd2cd37e73105417baf1f6",
+      "size": 4724
     },
     {
       "mode": "0644",
@@ -963,8 +975,8 @@
     {
       "mode": "0644",
       "path": "skills/adopt/SKILL.md",
-      "sha256": "846fef2889d9100cb774e2cb11f98d8b3be3176485c8e019b085b0ba61adeef2",
-      "size": 18493
+      "sha256": "3c800a1cec4199e0347544a4e5f7cc8dc002ae79267c0776ac9272e34fc1e311",
+      "size": 15071
     },
     {
       "mode": "0755",
@@ -975,116 +987,116 @@
     {
       "mode": "0755",
       "path": "skills/adopt/retrofit-collision-matrix.py",
-      "sha256": "e5f5babb9adf971dd27d8d9115fce5dd8034c0ec0ce4885f13b59457135c8c12",
-      "size": 9696
+      "sha256": "4c8ddf1f0ce8b1df14c1df0381a5214fe5d8e3da08760737a72110afe6e75c3c",
+      "size": 9724
     },
     {
       "mode": "0755",
       "path": "skills/adopt/retrofit-collision-matrix.sh",
-      "sha256": "01ee94d09e849d44a79c163c636bb10ed39b151aa782de0ae5d7f10ab93a84df",
-      "size": 1814
+      "sha256": "11b1e421049771d3cc69b51cbf953a04a1d36ff1e34dbf6bab7252411ac3d59e",
+      "size": 1818
     },
     {
       "mode": "0755",
       "path": "skills/adopt/retrofit-prefilter.py",
-      "sha256": "5af0c4e087fdacc4833b5a93487d58f851a567035605a7d03dcba4951259948c",
-      "size": 18042
+      "sha256": "ae0c15aa998d02fa4d6fdec1ca17519d3802de2f45a11dddb41cc856aced8aea",
+      "size": 18114
     },
     {
       "mode": "0755",
       "path": "skills/adopt/retrofit.sh",
-      "sha256": "08ca676e4792a7ef25d87de15d9f0a6a083b1423014136d24d2748228c84adeb",
-      "size": 18758
+      "sha256": "ab05655b530c69138c37441ea88cce3d1f22e8e82bfa45e90fc705921143e096",
+      "size": 18767
     },
     {
       "mode": "0644",
       "path": "skills/architect/SKILL.md",
-      "sha256": "043ee03f0d24abd4628613e300c266b1cf61ff330d04670605e3466f02f650c8",
-      "size": 26834
+      "sha256": "1b1235a0dde9156e402df49a97b830eb3f2f80ea31bf3cd8c7882a5825b971ce",
+      "size": 21691
     },
     {
       "mode": "0644",
       "path": "skills/backlog-hygiene/SKILL.md",
-      "sha256": "8f3f28f07441e36dd9a733426340bc2919313de88abf4ed8291db6ef3c81c4b3",
-      "size": 12743
+      "sha256": "3b286b2fdbd64e645e0f0fc0c9104d0f11ffffa85efdbdaa2f88106483e17dc7",
+      "size": 10514
     },
     {
       "mode": "0644",
       "path": "skills/backlog-research/SKILL.md",
-      "sha256": "e1bca237b541773f6c282fb90ae3a83cb6f90459271184d8385df454293cc850",
-      "size": 13381
+      "sha256": "b00fe9f50b87d84044d93e4962f465a827430fc0083e812f8c82cea8a6d87688",
+      "size": 11968
     },
     {
       "mode": "0644",
       "path": "skills/backlog-triage/SKILL.md",
-      "sha256": "1d60f4d43ee4d2890c08b3d02c2e6d748d851b10bddeaf63d65ec5655e0d6b45",
-      "size": 7389
+      "sha256": "64b88176722a96ae9658ab71c598a8aa99223373c50278fa6cb766ac17b08d24",
+      "size": 7325
     },
     {
       "mode": "0644",
       "path": "skills/infer-vault-structure/SKILL.md",
-      "sha256": "12994a31625b98972fd35c9dc7c3629677bb07b057a140447ae2dd2962e72433",
-      "size": 35263
+      "sha256": "c7786a5c7f7c980f6ed9a915d389355d9238c80f5dfbc055a8bbb5be147b8a11",
+      "size": 27246
     },
     {
       "mode": "0755",
       "path": "skills/infer-vault-structure/cluster.py",
-      "sha256": "4f080c3ebb05ecec2f11c0dc9624362592359eeb5304faa9f1ea018d1728864c",
-      "size": 12610
+      "sha256": "864eed2ecc24b490611e2f060c5964be91697103403022fb971315063a6c5756",
+      "size": 12638
     },
     {
       "mode": "0755",
       "path": "skills/infer-vault-structure/cluster.sh",
-      "sha256": "fe9445eced6d6ed888dafc31bae44cbc8d54b687e068b2e934b2ecd7a81ec721",
-      "size": 4213
+      "sha256": "d5de507e3e2cf0cce75e647c548b4094f0fdb11510d8c959741a0b175c61d233",
+      "size": 4227
     },
     {
       "mode": "0644",
       "path": "skills/infer-vault-structure/import-plan.py",
-      "sha256": "c5e71008b1e363987dee4a151de63101e548d4fc76f83878c52ff824ede7e369",
-      "size": 23797
+      "sha256": "6d3ad854f6412b98fbce6e7f6120d01cf8458cbf071df3fbca1fe19ed2ae8534",
+      "size": 23832
     },
     {
       "mode": "0755",
       "path": "skills/infer-vault-structure/import-plan.sh",
-      "sha256": "992301ca4f04fc6cb4707cbe8c7a81c98b8a41716f01badc1b6d25f9118de8d8",
-      "size": 3097
+      "sha256": "8fa3bba0e6da6015b47548a98ba4991e648e4feff51b6f870dc0cce4898747b5",
+      "size": 3114
     },
     {
       "mode": "0755",
       "path": "skills/infer-vault-structure/orchestrate.sh",
-      "sha256": "a380a27502131388368b4854024f8cc55b01df3748f477711991c21d3dfb79f2",
-      "size": 14090
+      "sha256": "431702ad57f365a4a478719de8020278a5d17365355b1b19b7d28ea688c5b97b",
+      "size": 13630
     },
     {
       "mode": "0644",
       "path": "skills/infer-vault-structure/propose-taxonomy.py",
-      "sha256": "ef77e9a54ee329d9663cdb2a847b77df971922229d6417f377b6904d443bad35",
-      "size": 24272
+      "sha256": "9e36a48e77c6c21d24954b0ccb6ca6c9939c892da412d859d671f821e50d075c",
+      "size": 24341
     },
     {
       "mode": "0755",
       "path": "skills/infer-vault-structure/propose-taxonomy.sh",
-      "sha256": "f66d875c5970b6c701c7a657810b7ec5e96c79a01f4d8f8d5d2719f2f13e4ab1",
-      "size": 5286
+      "sha256": "4d52207c890badda9528d6023cbf44947ae3fce2b451e0659951d1c63f368e93",
+      "size": 5311
     },
     {
       "mode": "0755",
       "path": "skills/infer-vault-structure/review-gate.sh",
-      "sha256": "31d11d3d6c4e8218f087547f9506d3c3d4c65e88979d13bd6cdc06fce46d7bf5",
-      "size": 12181
+      "sha256": "358536db5ecb029272631d07c8ae31ac3a5ce8a411533de4872fde33a1bc6a54",
+      "size": 10619
     },
     {
       "mode": "0755",
       "path": "skills/infer-vault-structure/stage-2-5-consultation.sh",
-      "sha256": "403d0f65a5a0f145e6483a7595d00cd2fe91693816431c76eb6701addbd86ea7",
-      "size": 14517
+      "sha256": "658a14c80cd007843aae0f3a91f77e905157acfc456b3911934489a05dfcbf56",
+      "size": 14612
     },
     {
       "mode": "0644",
       "path": "skills/librarian/SKILL.md",
-      "sha256": "437d16463fd5ef5546b3df035ee1263723550d00ca34adeef93b7eb34d48743c",
-      "size": 165216
+      "sha256": "75770dd55e7dd8e20e51e95265645a375b100a3ef2236869f69ff59f2a50768a",
+      "size": 158759
     },
     {
       "mode": "0755",
@@ -1101,20 +1113,20 @@
     {
       "mode": "0755",
       "path": "skills/librarian/capabilities/capability-registry-parity.sh",
-      "sha256": "6bad821144efca3e7e8d5b70301ec4b1dd6cfd5d036f21282a78435773b918d0",
-      "size": 8275
+      "sha256": "34705f3054778d41a44c5ee3b6fde54bf0a68c5620a396ceee83ed7d2172f794",
+      "size": 8310
     },
     {
       "mode": "0755",
       "path": "skills/librarian/capabilities/classify.sh",
-      "sha256": "4d28c963c43b190898e6b859efc5c14e09d1cde0881a575426e29d5806be632c",
-      "size": 254
+      "sha256": "ca2e73ece6902ef11244de263975a0fad54d0301829c2591cb913cac88b406c0",
+      "size": 227
     },
     {
       "mode": "0755",
       "path": "skills/librarian/capabilities/cluster-by-topic.sh",
-      "sha256": "1f1a4c32f0dfe4978355c90e93c839def98983ace3a2f86a2f68405babdec0f3",
-      "size": 278
+      "sha256": "511c9e0e9f66faf4c400a9b9c5e5932bd077b78606951ccd558bfea3be46bb53",
+      "size": 251
     },
     {
       "mode": "0755",
@@ -1125,8 +1137,8 @@
     {
       "mode": "0755",
       "path": "skills/librarian/capabilities/draft-canonical-file.sh",
-      "sha256": "51a3c33eba5636af7b7c1aceb8147409269446042678c18b4dd1abb4cfb8a8f5",
-      "size": 290
+      "sha256": "5010fe70e69cd796769f603ea1538647adfc30e891c0b3e9b805e5a99d698414",
+      "size": 263
     },
     {
       "mode": "0755",
@@ -1263,8 +1275,8 @@
     {
       "mode": "0755",
       "path": "skills/librarian/capabilities/tests/synthetic-capability-registry-parity-runtime.sh",
-      "sha256": "e015a32a9ef2c50a326363e6a585e7f37528cf36f5ea7c4beb6dafd315b66853",
-      "size": 10402
+      "sha256": "e984c4ef8f5367c4de94b23a69402642336b796de70a0cc3a6254a46d2efa85f",
+      "size": 10425
     },
     {
       "mode": "0755",
@@ -1359,8 +1371,8 @@
     {
       "mode": "0755",
       "path": "skills/librarian/capabilities/write-frontmatter.sh",
-      "sha256": "2aced20c9137f218c1ce0536b865f6cfeb46fd8a7319d18c531f50457e506252",
-      "size": 281
+      "sha256": "9b0fa90c95875d4ac7523cc855cf5963e6cd6998511a53943494723d53100bec",
+      "size": 254
     },
     {
       "mode": "0755",
@@ -1371,8 +1383,8 @@
     {
       "mode": "0600",
       "path": "skills/librarian/capability-registry.json",
-      "sha256": "f73bb9cec8ccddc4ec4ec5c8b931e1934646410674f324cdea99bb255cb33fb7",
-      "size": 27408
+      "sha256": "9f3800207993e990699909cdffe0916f50f55faa73ff6c39896c18db76011a56",
+      "size": 27245
     },
     {
       "mode": "0644",
@@ -1419,20 +1431,20 @@
     {
       "mode": "0644",
       "path": "skills/morning-brief/SKILL.md",
-      "sha256": "665bfd7a9544c365827e6fea50b25e136af6f912c3c67c6b5d762c2d8af0dc51",
-      "size": 17873
+      "sha256": "9497f6067c2dfaa22cc2eadb46a24bf9bdd40fdb6ca995805b168add8fde6782",
+      "size": 15858
     },
     {
       "mode": "0644",
       "path": "skills/onboarder/SKILL.md",
-      "sha256": "e60b33258ee7b0e664e429dc926d02ffa48b181b0d45261ace7cfd9ec4ed71a9",
-      "size": 27724
+      "sha256": "89ef101a56c43e37dd60a50bf5731dd56d7878ef8b560df32291e875adf5d353",
+      "size": 17829
     },
     {
       "mode": "0755",
       "path": "skills/onboarder/onboard.sh",
-      "sha256": "f27d77370ca06fc305e3cabe54ea3240effc98b63f595e540b6bb65bf2699661",
-      "size": 17479
+      "sha256": "04f7ba15763891d6992a5e67ed1dc97f1368a5210a51ed181b2f798c2e38ddde",
+      "size": 17471
     },
     {
       "mode": "0644",
@@ -1443,14 +1455,14 @@
     {
       "mode": "0644",
       "path": "templates/README.md",
-      "sha256": "60940e23d4a4e82c7f2f264066d49a0dec409d3bd42248b96fbe7be4f137fd2f",
-      "size": 3270
+      "sha256": "0bfb1034500f2cbb650c2dc46dc953c1daa820ad4ce147bf1732bf60b922fb31",
+      "size": 3378
     },
     {
       "mode": "0644",
       "path": "templates/claude-home-claude-md-template.md",
-      "sha256": "c41aac07e3644a4985bd254051b975f395b7e20888e86714ca1176ea386af02f",
-      "size": 10693
+      "sha256": "1f330f704952e99d8ccf3ebe72c9769e58cba625b9443f7b8e5a3efc6ac82a00",
+      "size": 10774
     },
     {
       "mode": "0644",
@@ -1539,11 +1551,11 @@
     {
       "mode": "0644",
       "path": "templates/vault-claude-md-template.md",
-      "sha256": "7e6f870984114a671e3ef72a313c87b449031cfc13e335c93c23962d959c9fd6",
-      "size": 5790
+      "sha256": "e2ce7d0f24084cdbe32196f0eee52a2bf09f7760fc70801b691ccd5944146c54",
+      "size": 5736
     }
   ],
-  "generated_at": "2026-05-05T19:05:37Z",
+  "generated_at": "2026-05-05T21:42:50Z",
   "generator_sha256": "381d002f4e004142c8079a580eb3509fc229a22fb6fd181ef12f299be50613a5",
-  "version": "v2.1.2"
+  "version": "v2.0.0-rc1"
 }
