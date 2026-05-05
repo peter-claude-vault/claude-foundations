@@ -6,7 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/registry.sh"
 
-STATE_DIR="$HOME/.claude/hooks/state"
+STATE_DIR="${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}"
 CHECKPOINT_FILE="$STATE_DIR/checkpoint.md"
 MANIFEST_FILE="$VAULT_ROOT/Logs/librarian-manifest.json"
 

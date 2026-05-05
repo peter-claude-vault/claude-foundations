@@ -3,7 +3,7 @@
 # Registered as statusLineCommand in settings.json.
 # Other hooks (prompt-context.sh, stop-checkpoint-check.sh) read this state.
 
-STATE_DIR="$HOME/.claude/hooks/state"
+STATE_DIR="${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}"
 STATE_FILE="$STATE_DIR/context-pressure.json"
 
 # Read stdin (status line JSON)
