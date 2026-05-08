@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "description": "Per-vault additive overlay for doc-dependencies.json skeleton. Hand-editable. Pairs with hooks/config/doc-dependencies.json (foundation skeleton) at runtime: consumers merge entries[] (by .id; overlay rows override skeleton rows of the same id) and entities{} (overlay keys override skeleton keys) additively. Schema: ${CLAUDE_HOME}/schemas/vault-overlay-schema.json (https://stem.peter.dev/schemas/vault-overlay/v1.json). Foundation install ships this empty; populate via onboarding flow or hand-edit per vault conventions (e.g., engagement directory cascades, vault-architecture hub-spoke, project-tree directory listings).",
+  "generated_by": "Plan 81 SP01 T-28a (2026-05-08) — install-shipped empty template",
+  "entries": [],
+  "entities": {}
+}
