@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "regenerated_at": "2026-05-07T00:00:00Z",
+  "regenerated_by": "manual-author Plan 80/81 SP01 T-5",
+  "_provenance": "Initial enumeration per packet §3.16 + Agent 5 inventory. T-10 (l3-registry-audit librarian capability) replaces this with automated regeneration walking ~/Library/LaunchAgents/com.*.plist + ~/.claude/hooks/*.sh weekly.",
+  "_purpose": "Master enumeration of writers (SessionEnd hooks, UserPromptSubmit hooks, launchd labels) + their write paths. Consumed by (a) l3-pause-helper.sh at runtime to coordinate pauses, (b) librarian l3-registry-audit at manifest-author time for static lint flagging Incident-β-class omissions (plan declares scope_paths overlapping a writer's write paths but doesn't declare a pause for that writer).",
+  "writers": [
+    {
+      "id": "auto-commit-surfaces",
+      "trigger": "SessionEnd hook",
+      "hook_path": "$HOME/.claude/hooks/auto-commit-surfaces.sh",
+      "write_paths": [
+        "$HOME/.claude-plans/**/.git/**",
+        "$CLAUDE_HOME/.git/**"
+      ],
+      "pause_mechanism": "sentinel",
+      "sentinel_path": "$HOOKS_STATE/canary-editing.lock",
+      "_notes": "Auto-commits changes to ~/.claude-plans/ and ~/.claude/ git surfaces at session end. Pause via canary-editing.lock sentinel; live helper at ~/.claude/hooks/auto-commit-surfaces.sh checks for existence before running."
+    },
+    {
+      "id": "memory-consolidation-session-end",
+      "trigger": "SessionEnd hook",
+      "hook_path": "$HOME/.claude/hooks/memory-consolidation-run.sh",
+      "write_paths": [
+        "$HOME/.claude/projects/**/memory/**",
+        "$HOME/.claude/projects/-Users-petertiktinsky/memory/**"
+      ],
+      "pause_mechanism": "env",
+      "env_var": "CLAUDE_MEM_DISABLE_OK=1",
+      "sp09_incident": "Incident β (2026-04-28). Env var CLAUDE_MEM_DISABLE_OK=1 covers SessionEnd consolidation ONLY. Auto-memory consolidation paths invoked from UserPromptSubmit, manual save calls, and librarian consolidation continue to run regardless. This was the structural gap that allowed Session 17 close-out auto-memory edit on MEMORY.md to consume T-13-postmortem.nonce.",
+      "_notes": "claude-mem SessionEnd-driven memory consolidation. R-24 enforces this hook stays running unless CLAUDE_MEM_DISABLE_OK=1 set. See feedback_keep_claude_mem_running.md."
+    },
+    {
+      "id": "user-prompt-submit-auto-memory",
+      "trigger": "UserPromptSubmit hook",
+      "hook_path": "$HOME/.claude/hooks/prompt-context.sh",
+      "write_paths": [
+        "$HOME/.claude/projects/**/memory/**",
+        "$HOME/.claude/hooks/state/checkpoint.md",
+        "$HOME/.claude/hooks/state/checkpoint-*.md"
+      ],
+      "pause_mechanism": "carve_out_in_g1",
+      "_notes": "Auto-memory writes invoked from UserPromptSubmit context (separate from SessionEnd path). This writer was the load-bearing surface in Plan 71 SP09 Incident β: mid-session auto-memory edits consumed task-bound nonces issued for unrelated targets. CLAUDE_MEM_DISABLE_OK=1 does NOT pause this writer (covers SessionEnd only). Carve-out in G1 (live-guard.sh exempt_paths declaration for ~/.claude/projects/**) is the v1 mitigation; per-task nonce affinity (basename-match-env) is the structural fix."
+    },
+    {
+      "id": "session-checkpoint-r26",
+      "trigger": "UserPromptSubmit hook (context-pressure ≥45%) + manual /session-checkpoint",
+      "hook_path": "$HOME/.claude/hooks/prompt-context.sh",
+      "write_paths": [
+        "$HOME/.claude/hooks/state/checkpoint.md",
+        "$HOME/.claude/hooks/state/checkpoint-YYYYMMDD-HHMMSS.md"
+      ],
+      "pause_mechanism": "carve_out_in_g1",
+      "_notes": "R-26 enforcement: context-pressure 45%/48% thresholds inject re-firing UserPromptSubmit mandate to invoke /session-checkpoint. Writes to ~/.claude/hooks/state/. Plan 71 master manifest exempt_paths (T-14) MUST include ~/.claude/hooks/state/** to avoid Incident-β-class denial of legitimate checkpoint writes during Plan-71-context sessions. Closes SP07 OQ-H."
+    },
+    {
+      "id": "session-register-deregister",
+      "trigger": "SessionStart + Stop hooks",
+      "hook_path": "$HOME/.claude/hooks/session-register.sh + session-deregister.sh",
+      "write_paths": [
+        "$HOME/.claude/hooks/state/sessions/**"
+      ],
+      "pause_mechanism": "carve_out_in_g1",
+      "_notes": "Session lifecycle tracking. Multi-session coordination per Plan 42 R-42."
+    },
+    {
+      "id": "com.librarian-scan",
+      "trigger": "launchd cron (daily)",
+      "launchd_label": "com.librarian-scan",
+      "plist_path": "$HOME/Library/LaunchAgents/com.librarian-scan.plist",
+      "write_paths": [
+        "$VAULT_ROOT/Logs/librarian-manifest*",
+        "$HOME/.claude/hooks/state/cron-librarian-*.log"
+      ],
+      "pause_mechanism": "launchctl",
+      "launchctl_command": "launchctl unload $HOME/Library/LaunchAgents/com.librarian-scan.plist"
+    },
+    {
+      "id": "com.architect-analysis",
+      "trigger": "launchd cron (weekly)",
+      "launchd_label": "com.architect-analysis",
+      "plist_path": "$HOME/Library/LaunchAgents/com.architect-analysis.plist",
+      "write_paths": [
+        "$VAULT_ROOT/Logs/architect-*",
+        "$HOME/.claude/hooks/state/cron-architect-*.log"
+      ],
+      "pause_mechanism": "launchctl"
+    },
+    {
+      "id": "com.digest-run",
+      "trigger": "launchd cron (multiple times daily)",
+      "launchd_label": "com.digest-run",
+      "plist_path": "$HOME/Library/LaunchAgents/com.digest-run.plist",
+      "write_paths": [
+        "$VAULT_ROOT/Inbox/**",
+        "$VAULT_ROOT/Logs/digest-*",
+        "$HOME/.claude/hooks/state/cron-digest-*.log"
+      ],
+      "pause_mechanism": "launchctl"
+    },
+    {
+      "id": "com.backlog-research",
+      "trigger": "launchd cron",
+      "launchd_label": "com.backlog-research",
+      "plist_path": "$HOME/Library/LaunchAgents/com.backlog-research.plist",
+      "write_paths": [
+        "$HOME/.claude-plans/**/00-ideation-brief.md",
+        "$VAULT_ROOT/System Backlog.md"
+      ],
+      "pause_mechanism": "launchctl"
+    },
+    {
+      "id": "com.backlog-hygiene",
+      "trigger": "launchd cron (weekly)",
+      "launchd_label": "com.backlog-hygiene",
+      "plist_path": "$HOME/Library/LaunchAgents/com.backlog-hygiene.plist",
+      "write_paths": [
+        "$VAULT_ROOT/System Backlog.md",
+        "$VAULT_ROOT/System Backlog - Archive.md",
+        "$VAULT_ROOT/Logs/backlog-progress/**"
+      ],
+      "pause_mechanism": "launchctl"
+    },
+    {
+      "id": "com.chat-scrape",
+      "trigger": "launchd cron (incremental)",
+      "launchd_label": "com.chat-scrape",
+      "plist_path": "$HOME/Library/LaunchAgents/com.chat-scrape.plist",
+      "write_paths": [
+        "$HOME/.claude/hooks/state/chat-watermarks/**",
+        "$HOME/.claude/state/chat_digests.sqlite"
+      ],
+      "pause_mechanism": "launchctl"
+    },
+    {
+      "id": "com.meeting-processor",
+      "trigger": "launchd cron (multiple times daily)",
+      "launchd_label": "com.meeting-processor",
+      "plist_path": "$HOME/Library/LaunchAgents/com.meeting-processor.plist",
+      "write_paths": [
+        "$VAULT_ROOT/Engagements/**/Meetings/**",
+        "$HOME/.claude/hooks/state/cron-meeting-*.log"
+      ],
+      "pause_mechanism": "launchctl"
+    },
+    {
+      "id": "com.git-backup-push",
+      "trigger": "launchd cron (hourly)",
+      "launchd_label": "com.git-backup-push",
+      "plist_path": "$HOME/Library/LaunchAgents/com.git-backup-push.plist",
+      "write_paths": [
+        "$VAULT_ROOT/.git/**"
+      ],
+      "pause_mechanism": "launchctl",
+      "_notes": "Plan 79 cron — vault git-backup. Hard prereq for Plan 81 SP04, NOT SP01."
+    },
+    {
+      "id": "com.outlook-gcal-sync",
+      "trigger": "launchd cron",
+      "launchd_label": "com.outlook-gcal-sync",
+      "plist_path": "$HOME/Library/LaunchAgents/com.outlook-gcal-sync.plist",
+      "write_paths": [
+        "$HOME/.claude/state/calendar.json",
+        "$HOME/.claude/hooks/state/cron-outlook-*.log"
+      ],
+      "pause_mechanism": "launchctl"
+    },
+    {
+      "id": "com.logs-audit",
+      "trigger": "launchd cron",
+      "launchd_label": "com.logs-audit",
+      "plist_path": "$HOME/Library/LaunchAgents/com.logs-audit.plist",
+      "write_paths": [
+        "$VAULT_ROOT/Logs/**"
+      ],
+      "pause_mechanism": "launchctl"
+    },
+    {
+      "id": "com.plan-execution",
+      "trigger": "launchd cron (orchestrator)",
+      "launchd_label": "com.plan-execution",
+      "plist_path": "$HOME/Library/LaunchAgents/com.plan-execution.plist",
+      "write_paths": [
+        "$HOME/.claude-plans/**/Logs/backlog-progress/**",
+        "$HOME/.claude/hooks/state/orchestrator/**"
+      ],
+      "pause_mechanism": "launchctl",
+      "_notes": "Plan 32 autonomous orchestration. Job-runner.sh post-dispatch verifier shipped 2026-04-25."
+    }
+  ],
+  "_promotion_gate_reviewers": {
+    "_note": "com.promotion-gate-review.*.plist labels (com.promotion-gate-review.may1-r38-r39-r40, may4-r43-r44-r45, may5-plan59, may8-r33, may18-r46, may19-r47) and com.plan67-obs-gate.*.plist labels are short-lived calendar-gated reviewers. They write to vault Logs/ for the duration of their observation window then self-deregister. Not enumerated as registry writers because their write paths are bounded (single-day reviewer outputs) and their pause-mechanism would be gate-redundant (window expires before any plan's pause matters).",
+    "labels": [
+      "com.promotion-gate-review.may1-r38-r39-r40",
+      "com.promotion-gate-review.may4-r43-r44-r45",
+      "com.promotion-gate-review.may5-plan59",
+      "com.promotion-gate-review.may8-r33",
+      "com.promotion-gate-review.may18-r46",
+      "com.promotion-gate-review.may19-r47",
+      "com.plan67-obs-gate.r51-may6",
+      "com.plan67-obs-gate.r52-may6",
+      "com.plan67-obs-gate.r53-may22",
+      "com.plan67-obs-gate.rename-apply-reminder-may1"
+    ]
+  },
+  "_post_tool_use_advisory": [
+    {
+      "id": "tasks-md-autosync",
+      "trigger": "PostToolUse hook",
+      "hook_path": "$HOME/.claude/hooks/tasks-md-autosync.sh",
+      "write_paths": [
+        "$HOME/.claude-plans/**/tasks.md"
+      ],
+      "pause_mechanism": "carve_out_in_g1",
+      "_notes": "Auto-sync of plan tasks.md status via <!-- task-done: NN/T-M --> markers in backlog-progress files. Fires on PostToolUse Edit/Write. Per feedback_tasks_md_autosync. Writes to ~/.claude-plans/ which is gate-free for live-guard purposes (gate triggers on $HOME/.claude/, not .claude-plans).",
+      "_advisory_note": "PostToolUse-fire hooks fire AFTER pre-write succeeded. They reactively log/sync; they do NOT write to gate-protected paths during the pre-write decision window. pause_mechanism is not applicable in the L3 writer-pause sense — these hooks have no pause-state to manage. Listed here for completeness (so l3-registry-audit drift detection sees them) but excluded from layer_3 helper scope. Use carve_out_in_g1 for their write paths if they need exempt status."
+    },
+    {
+      "id": "track-vault-write",
+      "trigger": "PostToolUse hook",
+      "hook_path": "$HOME/.claude/hooks/track-vault-write.sh",
+      "write_paths": [
+        "$HOME/.claude/hooks/state/vault-write-trace.log"
+      ],
+      "pause_mechanism": "carve_out_in_g1",
+      "_advisory_note": "PostToolUse-fire hooks fire AFTER pre-write succeeded. They reactively log/sync; they do NOT write to gate-protected paths during the pre-write decision window. pause_mechanism is not applicable in the L3 writer-pause sense — these hooks have no pause-state to manage. Listed here for completeness (so l3-registry-audit drift detection sees them) but excluded from layer_3 helper scope. Use carve_out_in_g1 for their write paths if they need exempt status."
+    },
+    {
+      "id": "post-write-verify",
+      "trigger": "PostToolUse hook",
+      "hook_path": "$HOME/.claude/hooks/post-write-verify.sh",
+      "write_paths": [
+        "$HOME/Desktop/artefact-daily-logs/hook-audit.log"
+      ],
+      "pause_mechanism": "carve_out_in_g1",
+      "_notes": "Implements R-38/R-39 blockquote summary + provides advisory.",
+      "_advisory_note": "PostToolUse-fire hooks fire AFTER pre-write succeeded. They reactively log/sync; they do NOT write to gate-protected paths during the pre-write decision window. pause_mechanism is not applicable in the L3 writer-pause sense — these hooks have no pause-state to manage. Listed here for completeness (so l3-registry-audit drift detection sees them) but excluded from layer_3 helper scope. Use carve_out_in_g1 for their write paths if they need exempt status."
+    }
+  ],
+  "_post_tool_use_advisory_section_note": "PostToolUse hooks are reactive (fire after the tool succeeded); they have no L3 pause-state because they have no in-flight writes that survive across the pre-write gate. Listed here for l3-registry-audit drift detection but excluded from primary writers[] to avoid pause_mechanism semantic dilution."
+}
