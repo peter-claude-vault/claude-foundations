@@ -733,6 +733,32 @@ fi
 # VAULT_ROOT comes from paths.sh (sourced at top)
 SCHEMA_FILE="$SCHEMAS_DIR/vault-schema.json"
 
+# === gate-config.json — R-32/R-47 source of truth (Plan 81 SP01 T-6) =========
+# Foundation-repo authoring at ~/Code/claude-stem/schemas/gate-config.json.
+# $GATE_CONFIG_PATH override mirrors T-7 / T-27 test-isolation contract.
+# Missing config → degrade gracefully: empty arrays skip R-32 type/tag DENY
+# (fail-OPEN, same posture as missing SCHEMA_FILE).
+GATE_CONFIG="${GATE_CONFIG_PATH:-$HOME/Code/claude-stem/schemas/gate-config.json}"
+GATE_R32_ACCEPTED_TYPES=""
+GATE_R32_TYPE_ALIASES=""
+GATE_R32_EXEMPT_PATHS=""
+GATE_R47_TAG_DIMENSIONS=""
+GATE_R47_EXEMPT_PATHS=""
+GATE_R47_PREFIX_LIST=""
+GATE_R47_PREFIX_REGEX=""
+if [[ -f "$GATE_CONFIG" ]]; then
+  GATE_R32_ACCEPTED_TYPES=$(jq -r '.r32.accepted_types[]?' "$GATE_CONFIG" 2>/dev/null)
+  GATE_R32_TYPE_ALIASES=$(jq -r '.r32.type_aliases | to_entries[]? | "\(.key)\t\(.value)"' "$GATE_CONFIG" 2>/dev/null)
+  GATE_R32_EXEMPT_PATHS=$(jq -r '.r32.exempt_paths[]?' "$GATE_CONFIG" 2>/dev/null)
+  GATE_R47_TAG_DIMENSIONS=$(jq -r '.r47.tag_dimensions[]?' "$GATE_CONFIG" 2>/dev/null)
+  GATE_R47_EXEMPT_PATHS=$(jq -r '.r47.exempt_paths[]?' "$GATE_CONFIG" 2>/dev/null)
+  # Display + regex strings derived from r47.tag_dimensions (single-source per
+  # gate-config _tag_dimensions_note: same prefix grammar drives R-47 advisory
+  # AND R-32 Tier 2 tag-conformance DENY).
+  GATE_R47_PREFIX_LIST=$(echo "$GATE_R47_TAG_DIMENSIONS" | awk 'NF{printf "#%s/, ", $0}' | sed 's/, $//')
+  GATE_R47_PREFIX_REGEX=$(echo "$GATE_R47_TAG_DIMENSIONS" | awk 'NF{printf "%s|", $0}' | sed 's/|$//')
+fi
+
 if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
 
   REL_PATH="${FILE_PATH#$VAULT_ROOT/}"
@@ -742,11 +768,20 @@ if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
   IS_ENGAGEMENT_CLAUDE=false
   [[ "$REL_PATH" == Engagements/*/CLAUDE.md ]] && IS_ENGAGEMENT_CLAUDE=true
 
-  if [[ "$REL_PATH" != "Logs/librarian-manifest"* ]] && \
-     [[ "$REL_PATH" != "Logs/.coordination/"* ]] && \
-     [[ "$REL_PATH" != "CLAUDE.md" ]] && \
-     ( [[ "$REL_PATH" != *"/CLAUDE.md" ]] || [[ "$IS_ENGAGEMENT_CLAUDE" == "true" ]] ) && \
-     [[ -f "$SCHEMA_FILE" ]]; then
+  # R-32 exempt_paths sourced from gate-config.json::r32.exempt_paths (T-6).
+  # Engagement-CLAUDE carve-out (T4 navigation enforcement) overrides exemption
+  # so Engagements/*/CLAUDE.md always falls through to schema validation.
+  R32_EXEMPT=0
+  while IFS= read -r _exempt_pattern; do
+    [[ -z "$_exempt_pattern" ]] && continue
+    if [[ "$REL_PATH" == $_exempt_pattern ]]; then
+      R32_EXEMPT=1
+      break
+    fi
+  done <<< "$GATE_R32_EXEMPT_PATHS"
+  [[ "$IS_ENGAGEMENT_CLAUDE" == "true" ]] && R32_EXEMPT=0
+
+  if [[ $R32_EXEMPT -eq 0 ]] && [[ -f "$SCHEMA_FILE" ]]; then
 
     # --- Reconstruct file content for frontmatter analysis ---
     CONTENT=""
@@ -799,35 +834,19 @@ print(content, end='')
         FM_TYPE=$(fm_val "type")
         SCHEMA_KEY=""
 
-        # Map type field to schema key
-        case "$FM_TYPE" in
-          meeting-note)   SCHEMA_KEY="meeting-note" ;;
-          inbox-archive)  SCHEMA_KEY="inbox-archive" ;;
-          log)            SCHEMA_KEY="log" ;;
-          reference)      SCHEMA_KEY="reference" ;;
-          index)          SCHEMA_KEY="index" ;;
-          weekly-summary) SCHEMA_KEY="weekly-summary" ;;
-          daily-archive)  SCHEMA_KEY="daily-archive" ;;
-          skill-spec)     SCHEMA_KEY="reference" ;;
-          people)         SCHEMA_KEY="people" ;;
-          project)        SCHEMA_KEY="project" ;;
-          engagement)     SCHEMA_KEY="engagement" ;;
-          overview)       SCHEMA_KEY="engagement" ;;
-          updates)        SCHEMA_KEY="engagement" ;;
-          navigation)     SCHEMA_KEY="navigation" ;;
-          prd)            SCHEMA_KEY="prd" ;;
-          context)        SCHEMA_KEY="context" ;;
-          personal-initiative) SCHEMA_KEY="personal-initiative" ;;
-          daily-note)     SCHEMA_KEY="daily-note" ;;
-          briefing)       SCHEMA_KEY="briefing" ;;
-          strategic)      SCHEMA_KEY="strategic" ;;
-          planning)       SCHEMA_KEY="planning" ;;
-          archive)        SCHEMA_KEY="archive" ;;
-          historical-brief) SCHEMA_KEY="historical-brief" ;;
-          ideation-brief) SCHEMA_KEY="ideation-brief" ;;
-          file-index)     SCHEMA_KEY="index" ;;
-          tier-2)         SCHEMA_KEY="reference" ;;
-        esac
+        # Map type → schema key (R-32, gate-config.json::r32, T-6).
+        # Aliases override (5 entries: skill-spec, overview, updates, file-index,
+        # tier-2 → canonical schema keys per gate-config.json::r32.type_aliases).
+        # Other accepted_types map to themselves; unknown types yield empty
+        # SCHEMA_KEY and fall through to path inference below.
+        if [[ -n "$FM_TYPE" ]]; then
+          _alias_target=$(echo "$GATE_R32_TYPE_ALIASES" | awk -F'\t' -v t="$FM_TYPE" '$1 == t {print $2; exit}')
+          if [[ -n "$_alias_target" ]]; then
+            SCHEMA_KEY="$_alias_target"
+          elif echo "$GATE_R32_ACCEPTED_TYPES" | grep -Fxq "$FM_TYPE"; then
+            SCHEMA_KEY="$FM_TYPE"
+          fi
+        fi
 
         # Infer from path if type didn't match
         if [[ -z "$SCHEMA_KEY" ]]; then
@@ -845,22 +864,18 @@ print(content, end='')
         # =====================================================================
         # R-32 — TYPE ALLOWLIST (Tier 2 DENY)
         # Promoted from Tier 1 warning to Tier 2 blocking by spine-remediation-
-        # followup P4-T01 (2026-04-17). 25 accepted values: 20 canonical schema
-        # keys + 5 aliases (skill-spec, overview, updates, file-index, tier-2).
-        # New types must be added to vault-schema.json + the case statement
-        # above + post-write-verify.sh type_map + vault CLAUDE.md (R-37
-        # lockstep). Check is on FM_TYPE directly — path-inferred SCHEMA_KEY
-        # does not override an explicit-but-invalid type.
+        # followup P4-T01 (2026-04-17). Allowlist sourced from
+        # gate-config.json::r32.accepted_types (Plan 81 SP01 T-6, 2026-05-08):
+        # 26 accepted values = 21 canonical schema keys + 5 aliases (skill-spec,
+        # overview, updates, file-index, tier-2). Adding a type touches the
+        # R-37 coupled-surface set (vault-schema.json + pre-write-guard.sh +
+        # post-write-verify.sh + CLAUDE.md). Empty config → DENY skipped
+        # (fail-OPEN, same posture as missing SCHEMA_FILE).
         # =====================================================================
-        if [[ -n "$FM_TYPE" ]]; then
-          case "$FM_TYPE" in
-            meeting-note|inbox-archive|log|reference|index|weekly-summary|daily-archive|people|project|engagement|navigation|prd|context|personal-initiative|daily-note|briefing|strategic|planning|archive|historical-brief|ideation-brief|skill-spec|overview|updates|file-index|tier-2)
-              : # canonical or alias — allow
-              ;;
-            *)
-              TIER2_MSGS="${TIER2_MSGS}[R-32 UNKNOWN TYPE] type: '${FM_TYPE}' is not in the canonical allowlist (20 schema keys + 5 aliases). To add a new type: (1) update ~/.claude/schemas/vault-schema.json with required fields, (2) add case entry in pre-write-guard.sh, (3) add to post-write-verify.sh type_map, (4) document in vault CLAUDE.md — bundle as R-37 lockstep commit.\n"
-              ;;
-          esac
+        if [[ -n "$FM_TYPE" ]] && [[ -n "$GATE_R32_ACCEPTED_TYPES" ]]; then
+          if ! echo "$GATE_R32_ACCEPTED_TYPES" | grep -Fxq "$FM_TYPE"; then
+            TIER2_MSGS="${TIER2_MSGS}[R-32 UNKNOWN TYPE] type: '${FM_TYPE}' is not in the canonical allowlist (20 schema keys + 5 aliases). To add a new type: (1) update ~/.claude/schemas/vault-schema.json with required fields, (2) add case entry in pre-write-guard.sh, (3) add to post-write-verify.sh type_map, (4) document in vault CLAUDE.md — bundle as R-37 lockstep commit.\n"
+          fi
         fi
 
         # =====================================================================
