@@ -12,6 +12,14 @@
 #   FILE_PATH="$FILE_PATH" TOOL_NAME="$TOOL_NAME" HOOKS_STATE="$HOOKS_STATE" \
 #     "$HOME/.claude/hooks/lib/live-guard.sh"
 #
+# Dry-run CLI surface (T-3.6; SP04 §3.8 writer pre-flight binding):
+#   "$HOME/.claude/hooks/lib/live-guard.sh" --dry-run /abs/path/to/file
+# In dry-run mode the helper emits the same decision JSON to stdout but
+# (a) does NOT consume nonce overrides (nonce file persists post-call) and
+# (b) writes audit rows tagged with `dry_run: true`. Existing env-var
+# contract is preserved for production hook callers (no positional args
+# means no dry-run; --dry-run requires the positional <path>).
+#
 # Test-isolation env (T-3.5):
 #   HOOKS_STATE_OVERRIDE  - redirect state dir base
 #   PLANS_ROOT_OVERRIDE   - redirect plan-tree walk root
@@ -33,6 +41,30 @@
 # vs ignore=fail-open (Phase A bootstrap exception ONLY).
 
 set -uo pipefail
+
+# === CLI surface: --dry-run <path> (T-3.6) ================================
+# Optional positional flag; preserves env-var contract for production callers.
+DRY_RUN=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)
+      DRY_RUN=1
+      shift
+      if [[ $# -lt 1 ]] || [[ "${1:0:2}" == "--" ]]; then
+        echo "[live-guard] ERROR: --dry-run requires <path> argument" >&2
+        exit 2
+      fi
+      FILE_PATH="$1"
+      shift
+      ;;
+    --)
+      shift; break ;;
+    *)
+      echo "[live-guard] ERROR: unknown argument: $1" >&2
+      exit 2
+      ;;
+  esac
+done
 
 # === Required input contract =============================================
 : "${FILE_PATH:?missing FILE_PATH}"
@@ -71,12 +103,14 @@ audit() {
     --arg sha "$sha" \
     --arg gate_match "$gate_match" \
     --argjson schema_version 1 \
-    '{
+    --argjson dry_run "$DRY_RUN" \
+    '({
       ts: $ts, decision: $decision, plan_id: $plan_id, rule: $rule,
       tool: $tool, file: $file, signal: $signal, reason: $reason,
       nonce_task: $nonce_task, sha: $sha, gate_match: $gate_match,
       schema_version: $schema_version
-    } | with_entries(select(.value != "" and .value != null))' \
+    } + (if $dry_run > 0 then {dry_run: true} else {} end)
+    ) | with_entries(select(.value != "" and .value != null))' \
     >> "$DECISIONS_LOG" 2>/dev/null || true
 }
 
@@ -364,12 +398,21 @@ evaluate_gate() {
         sha=$(printf '%s' "$content" | awk -F'\t' '{print $3}')
 
         if [[ "$sha" == "$current_sha" ]] && [[ "${#reason}" -ge "$nonce_min" ]]; then
-          # Single-use: consume on match
-          rm -f "$nonce_file"
-          audit "allow-override" "$plan_id" "R-55" "$signal" \
-            "nonce-consumed: $task reason=$reason" "$task" "$current_sha"
-          emit_decision allow \
-            "[live-guard] allow-override: $plan_id nonce $task consumed (reason: $reason; signal=$signal)"
+          # Single-use: consume on match — except in --dry-run pre-flight
+          # where the writer is asking "what WOULD happen" and must not
+          # burn the task-bound nonce. T-3.6 (SP04 §3.8 binding-contract).
+          if [[ "$DRY_RUN" == "1" ]]; then
+            audit "allow-override" "$plan_id" "R-55" "$signal" \
+              "nonce-would-consume: $task reason=$reason" "$task" "$current_sha"
+            emit_decision allow \
+              "[live-guard] allow-override (dry-run): $plan_id nonce $task would consume (reason: $reason; signal=$signal)"
+          else
+            rm -f "$nonce_file"
+            audit "allow-override" "$plan_id" "R-55" "$signal" \
+              "nonce-consumed: $task reason=$reason" "$task" "$current_sha"
+            emit_decision allow \
+              "[live-guard] allow-override: $plan_id nonce $task consumed (reason: $reason; signal=$signal)"
+          fi
           GATE_MATCHED=1
           GATE_DECISION_EMITTED=1
           return 0
