@@ -79,15 +79,20 @@ JSON
 }
 
 # Helper: run pre-hook with controlled fixtures
+# Subshell-cd into fakerepo so `git rev-parse --show-toplevel` resolves
+# (mirrors dispatcher-test.sh::run_dispatcher contract).
 run_pre_hook() {
   local manifest_path="$1"
-  PRE_COMMIT_STAGED_OVERRIDE="$manifest_path" \
-  PRE_COMMIT_DIFF_OVERRIDE="$TEST_DIR/diff-fixtures" \
-  HOOKS_STATE_OVERRIDE="$TEST_DIR/hooks-state" \
-  FOUNDATION_REPO_OVERRIDE="$TEST_DIR/fakerepo" \
-  FOUNDATION_SHA_OVERRIDE="$SHA" \
-  UPDATE_HARNESS_CAP="$CAP" \
-  bash "$PRE_HOOK"
+  (
+    cd "$TEST_DIR/fakerepo"
+    PRE_COMMIT_STAGED_OVERRIDE="$manifest_path" \
+    PRE_COMMIT_DIFF_OVERRIDE="$TEST_DIR/diff-fixtures" \
+    HOOKS_STATE_OVERRIDE="$TEST_DIR/hooks-state" \
+    FOUNDATION_REPO_OVERRIDE="$TEST_DIR/fakerepo" \
+    FOUNDATION_SHA_OVERRIDE="$SHA" \
+    UPDATE_HARNESS_CAP="$CAP" \
+    bash "$PRE_HOOK"
+  )
 }
 
 # === Scenario 1: pre-commit — flip with fresh+pass entry → ALLOW ========
@@ -261,24 +266,11 @@ INV_FRESH=$(jq -r '.harness_validated[0].harness_freshness' "$PLAN_DIR/manifest.
 assert_eq "scenario_10_entry_remains_fresh" "$INV_FRESH" "fresh"
 
 # === Scenario 11: pre-commit handles missing manifest gracefully ========
-PRE_COMMIT_STAGED_OVERRIDE="nonexistent.json" \
-PRE_COMMIT_DIFF_OVERRIDE="$TEST_DIR/diff-fixtures" \
-HOOKS_STATE_OVERRIDE="$TEST_DIR/hooks-state" \
-FOUNDATION_REPO_OVERRIDE="$TEST_DIR/fakerepo" \
-FOUNDATION_SHA_OVERRIDE="$SHA" \
-UPDATE_HARNESS_CAP="$CAP" \
-bash "$PRE_HOOK" >/dev/null 2>&1
+run_pre_hook "nonexistent.json" >/dev/null 2>&1
 assert "scenario_11_missing_manifest_passthrough" $? 0
 
 # === Scenario 12: pre-commit — non-manifest staged paths → noop ========
-PRE_COMMIT_STAGED_OVERRIDE="some-other-file.sh
-README.md" \
-PRE_COMMIT_DIFF_OVERRIDE="$TEST_DIR/diff-fixtures" \
-HOOKS_STATE_OVERRIDE="$TEST_DIR/hooks-state" \
-FOUNDATION_REPO_OVERRIDE="$TEST_DIR/fakerepo" \
-FOUNDATION_SHA_OVERRIDE="$SHA" \
-UPDATE_HARNESS_CAP="$CAP" \
-bash "$PRE_HOOK" >/dev/null 2>&1
+run_pre_hook $'some-other-file.sh\nREADME.md' >/dev/null 2>&1
 assert "scenario_12_non_manifest_staged_noop" $? 0
 
 # === Scenario 13: audit log written ====================================
