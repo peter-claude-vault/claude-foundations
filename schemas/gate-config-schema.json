@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stem.peter.dev/schemas/gate-config/v1.json",
+  "title": "Gate Config Schema",
+  "description": "Vault-wide gate rules (R-32 type allowlist, R-47 tag-presence advisory, R-37 coupled-surface atomic-lockstep). Authored by Plan 80/81 SP01 (manifest-generalization). Per-plan scope lives in plan manifests (live_mutation_scope); this surface is global.",
+  "type": "object",
+  "required": ["schema_version", "r32", "r47", "r37"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version. Hard switch on mismatch (Chrome MV3-style; security-gate posture). Migration via gate-schema-migrate.sh."
+    },
+    "gate_manifest_schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to the schema spec for cross-system tooling integration. dbt-pattern."
+    },
+    "r32": {
+      "type": "object",
+      "description": "R-32 frontmatter type allowlist (Tier 2 DENY). Lifted from pre-write-guard.sh:803-863, 1052-1069. Originally promoted Tier 1 → Tier 2 by spine-remediation-followup P4-T01 (2026-04-17).",
+      "required": ["enabled", "schema_path", "accepted_types", "type_aliases", "exempt_paths"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "schema_path": {
+          "type": "string",
+          "description": "Path to vault-schema.json (defines canonical schema_keys + required fields per type)."
+        },
+        "accepted_types": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Allowlist of frontmatter `type:` values. Includes canonical schema keys + aliases. New types require R-37 lockstep commit (vault-schema.json + this allowlist + pre-write-guard.sh case statement + post-write-verify.sh type_map + vault CLAUDE.md)."
+        },
+        "type_aliases": {
+          "type": "object",
+          "description": "Alias → canonical schema_key map. Aliases pass type allowlist but resolve to canonical key for required-field validation.",
+          "additionalProperties": {"type": "string"}
+        },
+        "exempt_paths": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Glob patterns relative to vault root that skip R-32 enforcement (operational files, manifests, root CLAUDE.md, sub-folder CLAUDE.md except Engagements/*/CLAUDE.md)."
+        },
+        "tier_overrides": {
+          "type": "array",
+          "description": "Per-archetype tier override (T4 §3.1 Strict/Standard/Minimal). NEW capability beyond verbatim lift; v1 ships empty array (default Strict for all paths). Path-pattern matching is glob; first-match wins.",
+          "items": {
+            "type": "object",
+            "required": ["path_pattern", "tier"],
+            "additionalProperties": false,
+            "properties": {
+              "path_pattern": {"type": "string"},
+              "tier": {"type": "string", "enum": ["strict", "standard", "minimal"]},
+              "rationale": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "r47": {
+      "type": "object",
+      "description": "R-47 tag-presence advisory (Tier 1, never blocks). Lifted from pre-write-guard.sh:933-972. Complements R-32 tag-prefix DENY at :1071-1077.",
+      "required": ["enabled", "tag_dimensions", "exempt_paths", "tag_cap", "enforcement_action"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "tag_dimensions": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Tag prefix grammar (8-dimension list). Tags MUST start with one of these prefixes followed by '/' (per pre-write-guard.sh:1073 grep regex). Used by both R-47 advisory and R-32 Tier 2 DENY (single-sourced in v1)."
+        },
+        "exempt_paths": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Glob patterns relative to vault root that skip R-47 advisory. Plan 67 SP03 T-3 (2026-04-22) positive-list semantics."
+        },
+        "tag_cap": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Max tags per file per T4 §3.2. Today implicit; v1 declares structurally."
+        },
+        "enforcement_action": {
+          "type": "string",
+          "enum": ["warn"],
+          "description": "Advisory-only in v1. Tier 1 — never blocks writes; emits TIER1_MSGS for graph-view diagnostic."
+        }
+      }
+    },
+    "r37": {
+      "type": "object",
+      "description": "R-37 schema-addition lockstep commit rule. Currently documentary (pre-write-guard.sh:25 — 'enforced by git atomicity'). SP01 promotes to STRUCTURAL via Option α: G2 pre-commit denial of partial coupled-surface commits. Same sentinel-override pattern as G2 denylist.",
+      "required": ["enabled", "enforcement_action", "coupled_surfaces", "override_sentinel"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "enforcement_action": {
+          "type": "string",
+          "enum": ["deny", "warn", "dryrun"],
+          "description": "deny=block partial-set commit (Option α structural); warn=log only (shadow-mode 7-day soak through SP01 cutover); dryrun=evaluate without surfacing."
+        },
+        "coupled_surfaces": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "paths", "min_match"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+              "paths": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 2,
+                "description": "Paths/globs (resolved relative to repo root via `git diff --cached --name-only`) that must change atomically."
+              },
+              "min_match": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "If staged-diff intersection ≥ min_match, ALL paths must be touched. v1 always 1 (any-touch triggers full-set requirement)."
+              }
+            }
+          }
+        },
+        "override_sentinel": {
+          "type": "string",
+          "description": "Path to sentinel file (relative to repo root). Touch + `git commit --no-verify` bypasses R-37 (mirrors existing G2 denylist override pattern). Two physical actions required."
+        }
+      }
+    }
+  }
+}

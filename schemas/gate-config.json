@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "gate_manifest_schema": "https://stem.peter.dev/schemas/gate-config/v1.json",
+  "_provenance": "Authored Plan 80/81 SP01 T-1 on 2026-05-07. Verbatim lift from ~/.claude/hooks/pre-write-guard.sh hardcoded values. R-32 source: lines 803-863 + 1052-1069. R-47 source: lines 933-972 + 1073 (tag prefix grammar). R-37 source: line 25 + packet §3.3. NO semantic changes — pure externalization. Behavior-preserving validation deferred to T-16 fixture corpus + T-6 refactor.",
+  "r32": {
+    "enabled": true,
+    "schema_path": "$CLAUDE_HOME/schemas/vault-schema.json",
+    "_schema_path_note": "Live hook resolves SCHEMA_FILE = SCHEMAS_DIR/vault-schema.json where SCHEMAS_DIR = $CLAUDE_HOME/schemas (per ~/.claude/hooks/lib/paths.sh:18). Authoritative runtime path. Foundation-repo authoring lives at ~/Code/claude-stem/schemas/vault-schema.json (16 schemas; superset of live's 3) and Phase A bootstrap discipline syncs foundation-repo → live $CLAUDE_HOME/schemas/ as part of deploy ceremony — gate-config.json ALWAYS resolves to live runtime path, never foundation-repo path.",
+    "accepted_types": [
+      "meeting-note",
+      "inbox-archive",
+      "log",
+      "reference",
+      "index",
+      "weekly-summary",
+      "daily-archive",
+      "people",
+      "project",
+      "engagement",
+      "navigation",
+      "prd",
+      "context",
+      "personal-initiative",
+      "daily-note",
+      "briefing",
+      "strategic",
+      "planning",
+      "archive",
+      "historical-brief",
+      "ideation-brief",
+      "skill-spec",
+      "overview",
+      "updates",
+      "file-index",
+      "tier-2"
+    ],
+    "_accepted_types_note": "26 values (21 canonical schema keys from vault-schema.json + 5 aliases). Live hook comment at pre-write-guard.sh:849 says '25 accepted values: 20 canonical + 5 aliases' — comment is off by 1 vs reality (canonical count is 21, not 20). T-6 refactor preserves the 26-value reality, not the comment.",
+    "type_aliases": {
+      "skill-spec": "reference",
+      "overview": "engagement",
+      "updates": "engagement",
+      "file-index": "index",
+      "tier-2": "reference"
+    },
+    "exempt_paths": [
+      "Logs/librarian-manifest*",
+      "Logs/.coordination/**",
+      "CLAUDE.md",
+      "**/CLAUDE.md"
+    ],
+    "_exempt_paths_note": "Sub-folder CLAUDE.md exempt EXCEPT Engagements/*/CLAUDE.md (T4 navigation enforcement). Live hook lines 742-748 carry this carve-out; v1 retains it via case-statement equivalent at refactor time. Glob patterns documented above are vault-relative; refactor honors original prefix-match semantics (REL_PATH != Logs/librarian-manifest*).",
+    "tier_overrides": []
+  },
+  "r47": {
+    "enabled": true,
+    "tag_dimensions": [
+      "engagement",
+      "project",
+      "scope",
+      "status",
+      "initiative",
+      "artefact-bd",
+      "about-me",
+      "log"
+    ],
+    "_tag_dimensions_note": "8-dimension list per vault CLAUDE.md §Tagging Taxonomy. Same prefix grammar single-sourced for: (a) R-47 Tier 1 advisory at pre-write-guard.sh:971, (b) R-32 Tier 2 DENY tag-conformance check at pre-write-guard.sh:1073. SP01 lifts both consumers to read this same array.",
+    "exempt_paths": [
+      "Archive/**",
+      "Logs/foundations-essays/**",
+      "Logs/backlog-progress/**",
+      "Tags/**",
+      "_test*",
+      ".claude/**",
+      "Logs/ideation-brief-*.md",
+      "_orchestrator/**",
+      ".claude/hooks/state/**",
+      ".claude/hooks/lib/**",
+      "tests/**",
+      "Logs/build-*"
+    ],
+    "_exempt_paths_note": "Plan 67 SP03 T-3 positive-list semantics (2026-04-22). Verbatim lift from pre-write-guard.sh:946-965 case statement. Vault-relative globs.",
+    "tag_cap": 25,
+    "enforcement_action": "warn"
+  },
+  "r37": {
+    "enabled": true,
+    "enforcement_action": "warn",
+    "_enforcement_action_note": "v1 ships in shadow-mode warn-only for the 7-day SP01 cutover soak. Promotes to deny on zero unjustified divergences. Per packet §3.8 + success criterion 6.",
+    "coupled_surfaces": [
+      {
+        "name": "vault-schema-add",
+        "paths": [
+          "schemas/vault-schema.json",
+          "hooks/pre-write-guard.sh",
+          "hooks/post-write-verify.sh",
+          "CLAUDE.md"
+        ],
+        "min_match": 1,
+        "_provenance": "pre-write-guard.sh:849-852 deny-message acknowledges this 4-surface lockstep as the failure mode that justified R-32 Tier 1 → Tier 2 promotion (P4-T01 2026-04-17). Adding new vault types without all four = drift class R-37 promotion guards against."
+      },
+      {
+        "name": "connector-schema-add",
+        "paths": [
+          "schemas/user-manifest-schema.json",
+          "schemas/connectors-runtime-schema.json",
+          "onboarding/connectors/beats/beat-5-brief.sh",
+          "tests/sp07/*-unit-test.sh",
+          "docs/connectors-schema.md"
+        ],
+        "min_match": 1,
+        "_provenance": "SP07 §3.7 5-surface lockstep. Canonical R-37 Option α use case per packet §3.17. Note: tests/sp07/ + docs/connectors-schema.md are SP07-build-time artifacts; coupled-set declared now to assert lockstep discipline at SP07 land time."
+      },
+      {
+        "name": "enforcement-map-row",
+        "paths": [
+          "enforcement-map.md",
+          "CLAUDE.md"
+        ],
+        "min_match": 1,
+        "_provenance": "ENFORCEMENT-MAP rows must always cross-reference CLAUDE.md (R-XX paragraph) and vice versa. Drift between the two is the documentation-rot class R-37 closes."
+      }
+    ],
+    "override_sentinel": ".allow-r37-partial",
+    "_override_sentinel_note": "Mirrors existing G2 denylist sentinel pattern. Touch + git commit --no-verify required (two physical actions). Logged in audit trail (gate-decisions.log). Per packet §3.6."
+  }
+}
