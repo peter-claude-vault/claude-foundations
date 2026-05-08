@@ -110,4 +110,4 @@ If a reader cannot articulate these, the page has failed its quality bar (SP03 �
 ## Related principle pages
 
 - [override-mechanisms](../override-mechanisms/) — the out-of-band escape valve grammar consumed by this mechanism
-- *parallel-run-discipline* (forthcoming; gated on SP01 T-7 R-37 promotion) — the safe-cutover discipline used to migrate Plan 71 hardcoded gate → manifest-driven gate
+- [parallel-run-discipline](../parallel-run-discipline/) — the safe-cutover discipline used to migrate Plan 71 hardcoded gate → manifest-driven gate

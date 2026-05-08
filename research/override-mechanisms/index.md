@@ -120,4 +120,4 @@ After reading, a novice should be able to articulate:
 ## Related principle pages
 
 - [manifest-mechanism](../manifest-mechanism/) — the engine that consumes this override grammar
-- *parallel-run-discipline* (forthcoming; gated on SP01 T-7) — the cutover protocol that makes parallel-engine validation safe even with overrides active
+- [parallel-run-discipline](../parallel-run-discipline/) — the cutover protocol that makes parallel-engine validation safe even with overrides active
