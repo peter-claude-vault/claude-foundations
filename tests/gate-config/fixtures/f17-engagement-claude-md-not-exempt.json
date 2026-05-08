@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/CLAUDE.md",
+    "content": "---\ntype: navigation\n---\n\nEngagement CLAUDE.md missing required engagement + updated. Should DENY."
+  }
+}

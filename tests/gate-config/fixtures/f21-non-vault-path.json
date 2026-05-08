@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/tmp/random-path/file.md",
+    "content": "---\ntype: foo\n---\n\nNot under vault root; R-32/R-47 do not apply."
+  }
+}

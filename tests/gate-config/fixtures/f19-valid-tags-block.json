@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/block.md",
+    "content": "---\ntype: reference\nupdated: 2026-05-07\ntags:\n  - scope/block-test\n  - status/active\n---\n\nBlock tag form."
+  }
+}

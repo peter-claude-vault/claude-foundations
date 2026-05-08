@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/inline.md",
+    "content": "---\ntype: reference\nupdated: 2026-05-07\ntags: [scope/inline-test, status/active]\n---\n\nInline tag form."
+  }
+}

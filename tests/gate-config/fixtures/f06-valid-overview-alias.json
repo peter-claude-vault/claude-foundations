@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/Overview.md",
+    "content": "---\ntype: overview\nengagement: Acme\nowner: PT\nstatus: active\nupdated: 2026-05-07\ntags:\n  - engagement/acme\n---\n\nOverview."
+  }
+}

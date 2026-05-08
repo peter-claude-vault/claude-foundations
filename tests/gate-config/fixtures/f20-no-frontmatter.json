@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/no-frontmatter.md",
+    "content": "# No frontmatter\n\nBody only. R-32/R-47 evaluation skipped (FRONTMATTER empty)."
+  }
+}

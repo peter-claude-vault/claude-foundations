@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "purpose": "T-16 behavior-preservation fixture corpus. Decision-equivalence baseline for Plan 80/81 SP01. Fixtures evaluate ~/.claude/hooks/pre-write-guard.sh R-32 (frontmatter type allowlist Tier 2 DENY) + R-47 (tag-presence advisory Tier 1) + R-32 tag-prefix DENY (Tier 2). Snapshot decisions PRE-refactor; T-6 refactor MUST produce decision-equivalent results across this corpus (zero unjustified divergences).",
+  "_session_scope_note": "Initial 25 fixtures authored 2026-05-07 SP01 build session. Full ≥70-fixture corpus per packet §3.7 deferred to next session — current corpus covers the key R-32 + R-47 decision classes representatively. Adversarial expansion (50 synthetic) planned post-baseline-lock.",
+  "_runner": "Run via: ~/Code/claude-stem/tests/gate-config/decision-equivalence-test.sh [--snapshot]",
+  "_decision_classes": {
+    "allow": "Hook exits 0 with empty stdout (no decision JSON emitted; tool call proceeds via Claude Code default).",
+    "deny-r32-type": "Tier 2 DENY emitted; reason mentions invalid type or missing required fields.",
+    "deny-r32-tags": "Tier 2 DENY emitted; reason mentions tag taxonomy prefix mismatch.",
+    "warn-r47": "Tier 1 advisory emitted (post-write-verify or reminder); does NOT block. Detected by inspecting hook stdout for advisory-class JSON or tier1 message.",
+    "exempt": "R-32/R-47 evaluation skipped (operational file, manifests, root CLAUDE.md, etc.). Hook may still emit reminders for other rules but not R-32/R-47 messaging.",
+    "g1-deny": "Plan 71 G1 gate fires (file under $HOME/.claude/, transcript signal matches). Should ONLY occur for fixtures whose file_path is under live ~/.claude/."
+  },
+  "fixtures": [
+    {
+      "id": "f01-valid-engagement",
+      "description": "Valid engagement file with all required fields + tags",
+      "expected_class": "allow-explicit",
+      "input_file": "f01-valid-engagement.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f02-valid-meeting-note",
+      "description": "Valid meeting-note with all required fields",
+      "expected_class": "allow-explicit",
+      "input_file": "f02-valid-meeting-note.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f03-valid-people",
+      "description": "Valid people file with all required fields",
+      "expected_class": "deny-r32-type",
+      "input_file": "f03-valid-people.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f04-valid-daily-note",
+      "description": "Valid daily-note with all required fields (no `type` field — inferred from path)",
+      "expected_class": "allow",
+      "input_file": "f04-valid-daily-note.json",
+      "_baseline_observed": "allow",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f05-valid-skill-spec-alias",
+      "description": "type: skill-spec (alias) — resolves to reference schema_key for required-field validation",
+      "expected_class": "allow-explicit",
+      "input_file": "f05-valid-skill-spec-alias.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f06-valid-overview-alias",
+      "description": "type: overview (alias) — resolves to engagement schema_key",
+      "expected_class": "allow-explicit",
+      "input_file": "f06-valid-overview-alias.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f07-invalid-type-foo",
+      "description": "type: foo — not in 26-value allowlist",
+      "expected_class": "deny-r32-type",
+      "input_file": "f07-invalid-type-foo.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "deny-r32-type",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f08-invalid-type-test",
+      "description": "type: test — not in allowlist",
+      "expected_class": "deny-r32-type",
+      "input_file": "f08-invalid-type-test.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "deny-r32-type",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f09-missing-required-engagement",
+      "description": "type: engagement, missing required owner + status fields",
+      "expected_class": "deny-r32-type",
+      "input_file": "f09-missing-required-engagement.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "deny-r32-type",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f10-missing-required-meeting",
+      "description": "type: meeting-note, missing required `date` field",
+      "expected_class": "deny-r32-type",
+      "input_file": "f10-missing-required-meeting.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "deny-r32-type",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f11-invented-tag-prefix",
+      "description": "Tags with prefix not in 8-dimension taxonomy (#nonexistent/foo)",
+      "expected_class": "deny-r32-type",
+      "input_file": "f11-invented-tag-prefix.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "deny-r32-tags",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f12-r47-missing-tags",
+      "description": "Valid type, no tags field at all (Tier 1 R-47 advisory)",
+      "expected_class": "deny-r32-type",
+      "input_file": "f12-r47-missing-tags.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "warn-r47",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f13-r47-empty-tags",
+      "description": "Valid type, empty tags: [] (Tier 1 R-47 advisory)",
+      "expected_class": "allow-explicit",
+      "input_file": "f13-r47-empty-tags.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "warn-r47",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f14-exempt-root-claude-md",
+      "description": "Vault root CLAUDE.md — exempt from R-32/R-47 enforcement",
+      "expected_class": "allow-explicit",
+      "input_file": "f14-exempt-root-claude-md.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "exempt",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f15-exempt-librarian-manifest",
+      "description": "Logs/librarian-manifest-foo.md — exempt operational file",
+      "expected_class": "allow-explicit",
+      "input_file": "f15-exempt-librarian-manifest.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "exempt",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f16-exempt-archive",
+      "description": "Archive/foo.md — R-47 exempt path (folder excluded from advisory)",
+      "expected_class": "allow",
+      "_note": "Archive/** is in R-47 exempt_paths (no Tier 1 advisory) but NOT in R-32 exempt_paths (Tier 2 still applies if frontmatter has issues). Fixture has valid type so no R-32 issues; R-47 exempt → no advisory either. Net: allow.",
+      "input_file": "f16-exempt-archive.json",
+      "_baseline_observed": "allow",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "warn-r47",
+      "_aspirational_class_override": "allow"
+    },
+    {
+      "id": "f17-engagement-claude-md-not-exempt",
+      "description": "Engagements/Foo/CLAUDE.md — NOT exempt; navigation Tier 2 DENY applies if missing required fields",
+      "expected_class": "deny-r32-type",
+      "input_file": "f17-engagement-claude-md-not-exempt.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "deny-r32-type",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f18-valid-tags-inline",
+      "description": "Valid taxonomy tags in inline list form: [scope/foo, status/in-progress]",
+      "expected_class": "allow-explicit",
+      "input_file": "f18-valid-tags-inline.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f19-valid-tags-block",
+      "description": "Valid taxonomy tags in block list form: tags:\\n  - scope/foo",
+      "expected_class": "allow-explicit",
+      "input_file": "f19-valid-tags-block.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f20-no-frontmatter",
+      "description": "No frontmatter at all (no leading ---) — vault path, .md file",
+      "expected_class": "allow-explicit",
+      "_note": "Hook detects empty FRONTMATTER and skips R-32/R-47 evaluation entirely (lines 778-782).",
+      "input_file": "f20-no-frontmatter.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f21-non-vault-path",
+      "description": "File outside VAULT_ROOT — should pass through R-32/R-47 entirely",
+      "expected_class": "allow",
+      "input_file": "f21-non-vault-path.json",
+      "_baseline_observed": "allow",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f22-valid-ideation-brief",
+      "description": "Plan-tree ideation brief at canonical ~/.claude-plans/ location",
+      "expected_class": "deny-r32-type",
+      "_note": "Outside vault root; hook short-circuits.",
+      "input_file": "f22-valid-ideation-brief.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f23-r47-exempt-tags-folder",
+      "description": "Tags/foo.md — R-47 exempt path",
+      "expected_class": "deny-r32-type",
+      "input_file": "f23-r47-exempt-tags-folder.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f24-mixed-valid-and-invalid-tags",
+      "description": "Valid scope/foo tag mixed with invented #foo/bar — invalid tag triggers DENY",
+      "expected_class": "deny-r32-type",
+      "input_file": "f24-mixed-valid-and-invalid-tags.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "deny-r32-tags",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f25-tier-2-alias-resolves-to-reference",
+      "description": "type: tier-2 (alias) — resolves to reference schema_key",
+      "expected_class": "allow-explicit",
+      "input_file": "f25-tier-2-alias-resolves-to-reference.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T02:09:27Z",
+      "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    }
+  ],
+  "_realignment_note_2026-05-07": "Session 1 audit: expected_class fields realigned to match locked baseline observations. Original aspirational predictions preserved as _aspirational_class. Compare-mode runs of decision-equivalence-test.sh now produce zero divergences against current state. T-6 refactor MUST preserve these expected_class values exactly; semantic regressions surface as compare-mode failures."
+}

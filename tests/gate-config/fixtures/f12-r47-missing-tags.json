@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/note.md",
+    "content": "---\ntype: reference\nupdated: 2026-05-07\n---\n\nBody. (No tags field at all.)"
+  }
+}

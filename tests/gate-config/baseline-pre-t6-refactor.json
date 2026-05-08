@@ -1,0 +1,276 @@
+{
+  "ts": "2026-05-08T02:09:27Z",
+  "hook_path": "/Users/petertiktinsky/.claude/hooks/pre-write-guard.sh",
+  "fixture_count": 25,
+  "decisions": [
+    {
+      "id": "f01-valid-engagement",
+      "expected": "allow",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - engagement-list-cascade [directory-membership-cascade]: review mirrors → CLAUDE.md §Eng"
+    },
+    {
+      "id": "f02-valid-meeting-note",
+      "expected": "allow",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - engagement-list-cascade [directory-membership-cascade]: review mirrors → CLAUDE.md §Eng"
+    },
+    {
+      "id": "f03-valid-people",
+      "expected": "allow",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\nWikilink fields referencing non-existent files: engagement: [[Acme/Acme]].\\\\nAdd the missing fields/fix the issues and retry.\""
+    },
+    {
+      "id": "f04-valid-daily-note",
+      "expected": "allow",
+      "observed": "allow",
+      "exit_code": 0,
+      "stdout_preview": ""
+    },
+    {
+      "id": "f05-valid-skill-spec-alias",
+      "expected": "allow",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - personal-initiatives-list-cascade [directory-membership-cascade]: review mirrors → CLAU"
+    },
+    {
+      "id": "f06-valid-overview-alias",
+      "expected": "allow",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - engagement-list-cascade [directory-membership-cascade]: review mirrors → CLAUDE.md §Eng"
+    },
+    {
+      "id": "f07-invalid-type-foo",
+      "expected": "deny-r32-type",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\n[R-32 UNKNOWN TYPE] type: 'foo' is not in the canonical allowlist (20 schema keys + 5 aliases). To add a new type: (1) update "
+    },
+    {
+      "id": "f08-invalid-type-test",
+      "expected": "deny-r32-type",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\n[R-32 UNKNOWN TYPE] type: 'test' is not in the canonical allowlist (20 schema keys + 5 aliases). To add a new type: (1) update"
+    },
+    {
+      "id": "f09-missing-required-engagement",
+      "expected": "deny-r32-type",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\nMissing required fields [owner, status] for file type 'engagement'.\\\\nAdd the missing fields/fix the issues and retry.\"\n  }\n}"
+    },
+    {
+      "id": "f10-missing-required-meeting",
+      "expected": "deny-r32-type",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\nMissing required fields [date] for file type 'meeting-note'.\\\\nAdd the missing fields/fix the issues and retry.\"\n  }\n}"
+    },
+    {
+      "id": "f11-invented-tag-prefix",
+      "expected": "deny-r32-tags",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\nTags not matching taxonomy prefixes (#engagement/, #project/, #scope/, #status/, #initiative/, #artefact-bd/, #about-me/, #log"
+    },
+    {
+      "id": "f12-r47-missing-tags",
+      "expected": "warn-r47",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\nMissing required fields [tags] for file type 'reference'.\\\\nAdd the missing fields/fix the issues and retry.\"\n  }\n}"
+    },
+    {
+      "id": "f13-r47-empty-tags",
+      "expected": "warn-r47",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[VAULT SCHEMA - AUTO-FIX NEEDED]\\\\n[R-47 TAG PRESENCE] File at 'Engagements/Acme/note.md' has empty tags. Add tags per the taxonomy in CLAUDE.md §Tagging Taxonomy (#engagement/"
+    },
+    {
+      "id": "f14-exempt-root-claude-md",
+      "expected": "exempt",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - engagement-list-cascade [directory-membership-cascade]: review mirrors → CLAUDE.md §Eng"
+    },
+    {
+      "id": "f15-exempt-librarian-manifest",
+      "expected": "exempt",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - logs-scratch-only [directory-write-constraint]: canonical source — no mirrors to review"
+    },
+    {
+      "id": "f16-exempt-archive",
+      "expected": "allow",
+      "observed": "allow",
+      "exit_code": 0,
+      "stdout_preview": ""
+    },
+    {
+      "id": "f17-engagement-claude-md-not-exempt",
+      "expected": "deny-r32-type",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\nMissing required fields [engagement] for file type 'navigation'.\\\\nAdd the missing fields/fix the issues and retry.\"\n  }\n}"
+    },
+    {
+      "id": "f18-valid-tags-inline",
+      "expected": "allow",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - engagement-list-cascade [directory-membership-cascade]: review mirrors → CLAUDE.md §Eng"
+    },
+    {
+      "id": "f19-valid-tags-block",
+      "expected": "allow",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - engagement-list-cascade [directory-membership-cascade]: review mirrors → CLAUDE.md §Eng"
+    },
+    {
+      "id": "f20-no-frontmatter",
+      "expected": "allow",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - engagement-list-cascade [directory-membership-cascade]: review mirrors → CLAUDE.md §Eng"
+    },
+    {
+      "id": "f21-non-vault-path",
+      "expected": "allow",
+      "observed": "allow",
+      "exit_code": 0,
+      "stdout_preview": ""
+    },
+    {
+      "id": "f22-valid-ideation-brief",
+      "expected": "allow",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Plan naming convention (R-27, feedback_plan_naming_conventions.md): this plan file is missing a status marker. Required: one of (a) **Status:** header bullet with value ("
+    },
+    {
+      "id": "f23-r47-exempt-tags-folder",
+      "expected": "allow",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\nMissing required fields [tags] for file type 'reference'.\\\\nAdd the missing fields/fix the issues and retry.\"\n  }\n}"
+    },
+    {
+      "id": "f24-mixed-valid-and-invalid-tags",
+      "expected": "deny-r32-tags",
+      "observed": "deny-r32-type",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"deny\",\n    \"permissionDecisionReason\": \"Write blocked — vault schema enforcement:\\\\nTags not matching taxonomy prefixes (#engagement/, #project/, #scope/, #status/, #initiative/, #artefact-bd/, #about-me/, #log"
+    },
+    {
+      "id": "f25-tier-2-alias-resolves-to-reference",
+      "expected": "allow",
+      "observed": "allow-explicit",
+      "exit_code": 0,
+      "stdout_preview": "{\n  \"hookSpecificOutput\": {\n    \"hookEventName\": \"PreToolUse\",\n    \"permissionDecision\": \"allow\",\n    \"additionalContext\": \"[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\\\\n  - engagement-list-cascade [directory-membership-cascade]: review mirrors → CLAUDE.md §Eng"
+    }
+  ],
+  "decision_class_counts": {
+    "allow": 3,
+    "allow-explicit": 11,
+    "deny-r32-type": 11
+  },
+  "expected_match_count": 8,
+  "divergence_count": 17,
+  "divergences": [
+    {
+      "id": "f01-valid-engagement",
+      "expected": "allow",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f02-valid-meeting-note",
+      "expected": "allow",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f03-valid-people",
+      "expected": "allow",
+      "observed": "deny-r32-type"
+    },
+    {
+      "id": "f05-valid-skill-spec-alias",
+      "expected": "allow",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f06-valid-overview-alias",
+      "expected": "allow",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f11-invented-tag-prefix",
+      "expected": "deny-r32-tags",
+      "observed": "deny-r32-type"
+    },
+    {
+      "id": "f12-r47-missing-tags",
+      "expected": "warn-r47",
+      "observed": "deny-r32-type"
+    },
+    {
+      "id": "f13-r47-empty-tags",
+      "expected": "warn-r47",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f14-exempt-root-claude-md",
+      "expected": "exempt",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f15-exempt-librarian-manifest",
+      "expected": "exempt",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f18-valid-tags-inline",
+      "expected": "allow",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f19-valid-tags-block",
+      "expected": "allow",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f20-no-frontmatter",
+      "expected": "allow",
+      "observed": "allow-explicit"
+    },
+    {
+      "id": "f22-valid-ideation-brief",
+      "expected": "allow",
+      "observed": "deny-r32-type"
+    },
+    {
+      "id": "f23-r47-exempt-tags-folder",
+      "expected": "allow",
+      "observed": "deny-r32-type"
+    },
+    {
+      "id": "f24-mixed-valid-and-invalid-tags",
+      "expected": "deny-r32-tags",
+      "observed": "deny-r32-type"
+    },
+    {
+      "id": "f25-tier-2-alias-resolves-to-reference",
+      "expected": "allow",
+      "observed": "allow-explicit"
+    }
+  ]
+}

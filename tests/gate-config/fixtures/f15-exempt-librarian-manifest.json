@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Logs/librarian-manifest-2026-05-07.md",
+    "content": "---\nupdated: 2026-05-07\n---\n\nLibrarian manifest output. Operational file, exempt."
+  }
+}

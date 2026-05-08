@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$HOME/.claude-plans/82-future-plan/00-ideation-brief.md",
+    "content": "---\ntype: ideation-brief\ntitle: Future Plan\ncreated: 2026-05-07\nupdated: 2026-05-07\nparent_plan: 82-future-plan\n---\n\nBrief content. Outside vault root; hook short-circuits."
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/tier2-doc.md",
+    "content": "---\ntype: tier-2\nupdated: 2026-05-07\ntags:\n  - scope/tier2\n---\n\ntier-2 alias → reference schema_key. Should validate against reference required fields."
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/mixed.md",
+    "content": "---\ntype: reference\nupdated: 2026-05-07\ntags:\n  - scope/valid\n  - \"#invented/bad\"\n---\n\nMixed valid + invalid tags."
+  }
+}

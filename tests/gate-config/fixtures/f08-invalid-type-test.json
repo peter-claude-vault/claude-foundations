@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/test.md",
+    "content": "---\ntype: test\nupdated: 2026-05-07\ntags:\n  - scope/test\n---\n\nBody."
+  }
+}

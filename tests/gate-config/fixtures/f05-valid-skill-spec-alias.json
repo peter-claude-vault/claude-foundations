@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Personal Initiatives/Foo/SKILL.md",
+    "content": "---\ntype: skill-spec\nupdated: 2026-05-07\ntags:\n  - scope/skill\n  - about-me/build\n---\n\nSkill spec."
+  }
+}

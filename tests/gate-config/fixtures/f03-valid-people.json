@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/People/Jane Doe.md",
+    "content": "---\nname: Jane Doe\norg: Acme\nrole: PM\nengagement: \"[[Acme/Acme]]\"\nupdated: 2026-05-07\ntags:\n  - engagement/acme\n  - about-me/colleague\n---\n\nNotes."
+  }
+}

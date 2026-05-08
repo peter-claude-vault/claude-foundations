@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Tags/scope-foo.md",
+    "content": "---\ntype: reference\nupdated: 2026-05-07\n---\n\nTag landing page; R-47 exempt path."
+  }
+}

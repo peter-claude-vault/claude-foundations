@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Archive/old-thing.md",
+    "content": "---\ntype: archive\nsource-path: Engagements/Old/old.md\narchived-date: 2026-04-01\ntags:\n  - log/archive\n---\n\nArchived content."
+  }
+}
