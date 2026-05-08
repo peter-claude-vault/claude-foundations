@@ -957,33 +957,23 @@ print(content, end='')
         # schema-level `tags` required-field enforcement (R-32) — see CLAUDE.md
         # §Tagging Taxonomy opt-in notes. Unenumerated paths DEFAULT to the
         # advisory, surfacing orphans as drift findings.
+        # R-47 exempt_paths sourced from gate-config.json::r47.exempt_paths (T-6).
+        # Positive-list semantics (Plan 67 SP03 T-3, 2026-04-22): unenumerated
+        # paths default to advisory. Patterns are vault-relative globs.
         R47_EXEMPT=0
-        case "$REL_PATH" in
-          # Infrastructure and scratch — Claude-write zones without taxonomy coverage
-          Archive/*|Logs/foundations-essays/*|Logs/backlog-progress/*|Tags/*|_test*|.claude/*)
-            R47_EXEMPT=1 ;;
-          # Symlink pointers to canonical plan briefs (live under ~/.claude-plans/)
-          Logs/ideation-brief-*.md)
-            R47_EXEMPT=1 ;;
-          # Orchestrator session/job state (machine-managed)
-          _orchestrator/*)
-            R47_EXEMPT=1 ;;
-          # Hook state and lib (machine-managed — non-vault writes already gated out above)
-          .claude/hooks/state/*|.claude/hooks/lib/*)
-            R47_EXEMPT=1 ;;
-          # Test harness outputs under ~/.claude/hooks/tests/ (outside vault root — belt-and-suspenders)
-          tests/*)
-            R47_EXEMPT=1 ;;
-          # Dated log build artifacts
-          Logs/build-*)
-            R47_EXEMPT=1 ;;
-        esac
+        while IFS= read -r _r47_pattern; do
+          [[ -z "$_r47_pattern" ]] && continue
+          if [[ "$REL_PATH" == $_r47_pattern ]]; then
+            R47_EXEMPT=1
+            break
+          fi
+        done <<< "$GATE_R47_EXEMPT_PATHS"
         if [[ $R47_EXEMPT -eq 0 ]] && [[ -n "$FRONTMATTER" ]] && [[ -z "$TAGS_RAW" ]]; then
           R47_KIND="missing"
           if echo "$FRONTMATTER" | grep -q '^tags:'; then
             R47_KIND="empty"
           fi
-          TIER1_MSGS="${TIER1_MSGS}[R-47 TAG PRESENCE] File at '${REL_PATH}' has ${R47_KIND} tags. Add tags per the taxonomy in CLAUDE.md §Tagging Taxonomy (#engagement/, #project/, #scope/, #status/, #initiative/, #artefact-bd/, #about-me/, #log/). Tags are load-bearing for graph-view health and cross-folder retrieval. Advisory only — not blocking.\n"
+          TIER1_MSGS="${TIER1_MSGS}[R-47 TAG PRESENCE] File at '${REL_PATH}' has ${R47_KIND} tags. Add tags per the taxonomy in CLAUDE.md §Tagging Taxonomy (${GATE_R47_PREFIX_LIST}). Tags are load-bearing for graph-view health and cross-folder retrieval. Advisory only — not blocking.\n"
         fi
 
         # --- R-48: Wikilink write-time advisory (Tier 1, never blocks) ---
@@ -1083,11 +1073,15 @@ PYEOF
           fi
         fi
 
-        # Check tags conform to taxonomy prefixes (hard block if clearly wrong)
-        if [[ -n "$TAGS_RAW" ]]; then
-          INVENTED_TAGS=$(echo "$TAGS_RAW" | sed 's/^  - //' | sed 's/^"//' | sed 's/"$//' | grep -E '^#' | grep -v -E '^#(engagement|project|scope|status|initiative|artefact-bd|about-me|log)/' || true)
+        # Check tags conform to taxonomy prefixes (hard block if clearly wrong).
+        # Prefix grammar single-sourced from gate-config.json::r47.tag_dimensions
+        # per gate-config _tag_dimensions_note (T-6, 2026-05-08): same array
+        # drives R-47 advisory above AND this Tier 2 R-32 tag-conformance DENY.
+        # Empty config → DENY skipped (fail-OPEN, matches R-32 type-allowlist).
+        if [[ -n "$TAGS_RAW" ]] && [[ -n "$GATE_R47_PREFIX_REGEX" ]]; then
+          INVENTED_TAGS=$(echo "$TAGS_RAW" | sed 's/^  - //' | sed 's/^"//' | sed 's/"$//' | grep -E '^#' | grep -v -E "^#(${GATE_R47_PREFIX_REGEX})/" || true)
           if [[ -n "$INVENTED_TAGS" ]]; then
-            TIER2_MSGS="${TIER2_MSGS}Tags not matching taxonomy prefixes (#engagement/, #project/, #scope/, #status/, #initiative/, #artefact-bd/, #about-me/, #log/): $(echo "$INVENTED_TAGS" | tr '\n' ', ' | sed 's/, $//').\n"
+            TIER2_MSGS="${TIER2_MSGS}Tags not matching taxonomy prefixes (${GATE_R47_PREFIX_LIST}): $(echo "$INVENTED_TAGS" | tr '\n' ', ' | sed 's/, $//').\n"
           fi
         fi
 
