@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/Meetings/2026-05-07-standup.md",
+    "content": "---\ntype: meeting-note\nengagement: Acme\ndate: 2026-05-07\nparticipants:\n  - PT\ntags:\n  - engagement/acme\n  - scope/meeting\n---\n\n# Standup\nNotes."
+  }
+}

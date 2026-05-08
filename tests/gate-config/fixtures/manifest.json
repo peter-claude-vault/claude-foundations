@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "purpose": "T-16 behavior-preservation fixture corpus. Decision-equivalence baseline for Plan 80/81 SP01. Fixtures evaluate ~/.claude/hooks/pre-write-guard.sh R-32 (frontmatter type allowlist Tier 2 DENY) + R-47 (tag-presence advisory Tier 1) + R-32 tag-prefix DENY (Tier 2). Snapshot decisions PRE-refactor; T-6 refactor MUST produce decision-equivalent results across this corpus (zero unjustified divergences).",
-  "_session_scope_note": "Initial 25 fixtures authored 2026-05-07 SP01 build session. Full ≥70-fixture corpus per packet §3.7 deferred to next session — current corpus covers the key R-32 + R-47 decision classes representatively. Adversarial expansion (50 synthetic) planned post-baseline-lock.",
+  "_session_scope_note": "Phase 2 (Session 2, 2026-05-07): expanded 25 → 73 fixtures via generate-corpus.sh. New fixtures (f26-f73) cover ~all vault-shape representatives (Engagements, Logs, Daily, Tags, Archive, _orchestrator, Personal Initiatives) + YAML adversarial + tag taxonomy adversarial + path-based exemption edge cases. Run decision-equivalence-test.sh --snapshot to lock baseline observations for f26-f73 (existing f01-f25 baselines preserved).",
   "_runner": "Run via: ~/Code/claude-stem/tests/gate-config/decision-equivalence-test.sh [--snapshot]",
   "_decision_classes": {
     "allow": "Hook exits 0 with empty stdout (no decision JSON emitted; tool call proceeds via Claude Code default).",
@@ -263,6 +263,486 @@
       "_baseline_observed": "allow-explicit",
       "_baseline_locked_at": "2026-05-08T02:09:27Z",
       "_aspirational_class": "allow",
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f26-updates-alias",
+      "description": "updates alias",
+      "expected_class": "deny-r32-type",
+      "input_file": "f26-updates-alias.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f27-engagement-meeting",
+      "description": "engagement meeting",
+      "expected_class": "deny-r32-type",
+      "input_file": "f27-engagement-meeting.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f28-engagement-claude-md",
+      "description": "engagement claude md",
+      "expected_class": "allow-explicit",
+      "input_file": "f28-engagement-claude-md.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f29-engagement-people",
+      "description": "engagement people",
+      "expected_class": "deny-r32-type",
+      "input_file": "f29-engagement-people.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f30-engagement-project",
+      "description": "engagement project",
+      "expected_class": "deny-r32-type",
+      "input_file": "f30-engagement-project.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f31-logs-architect",
+      "description": "logs architect",
+      "expected_class": "deny-r32-type",
+      "input_file": "f31-logs-architect.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f32-foundations-essay",
+      "description": "foundations essay",
+      "expected_class": "deny-r32-type",
+      "input_file": "f32-foundations-essay.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f33-backlog-progress",
+      "description": "backlog progress",
+      "expected_class": "deny-r32-type",
+      "input_file": "f33-backlog-progress.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f34-logs-digest",
+      "description": "logs digest",
+      "expected_class": "deny-r32-type",
+      "input_file": "f34-logs-digest.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f35-logs-build",
+      "description": "logs build",
+      "expected_class": "deny-r32-type",
+      "input_file": "f35-logs-build.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f36-ideation-brief-legacy",
+      "description": "ideation brief legacy",
+      "expected_class": "deny-r32-type",
+      "input_file": "f36-ideation-brief-legacy.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f37-daily-current",
+      "description": "daily current",
+      "expected_class": "allow",
+      "input_file": "f37-daily-current.json",
+      "_baseline_observed": "allow",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f38-daily-archive",
+      "description": "daily archive",
+      "expected_class": "deny-r32-type",
+      "input_file": "f38-daily-archive.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f39-weekly-summary",
+      "description": "weekly summary",
+      "expected_class": "deny-r32-type",
+      "input_file": "f39-weekly-summary.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f40-tag-folder",
+      "description": "tag folder",
+      "expected_class": "allow-explicit",
+      "input_file": "f40-tag-folder.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f41-archive",
+      "description": "archive",
+      "expected_class": "deny-r32-type",
+      "input_file": "f41-archive.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f42-orchestrator",
+      "description": "orchestrator",
+      "expected_class": "deny-r32-type",
+      "input_file": "f42-orchestrator.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f43-personal-initiative",
+      "description": "personal initiative",
+      "expected_class": "deny-r32-type",
+      "input_file": "f43-personal-initiative.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f44-unclosed-frontmatter",
+      "description": "unclosed frontmatter",
+      "expected_class": "deny-r32-type",
+      "input_file": "f44-unclosed-frontmatter.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f45-type-as-list",
+      "description": "type as list",
+      "expected_class": "deny-r32-type",
+      "input_file": "f45-type-as-list.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f46-type-null",
+      "description": "type null",
+      "expected_class": "deny-r32-type",
+      "input_file": "f46-type-null.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f47-type-capital",
+      "description": "type capital",
+      "expected_class": "deny-r32-type",
+      "input_file": "f47-type-capital.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f48-multi-doc-yaml",
+      "description": "multi doc yaml",
+      "expected_class": "deny-r32-type",
+      "input_file": "f48-multi-doc-yaml.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f49-empty-body",
+      "description": "empty body",
+      "expected_class": "allow-explicit",
+      "input_file": "f49-empty-body.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f50-inline-flow-tags",
+      "description": "inline flow tags",
+      "expected_class": "allow-explicit",
+      "input_file": "f50-inline-flow-tags.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f51-quoted-frontmatter",
+      "description": "quoted frontmatter",
+      "expected_class": "deny-r32-type",
+      "input_file": "f51-quoted-frontmatter.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f52-hash-prefix-tags",
+      "description": "hash prefix tags",
+      "expected_class": "allow-explicit",
+      "input_file": "f52-hash-prefix-tags.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f53-frontmatter-whitespace",
+      "description": "frontmatter whitespace",
+      "expected_class": "allow-explicit",
+      "input_file": "f53-frontmatter-whitespace.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f54-block-scalar-tags",
+      "description": "block scalar tags",
+      "expected_class": "allow-explicit",
+      "input_file": "f54-block-scalar-tags.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f55-bom-prefix",
+      "description": "bom prefix",
+      "expected_class": "deny-r32-type",
+      "input_file": "f55-bom-prefix.json",
+      "_baseline_observed": "deny-r32-type",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f56-all-eight-dims",
+      "description": "all eight dims",
+      "expected_class": "allow-explicit",
+      "input_file": "f56-all-eight-dims.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f57-tag-cap-exceeded",
+      "description": "tag cap exceeded",
+      "expected_class": "allow-explicit",
+      "input_file": "f57-tag-cap-exceeded.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f58-tag-leading-slash",
+      "description": "tag leading slash",
+      "expected_class": "allow-explicit",
+      "input_file": "f58-tag-leading-slash.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f59-tag-cap-exact-25",
+      "description": "tag cap exact 25",
+      "expected_class": "allow-explicit",
+      "input_file": "f59-tag-cap-exact-25.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f60-deep-tag-paths",
+      "description": "deep tag paths",
+      "expected_class": "allow-explicit",
+      "input_file": "f60-deep-tag-paths.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f61-unicode-tags",
+      "description": "unicode tags",
+      "expected_class": "allow-explicit",
+      "input_file": "f61-unicode-tags.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f62-empty-tag-string",
+      "description": "empty tag string",
+      "expected_class": "allow-explicit",
+      "input_file": "f62-empty-tag-string.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f63-tag-trailing-slash",
+      "description": "tag trailing slash",
+      "expected_class": "allow-explicit",
+      "input_file": "f63-tag-trailing-slash.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f64-tag-duplicates",
+      "description": "tag duplicates",
+      "expected_class": "allow-explicit",
+      "input_file": "f64-tag-duplicates.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f65-tags-as-string",
+      "description": "tags as string",
+      "expected_class": "allow-explicit",
+      "input_file": "f65-tags-as-string.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f66-vault-root",
+      "description": "vault root",
+      "expected_class": "allow-explicit",
+      "input_file": "f66-vault-root.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f67-path-with-spaces",
+      "description": "path with spaces",
+      "expected_class": "allow-explicit",
+      "input_file": "f67-path-with-spaces.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f68-hidden-file",
+      "description": "hidden file",
+      "expected_class": "allow-explicit",
+      "input_file": "f68-hidden-file.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f69-non-md-txt",
+      "description": "non md txt",
+      "expected_class": "allow-explicit",
+      "input_file": "f69-non-md-txt.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f70-librarian-manifest",
+      "description": "librarian manifest",
+      "expected_class": "deny-other",
+      "input_file": "f70-librarian-manifest.json",
+      "_baseline_observed": "deny-other",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f71-index-md",
+      "description": "index md",
+      "expected_class": "allow-explicit",
+      "input_file": "f71-index-md.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f72-file-index",
+      "description": "file index",
+      "expected_class": "allow-explicit",
+      "input_file": "f72-file-index.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
+      "_aspirational_class_override": null
+    },
+    {
+      "id": "f73-subfolder-claude-md",
+      "description": "subfolder claude md",
+      "expected_class": "allow-explicit",
+      "input_file": "f73-subfolder-claude-md.json",
+      "_baseline_observed": "allow-explicit",
+      "_baseline_locked_at": "2026-05-08T03:14:50Z",
+      "_aspirational_class": null,
       "_aspirational_class_override": null
     }
   ],

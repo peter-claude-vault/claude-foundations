@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/list-type.md",
+    "content": "---\ntype:\n  - engagement\n  - reference\nengagement: Acme\ntags:\n  - engagement/acme\n---\n\nType field is a list. Should be a string."
+  }
+}

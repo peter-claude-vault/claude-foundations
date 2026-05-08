@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/Updates/2026-04-15.md",
+    "content": "---\ntype: updates\nengagement: Acme\nupdated: 2026-05-07\nstatus: active\ntags:\n  - engagement/acme\n  - status/active\n---\n\nDaily updates body."
+  }
+}

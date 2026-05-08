@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Tags/engagement-acme.md",
+    "content": "---\ntype: index\n---\n\n# Tag: engagement/acme"
+  }
+}

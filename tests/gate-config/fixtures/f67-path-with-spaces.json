@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/My Engagement/file.md",
+    "content": "---\ntype: engagement\nengagement: My-Engagement\nowner: PT\nstatus: active\nupdated: 2026-05-07\ntags:\n  - engagement/my-engagement\n---\n\nPath contains spaces."
+  }
+}

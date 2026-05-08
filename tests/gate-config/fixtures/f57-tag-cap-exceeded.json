@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/many-tags.md",
+    "content": "---\ntype: engagement\nengagement: Acme\nowner: PT\nstatus: active\nupdated: 2026-05-07\ntags:\n  - engagement/a\n  - engagement/b\n  - engagement/c\n  - engagement/d\n  - engagement/e\n  - engagement/f\n  - engagement/g\n  - engagement/h\n  - engagement/i\n  - engagement/j\n  - engagement/k\n  - engagement/l\n  - engagement/m\n  - engagement/n\n  - engagement/o\n  - engagement/p\n  - engagement/q\n  - engagement/r\n  - engagement/s\n  - engagement/t\n  - engagement/u\n  - engagement/v\n  - engagement/w\n  - engagement/x\n  - engagement/y\n  - engagement/z\n---\n\n26 tags — exceeds 25-cap (R-47 advisory)."
+  }
+}

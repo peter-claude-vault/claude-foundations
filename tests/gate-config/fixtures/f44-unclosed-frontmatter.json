@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/broken.md",
+    "content": "---\ntype: engagement\nengagement: Acme\ntags:\n  - engagement/acme\n\n# Body content without closing fence\nThis file has no closing --- after frontmatter."
+  }
+}

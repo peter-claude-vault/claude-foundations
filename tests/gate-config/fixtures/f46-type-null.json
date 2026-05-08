@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/null-type.md",
+    "content": "---\ntype: null\nengagement: Acme\ntags:\n  - engagement/acme\n---\n\nBody."
+  }
+}

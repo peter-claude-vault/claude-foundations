@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/multidoc.md",
+    "content": "---\ntype: engagement\nengagement: Acme\n---\n---\nextra: doc\n---\n\nBody after multi-doc YAML."
+  }
+}

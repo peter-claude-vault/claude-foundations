@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Daily/Weekly/2026-W18.md",
+    "content": "---\ntype: weekly-summary\nweek: 2026-W18\ntags:\n  - log/weekly\n---\n\n# Week of 2026-W18"
+  }
+}

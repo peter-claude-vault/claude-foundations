@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/deep.md",
+    "content": "---\ntype: engagement\nengagement: Acme\nowner: PT\nstatus: active\nupdated: 2026-05-07\ntags:\n  - engagement/acme/sub-team/migration/phase-1\n  - status/active/in-progress/blocked\n---\n\nDeep nesting in tag paths."
+  }
+}

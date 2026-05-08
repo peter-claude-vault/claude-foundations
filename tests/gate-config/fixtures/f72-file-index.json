@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/File-Index.md",
+    "content": "---\ntype: file-index\n---\n\n# File Index"
+  }
+}

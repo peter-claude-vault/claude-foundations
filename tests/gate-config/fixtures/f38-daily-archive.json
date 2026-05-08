@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Daily/2025/Q1/2025-01-15.md",
+    "content": "---\ntype: daily-archive\ndate: 2025-01-15\ntags:\n  - log/daily\n---\n\nArchived daily."
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/slash.md",
+    "content": "---\ntype: engagement\nengagement: Acme\nowner: PT\nstatus: active\nupdated: 2026-05-07\ntags:\n  - /engagement/acme\n  - /status/active\n---\n\nLeading slash on tags — invalid prefix grammar."
+  }
+}

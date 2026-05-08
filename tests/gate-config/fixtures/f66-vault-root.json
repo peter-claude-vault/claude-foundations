@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Misc.md",
+    "content": "---\ntype: reference\nupdated: 2026-05-07\ntags:\n  - scope/misc\n---\n\nFile directly at vault root."
+  }
+}

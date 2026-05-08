@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Logs/CLAUDE.md",
+    "content": "---\ntype: navigation\n---\n\n# Logs Navigation\nLogs subfolder CLAUDE.md should be exempt (only Engagements/CLAUDE.md is non-exempt per T4)."
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/Project/Migration.md",
+    "content": "---\ntype: project\nproject: Migration\nengagement: Acme\nstatus: active\nupdated: 2026-05-07\ntags:\n  - engagement/acme\n  - project/migration\n  - status/active\n---\n\n# Project: Migration\nBody."
+  }
+}

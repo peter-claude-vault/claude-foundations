@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Archive/2024/old-engagement.md",
+    "content": "---\ntype: archive\narchived_at: 2024-12-31\n---\n\nOld archived content."
+  }
+}

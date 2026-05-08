@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/notes.txt",
+    "content": "This is a plain text file. Should be exempt from R-32/R-47 (vault-schema applies to *.md only)."
+  }
+}

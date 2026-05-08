@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/string-tags.md",
+    "content": "---\ntype: engagement\nengagement: Acme\nowner: PT\nstatus: active\nupdated: 2026-05-07\ntags: engagement/acme status/active\n---\n\nTags as a single space-delimited string (atypical Obsidian shape)."
+  }
+}

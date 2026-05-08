@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/CLAUDE.md",
+    "content": "---\ntype: navigation\nengagement: Acme\nupdated: 2026-05-07\ntags:\n  - engagement/acme\n---\n\n# Acme Engagement Navigation\nSubfolders + key links."
+  }
+}

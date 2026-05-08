@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Personal Initiatives/Claude Foundations/index.md",
+    "content": "---\ntype: personal-initiative\nstatus: active\nupdated: 2026-05-07\ntags:\n  - initiative/claude-foundations\n  - status/active\n---\n\n# Claude Foundations"
+  }
+}

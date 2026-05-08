@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "$VAULT_ROOT/Engagements/Acme/capital.md",
+    "content": "---\ntype: Engagement\nengagement: Acme\nowner: PT\nstatus: active\nupdated: 2026-05-07\ntags:\n  - engagement/acme\n---\n\nType with capital letter — strict matching."
+  }
+}
