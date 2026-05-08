@@ -1,9 +1,15 @@
 #!/bin/bash
-# install-hooks.sh — symlink T-27 hooks into target git repos
+# install-hooks.sh — symlink SP01 git-hooks into target git repos
 #
 # Sanctioned by SP01 spec L120 ("foundation-repo .git/hooks/pre-commit") +
 # spec L122 (cross-sub-plan invalidation post-commit). Hook bodies live in
 # foundation-repo work tree; this installer creates symlinks.
+#
+# pre-commit is installed as a dispatcher (Session 13) chaining the two
+# child hooks fail-fast: R-37 coupled-surface (T-7) → R-46-cousin
+# flip-to-complete (T-27). Single .git/hooks/pre-commit slot per git's
+# convention; dispatcher resolves siblings via the symlink chain back to
+# this directory.
 #
 # Phase A bootstrap deploy (calendar-gated to ≥2026-05-17 per R-55 retire
 # window). Run AFTER:
@@ -37,7 +43,9 @@ while (( $# > 0 )); do
 done
 
 install_pre_commit() {
-  local repo="$1" hook_dir="$repo/.git/hooks" target="$hook_dir/pre-commit"
+  local repo="$1"
+  local hook_dir="$repo/.git/hooks"
+  local target="$hook_dir/pre-commit"
   if [[ ! -d "$hook_dir" ]]; then
     echo "skip: $repo/.git/hooks does not exist (not a git repo or worktree)" >&2
     return 0
@@ -49,16 +57,18 @@ install_pre_commit() {
   fi
 
   if (( DRY_RUN == 1 )); then
-    echo "[dry-run] ln -sf $SCRIPT_DIR/pre-commit-harness-validated.sh $target"
+    echo "[dry-run] ln -sf $SCRIPT_DIR/pre-commit-dispatcher.sh $target"
     return 0
   fi
 
-  ln -sf "$SCRIPT_DIR/pre-commit-harness-validated.sh" "$target"
-  echo "installed: $target -> $SCRIPT_DIR/pre-commit-harness-validated.sh"
+  ln -sf "$SCRIPT_DIR/pre-commit-dispatcher.sh" "$target"
+  echo "installed: $target -> $SCRIPT_DIR/pre-commit-dispatcher.sh"
 }
 
 install_post_commit() {
-  local repo="$1" hook_dir="$repo/.git/hooks" target="$hook_dir/post-commit"
+  local repo="$1"
+  local hook_dir="$repo/.git/hooks"
+  local target="$hook_dir/post-commit"
   if [[ ! -d "$hook_dir" ]]; then
     echo "skip: $repo/.git/hooks does not exist" >&2
     return 0
