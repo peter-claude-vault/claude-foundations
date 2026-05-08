@@ -32,8 +32,8 @@
     },
     "type": {
       "type": "string",
-      "enum": ["plan", "sub-plan"],
-      "description": "Manifest scope. plan = top-level plan; sub-plan = component under a plan. SP01 sub-plan manifests carry sub-plan."
+      "enum": ["plan", "sub-plan", "master"],
+      "description": "Manifest scope. plan = top-level plan; sub-plan = component under a plan; master = top-level coordinating manifest for multi-sub-plan initiatives (Plans 38, 71, 81 precedent). SP01 sub-plan manifests carry sub-plan."
     },
     "parent_plan": {
       "type": ["string", "null"],
