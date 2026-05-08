@@ -1,12 +1,18 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Orchestrator Task Manifest",
-  "description": "Defines a set of tasks for the orchestrator to execute, with dependencies and parallel grouping.",
+  "$id": "https://stem.peter.dev/schemas/plan-manifest/v1.json",
+  "title": "Plan Manifest (orchestrator + plan-tree superset)",
+  "description": "Validates manifests under ~/.claude-plans/ for both shapes: (a) orchestrator task-list manifests (consumed by the autonomous orchestrator), (b) plan-tree status/scope manifests (live_mutation_scope, top_level_status, harness_validated[], git_tag_published — added by Plan 80/81 SP01 T-2 + T-27 on 2026-05-07). Manifests may carry either shape or both. additionalProperties: true permits forward-compatible field additions per dbt schema-evolution pattern.",
   "type": "object",
-  "required": ["schema_version", "project", "spec_path", "tasks"],
+  "required": ["schema_version", "project", "spec_path"],
+  "additionalProperties": true,
   "properties": {
     "schema_version": {
-      "const": "1.0.0"
+      "oneOf": [
+        {"const": "1.0.0"},
+        {"const": 1}
+      ],
+      "description": "Schema version. v1 accepts both `\"1.0.0\"` (legacy orchestrator manifests) and `1` (plan-tree manifests)."
     },
     "project": {
       "type": "string",
@@ -24,6 +30,28 @@
       "type": "string",
       "description": "Top-level plan status (R-27 / plan-index classifier). Optional for manifests that inherit status from spec.md, required for manifests acting as the plan's status anchor."
     },
+    "type": {
+      "type": "string",
+      "enum": ["plan", "sub-plan"],
+      "description": "Manifest scope. plan = top-level plan; sub-plan = component under a plan. SP01 sub-plan manifests carry sub-plan."
+    },
+    "parent_plan": {
+      "type": ["string", "null"],
+      "description": "Top-level plan slug (no path, no extension). Required at depth ≥ 3 per CLAUDE.md plan-tree convention rule #5 (R-28). Plan-root files (depth 2) exempt; handoff.md exempt at any depth."
+    },
+    "sub_plan_id": {
+      "type": "string",
+      "description": "Two-digit ordinal of this sub-plan within its parent (01, 02, ...). Execution order, not creation order."
+    },
+    "source_packet": {
+      "type": "string",
+      "description": "Absolute path to the canonical alignment packet that locked this plan's scope."
+    },
+    "phase_2_scaffolded_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when /new-plan or /backlog-research scaffolded this plan tree."
+    },
     "tasks": {
       "type": "array",
       "minItems": 1,
@@ -33,55 +61,421 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^T-[0-9]+$",
-            "description": "Task identifier (T-1, T-2, etc.)"
+            "pattern": "^T-[0-9]+(\\.[0-9]+)?$",
+            "description": "Task identifier (T-1, T-2, ..., T-3.5 for inserts)."
           },
-          "title": {
-            "type": "string",
-            "description": "Short task name"
-          },
-          "description": {
-            "type": "string",
-            "description": "2-4 sentence description of what the task accomplishes"
-          },
+          "title": {"type": "string"},
+          "description": {"type": "string"},
           "acceptance_criteria": {
             "type": "array",
-            "items": { "type": "string" },
-            "description": "Verb-first bullets defining done"
+            "items": {"type": "string"}
           },
           "file_references": {
             "type": "array",
-            "items": { "type": "string" },
-            "default": [],
-            "description": "Absolute paths the worker should read before starting"
+            "items": {"type": "string"},
+            "default": []
           },
           "depends_on": {
             "type": "array",
-            "items": { "type": "string" },
-            "default": [],
-            "description": "Task IDs that must complete before this task starts"
+            "items": {"type": "string"},
+            "default": []
           },
           "parallel_group": {
             "type": ["string", "null"],
-            "default": null,
-            "description": "Tasks sharing a parallel_group run simultaneously. Must not share file_references."
+            "default": null
           },
           "allowed_tools": {
             "type": "array",
-            "items": { "type": "string" },
-            "default": [],
-            "description": "Tool names passed to --allowedTools. Empty means all tools allowed."
+            "items": {"type": "string"},
+            "default": []
           },
           "max_budget_usd": {
             "type": "number",
             "minimum": 0,
-            "default": 5,
-            "description": "Per-task budget cap in USD"
+            "default": 5
           }
         },
-        "additionalProperties": false
+        "additionalProperties": true
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "Plan-level dependency declarations.",
+      "additionalProperties": true,
+      "properties": {
+        "predecessor_closed": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "hard_prereq_other_plans": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "internal_prereqs": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "external_capabilities": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "supersedes_hardcoded": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "question"],
+        "properties": {
+          "id": {"type": "string"},
+          "question": {"type": "string"},
+          "disposition": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+
+    "top_level_status": {
+      "type": "string",
+      "enum": ["aligned", "in_progress", "complete", "closed", "superseded"],
+      "description": "PLAN-TREE FIELD (T-2 / Path D step 4 amendment). Distinct from loose `status` field; this is the canonical lifecycle marker consumed by R-55 sunset trigger evaluation, R-46-cousin gate (T-27), and active-gates-rebuild. Transitions: aligned → in_progress → complete → closed (or superseded). `closed` requires git_tag_published populated for foundation-distributed plans."
+    },
+
+    "git_tag_published": {
+      "type": "object",
+      "description": "PLAN-TREE FIELD (T-2 / Path D step 4 amendment). Per-tag publication record for foundation-repo distribution. Helper reads this object to evaluate R-55 sunset trigger conditions WITHOUT shelling to `git tag --list` (deterministic + fast).",
+      "patternProperties": {
+        "^v[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.-]+)?$": {
+          "type": "object",
+          "required": ["published_at", "sha"],
+          "additionalProperties": false,
+          "properties": {
+            "published_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "ISO 8601 timestamp of tag publication."
+            },
+            "sha": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{7,40}$",
+              "description": "Commit SHA the tag points to."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "live_mutation_scope": {
+      "type": "object",
+      "description": "PLAN-TREE FIELD (T-2). Declares plan-scoped live-mutation gate. Plan-lifetime; retires when plan closes via three-phase sequence (Phase A parallel-run → Phase B helper retires → Phase C manifest entry retires). Per packet §3.2.",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Gate active for this plan."
+        },
+        "schema_version": {
+          "type": "integer",
+          "const": 1,
+          "description": "Required from day one (Terraform/dbt pattern)."
+        },
+        "inherits_from": {
+          "type": ["string", "null"],
+          "description": "Master plan slug for sub-plan manifests; null for top-level plans. Sub-plan declares ADDITIVE-ONLY scope: scope_paths/exempt_paths/launchd_labels/g2_commit_denylist UNION with master."
+        },
+        "scope_paths": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Glob patterns under which mutations gate. e.g., [\"$HOME/.claude/**\"]"
+        },
+        "exempt_paths": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Post-detection carve-outs. Sub-plan can extend, NOT subtract. Generalizes Plan 71 hardcoded ~/.claude/projects/** carve-out."
+        },
+        "detection_signals": {
+          "type": "object",
+          "description": "OR semantics — ANY one tier triggers DETECTED=1.",
+          "additionalProperties": false,
+          "properties": {
+            "cwd_pattern": {"type": ["string", "null"]},
+            "plan_id_pattern": {"type": ["string", "null"]},
+            "plan_mode_env_var": {"type": ["string", "null"]},
+            "transcript_regex": {
+              "type": ["string", "null"],
+              "description": "Tier-3 fallback. OPT-IN ONLY. Locked to $CLAUDE_SESSION_ID at runtime (NOT find-mtime); closes Plan 71 SP09 Incident δ stochasticity."
+            },
+            "deterministic_only": {
+              "type": "boolean",
+              "default": false,
+              "description": "If true, transcript_regex is disabled regardless of declaration."
+            }
+          }
+        },
+        "override": {
+          "type": "object",
+          "description": "Out-of-band override mechanisms. NO in-band fields permitted (e.g., bypass: true is schema-rejected per A8 anti-success criterion).",
+          "additionalProperties": false,
+          "properties": {
+            "nonce_dir": {"type": "string"},
+            "nonce_sha_anchor": {
+              "type": "string",
+              "description": "Git ref (tag or branch) whose SHA must equal the third tab-separated field of the nonce content."
+            },
+            "nonce_min_reason_length": {
+              "type": "integer",
+              "default": 12,
+              "minimum": 12
+            },
+            "nonce_consume_strategy": {
+              "type": "string",
+              "const": "basename_match_env",
+              "description": "LOCKED to (c) both = basename-match-env primary + scope carve-out. first_match_glob is DEPRECATED; A5 anti-success criterion."
+            },
+            "nonce_affinity_env": {
+              "type": "string",
+              "description": "Env var name caller sets to indicate which nonce basename to match (e.g., PLAN_71_NONCE_TASK)."
+            },
+            "sentinel_override_path": {"type": "string"},
+            "bypass_env_var": {
+              "type": "string",
+              "description": "Shell-rc-only escape hatch. Per-call env scoping in Claude Code prevents agent self-issuance."
+            }
+          }
+        },
+        "layer_3": {
+          "type": "object",
+          "description": "L3 writer-pause declarations consumed by l3-pause-helper.sh (T-4). Lint at manifest-author time validates against l3-writer-registry.json (T-10).",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "expected_quiescence_period_seconds": {
+              "type": "integer",
+              "default": 30,
+              "minimum": 0,
+              "description": "k8s drain pattern; helper sleeps this duration after pause-broadcast. Default 30s."
+            },
+            "launchd_labels": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "session_end_hooks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["path", "pause_via"],
+                "additionalProperties": false,
+                "properties": {
+                  "path": {"type": "string"},
+                  "pause_via": {
+                    "type": "string",
+                    "enum": ["sentinel", "env", "launchctl", "carve_out_in_g1"]
+                  },
+                  "sentinel_path": {"type": "string"},
+                  "env_var": {"type": "string"}
+                }
+              }
+            },
+            "user_prompt_submit_writers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["path_pattern", "pause_via"],
+                "additionalProperties": false,
+                "properties": {
+                  "path_pattern": {"type": "string"},
+                  "pause_via": {
+                    "type": "string",
+                    "const": "carve_out_in_g1",
+                    "description": "v1 mechanism for UserPromptSubmit writers (no native pause API)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "g2_commit_denylist": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Path globs added to ~/.claude/.git/hooks/pre-commit denylist for the duration of this plan's gate."
+        },
+        "enforcement": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "match_action": {
+              "type": "string",
+              "enum": ["deny", "warn", "dryrun"],
+              "default": "deny",
+              "description": "deny=block+log; warn=log+advisory+ALLOW (new-plan onboarding soak); dryrun=log only, no user-visible message, ALLOW (pre-deploy validation)."
+            },
+            "error_action": {
+              "type": "string",
+              "enum": ["deny", "ignore"],
+              "default": "deny",
+              "description": "deny=fail-closed on helper crash (default; security-gate posture); ignore=fail-open (Phase A bootstrap exception ONLY)."
+            }
+          }
+        },
+        "sunset": {
+          "type": "object",
+          "description": "Plan retirement state machine. Three explicit phases A→B→C per packet §3.14.",
+          "additionalProperties": true,
+          "properties": {
+            "trigger_conditions": {
+              "type": "object",
+              "description": "ALL must hold for retirement eligibility.",
+              "additionalProperties": true,
+              "properties": {
+                "master_top_level_status_in": {
+                  "type": "array",
+                  "items": {"type": "string", "enum": ["closed"]}
+                },
+                "git_tag_published": {
+                  "type": "string",
+                  "description": "Required tag (e.g., \"v2.0.0\")."
+                },
+                "parallel_run_validated": {"type": "boolean"}
+              }
+            },
+            "deferral_until": {
+              "type": ["string", "null"],
+              "format": "date",
+              "description": "Explicit calendar gate. e.g., \"2026-05-17\" for R-55."
+            },
+            "deferral_rationale": {"type": "string"},
+            "early_retire_override": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "reason": {"type": ["string", "null"]},
+                "authorized_at": {"type": ["string", "null"], "format": "date-time"},
+                "authorized_by": {"type": ["string", "null"]}
+              }
+            },
+            "phase": {
+              "type": "string",
+              "enum": ["A", "B", "C", "retired"],
+              "description": "Current phase. A=parallel-run; B=helper retired, manifest entry active; C=manifest entry retired."
+            },
+            "parallel_run_started_at": {"type": ["string", "null"], "format": "date-time"},
+            "parallel_run_decisions_logged": {"type": "integer", "default": 0},
+            "parallel_run_divergences": {"type": "integer", "default": 0},
+            "parallel_run_validated_at": {"type": ["string", "null"], "format": "date-time"},
+            "divergence_log": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "properties": {
+                  "ts": {"type": "string", "format": "date-time"},
+                  "decision_old": {"type": "string"},
+                  "decision_new": {"type": "string"},
+                  "file": {"type": "string"},
+                  "signal": {"type": "string"},
+                  "disposition": {
+                    "type": "string",
+                    "enum": ["expected", "bug-old", "bug-new", "unresolved"]
+                  }
+                }
+              }
+            },
+            "retired_at": {"type": ["string", "null"], "format": "date-time"},
+            "teardown_status": {
+              "type": "string",
+              "enum": ["DEFERRED", "ELIGIBLE", "RETIRED-HELPER", "RETIRED-FULL"],
+              "description": "Coarse retirement marker for human-readable status. Inherits Plan 71 r55_sunset.teardown_status semantics."
+            }
+          }
+        }
+      }
+    },
+
+    "harness_validated": {
+      "type": "array",
+      "description": "PLAN-TREE FIELD (T-27 / Path D step 4 amendment item (a)). Verdict-pass entries from SP08 dogfood-harness. R-46-cousin gate (foundation-repo .git/hooks/pre-commit) refuses sub-plan top_level_status flip from in_progress → complete unless a matching verdict-pass entry exists at current foundation-repo HEAD within last 7 days. Cross-sub-plan invalidation via post-commit hook when sister sub-plan modifies files in validated sub-plan's live_mutation_scope.scope_paths.",
+      "items": {
+        "type": "object",
+        "required": [
+          "harness_id",
+          "sub_plan_id",
+          "run_id",
+          "sha",
+          "timestamp",
+          "verdict",
+          "tier",
+          "evidence_path",
+          "harness_freshness",
+          "schema_version"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "harness_id": {
+            "type": "string",
+            "description": "SP08 fixture identifier (e.g., manifest_mechanism_extensibility, live_guard_root_resolution_determinism)."
+          },
+          "sub_plan_id": {
+            "type": "string",
+            "description": "Sub-plan being validated (e.g., 01-manifest-generalization)."
+          },
+          "run_id": {"type": "string"},
+          "sha": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{7,40}$",
+            "description": "Foundation-repo HEAD SHA at run time."
+          },
+          "timestamp": {"type": "string", "format": "date-time"},
+          "judges": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "LLM judges if verdict ensemble used."
+          },
+          "kappa": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Cohen's kappa for inter-judge agreement."
+          },
+          "kappa_ci": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {"type": "number"},
+            "description": "[lower, upper] 95% confidence interval for kappa."
+          },
+          "pinned_reference_v": {
+            "type": "string",
+            "description": "Pinned reference version against which the harness ran."
+          },
+          "verdict": {
+            "type": "string",
+            "enum": ["pass", "fail", "partial", "skip"]
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["tier-1", "tier-2", "tier-3"],
+            "description": "Tier-1 = structural assertion (pass/fail deterministic); tier-2 = behavioral assertion (judge-mediated); tier-3 = soft observability (advisory)."
+          },
+          "evidence_path": {
+            "type": "string",
+            "description": "Path to harness output artifacts (logs, diffs, screenshots)."
+          },
+          "harness_freshness": {
+            "type": "string",
+            "enum": ["fresh", "stale-7d", "stale-30d", "invalidated"],
+            "description": "Freshness band relative to current foundation-repo HEAD. R-46-cousin gate accepts only `fresh` for top_level_status flip."
+          },
+          "schema_version": {
+            "type": "integer",
+            "const": 1
+          }
+        }
       }
     }
-  },
-  "additionalProperties": false
+  }
 }
