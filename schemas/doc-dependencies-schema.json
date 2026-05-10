@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stem.peter.dev/schemas/doc-dependencies/v1.json",
+  "title": "Documentation Dependency Registry (foundation skeleton)",
+  "description": "Validates ${CLAUDE_HOME}/hooks/config/doc-dependencies.json — the foundation-shipped skeleton declaring cross-file cascade rules and entity-parity registries consumed by pre-write-guard.sh and the librarian capabilities (rename-history-sync, wikilink-repair, entity-parity, session-close Step 2c). Per-vault additive overlay rows live in the paired vault-overlay.json file (schema: ${CLAUDE_HOME}/schemas/vault-overlay-schema.json — https://stem.peter.dev/schemas/vault-overlay/v1.json). Adopter-facing walkthrough (skeleton vs overlay, merge precedence, hand-editing, known constraints): docs/doc-dependencies-conventions.md. Authored by Plan 81 SP01 Session 16 (2026-05-10) per T-28a deferral disposition; structural shape is mirrored from vault-overlay-schema.json (which itself was authored first, 2026-05-08, as the parallel authoritative reference).",
+  "type": "object",
+  "required": ["version"],
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 2,
+      "description": "Registry version. Locked at 2; consumers reject mismatched versions to surface schema drift early. Mirrored by vault-overlay.json version field."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of registry purpose. Foundation skeleton ships a description tagging the foundation-repo + plan provenance; consumers do not parse this."
+    },
+    "generated_by": {
+      "type": "string",
+      "description": "Provenance string. Foundation install ships this populated with the authoring plan/session reference; consumers do not parse this."
+    },
+    "schema_notes": {
+      "type": "object",
+      "description": "Free-form notes about cross-file conventions, rename-history semantics, vault-overlay merge precedence, and per-consumer expectations. Not consumed by runtime; documentation surface for the registry author and adopter.",
+      "additionalProperties": true
+    },
+    "entries": {
+      "type": "array",
+      "description": "Cascade-rule entries. Foundation skeleton ships generic entries (e.g., vault-schema-type-consistency); per-vault entries layer additively from vault-overlay.json at runtime.",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind"],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable identifier. Overlay row with id matching a skeleton id replaces the skeleton row at consumer-side merge time."
+          },
+          "kind": {
+            "type": "string",
+            "description": "Entry kind. Common values: directory-write-constraint, directory-membership-cascade, hub-spoke-cascade, cross-file-type-union. Unconstrained for forward-compatible additions; consumers tolerate unknown kinds with advisory warnings."
+          },
+          "primary_dir": {
+            "type": "string",
+            "description": "Primary directory the entry governs (for directory-* kinds). Mutually exclusive with primary."
+          },
+          "primary": {
+            "type": "string",
+            "description": "Primary file path the entry governs (for hub-* / cross-* kinds). Mutually exclusive with primary_dir."
+          },
+          "primary_scope": {
+            "type": "string",
+            "description": "Scope qualifier for directory-membership-cascade (e.g., top-level-children, recursive)."
+          },
+          "mirrors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Mirror entries that must stay synchronized with primary. Heterogeneous field-set per kind."
+          },
+          "rule": {
+            "type": "string",
+            "description": "Rule label consumed by pre-write-guard advisory emission (e.g., if-primary-changes-mirrors-must-be-reviewed, hub-stub-must-have-matching-spoke, deny-list)."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["warn", "deny"],
+            "description": "Advisory severity. warn = inform on stderr, allow write; deny = block write."
+          },
+          "denied_types": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "deny-list-kind entries: vault-schema type values denied in the primary_dir scope."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Human-readable rationale for the entry. Surfaced in advisory messages for traceability."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Free-form notes for entry maintainers. Not consumed by runtime."
+          },
+          "path_inferred_exceptions": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "vault-schema type values whose path-inference exempts them from the entry's union check (cross-file-type-union kind)."
+          },
+          "rename_history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["from", "to", "at"],
+              "additionalProperties": true,
+              "properties": {
+                "from": {"type": "string"},
+                "to": {"type": "string"},
+                "at": {"type": "string"},
+                "commit": {"type": "string"}
+              }
+            },
+            "description": "Append-only rename audit trail. Populated by librarian rename-detect at session-close Step 2b. Empty array means no known renames since instrumentation landed."
+          }
+        }
+      }
+    },
+    "entities": {
+      "type": "object",
+      "description": "Entity-parity registry. Foundation skeleton ships generic entity types (skill, plan, memory-file) that mirror across vault and ${CLAUDE_HOME} surfaces; per-vault entity types layer additively from vault-overlay.json. Underscore-prefixed string keys (_comment, _note, _schema_version, etc.) are permitted as inline documentation and ignored by consumers.",
+      "patternProperties": {
+        "^_": {
+          "type": ["string", "number", "boolean"],
+          "description": "Underscore-prefixed metadata key. Ignored by consumers."
+        }
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "canonical": {
+            "type": "string",
+            "description": "Path template with {placeholder} tokens. Per-vault placeholders (e.g., {project_namespace}) require consumer-side resolution against user-manifest.json or environment."
+          },
+          "canonical_field": {
+            "type": "string",
+            "description": "Field name on canonical-source frontmatter that consumers compare against mirror values."
+          },
+          "instance_enumerator": {
+            "type": "string",
+            "description": "Enumerator strategy for entity instances. Format: <strategy>:<arg> (e.g., glob:${CLAUDE_HOME}/skills/*/SKILL.md)."
+          },
+          "exclude_basenames": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Basenames to exclude from instance enumeration (e.g., MEMORY.md for the memory-file entity)."
+          },
+          "mirrors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path"],
+              "additionalProperties": true,
+              "properties": {
+                "path": {"type": "string"},
+                "row_kind": {"type": "string"},
+                "match_kind": {"type": "string"},
+                "fields": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                },
+                "strict": {"type": "boolean"},
+                "presence_only": {"type": "boolean"},
+                "optional": {"type": "boolean"},
+                "notes": {"type": "string"}
+              }
+            },
+            "description": "Mirror surfaces consumers verify against canonical."
+          }
+        }
+      }
+    }
+  }
+}

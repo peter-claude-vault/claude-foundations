@@ -88,7 +88,12 @@ CH="$(mk_tmp)"
 rc=0
 # HOME isolation: G5 (S65) walks $PLANS_HOME=$HOME/.claude-plans for NN-*/ entries.
 # Set HOME to test tmpdir so PLANS_HOME resolves to an empty path.
-HOME="$CH" CLAUDE_HOME="$CH" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" --apply >"$CH/.stdout" 2>"$CH/.stderr" || rc=$?
+# PYTHONUSERBASE forwarding (Plan 81 SP01 S16): HOME isolation hides the real
+# user-site site-packages from python3 (Step 13.6 jsonschema validator). Re-
+# expose user-site explicitly so the validation path is exercised end-to-end.
+# Adopters who installed jsonschema system-wide are unaffected.
+USERBASE="$(python3 -m site --user-base 2>/dev/null || true)"
+HOME="$CH" CLAUDE_HOME="$CH" SOURCE_REPO="$REPO_ROOT" PYTHONUSERBASE="$USERBASE" bash "$INSTALL_SH" --apply >"$CH/.stdout" 2>"$CH/.stderr" || rc=$?
 assert_eq "0" "$rc" "T1: install.sh exits 0"
 
 # 14 asset categories:
@@ -145,6 +150,25 @@ assert_path_exists "$CH/projects/$mem_slug/memory/MEMORY.md" \
   "T1.27: \$CLAUDE_HOME/projects/<slug>/memory/MEMORY.md seeded (SP11 T-1)"
 mem_h2_count="$(grep -c '^## ' "$CH/projects/$mem_slug/memory/MEMORY.md" 2>/dev/null || echo 0)"
 assert_eq "4" "$mem_h2_count" "T1.28: seeded MEMORY.md has 4 H2 section headers (User/Feedback/Project/Reference)"
+
+# Plan 81 SP01 S16: 4 hooks/config companion schemas land at $CLAUDE_HOME/schemas/
+for s in vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema; do
+  assert_path_exists "$CH/schemas/$s.json" "T1.29: schemas/$s.json landed (Plan 81 SP01 S16)"
+done
+
+# Plan 81 SP01 S16: Step 13.6 jsonschema validation either passed (clean exit
+# 0 already asserted in T1.1) or skipped gracefully with a warn line on stderr
+# when python3 jsonschema module is unavailable. Either path is acceptable;
+# only a non-zero exit on malformed config is a failure. Verify the diagnostic
+# substring is absent (no validation failure was logged).
+if grep -q "config schema validation failed" "$CH/.stderr" 2>/dev/null; then
+  printf '  FAIL T1.30: Step 13.6 reported config schema validation failure on happy-path install\n' >&2
+  cat "$CH/.stderr" >&2
+  FAIL=$((FAIL+1))
+else
+  printf '  PASS T1.30: Step 13.6 produced no config-validation failure (happy-path)\n'
+  PASS=$((PASS+1))
+fi
 
 # =====================================================================
 # T2 — LABEL_PREFIX preservation (G6)

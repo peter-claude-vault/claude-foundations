@@ -4,7 +4,7 @@
 
 **Audience:** users adding or auditing entries in `~/.claude/hooks/config/doc-dependencies.json` (foundation skeleton) or `~/.claude/hooks/config/vault-overlay.json` (per-vault overlay).
 
-> **Status (2026-05-08).** This doc is the canonical contract for the skeleton/overlay registry. Schema and skeleton ratified Plan 81 SP01 T-28a (Session 12). Consumer-side overlay-read (`pre-write-guard.sh` + 5 librarian capabilities) and onboarder retarget land in T-28b during the T-20 Phase A 7-day soak (≥2026-05-17). Until T-28b ships, only the skeleton is consumed at runtime; overlay entries are accepted by the schema but unused. Adopters can author overlay entries today; runtime activation lands when T-28b commits.
+> **Status (2026-05-10).** This doc is the canonical contract for the skeleton/overlay registry. Schema and skeleton ratified Plan 81 SP01 T-28a (Session 12); skeleton-side schema authored Session 16 (`schemas/doc-dependencies-schema.json`) and wired into `install.sh` Step 13.6 jsonschema validation alongside the overlay schema and the two sister-config schemas. Consumer-side overlay-read (`pre-write-guard.sh` + 5 librarian capabilities) and onboarder retarget land in T-28b during the T-20 Phase A 7-day soak (≥2026-05-17). Until T-28b ships, only the skeleton is consumed at runtime; overlay entries are accepted by the schema but unused. Adopters can author overlay entries today; runtime activation lands when T-28b commits.
 
 ---
 
@@ -42,8 +42,10 @@ Same-id and same-key collisions are explicitly resolved overlay-wins so adopters
 
 Both files validate against the same structural shape:
 
-- Skeleton: schema authoring deferred (T-28a scope). The skeleton's structural contract is mirrored authoritatively in the overlay schema.
+- Skeleton: [`schemas/doc-dependencies-schema.json`](../schemas/doc-dependencies-schema.json) (`$id: https://stem.peter.dev/schemas/doc-dependencies/v1.json`, Draft 2020-12). Authored Session 16 mirroring the overlay schema.
 - Overlay: [`schemas/vault-overlay-schema.json`](../schemas/vault-overlay-schema.json) (`$id: https://stem.peter.dev/schemas/vault-overlay/v1.json`, Draft 2020-12).
+
+`install.sh` Step 13.6 jsonschema-validates both against their respective schemas at install time when the `python3 jsonschema` module is reachable; it graceful-skips with a warn when the module is absent. Failure exits with code 30 (pre-allocated post-install schema parse / validation failure).
 
 `version` is locked at `2` on both files; consumers reject mismatched versions to surface schema drift early.
 

@@ -638,8 +638,11 @@ if [ -d "$SOURCE_REPO/installer" ]; then
   cp -R $cp_clobber "$SOURCE_REPO/installer"/. "$CLAUDE_HOME/installer/" 2>/dev/null || true
 fi
 
-# Step 9: schemas/ — 6 named files only (audit F-06)
-for schema in vault-schema plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema; do
+# Step 9: schemas/ — 10 named files (audit F-06; Plan 81 SP01 S16 extended the
+# list to ship the 4 hooks/config/*.json companion schemas: vault-overlay,
+# doc-dependencies, drift-allowlist, cron-log-architecture-exceptions. These
+# are consumed by Step 13.6 jsonschema validation below.)
+for schema in vault-schema plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema; do
   src="$SOURCE_REPO/schemas/$schema.json"
   if [ ! -f "$src" ]; then
     diag "schema missing in source: $schema.json"
@@ -880,6 +883,35 @@ for schema in "$CLAUDE_HOME/schemas"/*.json; do
     exit 30
   fi
 done
+
+# Step 13.6: jsonschema validation of foundation-shipped configs (Plan 81 SP01
+# S16; T-28a deferral disposition). Validates hooks/config/*.json against the
+# 4 companion schemas shipped at Step 9. Graceful skip when python3 jsonschema
+# module is unavailable on the adopter machine — preserves T-20 Phase A
+# error_action: ignore posture (fresh adopters degrade silently at runtime
+# when validation tooling absent). Adopters with jsonschema installed
+# (pip3 install jsonschema) get fail-loud-at-install behavior on malformed
+# configs via exit 30 (pre-allocated for "schema parse failure (post-install)").
+if python3 -c "import jsonschema" 2>/dev/null; then
+  for pair in \
+    "doc-dependencies.json:doc-dependencies-schema.json" \
+    "vault-overlay.json:vault-overlay-schema.json" \
+    "drift-allowlist.json:drift-allowlist-schema.json" \
+    "cron-log-architecture-exceptions.json:cron-log-architecture-exceptions-schema.json"; do
+    cfg_name="${pair%:*}"
+    sch_name="${pair#*:}"
+    cfg_path="$CLAUDE_HOME/hooks/config/$cfg_name"
+    sch_path="$CLAUDE_HOME/schemas/$sch_name"
+    [ -f "$cfg_path" ] || continue
+    [ -f "$sch_path" ] || continue
+    if ! python3 -c "import json,sys; from jsonschema.validators import Draft202012Validator; Draft202012Validator(json.load(open(sys.argv[1]))).validate(json.load(open(sys.argv[2])))" "$sch_path" "$cfg_path"; then
+      diag "config schema validation failed: $cfg_path against $sch_path"
+      exit 30
+    fi
+  done
+else
+  warn "python3 jsonschema module not available; install-time config-vs-schema validation skipped (pip3 install jsonschema to enable). Configs were JSON-syntax-validated by Step 13."
+fi
 
 # Step 13.5: ship foundation-manifest.json baseline (T-5 / S62)
 # Generator is at $SOURCE_REPO/generate-foundation-manifest.sh; output is

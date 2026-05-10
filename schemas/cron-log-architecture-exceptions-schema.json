@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stem.peter.dev/schemas/cron-log-architecture-exceptions/v1.json",
+  "title": "Cron log-architecture R-22 exceptions",
+  "description": "Validates ${CLAUDE_HOME}/hooks/config/cron-log-architecture-exceptions.json — the allowlist of cron plist labels exempt from the R-22 wrapper-owned-logging default. Consumed by librarian capabilities/cron-log-architecture.sh. Authored by Plan 81 SP01 Session 16 (2026-05-10).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "_comment": {
+      "type": "string",
+      "description": "Inline documentation. Ignored by consumers."
+    },
+    "_schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version pin. Foundation skeleton ships version 1; future versions bump and consumers branch behavior."
+    },
+    "exceptions": {
+      "type": "array",
+      "description": "Exemption entries. Each entry declares a cron plist label that should NOT be flagged for R-22 wrapper-owned-logging. Foundation skeleton ships an empty array.",
+      "items": {
+        "type": "object",
+        "required": ["label", "reason"],
+        "additionalProperties": true,
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Plist label (e.g., com.claude-stem.foo). Matched against rendered launchd plist labels."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Human-readable rationale for the exemption. Surfaced in librarian audit reports."
+          }
+        }
+      }
+    }
+  }
+}

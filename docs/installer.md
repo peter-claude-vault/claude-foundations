@@ -9,7 +9,7 @@
 
 ## What it does
 
-The script writes 14 asset categories (hooks, hooks/lib, 8 skills, 6 schemas, the full onboarding subtree, orchestrator, installer, templates, the claude-mem plugin, and `foundation-manifest.json`), atomically merges a `settings.json` snippet, and emits a deterministic provenance log under `$CLAUDE_HOME/logs/install-<ts>-<pid>.log`.
+The script writes 14 asset categories (hooks, hooks/lib, 8 skills, 10 schemas, the full onboarding subtree, orchestrator, installer, templates, the claude-mem plugin, and `foundation-manifest.json`), atomically merges a `settings.json` snippet, and emits a deterministic provenance log under `$CLAUDE_HOME/logs/install-<ts>-<pid>.log`.
 
 ---
 
@@ -54,7 +54,7 @@ The default dry-run path is the safe entry point. It emits a JSON document on st
 | 10   | prereq missing       | `CLAUDE_HOME` unset/empty; required binary absent; SOURCE_REPO not a foundation-repo.       |
 | 11   | write failure        | Permission denied; provenance-log write failed; `--no-preserve-config` without `--force-install`.|
 | 21   | state                | `$CLAUDE_HOME` contains only non-foundation content without `--force-install`.              |
-| 30   | schema parse         | Post-install schema parse failure.                                                          |
+| 30   | schema parse         | Post-install schema parse failure (Step 13 JSON-syntax check) OR `hooks/config/*.json` jsonschema validation failure (Step 13.6 — fires only when `python3 jsonschema` module is reachable; graceful-skips otherwise). |
 | 40   | settings.json merge  | jq merge conflict requires human resolution.                                                |
 | 51   | G1-main              | `$HOME/.claude` equality + non-foundation content; missing `--force-install` or `I-UNDERSTAND-OVERWRITE-RISK` sentinel.|
 | 52   | G2                   | Foreign-content sha256 drift in foundation files; missing `--force-install` or sentinel.    |
@@ -113,6 +113,23 @@ schemas/user-manifest-schema.json sha256:efgh... bytes:5102
 ```
 
 `uninstall.sh` consumes this log to walk fingerprints and refuse if `$CLAUDE_HOME` does not match the provenance header.
+
+---
+
+## Config validation (Step 13.6)
+
+After all assets land, the installer cross-validates the four foundation-shipped configs at `$CLAUDE_HOME/hooks/config/` against their companion schemas at `$CLAUDE_HOME/schemas/`:
+
+| Config | Schema |
+|---|---|
+| `doc-dependencies.json` | `doc-dependencies-schema.json` |
+| `vault-overlay.json` | `vault-overlay-schema.json` |
+| `drift-allowlist.json` | `drift-allowlist-schema.json` |
+| `cron-log-architecture-exceptions.json` | `cron-log-architecture-exceptions-schema.json` |
+
+The check requires the `python3 jsonschema` module (PyPI). When the module is reachable, malformed configs fail install with exit 30 and a `config schema validation failed: <path> against <schema>` diagnostic on stderr. When the module is unavailable, the step graceful-skips with a `WARN` line; configs are still JSON-syntax-validated by Step 13. Adopters who want fail-loud-at-install behavior can `pip3 install --user jsonschema` and re-run.
+
+See [`doc-dependencies-conventions.md`](doc-dependencies-conventions.md) for the skeleton/overlay model these schemas validate.
 
 ---
 
