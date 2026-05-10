@@ -1,0 +1,5 @@
+block-1-house-metaphor.md
+block-2-architecture.md
+block-3-patterns.md
+block-4-consent.md
+block-5-bridge.md
