@@ -172,20 +172,16 @@ printf 'I-UNDERSTAND-OVERWRITE-RISK\n' | \
     >"$CAPTURE1/stdout3" 2>"$CAPTURE1/stderr3" || rc=$?
 assert_eq "0" "$rc" "T1.6: re-install with --force-install + sentinel + --backup-dir rc=0 (full ceremony succeeds)"
 
-# Phase A finding (encoded as test, not a bug fix in D1's scope):
-# After a fresh install, the second-run state classifies as "mixed", not
-# "foundation-only", because SP10 T-4 (seeded $CLAUDE_HOME/CLAUDE.md) and
-# SP11 T-1 (seeded $CLAUDE_HOME/projects/<slug>/memory/MEMORY.md) added
-# top-level entries that are NOT in install.sh's foundation_known_entries
-# (line ~222: "hooks skills schemas onboarding orchestrator templates
-# plugins Library installer logs settings.json settings.local.json
-# foundation-manifest.json"). On re-install, those entries are seen as
-# non-foundation, tipping classification to mixed. This is a semantic
-# defect (CLAUDE.md and projects/ ARE foundation artifacts), but encoding
-# it as the current observed behavior keeps the test green; a follow-up
-# install.sh patch should add CLAUDE.md and projects to the known set.
-assert_grep "state classification: mixed" "$CAPTURE1/stdout3" \
-  "T1.7: ceremony re-install classifies state as mixed (FINDING: SP10/SP11 seeded paths missing from foundation_known_entries)"
+# Regression check (T-29 fix landed Session 18, 2026-05-10):
+# After a fresh install, the second-run state must classify as
+# "foundation-only" because SP10 T-4 (seeded $CLAUDE_HOME/CLAUDE.md) and
+# SP11 T-1 (seeded $CLAUDE_HOME/projects/<slug>/memory/MEMORY.md) are now
+# present in install.sh's foundation_known_entries (line ~222). Prior
+# Session 17 D1 ship encoded the bug as "mixed"; T-29 flipped this from
+# bug-encoder to regression-checker. If this assertion ever flips back to
+# "mixed", it means CLAUDE.md or projects/ regressed out of the whitelist.
+assert_grep "state classification: foundation-only" "$CAPTURE1/stdout3" \
+  "T1.7: ceremony re-install classifies state as foundation-only (T-29 regression check; whitelist must include CLAUDE.md + projects)"
 
 prov_after_third="$(ls "$CH1/logs"/install-*.log 2>/dev/null | wc -l | tr -d ' ')"
 assert_eq "2" "$prov_after_third" "T1.8: provenance log count = 2 after ceremony re-install (G2 refuse leaves no log; one per successful --apply)"

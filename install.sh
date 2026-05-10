@@ -219,7 +219,7 @@ fi
 # Refuse if $CLAUDE_HOME == $HOME/.claude AND target exists with non-foundation
 # content, unless --force-install AND I-UNDERSTAND-OVERWRITE-RISK sentinel typed.
 # String comparison (not resolution) per R-55 carve-out.
-foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json foundation-manifest.json"
+foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json foundation-manifest.json CLAUDE.md projects"
 
 g1_main_has_non_foundation_content() {
   local d="$1"
