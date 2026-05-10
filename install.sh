@@ -602,6 +602,16 @@ for f in "$SOURCE_REPO/lib"/*.sh; do
   cp $cp_clobber "$f" "$CLAUDE_HOME/hooks/lib/" 2>/dev/null || true
 done
 
+# Step 3.5: hooks/lib/*.{sh,json} → $CLAUDE_HOME/hooks/lib/
+# (Plan 81 SP01 T-20: ship plan-agnostic gate helpers — live-guard.sh,
+# l3-pause-helper.sh, l3-writer-registry.json, gate-schema-migrate.sh.
+# These were authored under hooks/lib/ rather than lib/ and must be
+# shipped explicitly. cp_clobber posture matches Step 3.)
+for f in "$SOURCE_REPO/hooks/lib"/*.sh "$SOURCE_REPO/hooks/lib"/*.json; do
+  [ -e "$f" ] || continue
+  cp $cp_clobber "$f" "$CLAUDE_HOME/hooks/lib/" 2>/dev/null || true
+done
+
 # Step 4: hooks/config/*.json → $CLAUDE_HOME/hooks/config/
 for f in "$SOURCE_REPO/hooks/config"/*.json; do
   [ -e "$f" ] || continue
