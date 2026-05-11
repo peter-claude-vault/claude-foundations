@@ -72,7 +72,7 @@ set -u
 SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 SOURCE_REPO="${SOURCE_REPO:-$SCRIPT_DIR}"
-VERSION="v2.0.0-rc1"
+VERSION="v2.1.3"
 OUTPUT=""
 
 usage() {
@@ -134,11 +134,25 @@ emit_pairs() {
     printf 'hooks/config/%s\thooks/config/%s\n' "$base" "$base"
   done
 
-  # lib/*.sh → hooks/lib/*.sh (TRANSLATION)
+  # lib/*.sh → hooks/lib/*.sh (TRANSLATION; install.sh Step 3)
+  # Skip files that also exist at hooks/lib/ — install.sh Step 3.5 cp_clobbers
+  # over them, so the post-install effective state is the hooks/lib/ copy.
+  # Mirrors install.sh ordering: Step 3 copies lib/*, Step 3.5 overwrites
+  # with hooks/lib/*. Manifest reflects post-install state, not intermediate.
   for f in "$SOURCE_REPO/lib"/*.sh; do
     [ -f "$f" ] || continue
     base="${f##*/}"
+    [ -f "$SOURCE_REPO/hooks/lib/$base" ] && continue
     printf 'lib/%s\thooks/lib/%s\n' "$base" "$base"
+  done
+
+  # hooks/lib/*.{sh,json} (identity; install.sh Step 3.5)
+  # Plan 81 SP01 helpers ship from hooks/lib/ directly: live-guard.sh,
+  # l3-pause-helper.sh, l3-writer-registry.json, gate-schema-migrate.sh.
+  for f in "$SOURCE_REPO/hooks/lib"/*.sh "$SOURCE_REPO/hooks/lib"/*.json; do
+    [ -f "$f" ] || continue
+    base="${f##*/}"
+    printf 'hooks/lib/%s\thooks/lib/%s\n' "$base" "$base"
   done
 
   # skills/{9 named}/** (recursive within named dirs)
@@ -152,8 +166,9 @@ emit_pairs() {
     done
   done
 
-  # schemas — 6 named .json + README.md
-  for s in vault-schema plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema; do
+  # schemas — 12 named .json + README.md (mirrors install.sh Step 9 list +
+  # Plan 81 SP01 gate-config/gate-config-schema additions per v2.1.3).
+  for s in vault-schema plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema gate-config gate-config-schema; do
     f="$SOURCE_REPO/schemas/$s.json"
     [ -f "$f" ] || continue
     printf 'schemas/%s.json\tschemas/%s.json\n' "$s" "$s"

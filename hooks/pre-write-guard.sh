@@ -36,75 +36,34 @@ TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 # No file path → nothing to guard
 [[ -z "$FILE_PATH" ]] && exit 0
 
-# === G1: live-mutation gate — Phase A parallel-run (Plan 81 SP01 T-20) =====
-# Two helpers run side-by-side:
-#   1. NEW plan-agnostic live-guard.sh (manifest-driven) — shadow mode,
-#      error_action: ignore. Crash → continue with old helper, do not deny.
-#   2. OLD plan-71-live-guard.sh (hardcoded R-55) — authoritative.
-# Both decisions logged JSONL to $HOOKS_STATE/parallel-run.log per call so
-# librarian r55-parallel-run-audit (T-9) can disposition divergences before
-# Phase B retires the old helper.
+# === G1: live-mutation gate (Plan 81 SP01 T-22 graduation 2026-05-11) =====
+# Plan-agnostic manifest-driven gate. Reads each active plan's
+# `live_mutation_scope` block from its manifest.json; evaluates detection
+# signals (cwd_pattern / plan_id_pattern / plan_mode_env_var / opt-in
+# transcript_regex); honors exempt_paths, basename-match-env nonce
+# overrides, sentinel overrides, and per-plan bypass env vars.
 #
-# Helper paths overridable via $G1_NEW_HELPER / $G1_HELPER for fixture testing.
-G1_NEW_HELPER="${G1_NEW_HELPER:-$HOME/.claude/hooks/lib/live-guard.sh}"
-G1_HELPER="${G1_HELPER:-$HOME/.claude/hooks/lib/plan-71-live-guard.sh}"
+# Successor to Plan 71's hardcoded plan-71-live-guard.sh (retired
+# 2026-05-11 per R-55 sunset). Successor plans declare scope in manifest;
+# they no longer edit hook code.
+#
+# Helper path overridable via $G1_HELPER for fixture testing.
+G1_HELPER="${G1_HELPER:-$HOME/.claude/hooks/lib/live-guard.sh}"
 G1_CRASH_DIR="${HOOKS_STATE_OVERRIDE:-$HOOKS_STATE}"
 mkdir -p "$G1_CRASH_DIR" 2>/dev/null || true
 
-# Shadow invocation: NEW helper. error_action: ignore — crash is logged but
-# never denies; production behavior is preserved by old helper alone.
-G1_NEW_OUTPUT=""
-G1_NEW_EXIT=0
-if [[ -x "$G1_NEW_HELPER" ]]; then
-  set +e
-  G1_NEW_OUTPUT=$(FILE_PATH="$FILE_PATH" TOOL_NAME="$TOOL_NAME" HOOKS_STATE="$HOOKS_STATE" CLAUDE_HOME="$CLAUDE_HOME" "$G1_NEW_HELPER" 2>>"$G1_CRASH_DIR/live-guard-crashes.log")
-  G1_NEW_EXIT=$?
-  set -e
-  if [[ "$G1_NEW_EXIT" -ne 0 ]]; then
-    printf '%s live-guard.sh exit=%s; shadow-only, ignored\n' "$(date -u +%FT%TZ)" "$G1_NEW_EXIT" >> "$G1_CRASH_DIR/live-guard-crashes.log" 2>/dev/null || true
-  fi
-fi
-
-# Authoritative invocation: OLD helper. Behavior preserved verbatim.
 G1_OUTPUT=""
 G1_EXIT=0
 if [[ -x "$G1_HELPER" ]]; then
   set +e
-  G1_OUTPUT=$(FILE_PATH="$FILE_PATH" TOOL_NAME="$TOOL_NAME" HOOKS_STATE="$HOOKS_STATE" CLAUDE_HOME="$CLAUDE_HOME" "$G1_HELPER" 2>>"$G1_CRASH_DIR/plan-71-gate-crashes.log")
+  G1_OUTPUT=$(FILE_PATH="$FILE_PATH" TOOL_NAME="$TOOL_NAME" HOOKS_STATE="$HOOKS_STATE" CLAUDE_HOME="$CLAUDE_HOME" "$G1_HELPER" 2>>"$G1_CRASH_DIR/live-guard-crashes.log")
   G1_EXIT=$?
   set -e
   if [[ "$G1_EXIT" -ne 0 ]]; then
-    printf '%s plan-71-live-guard.sh exit=%s; failed open\n' "$(date -u +%FT%TZ)" "$G1_EXIT" >> "$G1_CRASH_DIR/plan-71-gate-crashes.log" 2>/dev/null || true
+    printf '%s live-guard.sh exit=%s; failed open\n' "$(date -u +%FT%TZ)" "$G1_EXIT" >> "$G1_CRASH_DIR/live-guard-crashes.log" 2>/dev/null || true
   fi
 fi
 
-# Parallel-run audit row: one JSONL per call, both verdicts side-by-side.
-# Verdict normalization: crash → "crash"; empty stdout → "allow"; non-empty
-# stdout → permissionDecision field.
-_g1_verdict() {
-  local out="$1" code="$2" d
-  if [[ "$code" -ne 0 ]]; then printf 'crash'; return; fi
-  if [[ -z "$out" ]]; then printf 'allow'; return; fi
-  d=$(printf '%s' "$out" | jq -r '.hookSpecificOutput.permissionDecision // "allow"' 2>/dev/null)
-  printf '%s' "${d:-allow}"
-}
-G1_NEW_VERDICT=$(_g1_verdict "$G1_NEW_OUTPUT" "$G1_NEW_EXIT")
-G1_OLD_VERDICT=$(_g1_verdict "$G1_OUTPUT" "$G1_EXIT")
-if command -v jq >/dev/null 2>&1; then
-  jq -nc \
-    --arg ts "$(date -u +%FT%TZ)" \
-    --arg file "$FILE_PATH" \
-    --arg tool "$TOOL_NAME" \
-    --arg session "${CLAUDE_SESSION_ID:-}" \
-    --arg new_verdict "$G1_NEW_VERDICT" \
-    --arg old_verdict "$G1_OLD_VERDICT" \
-    --argjson new_exit "$G1_NEW_EXIT" \
-    --argjson old_exit "$G1_EXIT" \
-    '{ts:$ts,file:$file,tool:$tool,session:$session,new_helper:{verdict:$new_verdict,exit:$new_exit},old_helper:{verdict:$old_verdict,exit:$old_exit},divergent:($new_verdict != $old_verdict)}' \
-    >> "$G1_CRASH_DIR/parallel-run.log" 2>/dev/null || true
-fi
-
-# Authoritative decision: OLD helper. Phase B (T-22) flips this to NEW.
 if [[ "$G1_EXIT" -eq 0 && -n "$G1_OUTPUT" ]]; then
   printf '%s\n' "$G1_OUTPUT"
   exit 0

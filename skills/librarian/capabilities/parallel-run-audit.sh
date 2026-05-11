@@ -1,5 +1,7 @@
 #!/bin/bash
-# r55-parallel-run-audit.sh — librarian capability (Plan 80/81 SP01 T-9).
+# parallel-run-audit.sh — librarian capability (Plan 80/81 SP01 T-9).
+# (Renamed from r55-parallel-run-audit.sh 2026-05-11 — R-55 was Plan-71-specific
+# naming; the audit pattern is reusable for any future gate parallel-run phase.)
 #
 # Reads ~/.claude/hooks/state/parallel-run.log JSONL emitted during Phase A
 # bootstrap (T-20 deploy), where the new plan-agnostic live-guard.sh runs
@@ -58,7 +60,7 @@ ITERATION_CAP=3
 
 usage() {
   cat <<'EOF'
-Usage: r55-parallel-run-audit.sh <subcommand> [args]
+Usage: parallel-run-audit.sh <subcommand> [args]
 
 Subcommands:
   summary [<log-path>]
@@ -242,7 +244,7 @@ cmd_iteration_count() {
 
   if [[ "$bug_new" -ge "$ITERATION_CAP" ]]; then
     cat <<EOF >&2
-[r55-parallel-run-audit] ITERATION CAP REACHED
+[parallel-run-audit] ITERATION CAP REACHED
   bug-new disposition count: $bug_new (cap: $ITERATION_CAP)
   Further investigation rounds require explicit user override.
   Phase A → B advance is structurally blocked.

@@ -652,7 +652,7 @@ fi
 # list to ship the 4 hooks/config/*.json companion schemas: vault-overlay,
 # doc-dependencies, drift-allowlist, cron-log-architecture-exceptions. These
 # are consumed by Step 13.6 jsonschema validation below.)
-for schema in vault-schema plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema; do
+for schema in vault-schema plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema gate-config gate-config-schema; do
   src="$SOURCE_REPO/schemas/$schema.json"
   if [ ! -f "$src" ]; then
     diag "schema missing in source: $schema.json"

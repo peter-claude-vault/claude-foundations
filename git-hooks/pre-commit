@@ -1,0 +1,88 @@
+#!/bin/bash
+# pre-commit — Generic G2 commit-time guard (Plan 81 SP01 T-22 graduation 2026-05-11)
+#
+# Replaces Plan 71's hardcoded G2 (R-55 onboarding-tree denylist, retired
+# 2026-05-11). Generic checks applied to every commit in ~/.claude/:
+#
+#   1. bash -n on every staged hooks/*.sh — fail-fast on syntax errors
+#      before they ship to runtime hooks.
+#   2. jq empty on every staged *.json — fail-fast on malformed JSON.
+#   3. R-24 mirror — if settings.json is staged AND claude-mem is present,
+#      verify the memory-consolidation-check SessionEnd handler is still
+#      registered (per `feedback_keep_claude_mem_running`).
+#
+# Override: set GIT_BYPASS_PRECOMMIT=1 or use `git commit --no-verify`.
+#
+# Not implemented here (per execution plan scope):
+#   - R-37 coupled-surface enforcement (Plan 81 SP01 T-7 deliverable;
+#     foundation-repo `git-hooks/pre-commit-r37.sh` ships separately via
+#     `install-hooks.sh` dispatcher when SP01 T-7 deploys live).
+#   - Harness-validated check (Plan 81 SP01 T-27 deliverable; ships via
+#     same dispatcher path).
+#
+# When SP01 T-7 / T-27 deploy, this file should be replaced by
+# `pre-commit-dispatcher.sh` which invokes all component checks.
+
+set -uo pipefail
+
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+[[ -z "$REPO_ROOT" ]] && exit 0
+
+if [[ "${GIT_BYPASS_PRECOMMIT:-0}" == "1" ]]; then
+  exit 0
+fi
+
+# Collect staged paths once.
+STAGED=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)
+[[ -z "$STAGED" ]] && exit 0
+
+FAIL=0
+
+# --- Check 1: bash -n on staged hooks/*.sh ---------------------------------
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  case "$f" in
+    hooks/*.sh|hooks/lib/*.sh)
+      [[ -f "$REPO_ROOT/$f" ]] || continue
+      if ! bash -n "$REPO_ROOT/$f" 2>/tmp/precommit-bash-err.$$; then
+        printf '[pre-commit] BLOCK: bash -n failed on %s\n' "$f" >&2
+        cat /tmp/precommit-bash-err.$$ >&2
+        FAIL=1
+      fi
+      rm -f /tmp/precommit-bash-err.$$ 2>/dev/null
+      ;;
+  esac
+done <<< "$STAGED"
+
+# --- Check 2: jq empty on staged *.json ------------------------------------
+if command -v jq >/dev/null 2>&1; then
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    case "$f" in
+      *.json)
+        [[ -f "$REPO_ROOT/$f" ]] || continue
+        if ! jq empty "$REPO_ROOT/$f" >/dev/null 2>/tmp/precommit-jq-err.$$; then
+          printf '[pre-commit] BLOCK: invalid JSON in %s\n' "$f" >&2
+          cat /tmp/precommit-jq-err.$$ >&2
+          FAIL=1
+        fi
+        rm -f /tmp/precommit-jq-err.$$ 2>/dev/null
+        ;;
+    esac
+  done <<< "$STAGED"
+fi
+
+# --- Check 3: R-24 mirror — claude-mem SessionEnd handler presence --------
+# Fires only if settings.json is staged AND claude-mem is installed.
+if echo "$STAGED" | grep -qx "settings.json"; then
+  SETTINGS_FILE="$REPO_ROOT/settings.json"
+  CLAUDE_MEM_PLUGIN="$REPO_ROOT/plugins/claude-mem"
+  if [[ -f "$SETTINGS_FILE" ]] && [[ -d "$CLAUDE_MEM_PLUGIN" ]]; then
+    if ! grep -q "memory-consolidation-check" "$SETTINGS_FILE" 2>/dev/null; then
+      printf '[pre-commit] BLOCK: R-24 — settings.json missing memory-consolidation-check SessionEnd handler while claude-mem plugin present. See feedback_keep_claude_mem_running.\n' >&2
+      FAIL=1
+    fi
+  fi
+fi
+
+exit "$FAIL"

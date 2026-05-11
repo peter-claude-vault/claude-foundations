@@ -19,7 +19,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-H="$REPO_ROOT/skills/librarian/capabilities/r55-parallel-run-audit.sh"
+H="$REPO_ROOT/skills/librarian/capabilities/parallel-run-audit.sh"
 [[ -x "$H" ]] || { echo "FAIL: $H not executable"; exit 1; }
 
 TEST_DIR=$(mktemp -d)
