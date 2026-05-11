@@ -19,6 +19,13 @@
 #
 # Each was rewritten to use ${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}.
 # This test exercises the CLAUDE_HOME → STATE_DIR resolution path.
+#
+# Plan 84 SP02 (2026-05-11): context-pressure.json migrated to per-session path
+# `sessions/<sid>/context-pressure.json`. worker-statusline requires session_id
+# in stdin payload (else skips write); stop-checkpoint-check requires
+# CLAUDE_SESSION_ID env (else exits 0 graceful). Test fixture below carries
+# TEST_SID through both writer and reader paths to exercise the per-session
+# canary location.
 
 set -euo pipefail
 
@@ -47,25 +54,31 @@ if [ "$SANDBOX_CLAUDE" = "$HOME/.claude" ]; then
   exit 1
 fi
 
+# Plan 84 SP02: per-session pressure file. Test SID + per-session canary.
+TEST_SID="claude-home-test-$$-$(date +%s)"
+SANDBOX_SESSION_DIR="$SANDBOX_CLAUDE/hooks/state/sessions/$TEST_SID"
+SANDBOX_PRESSURE="$SANDBOX_SESSION_DIR/context-pressure.json"
+mkdir -p "$SANDBOX_SESSION_DIR"
+
 # Pre-seed a context-pressure state file under the SANDBOX so the hooks
 # can read it. If they read from $HOME/.claude/hooks/state instead, they
 # either find a different file (real one, polluting test) or no file (and
 # silently degrade). Either way, the test detects misrouting.
-SANDBOX_PRESSURE="$SANDBOX_CLAUDE/hooks/state/context-pressure.json"
 echo '{"pct": 17, "ts": "2026-01-01T00:00:00Z"}' > "$SANDBOX_PRESSURE"
 
 fail=0
 
 # --- Test 1: worker-statusline.sh writes pressure to SANDBOX, not $HOME/.claude
-# worker-statusline reads stdin and writes to STATE_DIR/context-pressure.json
-test1_payload='{"context_window":{"used_percentage":33}}'
+# worker-statusline reads stdin and writes to STATE_DIR/sessions/<sid>/context-pressure.json
+# (Plan 84 SP02 per-session). Payload must include session_id; empty SID skips write.
+test1_payload=$(printf '{"context_window":{"used_percentage":33},"session_id":"%s"}' "$TEST_SID")
 # Remove the pre-seeded file so we can detect a fresh write
 rm -f "$SANDBOX_PRESSURE"
-# Snapshot the real $HOME/.claude pressure file (if any) to detect pollution
-REAL_PRESSURE="$HOME/.claude/hooks/state/context-pressure.json"
-real_before_sha=""
-if [ -f "$REAL_PRESSURE" ]; then
-  real_before_sha=$(shasum "$REAL_PRESSURE" | awk '{print $1}')
+# Snapshot the real $HOME/.claude per-session canary dir (if any) to detect pollution
+REAL_SESSION_DIR="$HOME/.claude/hooks/state/sessions/$TEST_SID"
+real_before_exists=0
+if [ -d "$REAL_SESSION_DIR" ]; then
+  real_before_exists=1
 fi
 
 # Invoke worker-statusline with ONLY CLAUDE_HOME overridden (HOME unchanged)
@@ -73,28 +86,26 @@ echo "$test1_payload" | CLAUDE_HOME="$SANDBOX_CLAUDE" HOOKS_STATE="" \
   bash "$SANDBOX_CLAUDE/hooks/worker-statusline.sh" >/dev/null 2>&1 || true
 
 if [ -f "$SANDBOX_PRESSURE" ]; then
-  echo "PASS: worker-statusline.sh wrote pressure file under CLAUDE_HOME override"
+  echo "PASS: worker-statusline.sh wrote pressure file under CLAUDE_HOME override (per-session path)"
 else
   echo "FAIL: worker-statusline.sh did NOT write pressure file under CLAUDE_HOME override; STATE_DIR misrouted" >&2
   fail=1
 fi
 
-# Verify $HOME/.claude was NOT polluted
-if [ -f "$REAL_PRESSURE" ]; then
-  real_after_sha=$(shasum "$REAL_PRESSURE" | awk '{print $1}')
-  if [ "$real_before_sha" != "$real_after_sha" ]; then
-    echo "FAIL: \$HOME/.claude/hooks/state/context-pressure.json was modified by the test (pollution)" >&2
-    fail=1
-  else
-    echo "PASS: \$HOME/.claude state file unchanged (no pollution)"
-  fi
+# Verify $HOME/.claude per-session canary dir was NOT polluted
+if [ -d "$REAL_SESSION_DIR" ] && [ "$real_before_exists" -eq 0 ]; then
+  echo "FAIL: \$HOME/.claude/hooks/state/sessions/$TEST_SID was created by the test (pollution)" >&2
+  fail=1
+else
+  echo "PASS: \$HOME/.claude per-session canary dir not created (no pollution)"
 fi
 
 # --- Test 2: stop-checkpoint-check.sh reads pressure from SANDBOX
-# Re-seed pressure with low value (< 48%) — should NOT block stop
+# Re-seed pressure with low value (< 48%) — should NOT block stop.
+# Plan 84 SP02: stop-checkpoint-check requires CLAUDE_SESSION_ID env var.
 echo '{"pct": 10}' > "$SANDBOX_PRESSURE"
 set +e
-CLAUDE_HOME="$SANDBOX_CLAUDE" HOOKS_STATE="" \
+CLAUDE_HOME="$SANDBOX_CLAUDE" HOOKS_STATE="" CLAUDE_SESSION_ID="$TEST_SID" \
   bash "$SANDBOX_CLAUDE/hooks/stop-checkpoint-check.sh" >/dev/null 2>&1
 rc=$?
 set -e
@@ -116,11 +127,11 @@ if [ -d "$HOME/.claude/hooks/state" ]; then
   real_state_before_count=$(find "$HOME/.claude/hooks/state" -newer "$SANDBOX_CLAUDE" -type f 2>/dev/null | wc -l | tr -d ' ')
 fi
 
-echo '{"hook_event_name":"UserPromptSubmit","prompt":"test"}' | \
+echo "{\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"test\",\"session_id\":\"$TEST_SID\"}" | \
   CLAUDE_HOME="$SANDBOX_CLAUDE" HOOKS_STATE="" \
   bash "$SANDBOX_CLAUDE/hooks/prompt-context.sh" >/dev/null 2>&1 || true
 
-echo '{"hook_event_name":"SessionStart","source":"startup"}' | \
+echo "{\"hook_event_name\":\"SessionStart\",\"source\":\"startup\",\"session_id\":\"$TEST_SID\"}" | \
   CLAUDE_HOME="$SANDBOX_CLAUDE" HOOKS_STATE="" \
   bash "$SANDBOX_CLAUDE/hooks/session-register.sh" >/dev/null 2>&1 || true
 

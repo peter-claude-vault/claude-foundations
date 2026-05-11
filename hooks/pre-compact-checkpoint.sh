@@ -103,9 +103,11 @@ if [[ -d "$PLANS_DIR" ]]; then
   fi
 fi
 
-# 2. Read session registry for touched files
+# 2. Read session registry for touched files — Plan 84 SP02 T-4 (2026-05-11):
+# scope to current $SESSION_ID deterministically (was MRU-heartbeat-active,
+# stochastic per feedback_guard_signal_determinism + cross-session pollution).
 if [[ -f "$SESSION_REGISTRY" ]]; then
-  registry_files=$(jq -r '.sessions | to_entries | map(select(.value.status == "active")) | sort_by(.value.last_heartbeat) | last | .value.touched_files // [] | .[]' "$SESSION_REGISTRY" 2>/dev/null | head -20 | tr '\n' '; ')
+  registry_files=$(jq -r --arg sid "$SESSION_ID" '.sessions | to_entries | map(select(.key == $sid)) | .[0] // empty | .value.touched_files // [] | .[]' "$SESSION_REGISTRY" 2>/dev/null | head -20 | tr '\n' '; ')
   if [[ -n "$registry_files" ]]; then
     files_modified="$registry_files"
     has_structured=true

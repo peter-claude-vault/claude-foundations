@@ -7,9 +7,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/registry.sh"
 
 STATE_DIR="${HOOKS_STATE_OVERRIDE:-${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}}"
-PRESSURE_FILE="$STATE_DIR/context-pressure.json"
 
 # Plan 84 SP01 T-2: per-session checkpoint paths.
+# Plan 84 SP02 T-3 (2026-05-11): per-session pressure file paths
+# (`sessions/<sid>/context-pressure.json`). PRESSURE_FILE construction moved
+# AFTER SESSION_ID resolution. Empty SID → PRESSURE_FILE="" → existence checks
+# fall through to default-pct-0 path; R-26 mandate firing preserved.
 # Read stdin once up-front so we can resolve the per-session checkpoint path
 # before the pressure block (which reads CHECKPOINT_FILE mtime).
 INPUT=$(cat)
@@ -20,11 +23,13 @@ fi
 if [[ -n "$SESSION_ID" ]]; then
   SESSION_DIR="$STATE_DIR/sessions/$SESSION_ID"
   CHECKPOINT_FILE="$SESSION_DIR/checkpoint.md"
+  PRESSURE_FILE="$SESSION_DIR/context-pressure.json"
   mkdir -p "$SESSION_DIR" 2>/dev/null || true
 else
-  # No session ID — checkpoint operations skipped (per-session path unavailable).
-  # Existence checks against "" return false, so pressure mandates still fire correctly.
+  # No session ID — checkpoint + pressure operations skipped (per-session path unavailable).
+  # Existence checks against "" return false, so pressure mandates default to pct=0.
   CHECKPOINT_FILE=""
+  PRESSURE_FILE=""
 fi
 
 # --- Context pressure enforcement (R-26) ---

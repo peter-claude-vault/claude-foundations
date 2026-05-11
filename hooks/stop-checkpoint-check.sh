@@ -4,10 +4,10 @@
 set -euo pipefail
 
 STATE_DIR="${HOOKS_STATE_OVERRIDE:-${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}}"
-PRESSURE_FILE="$STATE_DIR/context-pressure.json"
 CLEARING_WINDOW_SEC=600
 
 # Plan 84 SP01 T-2: per-session checkpoint paths.
+# Plan 84 SP02 T-3 (2026-05-11): per-session pressure file paths.
 # Use the env var Claude Code sets in hook subprocesses (no stdin parsing in this hook).
 SESSION_ID="${CLAUDE_SESSION_ID:-}"
 if [[ -z "$SESSION_ID" ]]; then
@@ -16,6 +16,7 @@ if [[ -z "$SESSION_ID" ]]; then
   exit 0
 fi
 CHECKPOINT_FILE="$STATE_DIR/sessions/$SESSION_ID/checkpoint.md"
+PRESSURE_FILE="$STATE_DIR/sessions/$SESSION_ID/context-pressure.json"
 
 # Read context percentage
 pct=0
