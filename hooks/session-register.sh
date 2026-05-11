@@ -6,8 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/registry.sh"
 
-STATE_DIR="${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}"
-CHECKPOINT_FILE="$STATE_DIR/checkpoint.md"
+STATE_DIR="${HOOKS_STATE_OVERRIDE:-${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}}"
 MANIFEST_FILE="$VAULT_ROOT/Logs/librarian-manifest.json"
 
 # Parse stdin
@@ -18,6 +17,13 @@ SOURCE=$(echo "$INPUT" | jq -r '.source // "startup"')
 if [[ -z "$SESSION_ID" ]]; then
   exit 0
 fi
+
+# Plan 84 SP01 T-2: per-session checkpoint paths.
+# Both the read+restore on SessionStart:compact and the archive-rotation target
+# now live under sessions/<sid>/ to close the 2026-05-10 cross-session-pollution incident class.
+SESSION_DIR="$STATE_DIR/sessions/$SESSION_ID"
+CHECKPOINT_FILE="$SESSION_DIR/checkpoint.md"
+mkdir -p "$SESSION_DIR"
 
 # Clear warning flag on fresh session start
 if [[ "$SOURCE" == "startup" ]]; then
@@ -61,9 +67,10 @@ if [[ "$SOURCE" == "compact" ]]; then
 
 ${checkpoint_content}"
 
-    # Archive checkpoint (don't delete — useful for debugging)
+    # Archive checkpoint (don't delete — useful for debugging).
+    # Plan 84 SP01 T-2: archive rotates within the per-session dir (not state/ root).
     ts=$(date +"%Y%m%d-%H%M%S")
-    mv "$CHECKPOINT_FILE" "${STATE_DIR}/checkpoint-${ts}.md"
+    mv "$CHECKPOINT_FILE" "${SESSION_DIR}/checkpoint-${ts}.md"
   fi
 
   # Re-inject librarian manifest state (pending_issues + scan_state only)

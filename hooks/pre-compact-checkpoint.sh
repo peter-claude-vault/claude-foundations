@@ -1,19 +1,66 @@
 #!/bin/bash
-# Hook: PreCompact — Mechanically extract session state before compaction.
+# Hook: PreCompact — Mechanically extract session state if no fresh checkpoint exists.
 # Zero-LLM-cost: all bash/grep/sed/jq. Must complete in <3 seconds.
 # Output matches Session Continuity Block schema from CLAUDE.md.
+#
+# 2026-05-10 fix (Plan 81 SP03 Session 2-rework, Peter authorized):
+#   (1) Removed invalid hookSpecificOutput emission.
+#       "PreCompact" is NOT in Claude Code's hookEventName enum
+#       (PreToolUse|UserPromptSubmit|PostToolUse|PostToolBatch only).
+#       Old emit was rejected by validator; additionalContext never reached
+#       post-compact intake. Hook now exits 0 silently. SessionStart
+#       source=compact reads checkpoint.md per R-26 contract.
+#   (2) Added freshness + structure precedence guard.
+#       /session-checkpoint output (rich) wins over PreCompact mechanical extraction.
+#       If checkpoint.md is < 10 minutes old AND has structured content
+#       (Session Continuity Block header + ≥3 populated fields), exit 0
+#       without overwriting. Mechanical extraction only runs when checkpoint
+#       is stale OR missing OR is a previous panic-fallback.
+#   (3) [MISSING] tokens replace empty fields per R-26 contract verbatim
+#       ("never silently skipped").
+#
 set -uo pipefail
 
 source "$HOME/.claude/hooks/lib/paths.sh"
 
-STATE_DIR="$HOOKS_STATE"
-CHECKPOINT_FILE="$STATE_DIR/checkpoint.md"
+STATE_DIR="${HOOKS_STATE_OVERRIDE:-$HOOKS_STATE}"
 SESSION_REGISTRY="$VAULT_LOGS/.coordination/session-registry.json"
 
 INPUT=$(cat)
 TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // empty')
 
-mkdir -p "$STATE_DIR"
+# Plan 84 SP01 T-2: per-session checkpoint paths. Env var preferred; stdin JSON fallback.
+SESSION_ID="${CLAUDE_SESSION_ID:-}"
+if [[ -z "$SESSION_ID" ]]; then
+  SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
+fi
+if [[ -z "$SESSION_ID" ]]; then
+  # Cannot construct per-session path; graceful degrade (no checkpoint to write/preserve)
+  exit 0
+fi
+SESSION_DIR="$STATE_DIR/sessions/$SESSION_ID"
+CHECKPOINT_FILE="$SESSION_DIR/checkpoint.md"
+
+mkdir -p "$SESSION_DIR"
+
+# --- Freshness + structure precedence guard (2026-05-10 fix) ---
+# If checkpoint.md exists, is < 10 minutes old, AND has structured content,
+# preserve it. /session-checkpoint output wins over mechanical extraction.
+if [[ -f "$CHECKPOINT_FILE" ]]; then
+  cp_mtime=$(stat -f %m "$CHECKPOINT_FILE" 2>/dev/null || stat -c %Y "$CHECKPOINT_FILE" 2>/dev/null || echo 0)
+  age_seconds=$(( $(date +%s) - cp_mtime ))
+  if [[ "$age_seconds" -lt 600 ]]; then
+    if grep -q "^# Session Continuity Block" "$CHECKPOINT_FILE" 2>/dev/null; then
+      populated_lines=$(grep -cE "^[a-z_]+: .+$" "$CHECKPOINT_FILE" 2>/dev/null || echo 0)
+      # Strip whitespace just in case
+      populated_lines="${populated_lines//[^0-9]/}"
+      if [[ "${populated_lines:-0}" -ge 3 ]]; then
+        # Fresh + structured. Preserve verbatim. Exit silently.
+        exit 0
+      fi
+    fi
+  fi
+fi
 
 # --- Mechanical State Extraction ---
 has_structured=false
@@ -29,45 +76,35 @@ current_blocker=""
 
 # 1. Find most recently modified plan file
 if [[ -d "$PLANS_DIR" ]]; then
-  # Check both flat .md files and dir-based plans (dir/plan.md or dir/tasks.md)
   active_plan=$(find "$PLANS_DIR" -maxdepth 2 -name "*.md" ! -name "_index.md" -type f -newer "$PLANS_DIR/_index.md" 2>/dev/null | xargs ls -t 2>/dev/null | head -1)
   if [[ -z "$active_plan" ]]; then
-    active_plan=$(find "$PLANS_DIR" -maxdepth 2 -name "*.md" ! -name "_index.md" -type f -type f 2>/dev/null | xargs ls -t 2>/dev/null | head -1)
+    active_plan=$(find "$PLANS_DIR" -maxdepth 2 -name "*.md" ! -name "_index.md" -type f 2>/dev/null | xargs ls -t 2>/dev/null | head -1)
   fi
 
   if [[ -n "$active_plan" ]]; then
-    # Extract plan slug from path
     rel_path="${active_plan#$PLANS_DIR/}"
     plan_id=$(echo "$rel_path" | sed 's|/.*||; s|\.md$||')
     has_structured=true
 
-    # Extract phase: look for "Phase N" or "## Phase" markers with status
     phase=$(grep -iE '^\s*(#+\s*)?phase\s+[0-9]' "$active_plan" 2>/dev/null | grep -iE '(in.progress|current|active|\*\*)' | head -1 | sed 's/^[# ]*//' | head -c 100)
     if [[ -z "$phase" ]]; then
-      # Fallback: last phase heading
       phase=$(grep -iE '^\s*(#+\s*)?phase\s+[0-9]' "$active_plan" 2>/dev/null | tail -1 | sed 's/^[# ]*//' | head -c 100)
     fi
 
-    # Look for tasks.md in same directory
     plan_dir=$(dirname "$active_plan")
     tasks_file="$plan_dir/tasks.md"
     if [[ -f "$tasks_file" ]]; then
-      # Grep for in-progress tasks (marked with [ ] or [~] or "in-progress")
       task_id=$(grep -iE '\[[ ~x]\].*in.progress|\-\s*\[~\]|\-\s*\[ \].*current' "$tasks_file" 2>/dev/null | head -3 | tr '\n' '; ' | head -c 300)
       completed_steps=$(grep -iE '\[x\]' "$tasks_file" 2>/dev/null | tail -10 | tr '\n' '; ' | head -c 500)
     fi
 
-    # Extract next steps from plan
     next_steps=$(sed -n '/[Nn]ext [Ss]tep/,/^##/p' "$active_plan" 2>/dev/null | grep -E '^\s*-' | head -5 | tr '\n' '; ' | head -c 300)
-
-    # Extract acceptance criteria status
     ac_status=$(sed -n '/[Aa]cceptance [Cc]riteria/,/^##/p' "$active_plan" 2>/dev/null | grep -E '^\s*-\s*\[' | head -10 | tr '\n' '; ' | head -c 300)
   fi
 fi
 
 # 2. Read session registry for touched files
 if [[ -f "$SESSION_REGISTRY" ]]; then
-  # Get touched files from the most recent active session
   registry_files=$(jq -r '.sessions | to_entries | map(select(.value.status == "active")) | sort_by(.value.last_heartbeat) | last | .value.touched_files // [] | .[]' "$SESSION_REGISTRY" 2>/dev/null | head -20 | tr '\n' '; ')
   if [[ -n "$registry_files" ]]; then
     files_modified="$registry_files"
@@ -75,9 +112,9 @@ if [[ -f "$SESSION_REGISTRY" ]]; then
   fi
 fi
 
-# 3. Read existing checkpoint for accumulated state
+# 3. Read existing checkpoint for accumulated state (only if stale; the freshness
+# guard above already returned for fresh+structured cases).
 if [[ -f "$CHECKPOINT_FILE" ]] && [[ -s "$CHECKPOINT_FILE" ]]; then
-  # Pull key_decisions and current_blocker from existing checkpoint if present
   if [[ -z "$key_decisions" ]]; then
     key_decisions=$(sed -n '/[Kk]ey [Dd]ecision/,/^##/p' "$CHECKPOINT_FILE" 2>/dev/null | grep -E '^\s*-' | head -5 | tr '\n' '; ' | head -c 300)
   fi
@@ -87,14 +124,25 @@ if [[ -f "$CHECKPOINT_FILE" ]] && [[ -s "$CHECKPOINT_FILE" ]]; then
   has_structured=true
 fi
 
-# --- Write checkpoint ---
+# Replace [MISSING] for empty fields per R-26 contract verbatim.
+plan_id="${plan_id:-[MISSING]}"
+phase="${phase:-[MISSING]}"
+task_id="${task_id:-[MISSING]}"
+completed_steps="${completed_steps:-[MISSING]}"
+files_modified="${files_modified:-[MISSING]}"
+key_decisions="${key_decisions:-[MISSING]}"
+next_steps="${next_steps:-[MISSING]}"
+ac_status="${ac_status:-[MISSING]}"
+current_blocker="${current_blocker:-[MISSING]}"
+
+# --- Write checkpoint (only path reached: stale/missing/empty checkpoint) ---
 if [[ "$has_structured" == "true" ]]; then
   ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   tmp="${CHECKPOINT_FILE}.tmp.$$"
   cat > "$tmp" <<EOF
 # Session Continuity Block
 **Generated:** $ts
-**Source:** PreCompact hook — mechanical extraction
+**Source:** PreCompact hook — mechanical extraction (no fresh /session-checkpoint output)
 
 plan_id: $plan_id
 phase: $phase
@@ -109,10 +157,9 @@ current_blocker: $current_blocker
 ## Action Required
 - Resume from this checkpoint after compaction
 - Re-read any files listed in files_modified if actively editing
+- Note: this is mechanically-extracted. If /session-checkpoint had been run within 10 minutes, that content was preserved by the freshness gate.
 EOF
   mv "$tmp" "$CHECKPOINT_FILE"
-
-  context="SESSION CONTINUITY BLOCK: plan_id=${plan_id:-none} | phase=${phase:-unknown} | task_id=${task_id:-none} | files_modified=${files_modified:-none} | current_blocker=${current_blocker:-none}. Full state at $CHECKPOINT_FILE."
 else
   # --- Transcript fallback (no structured sources) ---
   panic_context="No structured state sources found."
@@ -139,10 +186,9 @@ $panic_context
 - Re-read any files you were actively editing
 EOF
   mv "$tmp" "$CHECKPOINT_FILE"
-
-  context="CHECKPOINT REFERENCE: Panic checkpoint generated at $CHECKPOINT_FILE. $panic_context Resume from this checkpoint after compaction."
 fi
 
-# Output additionalContext for the compacted conversation
-jq -n --arg ctx "$context" \
-  '{"hookSpecificOutput":{"hookEventName":"PreCompact","additionalContext":$ctx}}'
+# 2026-05-10 fix: invalid hookSpecificOutput emission removed.
+# PreCompact hooks cannot inject additionalContext via hookSpecificOutput.
+# SessionStart source=compact reads checkpoint.md to restore context.
+exit 0

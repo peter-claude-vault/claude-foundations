@@ -3,10 +3,19 @@
 # Exit 2 = force continuation. Exit 0 = allow stop.
 set -euo pipefail
 
-STATE_DIR="${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}"
+STATE_DIR="${HOOKS_STATE_OVERRIDE:-${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}}"
 PRESSURE_FILE="$STATE_DIR/context-pressure.json"
-CHECKPOINT_FILE="$STATE_DIR/checkpoint.md"
 CLEARING_WINDOW_SEC=600
+
+# Plan 84 SP01 T-2: per-session checkpoint paths.
+# Use the env var Claude Code sets in hook subprocesses (no stdin parsing in this hook).
+SESSION_ID="${CLAUDE_SESSION_ID:-}"
+if [[ -z "$SESSION_ID" ]]; then
+  # Cannot determine session — allow stop (graceful degrade; we cannot enforce
+  # per-session checkpoint freshness without knowing which session is stopping).
+  exit 0
+fi
+CHECKPOINT_FILE="$STATE_DIR/sessions/$SESSION_ID/checkpoint.md"
 
 # Read context percentage
 pct=0
@@ -41,7 +50,7 @@ if (( pct_int < 80 )); then
     exit 0
   fi
   echo "Context at ${pct}%. Cannot stop — checkpoint stale (mtime age ${ckpt_age}s, limit ${CLEARING_WINDOW_SEC}s)." >&2
-  echo "Invoke /session-checkpoint first to refresh $CHECKPOINT_FILE. After checkpoint is written, stop will be allowed. (R-26 48-80% band)" >&2
+  echo "Invoke /session-checkpoint first to refresh $CHECKPOINT_FILE (per-session path). After checkpoint is written, stop will be allowed. (R-26 48-80% band)" >&2
   exit 2
 fi
 
@@ -50,5 +59,5 @@ if $ckpt_exists; then
   exit 0
 fi
 
-echo "Context at ${pct}%. You must save a checkpoint before stopping. Invoke /session-checkpoint to write $CHECKPOINT_FILE. (R-26 80-90% band)" >&2
+echo "Context at ${pct}%. You must save a checkpoint before stopping. Invoke /session-checkpoint to write $CHECKPOINT_FILE (per-session path). (R-26 80-90% band)" >&2
 exit 2

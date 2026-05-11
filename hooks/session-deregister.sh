@@ -40,6 +40,13 @@ if [[ -f "$REGISTRY_FILE" ]]; then
   fi
 fi
 
+# --- Plan 84 SP01 T-4: cleanup stale per-session checkpoint dirs ---
+# Fire-and-forget; lock-guarded, idempotent. Sweeps $STATE_DIR/sessions/*/
+# whose SID is no longer in the registry AND whose mtime has aged past
+# CHECKPOINT_CLEANUP_TTL_SECS (default 1h). Active + pending-reconciliation
+# sessions are protected from deletion regardless of mtime.
+nohup "$SCRIPT_DIR/lib/cleanup-stale-session-dirs.sh" > /dev/null 2>&1 &
+
 # --- Evaluate auto session-close ---
 # Only proceed if session touched vault files
 if [[ -z "$TOUCHED_FILES" ]]; then

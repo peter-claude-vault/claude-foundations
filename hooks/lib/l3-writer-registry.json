@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "regenerated_at": "2026-05-07T00:00:00Z",
-  "regenerated_by": "manual-author Plan 80/81 SP01 T-5",
+  "regenerated_at": "2026-05-11T16:45:00Z",
+  "regenerated_by": "manual-author Plan 80/81 SP01 T-5; updated Plan 84 SP01 T-7 (2026-05-11) for per-session checkpoint paths (R-37 foundation mirror)",
   "_provenance": "Initial enumeration per packet §3.16 + Agent 5 inventory. T-10 (l3-registry-audit librarian capability) replaces this with automated regeneration walking ~/Library/LaunchAgents/com.*.plist + ~/.claude/hooks/*.sh weekly.",
   "_purpose": "Master enumeration of writers (SessionEnd hooks, UserPromptSubmit hooks, launchd labels) + their write paths. Consumed by (a) l3-pause-helper.sh at runtime to coordinate pauses, (b) librarian l3-registry-audit at manifest-author time for static lint flagging Incident-β-class omissions (plan declares scope_paths overlapping a writer's write paths but doesn't declare a pause for that writer).",
   "writers": [
@@ -36,22 +36,22 @@
       "hook_path": "$HOME/.claude/hooks/prompt-context.sh",
       "write_paths": [
         "$HOME/.claude/projects/**/memory/**",
-        "$HOME/.claude/hooks/state/checkpoint.md",
-        "$HOME/.claude/hooks/state/checkpoint-*.md"
+        "$HOME/.claude/hooks/state/sessions/**/checkpoint.md"
       ],
       "pause_mechanism": "carve_out_in_g1",
-      "_notes": "Auto-memory writes invoked from UserPromptSubmit context (separate from SessionEnd path). This writer was the load-bearing surface in Plan 71 SP09 Incident β: mid-session auto-memory edits consumed task-bound nonces issued for unrelated targets. CLAUDE_MEM_DISABLE_OK=1 does NOT pause this writer (covers SessionEnd only). Carve-out in G1 (live-guard.sh exempt_paths declaration for ~/.claude/projects/**) is the v1 mitigation; per-task nonce affinity (basename-match-env) is the structural fix."
+      "_notes": "Auto-memory writes invoked from UserPromptSubmit context (separate from SessionEnd path). This writer was the load-bearing surface in Plan 71 SP09 Incident β: mid-session auto-memory edits consumed task-bound nonces issued for unrelated targets. CLAUDE_MEM_DISABLE_OK=1 does NOT pause this writer (covers SessionEnd only). Carve-out in G1 (live-guard.sh exempt_paths declaration for ~/.claude/projects/**) is the v1 mitigation; per-task nonce affinity (basename-match-env) is the structural fix.",
+      "_plan_84_sp01_update": "2026-05-11 Plan 84 SP01 T-2: prompt-context.sh 35% silent stub now writes to per-session path $HOOKS_STATE/sessions/<sid>/checkpoint.md (legacy bare path retired). Dated archives are session-register.sh's responsibility (writer #5, sessions/** covers)."
     },
     {
       "id": "session-checkpoint-r26",
       "trigger": "UserPromptSubmit hook (context-pressure ≥45%) + manual /session-checkpoint",
       "hook_path": "$HOME/.claude/hooks/prompt-context.sh",
       "write_paths": [
-        "$HOME/.claude/hooks/state/checkpoint.md",
-        "$HOME/.claude/hooks/state/checkpoint-YYYYMMDD-HHMMSS.md"
+        "$HOME/.claude/hooks/state/sessions/**/checkpoint.md"
       ],
       "pause_mechanism": "carve_out_in_g1",
-      "_notes": "R-26 enforcement: context-pressure 45%/48% thresholds inject re-firing UserPromptSubmit mandate to invoke /session-checkpoint. Writes to ~/.claude/hooks/state/. Plan 71 master manifest exempt_paths (T-14) MUST include ~/.claude/hooks/state/** to avoid Incident-β-class denial of legitimate checkpoint writes during Plan-71-context sessions. Closes SP07 OQ-H."
+      "_notes": "R-26 enforcement: context-pressure 45%/48% thresholds inject re-firing UserPromptSubmit mandate to invoke /session-checkpoint. Writes to ~/.claude/hooks/state/. Plan 71 master manifest exempt_paths (T-14) MUST include ~/.claude/hooks/state/** to avoid Incident-β-class denial of legitimate checkpoint writes during Plan-71-context sessions. Closes SP07 OQ-H.",
+      "_plan_84_sp01_update": "2026-05-11 Plan 84 SP01 T-2: /session-checkpoint skill + prompt-context.sh R-26 mandate now write to per-session path $HOOKS_STATE/sessions/<sid>/checkpoint.md (legacy bare path retired). Dated archive writes (checkpoint-YYYYMMDD-HHMMSS.md) belong to writer #5 (session-register-deregister) which already declares sessions/** scope."
     },
     {
       "id": "session-register-deregister",

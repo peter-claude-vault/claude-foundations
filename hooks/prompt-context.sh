@@ -6,9 +6,26 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/registry.sh"
 
-STATE_DIR="${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}"
+STATE_DIR="${HOOKS_STATE_OVERRIDE:-${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}}"
 PRESSURE_FILE="$STATE_DIR/context-pressure.json"
-CHECKPOINT_FILE="$STATE_DIR/checkpoint.md"
+
+# Plan 84 SP01 T-2: per-session checkpoint paths.
+# Read stdin once up-front so we can resolve the per-session checkpoint path
+# before the pressure block (which reads CHECKPOINT_FILE mtime).
+INPUT=$(cat)
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
+if [[ -z "$SESSION_ID" ]]; then
+  SESSION_ID="${CLAUDE_SESSION_ID:-}"
+fi
+if [[ -n "$SESSION_ID" ]]; then
+  SESSION_DIR="$STATE_DIR/sessions/$SESSION_ID"
+  CHECKPOINT_FILE="$SESSION_DIR/checkpoint.md"
+  mkdir -p "$SESSION_DIR" 2>/dev/null || true
+else
+  # No session ID — checkpoint operations skipped (per-session path unavailable).
+  # Existence checks against "" return false, so pressure mandates still fire correctly.
+  CHECKPOINT_FILE=""
+fi
 
 # --- Context pressure enforcement (R-26) ---
 # Re-firing mandates with mtime-based clearing condition.
@@ -65,21 +82,21 @@ if [[ -f "$PRESSURE_FILE" ]]; then
       # mandate% immediate-action mandate — re-fires every prompt until cleared
       pressure_context="CONTEXT PRESSURE ${pct}% — IMMEDIATE ACTION REQUIRED.
 Before responding to the user's prompt, invoke /session-checkpoint.
-Do not take any other tool action until checkpoint is written to ~/.claude/hooks/state/checkpoint.md.
+Do not take any other tool action until checkpoint is written to $CHECKPOINT_FILE.
 This is a blocking mandate enforced by the Stop hook (R-26).
 Clearing condition: checkpoint.md mtime < 10 min old."
     fi
   elif (( pct_int >= WARN_PCT )); then
     if ! $checkpoint_fresh; then
       # warn% at-next-break mandate — re-fires every prompt until cleared
-      pressure_context="CONTEXT PRESSURE ${pct}%. At the next natural task boundary (current tool chain complete), invoke /session-checkpoint to write ~/.claude/hooks/state/checkpoint.md with the Session Continuity Block.
+      pressure_context="CONTEXT PRESSURE ${pct}%. At the next natural task boundary (current tool chain complete), invoke /session-checkpoint to write $CHECKPOINT_FILE with the Session Continuity Block.
 Do not begin new multi-step work until checkpoint is written.
 Clearing condition: checkpoint.md mtime < 10 min old (R-26)."
     fi
   elif (( pct_int >= 35 )); then
     # 35% silent passive checkpoint — preserves prior behavior as PreCompact feed.
     # Only writes if no fresh checkpoint already exists (don't clobber manual ones).
-    if ! $checkpoint_fresh; then
+    if ! $checkpoint_fresh && [[ -n "$CHECKPOINT_FILE" ]]; then
       cat > "$CHECKPOINT_FILE" <<CKPT 2>/dev/null || true
 # Auto-checkpoint at ${pct}% context — $(date -Iseconds)
 # Passive 35% silent capture — feeds PreCompact hook
@@ -88,9 +105,7 @@ CKPT
   fi
 fi
 
-# Parse stdin
-INPUT=$(cat)
-SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
+# stdin + SESSION_ID parsed at top (Plan 84 SP01 T-2). Re-check empty case here:
 if [[ -z "$SESSION_ID" ]]; then
   # No session ID but we may still have pressure context
   if [[ -n "$pressure_context" ]]; then

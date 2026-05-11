@@ -189,20 +189,32 @@ context_pct_at_checkpoint: # context pressure % at the moment of the write
 ```
 
 After compaction, restore context by reading
-`$CLAUDE_HOME/hooks/state/checkpoint.md` and mapping its fields to this
-schema. This is a contract between PreCompact output and post-compaction
-model intake. Fields that cannot be populated must be marked `[MISSING]` —
-never silently skipped.
+`$CLAUDE_HOME/hooks/state/sessions/<sid>/checkpoint.md` (where `<sid>` is
+`$CLAUDE_SESSION_ID`) and mapping its fields to this schema. This is a
+contract between PreCompact output and post-compaction model intake.
+Fields that cannot be populated must be marked `[MISSING]` — never silently
+skipped.
 
 **Checkpoint file contract:**
 
-- `checkpoint.md` is the single canonical "current session state" file.
-  `/session-checkpoint`, `prompt-context.sh` (silent at moderate pressure),
-  and `pre-compact-checkpoint.sh` all write here.
-- Dated `checkpoint-YYYYMMDD-HHMMSS.md` files under `$CLAUDE_HOME/hooks/state/`
-  are post-compaction archives rotated by `session-register.sh` on
-  SessionStart `source=compact`. They are legitimate history — do not
-  delete or write to them directly.
+- `$CLAUDE_HOME/hooks/state/sessions/<sid>/checkpoint.md` is the single
+  canonical "current session state" file PER SESSION (where `<sid>` is
+  `$CLAUDE_SESSION_ID`). `/session-checkpoint`, `prompt-context.sh` (silent
+  at moderate pressure), and `pre-compact-checkpoint.sh` all write here.
+  Hooks fall through to graceful no-op when `$CLAUDE_SESSION_ID` is absent
+  (zero-cross-session-pollution invariant). Per-session paths close the
+  cross-session-pollution incident class where peer sessions racing through
+  SessionStart `source=compact` could deliver wrong-session payload via
+  POST-COMPACTION CHECKPOINT RESTORE.
+- Dated `checkpoint-YYYYMMDD-HHMMSS.md` archives live under the same
+  per-session dir (`$CLAUDE_HOME/hooks/state/sessions/<sid>/`), rotated by
+  `session-register.sh` on SessionStart `source=compact`. They are
+  legitimate history — do not delete or write to them directly.
+- Stale per-session directories (orphan in registry + mtime older than
+  `CHECKPOINT_CLEANUP_TTL_SECS`, default 3600s) are cleaned up by
+  `lib/cleanup-stale-session-dirs.sh`, fired from `session-deregister.sh`
+  tail. Active and `closed-pending-reconciliation` sessions are protected
+  from deletion regardless of mtime.
 - Default thresholds: warn at 45% context pressure, mandate at 48%,
   hard-block at 80%. Customize in `user-manifest.json` under
   `hooks.context_pressure.{warn_pct,mandate_pct,hard_pct}` if desired.
