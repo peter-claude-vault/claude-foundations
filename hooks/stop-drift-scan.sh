@@ -108,6 +108,7 @@ done <<< "$TOUCHED"
 if [[ $ISSUES -gt 0 ]]; then
   echo "[R-36 drift-scan] Scanned $SCANNED touched files, found $ISSUES issue(s):" >&2
   echo -e "$FINDINGS" >&2
+  journal_emission "Stop" "advise-stop:drift-scan:scanned=$SCANNED:issues=$ISSUES" 0
 fi
 
 exit 0

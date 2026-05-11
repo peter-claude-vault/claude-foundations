@@ -4,6 +4,7 @@
 set -euo pipefail
 
 source "$HOME/.claude/hooks/lib/paths.sh"
+source "$HOME/.claude/hooks/lib/registry.sh"
 
 SCHEMA_FILE="$SCHEMAS_DIR/vault-schema.json"
 
@@ -70,7 +71,7 @@ if [[ "$REL_PATH" == Engagements/*/CLAUDE.md ]]; then
     SAFE_WARN=$(echo "$WARNINGS" | tr '"' "'")
     mkdir -p "$HOOKS_STATE" 2>/dev/null || true
     echo "$(date -Iseconds) | post-write-verify | INCOMPLETE | ${FILE_PATH} | ${SAFE_WARN}" >> "$HOOKS_STATE/hook-audit.log" 2>/dev/null || true
-    printf '{"additionalContext":"Engagement CLAUDE.md completeness check: %s Fix before moving on."}\n' "$SAFE_WARN"
+    format_output "PostToolUse" "Engagement CLAUDE.md completeness check: ${SAFE_WARN} Fix before moving on." || true
     exit 0
   fi
 fi
@@ -259,7 +260,7 @@ if [[ -n "$ADV_MSGS" ]]; then
 fi
 
 if [[ -n "$EMIT_MSG" ]]; then
-  printf '{"additionalContext":"%s"}\n' "$EMIT_MSG"
+  format_output "PostToolUse" "$EMIT_MSG" || true
 fi
 
 exit 0

@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/petertiktinsky/claude/hooks/schemas/hook-output.json",
+  "title": "Claude Code hook stdout JSON contract",
+  "description": "Pre-emit schema validator for ~/.claude/hooks/**.sh stdout JSON. Plan 84 SP03. hookEventName enum EXCLUDES PreCompact (closes PreCompact Bug 1 class). additionalProperties:false at every level (catches typo'd field names at write-time). additionalContext maxLength:10240 (encodes B3 community-docs 10K cap).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hookSpecificOutput"],
+  "properties": {
+    "hookSpecificOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hookEventName"],
+      "properties": {
+        "hookEventName": {
+          "enum": ["PreToolUse", "UserPromptSubmit", "PostToolUse", "SessionStart", "Stop"],
+          "description": "Verified-valid hook event names. PreCompact is INTENTIONALLY EXCLUDED — Claude Code rejects it silently (the defect that hid PreCompact Bug 1 for >1 year)."
+        },
+        "permissionDecision": {
+          "enum": ["allow", "deny", "ask"],
+          "description": "PreToolUse permission verdict. Harness enforces deny structurally."
+        },
+        "permissionDecisionReason": {
+          "type": "string",
+          "description": "Human-readable reason for permissionDecision; surfaces in deny rationale."
+        },
+        "additionalContext": {
+          "type": "string",
+          "maxLength": 10240,
+          "description": "Free-text context appended to model turn. 10K char cap per Claude Code community docs (B3 finding)."
+        }
+      }
+    }
+  }
+}

@@ -19,6 +19,7 @@
 set -uo pipefail  # NO -e — we handle errors in the top-level trap block
 
 source "$HOME/.claude/hooks/lib/paths.sh"
+source "$HOME/.claude/hooks/lib/registry.sh"
 
 THRESHOLD_SECONDS=$((24*3600))
 MANIFEST_ADVISORY_SECONDS=$((24*3600))
@@ -228,15 +229,7 @@ main() {
     banner_text="${banner_text}${autocommit_line}"
   fi
 
-  # jq does the JSON escaping safely
-  if command -v jq >/dev/null 2>&1; then
-    jq -n --arg ctx "$banner_text" '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'
-  else
-    # Fallback: manual escape (best-effort — jq should always be present)
-    local esc
-    esc=$(printf '%s' "$banner_text" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
-    printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\n' "$esc"
-  fi
+  format_output "SessionStart" "$banner_text" || true
 }
 
 # Top-level try/catch: main() runs, any failure lands in log_self_error.

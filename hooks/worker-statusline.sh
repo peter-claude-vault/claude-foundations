@@ -5,6 +5,8 @@
 # Plan 84 SP02 T-2 (2026-05-11): per-session pressure file path
 # `sessions/<sid>/context-pressure.json`. Legacy bare path retired same day.
 
+source "$HOME/.claude/hooks/lib/hook-journal.sh"
+
 STATE_DIR="${HOOKS_STATE_OVERRIDE:-${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}}"
 
 # Read stdin (status line JSON)
@@ -23,6 +25,7 @@ if [[ -n "$sid" ]]; then
   tmp="${STATE_FILE}.tmp.$$"
   printf '{"pct":%s,"session_id":"%s","timestamp":"%s"}\n' "$pct" "$sid" "$ts" > "$tmp"
   mv "$tmp" "$STATE_FILE"
+  CLAUDE_SESSION_ID="$sid" journal_emission "statusline" "state-write:context-pressure:pct=$pct" 0
 fi
 
 # Display context percentage in status line

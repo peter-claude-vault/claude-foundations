@@ -22,6 +22,7 @@
 set -uo pipefail
 
 source "$HOME/.claude/hooks/lib/paths.sh"
+source "$HOME/.claude/hooks/lib/hook-journal.sh"
 
 STATE_DIR="${HOOKS_STATE_OVERRIDE:-$HOOKS_STATE}"
 SESSION_REGISTRY="$VAULT_LOGS/.coordination/session-registry.json"
@@ -162,6 +163,7 @@ current_blocker: $current_blocker
 - Note: this is mechanically-extracted. If /session-checkpoint had been run within 10 minutes, that content was preserved by the freshness gate.
 EOF
   mv "$tmp" "$CHECKPOINT_FILE"
+  journal_emission "PreCompact" "state-write:checkpoint:structured-extraction" 0
 else
   # --- Transcript fallback (no structured sources) ---
   panic_context="No structured state sources found."
@@ -188,6 +190,7 @@ $panic_context
 - Re-read any files you were actively editing
 EOF
   mv "$tmp" "$CHECKPOINT_FILE"
+  journal_emission "PreCompact" "state-write:checkpoint:panic-fallback" 0
 fi
 
 # 2026-05-10 fix: invalid hookSpecificOutput emission removed.

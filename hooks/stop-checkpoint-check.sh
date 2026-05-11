@@ -3,6 +3,8 @@
 # Exit 2 = force continuation. Exit 0 = allow stop.
 set -euo pipefail
 
+source "$HOME/.claude/hooks/lib/hook-journal.sh"
+
 STATE_DIR="${HOOKS_STATE_OVERRIDE:-${HOOKS_STATE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/state}}"
 CLEARING_WINDOW_SEC=600
 
@@ -52,6 +54,7 @@ if (( pct_int < 80 )); then
   fi
   echo "Context at ${pct}%. Cannot stop — checkpoint stale (mtime age ${ckpt_age}s, limit ${CLEARING_WINDOW_SEC}s)." >&2
   echo "Invoke /session-checkpoint first to refresh $CHECKPOINT_FILE (per-session path). After checkpoint is written, stop will be allowed. (R-26 48-80% band)" >&2
+  journal_emission "Stop" "deny-stop:48-80-band:checkpoint-stale:age=${ckpt_age}s:pct=${pct}" 2
   exit 2
 fi
 
@@ -61,4 +64,5 @@ if $ckpt_exists; then
 fi
 
 echo "Context at ${pct}%. You must save a checkpoint before stopping. Invoke /session-checkpoint to write $CHECKPOINT_FILE (per-session path). (R-26 80-90% band)" >&2
+journal_emission "Stop" "deny-stop:80-90-band:checkpoint-missing:pct=${pct}" 2
 exit 2

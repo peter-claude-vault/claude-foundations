@@ -3,6 +3,8 @@
 # Sourced by all hook scripts and registry-op.sh.
 
 source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/paths.sh"
+source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/hook-journal.sh"
+source "${CLAUDE_HOME:-$HOME/.claude}/hooks/lib/validate-hook-output.sh"
 
 COORD_DIR="$VAULT_LOGS/.coordination"
 REGISTRY_FILE="$COORD_DIR/session-registry.json"
@@ -75,9 +77,23 @@ clean_stale() {
 }
 
 # Format hookSpecificOutput JSON. Args: event_name, context_text.
+# Plan 84 SP03: pipes through pre-emit validator + NDJSON journal.
+# Returns 0 + emits payload to stdout on validator-pass.
+# Returns 1 + emits NOTHING on validator-reject (caller's emission is suppressed);
+#   journal records schema_valid:false for audit. Stderr surfaces rejection reason.
 format_output() {
-  jq -n --arg event "$1" --arg ctx "$2" \
-    '{"hookSpecificOutput":{"hookEventName":$event,"additionalContext":$ctx}}'
+  local event="$1" ctx="$2" payload
+  payload=$(jq -n --arg event "$event" --arg ctx "$ctx" \
+    '{"hookSpecificOutput":{"hookEventName":$event,"additionalContext":$ctx}}')
+
+  if printf '%s' "$payload" | validate_hook_output; then
+    journal_emission "$event" "$payload" 0 "true"
+    printf '%s\n' "$payload"
+    return 0
+  else
+    journal_emission "$event" "$payload" 1 "false"
+    return 1
+  fi
 }
 
 # Peer summary string. Args: registry_json, own_session_id. Empty if solo.
