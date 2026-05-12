@@ -1,6 +1,6 @@
 ---
 altitude: system
-scope: Frontmatter as the contract every file exposes to the system. Three compliance tiers (Strict / Standard / Minimal), universal vs archetype-conditional vs packet-only fields, the unified-with-per-archetype-entries extensibility model, the D1 folder-lineage convention, the D2 system-utility exemption, and the R-37 atomic-lockstep protocol that holds the schema and its enforcement layers aligned over time. The schema is target-state-extensible: foundation-repo ships the 21-entry canonical declaration; adopters extend via Layer 3 vault-overlay without changing schema shape.
+scope: Frontmatter as the contract every file exposes to the system. Three compliance tiers (Strict / Standard / Minimal), universal vs archetype-conditional vs packet-only fields, the unified-with-per-archetype-entries extensibility model, the folder-lineage convention, the system-utility dimension exemption, and the R-37 atomic-lockstep protocol that holds the schema and its enforcement layers aligned over time. The schema is target-state-extensible: foundation-repo ships the 21-entry canonical declaration; adopters extend via Layer 3 vault-overlay without changing schema shape.
 validity_window: 2026-05-12..2026-11-12
 source_dependencies:
   - schema: claude-stem/schemas/vault-schema.json (v2.0.0)
@@ -27,7 +27,7 @@ Frontmatter is the API every file exposes to the system. Every other governance 
 
 The contract is not aesthetic. It is the substrate that lets a vault scale from a single human's notebook to a multi-archetype, multi-system, multi-year operational database where Claude reads on demand and writes on capture. Three properties make the substrate hold under pressure. First, the schema is *typed* — every file declares its `type:` from a closed enumeration, and the enumeration is what hooks branch on. Second, the schema is *tiered* — Strict for system-emitted files (hard fail at write-time), Standard for user-authored content (soft warn + librarian audit), Minimal for explicit opt-out (no validation, flagged outside system). Third, the schema is *extensible without churn* — one unified declaration with per-archetype entries (the unified-with-per-archetype-entries model); adopters extend via Layer 3 vault-overlay without touching schema shape. The three properties compose: typed enables case-statement enforcement, tiered enables proportional consequences, extensible enables adoption without forking.
 
-The packet is the narrative half of the dual-surface governance pattern (see [`enforcement-map-design.md`](./enforcement-map-design.md) §Two-surface dual pattern). The schema itself lives at `claude-stem/schemas/vault-schema.json` (canonical, semver-versioned, 21 active type entries). The enforcement rules live at `claude-stem/governance/frontmatter-rules.json`. The user-facing spoke that distills this packet for inline reading is `Vault Architecture - Frontmatter.md`, rendered into the adopter vault from the foundation-repo scaffold at install time — the reference deployment ran the dual-surface pattern through a multi-week production validation before this codification. R-37 atomic lockstep holds the four surfaces aligned at write-time; the librarian `governance-parity-audit` capability catches drift at audit-time.
+The packet is the narrative half of the dual-surface governance pattern (see [`enforcement-map-design.md`](./enforcement-map-design.md) §Two-surface dual pattern). The schema itself lives at `claude-stem/schemas/vault-schema.json` (canonical, semver-versioned, 21 active type entries). The enforcement rules live at `claude-stem/governance/frontmatter-rules.json`. The user-facing spoke that distills this packet for inline reading is `Vault Architecture - Frontmatter.md`, rendered into the adopter vault from the foundation-repo scaffold at install time — the reference deployment ran the dual-surface pattern through a multi-week production validation before this codification. R-37 atomic lockstep holds the four surfaces aligned at write-time; the librarian `governance-parity-audit` capability catches drift at audit-time. See [ADR-0005](../../docs/decisions/0005-two-surface-governance-dual-pattern.md) for the design rationale.
 
 ## Vision / approach — five structural commitments
 
@@ -35,7 +35,7 @@ The commitments below are the load-bearing premises of the schema. Each one is j
 
 ### 1. Frontmatter is contract, not decoration
 
-Every file the system writes carries a YAML frontmatter block as its first non-shebang lines. The block is machine-readable, hook-validated at write-time, and consumed by every downstream agent that reads the file. The user does not hand-type the frontmatter — Claude proposes it on capture (propose-and-confirm; see [`vault-construction-principles.md`](./vault-construction-principles.md) commitment 1), templates ship pre-populated (anti-drift principle from spec L25), and the scaffold writes it on day one. Files without frontmatter are not "informal" — they are non-conforming. The R-32 Tier 2 DENY rule at `pre-write-guard.sh` blocks Strict-tier writes that lack the required fields.
+Every file the system writes carries a YAML frontmatter block as its first non-shebang lines. The block is machine-readable, hook-validated at write-time, and consumed by every downstream agent that reads the file. The user does not hand-type the frontmatter — Claude proposes it on capture (propose-and-confirm; see [`vault-construction-principles.md`](./vault-construction-principles.md) commitment 1), templates ship pre-populated under the anti-drift principle, and the scaffold writes it on day one. Files without frontmatter are not "informal" — they are non-conforming. The R-32 Tier 2 DENY rule at `pre-write-guard.sh` blocks Strict-tier writes that lack the required fields.
 
 The principle has a sharp consequence: **frontmatter cannot be optional for the file classes the system reasons over.** A meeting note without `processed:` is invisible to the meeting-processor pipeline. A packet without `last_reviewed:` falls out of the 180-day staleness audit. A people file without `engagement:` cannot be filtered to engagement-scoped views. The schema does not negotiate these fields away — it enumerates them per-type, hooks require them at write-time, and the librarian audits coverage at session-close. The contract is enforced because the alternative — "we'll add it later" — empirically does not return: production-scale untagged-file backlogs accumulate (~500 files observed in a reference deployment) without write-time enforcement.
 
@@ -49,7 +49,7 @@ The schema declares three tiers. Each tier names a validation behavior, a defaul
 
 The tier design is not "three flavors of strictness." It is three different *consumers* with three different costs of non-conformance. A Strict-tier non-conforming file is a system bug — the scaffold or the auto-router emitted something the schema rejects. A Standard-tier non-conforming file is human drift — the user typed faster than Claude proposed. A Minimal-tier file is a deliberate carve-out — the user opted out and accepted the consequence. The hook treats them differently because the responses required are different: fix the system (Strict deny), nudge the user (Standard warn), respect the carve-out (Minimal allow).
 
-The tier assignment is per-type, not per-file. The schema's `meeting-note` entry declares `tier: strict` because every meeting note in the reference vault is system-emitted by the meeting-processor pipeline. The `people` entry declares `tier: standard` because people files are user-authored on capture. The `tier: minimal` directive is a file-level opt-out, not a type-level default — there is no canonical type that defaults to Minimal. Adopters customize tier assignments via Layer 3 vault-overlay; the foundation-repo defaults reflect Peter's empirical instantiation.
+The tier assignment is per-type, not per-file. The schema's `meeting-note` entry declares `tier: strict` because every meeting note in the reference vault is system-emitted by the meeting-processor pipeline. The `people` entry declares `tier: standard` because people files are user-authored on capture. The `tier: minimal` directive is a file-level opt-out, not a type-level default — there is no canonical type that defaults to Minimal. Adopters customize tier assignments via Layer 3 vault-overlay; the foundation-repo defaults reflect the reference deployment's empirical instantiation.
 
 ### 3. Universal vs archetype-conditional vs packet-only — three field classes
 
@@ -67,7 +67,7 @@ granola_id       target_date      audience
 github_repo
 ```
 
-Per-type entries in the unified schema declare which subset applies. A `meeting-note` requires `attendees`, `processed`; optionally carries `engagement`, `project`, `granola_id`. A `prd` requires `engagement`, `project`, `status`, `owner`; optionally carries `workstream`, `provides`. The 13 entries are Peter's empirical instantiation generalized — adopters extend the list via Layer 3 vault-overlay when their archetype contributes new conditional fields (researcher's `study_phase`, developer's `repo`, manager's `program`).
+Per-type entries in the unified schema declare which subset applies. A `meeting-note` requires `attendees`, `processed`; optionally carries `engagement`, `project`, `granola_id`. A `prd` requires `engagement`, `project`, `status`, `owner`; optionally carries `workstream`, `provides`. The 13 entries are the foundation-repo seed — adopters extend the list via Layer 3 vault-overlay when their archetype contributes new conditional fields (researcher's `study_phase`, developer's `repo`, manager's `program`).
 
 **Packet-only fields.** Apply only to files with `type: packet` (system-altitude research context packets at `claude-stem/research/vault-construction/`; engagement/topic/initiative-altitude packets at the user vault use the same shape). Six fields:
 
@@ -76,7 +76,7 @@ altitude            validity_window      source_dependencies
 last_reviewed       canonical_url        url_stability
 ```
 
-The packet-only field set is what enables the 180-day staleness audit (`packet-staleness-audit` librarian capability, T-19), the URL-stable contract surfaced on GH Pages (per OQ-H lock), and the source-pointer discipline (every claim back-links to evidence; see quality bar criterion 6 below). Every system-altitude packet authored in this set — including the one you are reading — carries the full six-field block in its frontmatter. Engagement / topic / initiative-altitude packets carry a subset (`altitude`, `scope`, `last_reviewed` at minimum; the rest as applicable).
+The packet-only field set is what enables the 180-day staleness audit (`packet-staleness-audit` librarian capability), the URL-stable contract surfaced on GH Pages, and the source-pointer discipline (every claim back-links to evidence; see quality bar criterion 6 below). Every system-altitude packet authored in this set — including the one you are reading — carries the full six-field block in its frontmatter. Engagement / topic / initiative-altitude packets carry a subset (`altitude`, `scope`, `last_reviewed` at minimum; the rest as applicable).
 
 The three-class partition is what lets the schema scale without churn. Universal fields move via R-37 lockstep (touching universal changes every type entry). Archetype-conditional fields move via Layer 3 overlay (touching no other type). Packet-only fields move within the `packet` type entry. The blast radius of a schema change is bounded by which field class the change touches.
 
@@ -84,24 +84,24 @@ The three-class partition is what lets the schema scale without churn. Universal
 
 The schema is one file. The hook is one case statement. The narrative spoke is one document. Per-archetype variation lives *inside* the unified declaration as per-type entries, not as separate schema files or separate hooks. The model has a name: **unified-with-per-archetype-entries.**
 
-The structure: at the top of the schema, declarations that apply across all types (`tiers`, `_archetype_conditional_fields`, `_packet_only_fields`, `_path_rules`, `_tag_prefixes`). Below them, one entry per type (`meeting-note`, `daily-note`, `inbox-archive`, `people`, `prd`, `context`, `reference`, `index`, `weekly-summary`, `daily-archive`, `navigation`, `personal-initiative`, `briefing`, `strategic`, `planning`, `archive`, `historical-brief`, `ideation-brief`, `packet`, `archetype-template`, `log`) declaring its `tier`, `required` field list, `optional` field list. Twenty-one active type entries today; D1 retired `engagement` + `project` from the allowlist (see commitment 5 below).
+The structure: at the top of the schema, declarations that apply across all types (`tiers`, `_archetype_conditional_fields`, `_packet_only_fields`, `_path_rules`, `_tag_prefixes`). Below them, one entry per type (`meeting-note`, `daily-note`, `inbox-archive`, `people`, `prd`, `context`, `reference`, `index`, `weekly-summary`, `daily-archive`, `navigation`, `personal-initiative`, `briefing`, `strategic`, `planning`, `archive`, `historical-brief`, `ideation-brief`, `packet`, `archetype-template`, `log`) declaring its `tier`, `required` field list, `optional` field list. Twenty-one active type entries today; the folder-lineage convention retired `engagement` + `project` from the allowlist (see commitment 5 below; see [ADR-0003](../../docs/decisions/0003-folder-lineage-as-fields.md)).
 
 The unified model is the deliberate alternative to multi-file (e.g., `schemas/meeting-note.json` + `schemas/prd.json` + ...). Multi-file would force schema-walkers to read N files; would distribute tier definitions; would surface as N files for hooks to load. Unified-with-per-archetype-entries reuses one runtime-loaded artifact across all enforcement points. The hook reads the file once, switches on the file's declared `type:`, and validates against the matching entry. The narrative spoke documents the universal sections once and enumerates the per-type entries in a table. The maintenance cost is one schema, one hook branch per type, one table per type — all kept synchronized by R-37 lockstep.
 
-The model is also the live PoC. Peter's `~/.claude/hooks/vault-schema.json` has run this shape for the four weeks since SP09 landed; the schema-walker hook at `pre-write-guard.sh` consumes it via a case statement; the narrative spoke at `Vault Architecture - Frontmatter.md` documents it. Plan 81 SP03 ports the proof-of-concept to the foundation-repo and scales it from one pillar's worth of validation to four (extended via the governance JSONs at `~/Code/claude-stem/governance/`).
+The model is the reference deployment's validated shape. A live `vault-schema.json` has run this structure through multi-week production validation; the schema-walker hook at `pre-write-guard.sh` consumes it via a case statement; the narrative spoke at `Vault Architecture - Frontmatter.md` documents it. The foundation-repo ports the proof-of-concept and scales it from one pillar's worth of validation to four (extended via the governance JSONs at `governance/`).
 
 ### 5. Folder-lineage convention (D1) — fields carry what folders cannot
 
-Type information lives at file level only. Folders do not carry frontmatter. The architectural consequence: hierarchical context — *which engagement does this file belong to, which project within that engagement* — cannot be inferred by an LLM from directory ancestry alone. Claude reads a file's frontmatter, not its parent directory. The D1 resolution (2026-05-11) closes the gap by mandating that hierarchical context propagate to file-level fields.
+Type information lives at file level only. Folders do not carry frontmatter. The architectural consequence: hierarchical context — *which engagement does this file belong to, which project within that engagement* — cannot be inferred by an LLM from directory ancestry alone. Claude reads a file's frontmatter, not its parent directory. The folder-lineage convention closes the gap by mandating that hierarchical context propagate to file-level fields. See [ADR-0003](../../docs/decisions/0003-folder-lineage-as-fields.md) for the full design rationale.
 
 **The rule.** Any file living at `Engagements/<X>/Projects/<Y>/**` MUST carry both:
 
 - `engagement: <X>` and `project: <Y>` as frontmatter fields (matching the directory ancestor segments)
 - `#engagement/<X>` and `#project/<Y>` as tags (matching the field values, per the folder-mirrors-tag invariant)
 
-The folder is the structural artifact; the frontmatter fields and tags are the file-level workaround that propagates lineage to every consumer. R-32 hook contract (specified by T-20; implemented by SP05) validates lineage consistency at write-time: if a file lands under `Engagements/cdmo-ddx/Projects/gold-layer-qa/Meetings/`, the file's frontmatter must carry `engagement: cdmo-ddx` + `project: gold-layer-qa` + matching tags, or the write is denied.
+The folder is the structural artifact; the frontmatter fields and tags are the file-level workaround that propagates lineage to every consumer. The R-32 hook contract validates lineage consistency at write-time: if a file lands under `Engagements/acme-corp/Projects/gold-layer-qa/Meetings/`, the file's frontmatter must carry `engagement: acme-corp` + `project: gold-layer-qa` + matching tags, or the write is denied.
 
-The retirement consequence. `engagement` and `project` were originally TYPE values in the live v1.0.0 schema. Empirical measurement at D1 resolution time (per handoff Session 4 follow-up L1044-1120): zero files carried `type: engagement`; two files carried `type: project`; meanwhile 237 + 125 files carried the field slots (`engagement:` + `project:`) under the folder tree. The TYPE slots were aspirational, effectively never instantiated — the files that *should* have been engagement-level overview docs were actually `type: navigation` (the CLAUDE.md at `Engagements/<X>/CLAUDE.md`) or `type: context` (the project-overview doc). D1 retired both from the TYPE allowlist and codified them as FIELD slots: `engagement` and `project` are how lineage propagates, not what a file IS. The retirement is documented in the schema's `_retired_types` block with `decision_ref`, `reason`, and `replacement` guidance.
+The retirement consequence. `engagement` and `project` were originally TYPE values in an earlier schema version. Empirical measurement at retirement time: zero files carried `type: engagement`; two files carried `type: project`; meanwhile hundreds of files carried the field slots (`engagement:` + `project:`) under the folder tree. The TYPE slots were aspirational, effectively never instantiated — the files that *should* have been engagement-level overview docs were actually `type: navigation` (the CLAUDE.md at `Engagements/<X>/CLAUDE.md`) or `type: context` (the project-overview doc). The retirement codified both as FIELD slots: `engagement` and `project` are how lineage propagates, not what a file IS. The retirement is documented in the schema's `_retired_types` block with `decision_ref`, `reason`, and `replacement` guidance.
 
 **The generic encoding.** The schema's `_path_rules` array carries the rule, parameterized so adopter archetypes extend without schema-shape changes. The foundation-repo ships the consultant default (the `consultant-engagement-project-lineage` rule). Researcher archetype extends with `Topics/<X>/Studies/<Y>/` lineage; developer with `Repos/<X>/Epics/<Y>/`; manager with `Programs/<X>/Initiatives/<Y>/`. Each is one additional entry in the `_path_rules.rules[]` array — no schema-shape change, no hook change beyond consuming the new pattern. The pattern is the structural answer to "how do we encode hierarchical context in a folder-agnostic LLM consumer."
 
@@ -121,7 +121,7 @@ The tier system is the load-bearing enforcement primitive. The schema declares e
 
 Strict is what every system-emitted file conforms to. The hook denies the write if any universal_required field is missing or if any `required` field in the type entry is missing. The deny message enumerates the missing fields and points to the schema. The user sees the deny; the system does not silently write a half-formed file.
 
-**Worked example — a meeting note.** The `meeting-note` type entry declares `tier: strict`, `required: [type, date, meeting_title, attendees, tags, processed, updated]`, `optional: [engagement, project, previous_instance, granola_id, granola_ids, granola_url]`. A meeting-processor pipeline emitting a meeting note at `Engagements/cdmo-ddx/Projects/gold-layer-qa/Meetings/2026-05-12-gold-layer-qa-touchbase.md` must produce frontmatter like:
+**Worked example — a meeting note.** The `meeting-note` type entry declares `tier: strict`, `required: [type, date, meeting_title, attendees, tags, processed, updated]`, `optional: [engagement, project, previous_instance, granola_id, granola_ids, granola_url]`. A meeting-processor pipeline emitting a meeting note at `Engagements/acme-corp/Projects/gold-layer-qa/Meetings/2026-05-12-gold-layer-qa-touchbase.md` must produce frontmatter like:
 
 ```yaml
 ---
@@ -131,13 +131,13 @@ meeting_title: Gold Layer QA Touchbase
 attendees:
   - Alice Example
   - Sam Walker
-engagement: cdmo-ddx
+engagement: acme-corp
 project: gold-layer-qa
 processed: true
 granola_id: 8f3c2a1e
 updated: 2026-05-12
 tags:
-  - "#engagement/cdmo-ddx"
+  - "#engagement/acme-corp"
   - "#project/gold-layer-qa"
   - "#scope/decision"
   - "#log/meeting"
@@ -146,15 +146,15 @@ tags:
 
 Missing `attendees:`? Deny. Missing `processed:`? Deny. The deny is immediate — `pre-write-guard.sh` returns a structured error to Claude, which surfaces it as a tool-use error. Claude either fixes the frontmatter and retries, or the write fails permanently. No half-meeting-notes land.
 
-**Worked example — a packet.** This file. `type: packet`, `tier: strict`, `required: [type, altitude, scope, validity_window, source_dependencies, last_reviewed, tags, updated]`, `optional: [canonical_url, url_stability, provides, max_lines, engagement, project]`. The frontmatter at the top of this packet meets all eight required fields. The `canonical_url` and `url_stability` optional fields are present because this packet has been locked for the GH Pages site (per the URL-stable contract, OQ-H disposition). Removing any required field would cause the hook to deny the write.
+**Worked example — a packet.** This file. `type: packet`, `tier: strict`, `required: [type, altitude, scope, validity_window, source_dependencies, last_reviewed, tags, updated]`, `optional: [canonical_url, url_stability, provides, max_lines, engagement, project]`. The frontmatter at the top of this packet meets all eight required fields. The `canonical_url` and `url_stability` optional fields are present because this packet has been locked for the GH Pages site (per the URL-stable contract). Removing any required field would cause the hook to deny the write.
 
 ### Standard tier — user-authored with soft enforcement
 
 Standard is what user-authored content tier conforms to. The hook emits a soft warning if required fields are missing; the file lands; the librarian's `frontmatter-coverage-audit` capability surfaces drift at session-close. The operator triages: fix the frontmatter, or accept the drift, or move the file to a different type.
 
-**Worked example — a PRD.** The `prd` type entry declares `tier: standard`, `required: [title, engagement, project, type, status, owner, updated, tags]`, `optional: [workstream, provides, max_lines]`. A user-authored PRD at `Engagements/cdmo-ddx/Projects/gold-layer-qa/PRD - issue-tracking.md` lands with the frontmatter Claude proposed. If `status:` is missing, the hook warns ("`prd` files should declare `status:`; consider one of `draft|live|closed`") and proceeds. The file lands. The librarian flags the drift at session-close. Peter reviews and either fixes the PRD or accepts the omission.
+**Worked example — a PRD.** The `prd` type entry declares `tier: standard`, `required: [title, engagement, project, type, status, owner, updated, tags]`, `optional: [workstream, provides, max_lines]`. A user-authored PRD at `Engagements/acme-corp/Projects/gold-layer-qa/PRD - issue-tracking.md` lands with the frontmatter Claude proposed. If `status:` is missing, the hook warns ("`prd` files should declare `status:`; consider one of `draft|live|closed`") and proceeds. The file lands. The librarian flags the drift at session-close. The operator reviews and either fixes the PRD or accepts the omission.
 
-The Standard tier exists because forcing R-32 Tier 2 DENY on user-authored content empirically punishes capture rate. the reference vault before R-32 had 501 untagged files in `Logs/`; the response was Strict-tier enforcement on system-emitted files where there is no human in the loop, and Standard-tier enforcement on user-authored files where the human is the one writing. The tier choice is structural humility — the system enforces where it owns the write, and warns where the human does.
+The Standard tier exists because forcing R-32 Tier 2 DENY on user-authored content empirically punishes capture rate. Production-scale untagged-file backlogs (~500 files observed in a reference deployment) accumulated under capture-friendly modes before write-time enforcement landed; the response was Strict-tier enforcement on system-emitted files where there is no human in the loop, and Standard-tier enforcement on user-authored files where the human is the one writing. The tier choice is structural humility — the system enforces where it owns the write, and warns where the human does.
 
 ### Minimal tier — explicit opt-out
 
@@ -178,12 +178,12 @@ Four fields are universal across the Strict tier: `type`, `tags`, `updated`, and
 
 ## Archetype-conditional fields
 
-The 13 archetype-conditional fields live at the top of the schema as `_archetype_conditional_fields.fields`. Per-type entries declare which subset applies to their `required` or `optional` list. The list is Peter's empirical instantiation, generalized for adopter consumption — researchers extend with `study_phase`, developers with `repo`, managers with `program`, all as Layer 3 vault-overlay additions.
+The 13 archetype-conditional fields live at the top of the schema as `_archetype_conditional_fields.fields`. Per-type entries declare which subset applies to their `required` or `optional` list. The list is the consultant-archetype seed generalized for adopter consumption — researchers extend with `study_phase`, developers with `repo`, managers with `program`, all as Layer 3 vault-overlay additions.
 
 | Field | Used on (examples) | Notes |
 |---|---|---|
-| `engagement` | `prd`, `context`, `people`, `navigation`, `strategic`, `planning` | D1 FIELD slot; matches folder ancestor segment under `Engagements/`; archetype-specific (`client`, `program`, `topic` in other archetypes) |
-| `project` | `prd`, `context`, `meeting-note`, `navigation`, `strategic`, `planning`, `archive`, `packet` (optional) | D1 FIELD slot; matches folder ancestor segment under `Projects/`; archetype-specific |
+| `engagement` | `prd`, `context`, `people`, `navigation`, `strategic`, `planning` | Folder-lineage FIELD slot; matches folder ancestor segment under `Engagements/`; archetype-specific (`client`, `program`, `topic` in other archetypes) |
+| `project` | `prd`, `context`, `meeting-note`, `navigation`, `strategic`, `planning`, `archive`, `packet` (optional) | Folder-lineage FIELD slot; matches folder ancestor segment under `Projects/`; archetype-specific |
 | `workstream` | `prd`, `context`, `strategic`, `planning` | Sub-project granularity; optional in all current usages |
 | `owner` | `prd`, `context`, `personal-initiative`, `strategic` | The human accountable for the artifact; not the file's frontmatter author |
 | `provides` | `reference`, `personal-initiative`, `archetype-template`, `packet` (optional), VA spokes | Declares what concepts/rules this file is the canonical source for; consumed by R-40 provides-canonicality rule |
@@ -196,7 +196,7 @@ The 13 archetype-conditional fields live at the top of the schema as `_archetype
 | `audience` | `personal-initiative` | Who the artifact is for; distinct from `owner` |
 | `github_repo` | `personal-initiative` | GitHub repo URL for code-bearing initiatives |
 
-The list is open-ended in the sense that adopters add to it via Layer 3 vault-overlay (the `vault-schema.json` ships at `~/.claude/schemas/vault-schema.json` post-install; adopters extend via the overlay mechanism without touching the foundation-repo canonical). The 13 entries are the seed; SP04 archetype-template work (T-17) introduces archetype-specific extensions per the 4-archetype overlay model (consultant / researcher / developer / manager).
+The list is open-ended in the sense that adopters add to it via Layer 3 vault-overlay (`vault-schema.json` deploys to `$CLAUDE_HOME/schemas/vault-schema.json` post-install; adopters extend via the overlay mechanism without touching the foundation-repo canonical). The 13 entries are the seed; archetype-template work introduces archetype-specific extensions per the 4-archetype overlay model (consultant / researcher / developer / manager).
 
 ## Packet-only fields
 
@@ -210,9 +210,9 @@ Six fields exist exclusively for `type: packet` entries. The packet type carries
 
 **`source_dependencies:`** — array of pointer strings (filesystem paths, URLs, or `memory:slug` references) to the upstream sources the packet builds against. Critical for the source-pointer discipline (quality bar criterion 6): every claim in the packet body should trace to a `source_dependencies` entry. When an upstream source changes, the dependent packets are flagged for re-review.
 
-**`last_reviewed:`** — ISO date of the last human review. NOT the same as `updated`. `updated:` touches on every edit; `last_reviewed:` only on deliberate review pass. The `packet-staleness-audit` capability (T-19) walks this field, not `updated`.
+**`last_reviewed:`** — ISO date of the last human review. NOT the same as `updated`. `updated:` touches on every edit; `last_reviewed:` only on deliberate review pass. The `packet-staleness-audit` capability walks this field, not `updated`.
 
-**`canonical_url:`** — the GH Pages URL for system-altitude packets. Empty for other altitudes. URL-stable per OQ-H lock; restructures require a redirect plan.
+**`canonical_url:`** — the GH Pages URL for system-altitude packets. Empty for other altitudes. URL-stable; restructures require a redirect plan.
 
 **`url_stability:`** — a status declaration string (`locked-from-YYYY-MM-DD` or `pending-lock` or `deprecated-since-YYYY-MM-DD`). Surfaces in the URL-stability discipline rule. Once a packet's URL is locked, restructures must add redirects rather than breaking links.
 
@@ -222,17 +222,17 @@ Every system-altitude packet in this set — the one you are reading, plus [`vau
 
 One field is deliberately excluded from the vault schema: `parent_plan:`. It is a plan-tree field that lives in a separate schema and would surface misleading drift signals if included here. Disposition + rationale + future re-visit conditions documented at CQ-F3 below.
 
-## D2 — system-utility dimension exemption
+## System-utility dimension exemption
 
-The D2 resolution (2026-05-11) closes an ambiguity that surfaced during T-1 schema authoring: do system-utility tag dimensions (`#log/*`, `#status/*`) count against the 25-tag cap?
+The exemption closes an ambiguity that surfaces during schema authoring: do system-utility tag dimensions (`#log/*`, `#status/*`) count against the 25-tag cap?
 
-**The answer.** No. System-utility dimensions are exempt from the 25-tag cap. They are machine-emitted by skills, crons, and capabilities — they never enter the user's working vocabulary. Empirically the reference vault has 46 distinct `#log/*` values (canonical operational subtypes: `#log/digest-run`, `#log/session-close`, `#log/cron-error`, `#log/meeting`, etc.); enforcing the 25-cap on system-utility dimensions would either retire useful operational granularity or force the cap to widen in a way that defeats its working-memory rationale.
+**The answer.** No. System-utility dimensions are exempt from the 25-tag cap. They are machine-emitted by skills, crons, and capabilities — they never enter the user's working vocabulary. Empirically a reference vault has dozens of distinct `#log/*` values (canonical operational subtypes: `#log/digest-run`, `#log/session-close`, `#log/cron-error`, `#log/meeting`, etc.); enforcing the 25-cap on system-utility dimensions would either retire useful operational granularity or force the cap to widen in a way that defeats its working-memory rationale. See [ADR-0004](../../docs/decisions/0004-system-utility-dimension-exemption.md).
 
-The D2 framing in this packet's terms: **the Strict tier's `conditional_required: [status]` clause does NOT require a tag from the `#status/*` dimension on every Strict file.** It requires a `status:` *field* with an enum value when the type entry declares one. The tag-side equivalent (a `#status/<value>` tag) is governed by the tagging discipline (with system-utility exemption from the 25-cap), not by the frontmatter `status:` field requirement.
+The framing in this packet's terms: **the Strict tier's `conditional_required: [status]` clause does NOT require a tag from the `#status/*` dimension on every Strict file.** It requires a `status:` *field* with an enum value when the type entry declares one. The tag-side equivalent (a `#status/<value>` tag) is governed by the tagging discipline (with system-utility exemption from the 25-cap), not by the frontmatter `status:` field requirement.
 
 The distinction matters because frontmatter and tags are independent surfaces. A `prd` file declares `status: live` as a frontmatter field AND carries `#status/live` as a tag (for graph-view queryability). The Strict tier requires the field. The tagging discipline accepts the tag without counting it against the user-facing 25-cap. Both surfaces hold; neither is redundant.
 
-The system-utility exemption is governed by a different discipline: the **log-subtype registry** (T-34). The registry enforces that recurring routine activities use STABLE, canonical tag values across runs (every `backlog-hygiene` run tags `#log/backlog-hygiene`, never a near-synonym). The hook contract (R-NEW; SP01 assigns the rule ID at lockstep) consults the registry and DENIES near-match drift with "did you mean #log/<canonical>?" suggestions. The registry is the structural answer to "Claude should assign log subtypes intelligently" — it's a registry + hook gate, not a soft convention. See [`enforcement-map-design.md`](./enforcement-map-design.md) §System-utility dimension exemption for the full enforcement contract.
+The system-utility exemption is governed by a different discipline: the **log-subtype registry**. The registry enforces that recurring routine activities use STABLE, canonical tag values across runs (every `backlog-hygiene` run tags `#log/backlog-hygiene`, never a near-synonym). The hook contract consults the registry and DENIES near-match drift with "did you mean #log/<canonical>?" suggestions. The registry is the structural answer to "Claude should assign log subtypes intelligently" — it's a registry + hook gate, not a soft convention. See [`enforcement-map-design.md`](./enforcement-map-design.md) §System-utility dimension exemption for the full enforcement contract.
 
 ## The unified extensibility model — one schema, one hook, one doc
 
@@ -245,12 +245,12 @@ The schema declares cross-cutting structures at the top, then enumerates per-typ
 - `tiers` — the three compliance tiers with `validation_behavior` per tier
 - `_archetype_conditional_fields` — the 13-entry field menu
 - `_packet_only_fields` — the 6-entry packet field menu
-- `_path_rules` — the folder-lineage rules array (D1)
+- `_path_rules` — the folder-lineage rules array
 - `_tag_prefixes` — the 8-dimension taxonomy
-- `_tag_prefixes_meta` — system-utility vs user-facing dimension classification (D2)
+- `_tag_prefixes_meta` — system-utility vs user-facing dimension classification
 - `_retired_types` — types removed from the allowlist with `decision_ref`
 - `_excluded_fields` — fields deliberately excluded with documented reason
-- `_design_notes` — the meta-block (model name, lockstep pair, evolution protocol, source decisions)
+- `_design_notes` — the meta-block (model name, lockstep pair, evolution protocol, source dependencies)
 
 Per-type entries: each carries `tier`, `required`, `optional`, optionally `_description` for context. Twenty-one active type entries today.
 
@@ -258,36 +258,36 @@ The unified file is what `pre-write-guard.sh` loads once via `jq` at the start o
 
 ### Structurally: what one hook means
 
-`pre-write-guard.sh` has a single case statement (called `SCHEMA_KEY` in the live hook, around L685-694 of the current code) that switches on `type:` and validates the file's frontmatter against the matching schema entry. The hook does not have N branches for N type-files; it has one branch per type, and the branch consumes the schema's declaration of that type's required/optional fields.
+`pre-write-guard.sh` has a single case statement (called `SCHEMA_KEY`) that switches on `type:` and validates the file's frontmatter against the matching schema entry. The hook does not have N branches for N type-files; it has one branch per type, and the branch consumes the schema's declaration of that type's required/optional fields.
 
 The cost discipline: adding a new type to the schema requires adding one branch to the hook (R-37 lockstep). Removing a type requires removing its branch. The hook's case statement is the runtime mirror of the schema's type-entry list. A change to either without a matching change to the other is the drift that R-37 closes.
 
-`post-write-verify.sh` has a parallel `type_map` dict (per the live `doc-dependencies.json` row for `vault-schema-type-consistency`). The pre-write-guard SCHEMA_KEY case statement at `pre-write-guard.sh` L685-694 enumerates the live runtime allowlist; the foundation-repo schema (T-1) declares 21 active type entries, and hook parity at install time is governed by R-37 lockstep (live allowlist + post-write-verify type_map + schema move together).
+`post-write-verify.sh` has a parallel `type_map` dict (per the `doc-dependencies.json` row for `vault-schema-type-consistency`). The pre-write-guard SCHEMA_KEY case statement enumerates the runtime allowlist; the foundation-repo schema declares 21 active type entries, and hook parity at install time is governed by R-37 lockstep (allowlist + post-write-verify type_map + schema move together).
 
 ### Structurally: what one document means
 
 The narrative spoke (`Vault Architecture - Frontmatter.md` in adopter scaffolds; ports from the reference vault) documents the universal sections once and enumerates the per-type entries in a table. The doc-side maintenance cost is one table row per type, kept synchronized with the schema's per-type entry via R-37 lockstep.
 
-The narrative spoke is not generated from the schema. The choice was considered at Session 4 and rejected (see [`enforcement-map-design.md`](./enforcement-map-design.md) CQ-2): narrative spokes carry narrative voice + pedagogy + anti-patterns + citations — content that doesn't round-trip through JSON without lossy transformation. Generated narrative loses pedagogy. R-37 lockstep + librarian `governance-parity-audit` catches drift without flattening the spokes.
+The narrative spoke is not generated from the schema. The choice was considered and rejected (see [`enforcement-map-design.md`](./enforcement-map-design.md) §Alignment mechanism): narrative spokes carry narrative voice + pedagogy + anti-patterns + citations — content that doesn't round-trip through JSON without lossy transformation. Generated narrative loses pedagogy. R-37 lockstep + librarian `governance-parity-audit` catches drift without flattening the spokes.
 
 ### R-37 atomic-lockstep protocol — the alignment mechanism
 
 R-37 is the structural commitment that keeps the four coupled artifacts aligned at write-time. Every schema-touching commit MUST update all four in one commit:
 
-1. **The schema itself** — `vault-schema.json` (foundation-repo canonical at `~/Code/claude-stem/schemas/vault-schema.json`; adopter install at `~/.claude/schemas/vault-schema.json` or equivalent)
-2. **The enforcement rule registry** — `frontmatter-rules.json` at `~/Code/claude-stem/governance/frontmatter-rules.json` (T-24; the R-rule peer of the schema)
-3. **The narrative spoke** — `Vault Architecture - Frontmatter.md` (T-29; ports from the reference vault)
+1. **The schema itself** — `vault-schema.json` (foundation-repo canonical at `schemas/vault-schema.json`; adopter install at `$CLAUDE_HOME/schemas/vault-schema.json` or equivalent)
+2. **The enforcement rule registry** — `governance/frontmatter-rules.json` (the R-rule peer of the schema)
+3. **The narrative spoke** — `Vault Architecture - Frontmatter.md` (rendered from the foundation-repo scaffold)
 4. **The hook implementation** — `pre-write-guard.sh` SCHEMA_KEY case statement + `post-write-verify.sh` type_map dict + the CLAUDE.md reference if global
 
 R-37 fires from `pre-write-guard.sh` itself — a write that touches one of the four without the others is DENY-blocked with the missing-surface enumerated. The hook is self-referential by design: it enforces the rule that governs its own updates.
 
-The four-week empirical signal: the reference deployment has run R-37 lockstep on the schema/hook/spoke triple since SP09 landed. Drift detected to date: 2-3 types of bounded drift between `vault-schema.json` and `Vault Architecture - Frontmatter.md` (the spoke has historical context the schema dropped; the schema has new types the spoke hasn't documented yet). The drift is *visible* — the librarian's `governance-parity-audit` surfaces it weekly — and *bounded* — neither artifact has diverged catastrophically. The pattern works; Plan 81 scales it from one pillar to four.
+The empirical signal: a reference deployment has run R-37 lockstep on the schema/hook/spoke triple through multi-week production validation. Drift detected to date: 2-3 types of bounded drift between `vault-schema.json` and `Vault Architecture - Frontmatter.md` (the spoke has historical context the schema dropped; the schema has new types the spoke hasn't documented yet). The drift is *visible* — the librarian's `governance-parity-audit` surfaces it weekly — and *bounded* — neither artifact has diverged catastrophically. The pattern works at one pillar's scale; the foundation-repo extends it to four.
 
 The full enforcement model is documented at [`enforcement-map-design.md`](./enforcement-map-design.md) §Two-surface dual pattern, §Alignment mechanism. This packet is the frontmatter-specific instantiation.
 
-## Folder-lineage convention in practice (D1 in detail)
+## Folder-lineage convention in practice
 
-The D1 resolution mandates that any file under `Engagements/<X>/Projects/<Y>/**` carries both:
+The convention mandates that any file under `Engagements/<X>/Projects/<Y>/**` carries both:
 
 - `engagement: <X>` and `project: <Y>` as frontmatter fields
 - `#engagement/<X>` and `#project/<Y>` as tags
@@ -308,7 +308,6 @@ The schema encodes the rule generically via `_path_rules`. The foundation-repo s
     { "tag_pattern": "#project/{project_slug}" }
   ],
   "tier": "strict",
-  "rule_id_ref": "R-NEW (assigned by SP01 at R-37 lockstep)",
   "exemptions": [
     "Files at Engagements/<X>/CLAUDE.md (engagement-level navigation; type=navigation entry handles)",
     "Files at Engagements/<X>/_index.md (folder index; type=index entry handles)",
@@ -324,11 +323,11 @@ The schema encodes the rule generically via `_path_rules`. The foundation-repo s
 
 **Why folder-level CLAUDE.md and _index.md are exempt.** They are navigation files for the folder itself, not files *about* a project within an engagement. The exemption is enumerated explicitly in the rule's `exemptions` array; the hook honors it via pattern matching.
 
-**Why D1 retired `engagement` and `project` from TYPE.** Empirical zero-use at TYPE; structural confusion between "what a file IS" and "where a file LIVES." The retirement was the structurally honest answer once the empirical signal was clear. The schema documents the retirement in `_retired_types` with full `decision_ref`, `reason`, and `replacement` guidance — so a future-reader of the schema sees why the slot is empty and where the propagation now happens.
+**Why `engagement` and `project` were retired from TYPE.** Empirical zero-use at TYPE; structural confusion between "what a file IS" and "where a file LIVES." The retirement was the structurally honest answer once the empirical signal was clear. The schema documents the retirement in `_retired_types` with full `decision_ref`, `reason`, and `replacement` guidance — so a future-reader of the schema sees why the slot is empty and where the propagation now happens.
 
 ## Worked example — a packet's frontmatter
 
-This packet's own frontmatter at the top of the document is the canonical exemplar. All eight required `packet` fields are present (`type`, `altitude`, `scope`, `validity_window`, `source_dependencies`, `last_reviewed`, `tags`, `updated`); both optional URL fields (`canonical_url`, `url_stability`) are present because the packet has been locked for publishing. The `status:` field is absent because the `packet` type entry does not declare a status enum (packets age out via `last_reviewed` cadence, not status transitions). The tag block is emitted at hook-write-time from the schema's `_tag_prefixes` declaration plus packet-specific dimensions — the field set and the tag set are independent surfaces governed by separate disciplines (see [`tagging-strategy.md`](./tagging-strategy.md) for the tag side). Every system-altitude packet in this set carries this same shape: the frontmatter is the API, and the API is identical across packets.
+This packet's own frontmatter at the top of the document is the canonical exemplar. All eight required `packet` fields are present (`type`, `altitude`, `scope`, `validity_window`, `source_dependencies`, `last_reviewed`, `tags`, `updated`); both optional URL fields (`canonical_url`, `url_stability`) are present because the packet has been locked for publishing. The `status:` field is absent because the `packet` type entry does not declare a status enum (packets age out via `last_reviewed` cadence, not status transitions). The tag block is emitted at hook-write-time from the schema's `_tag_prefixes` declaration plus packet-specific dimensions — the field set and the tag set are independent surfaces governed by separate disciplines (see the companion tagging-strategy packet for the tag side). Every system-altitude packet in this set carries this same shape: the frontmatter is the API, and the API is identical across packets.
 
 ## Anti-patterns
 
@@ -338,71 +337,62 @@ The frontmatter discipline preempts a recurring set of failure modes. Each is a 
 |---|---|---|
 | **Frontmatter is decoration** | Treats fields as cosmetic; relies on the file body or filename for routing/lifecycle/agent context | Frontmatter is the API every file exposes. The fields drive R-32 enforcement, R-39 coverage audit, lifecycle staleness, and agent context. Strip the frontmatter and the file is opaque to the system. |
 | **Tags duplicate folders — why both?** | Sees folder + tag as redundant; argues for collapsing into one | Folders are hierarchical and answer "where does this file live"; tags are flat and overlap and answer "what is this file about, across hierarchies." Folder-mirrors-tag invariant is the *design* — graph view requires the tag surface; navigation requires the folder surface. Lose either and query power collapses. |
-| **I'll add tags / frontmatter later** | Defers; never returns; the audit trail loses the file's lineage forever | The system writes frontmatter for you on every generated file (capture-is-cheap commitment). For manual files, run `/route` and Claude infers + applies. The "later" empirically does not come — 501 untagged files in Peter's `Logs/` are the evidence. |
+| **I'll add tags / frontmatter later** | Defers; never returns; the audit trail loses the file's lineage forever | The system writes frontmatter for you on every generated file (capture-is-cheap commitment). For manual files, run `/route` and Claude infers + applies. The "later" empirically does not come — production-scale untagged-file backlogs (~500 files observed) accumulate without write-time enforcement. |
 | **Custom freeform fields whenever** | A user adds `priority:`, `urgency:`, `client_facing:` ad-hoc; the field set fragments per-file | Frontmatter fields are a closed vocabulary per type. Adding a field requires extending the schema (R-37 lockstep on schema + hook + doc + rule registry). Ad-hoc fields are silent drift — no consumer reads them. Hook does not require deny on unknown fields (Tier 3 advisory only), but the field is invisible to the system. |
 | **Strict tier sounds rigid** | Reads the default as imposed; argues for Standard everywhere | Strict tier applies to *system-emitted* files where there is no human in the loop. The system owns the write; the system enforces the contract. Standard tier applies to *user-authored* content where the human is the one writing. Minimal tier is an *explicit opt-out*. The defaults reflect who owns the write, not abstract strictness. |
-| **Engagement / project as a TYPE** | A user wants `type: engagement` on the engagement-overview file at `Engagements/<X>/CLAUDE.md` | Type information lives at file level; engagement/project lineage lives at *field* level (D1 resolution). The engagement-overview file is `type: navigation` (it navigates the engagement); the engagement *as a concept* is encoded as `engagement: <slug>` field + `#engagement/<slug>` tag on every file under the engagement's folder tree. The TYPE allowlist retired `engagement` and `project` because the slots were never instantiated. |
-| **Generate the narrative spoke from the schema** | A clever automation idea — the spoke is consistent with the schema by construction | The spoke carries voice, examples, anti-patterns, and citations. Generated narrative loses pedagogy (CQ-2 from [`enforcement-map-design.md`](./enforcement-map-design.md) §Alignment mechanism). R-37 lockstep + audit catches drift without flattening the spoke. The two-surface dual pattern is the design; collapsing it is the regression. |
+| **Engagement / project as a TYPE** | A user wants `type: engagement` on the engagement-overview file at `Engagements/<X>/CLAUDE.md` | Type information lives at file level; engagement/project lineage lives at *field* level (the folder-lineage convention). The engagement-overview file is `type: navigation` (it navigates the engagement); the engagement *as a concept* is encoded as `engagement: <slug>` field + `#engagement/<slug>` tag on every file under the engagement's folder tree. The TYPE allowlist retired `engagement` and `project` because the slots were never instantiated. |
+| **Generate the narrative spoke from the schema** | A clever automation idea — the spoke is consistent with the schema by construction | The spoke carries voice, examples, anti-patterns, and citations. Generated narrative loses pedagogy. R-37 lockstep + audit catches drift without flattening the spoke. The two-surface dual pattern is the design; collapsing it is the regression. See [ADR-0005](../../docs/decisions/0005-two-surface-governance-dual-pattern.md). |
 | **Skip frontmatter on "small" files** | A user-emitted note feels too short for full frontmatter | The Standard tier exists for user-authored content; required fields are still `type`, `tags`, `updated`. A short file is no less queryable than a long one. The librarian's `frontmatter-coverage-audit` flags files without `type:`/`tags:` regardless of body length. If the file is truly outside the system, opt out to Minimal explicitly; do not silently skip. |
 | **`updated:` is the last frontmatter edit, not the last content edit** | A user touches the body but forgets to bump `updated:` | The post-write-verify hook touches `updated:` automatically on every edit. The writer does not have to remember. If the hook is bypassed (manual filesystem edit, external editor write), the librarian's freshness audit surfaces the drift. |
 
 ## Quality bar self-test (6 criteria)
 
-Per spec §Research context packets §Quality bar — 6 criteria, mandatory. The criteria are not aesthetic; they are the surface T-21 reviewer dispatches verify against. Self-test below.
+The 6 criteria are mandatory for every system-altitude packet. Self-test below.
 
-1. **Citation required — every recommendation backed by external literature, internal incident, or dated Peter decision.**
-   - PASS. Spec citations (L27-46 frontmatter schema, L88-91 D2 exemption, L152-172 mandatory files) cited inline; D1 + D2 resolution dates cited (handoff.md Session 4 follow-up); T-1 schema artifact cited as the canonical declaration; the live PoC (vault-schema.json + pre-write-guard.sh + Vault Architecture - Frontmatter.md) cited as four-week empirical validation; 501-untagged-Logs/-files empirical signal cited; Plan 71 SP09 postmortem cited as schema/hook divergence incident class.
+1. **Citation required — every recommendation backed by external literature, internal incident, or documented decision.**
+   - PASS. ADRs cited inline ([ADR-0001](../../docs/decisions/0001-tiered-compliance.md) for tier compliance; [ADR-0002](../../docs/decisions/0002-unified-with-per-archetype-entries.md) for the unified model; [ADR-0003](../../docs/decisions/0003-folder-lineage-as-fields.md) for the folder-lineage convention; [ADR-0004](../../docs/decisions/0004-system-utility-dimension-exemption.md) for the system-utility exemption; [ADR-0005](../../docs/decisions/0005-two-surface-governance-dual-pattern.md) for the dual-surface pattern); the schema artifact (`schemas/vault-schema.json`) cited as the canonical declaration; the live PoC cited as multi-week empirical validation; production-scale ~500-untagged-file empirical signal cited; the schema/hook divergence incident class cited as the motivation for R-37 lockstep.
 
 2. **Scope declaration — frontmatter declares altitude, scope, validity window, source dependencies, `last_reviewed`.**
-   - PASS. Six packet-only fields all present in this packet's frontmatter: `altitude: system`, `scope:` (one-paragraph what-this-covers), `validity_window: 2026-05-12..2026-11-12`, `source_dependencies:` (17 entries), `last_reviewed: 2026-05-12`, `canonical_url:` + `url_stability: locked-from-2026-05-12`.
+   - PASS. All six packet-only fields present in this packet's frontmatter; both URL fields present and locked.
 
 3. **Articulation test — novice user can articulate the rule + the why after reading.**
-   - PASS. Five structural commitments at §Vision/approach enumerate the load-bearing premises with a *why* per commitment. Three-tier table at §The 3 compliance tiers in detail gives the rule + the why per tier. D1 + D2 sections explain the empirical signal that drove the resolution. A novice reader exits with: "frontmatter is the API the system reads; three tiers exist for three different write-owners; lineage propagates via field-and-tag because folders don't have frontmatter; the schema is one file with per-type entries so adding a type is a bounded R-37 commit."
+   - PASS. Five structural commitments at §Vision/approach enumerate the load-bearing premises with a *why* per commitment. Three-tier table at §The 3 compliance tiers in detail gives the rule + the why per tier. Folder-lineage and system-utility sections explain the empirical signal that drove each resolution. A novice reader exits with: "frontmatter is the API the system reads; three tiers exist for three different write-owners; lineage propagates via field-and-tag because folders don't have frontmatter; the schema is one file with per-type entries so adding a type is a bounded R-37 commit."
 
 4. **Anti-pattern coverage — every rule pairs with the failure mode it prevents.**
    - PASS. 9-row anti-pattern table at §Anti-patterns covers: decoration framing, tag/folder redundancy framing, "later" deferral, custom freeform fields, "Strict is rigid" framing, engagement/project as TYPE, schema-generated spoke, skip-on-small-files, `updated:` discipline. Each pairs with the field/tier/rule it preempts.
 
 5. **Decision-traceability — open questions explicit; closed questions named with disposition.**
-   - PASS. §Closed questions enumerates CQ-F1 through CQ-F4 with disposition + source decision; §Open questions enumerates OQ-F1 through OQ-F3 with deferral target. D1 and D2 resolutions are walked through inline with `decision_ref`, `reason`, and `replacement` framing matching the schema's `_retired_types` block.
+   - PASS. §Closed questions enumerates closed dispositions with source decision links; §Open questions enumerates open items with deferral target. Folder-lineage and system-utility resolutions are walked through inline with `decision_ref`, `reason`, and `replacement` framing matching the schema's `_retired_types` block.
 
 6. **Source pointers — every claim back-links to evidence.**
-   - PASS. `source_dependencies:` block in frontmatter enumerates 17 pointers; inline references throughout the body cite spec line ranges (L27-46, L88-91, L152-172), handoff.md sessions, T-1 schema artifact paths, live hook paths (pre-write-guard.sh L685-694, L1270), companion packet paths (T-3, T-5, T-7, T-8, T-9). Source-pointer discipline is reflexive: this packet is itself an exemplar of the discipline it documents.
+   - PASS. `source_dependencies:` block in frontmatter enumerates schema + companion-packet + ADR pointers; inline references throughout the body cite ADRs by stable filename, schema artifact paths, hook implementation file paths, and companion packet paths. Source-pointer discipline is reflexive: this packet is itself an exemplar of the discipline it documents.
 
-Self-test verdict: 6/6 PASS at first authoring. T-21 reviewer dispatch verifies independently (see Phase 2 of the dispatch protocol).
+Self-test verdict: 6/6 PASS at first authoring.
 
 ## Open questions
 
-- **OQ-F1** (deferred to SP04 install.sh contract): the foundation-repo schema ships at `~/Code/claude-stem/schemas/vault-schema.json`; SP04 install deploys it to `~/.claude/schemas/vault-schema.json` (or platform-equivalent). The idempotent re-install contract — what happens when an adopter upgrades between Plan 81 increments and has a Layer 3 vault-overlay — is specified at SP04 design time. Plan 81 SP09 T-4 surfaced an analogous collision pattern (`feedback_plan_81_83_install_collision`). **Sub-question (deferred to SP01 lockstep):** the folder-lineage R-32 sub-rule (encoded as `_path_rules.rules[0].rule_id_ref: "R-NEW (assigned by SP01 at R-37 lockstep)"` in the schema) needs its canonical rule ID assigned when the hook implementation lands. T-20 specifies the gate contract; SP01 assigns the ID at the lockstep commit.
+- **OQ-F1** (install contract): the foundation-repo schema ships at `schemas/vault-schema.json`; install deploys it to `$CLAUDE_HOME/schemas/vault-schema.json` (or platform-equivalent). The idempotent re-install contract — what happens when an adopter upgrades between releases and has a Layer 3 vault-overlay — is specified at install design time. A folder-lineage R-32 sub-rule (encoded in `_path_rules.rules[]`) needs its canonical rule ID assigned when the hook implementation lands.
 
-- **OQ-F2** (deferred to SP05 execution): the exact set of fields the `frontmatter-coverage-audit` librarian capability surfaces as drift findings for the Standard tier. Initial set: `[type-missing, type-not-in-allowlist, required-field-missing, tier-mismatch]`. Extension pending empirical observation of Standard-tier drift patterns post-deploy.
+- **OQ-F2** (audit-capability design): the exact set of fields the `frontmatter-coverage-audit` librarian capability surfaces as drift findings for the Standard tier. Initial set: `[type-missing, type-not-in-allowlist, required-field-missing, tier-mismatch]`. Extension pending empirical observation of Standard-tier drift patterns post-deploy.
 
-- **OQ-F3** (deferred to SP04 archetype-template authoring): the exact archetype-conditional field extensions per archetype overlay. Foundation-repo ships the 13-entry consultant-centric list; researcher / developer / manager overlays extend with archetype-specific fields. The extensions land at T-17 (archetype templates) per Layer 2 overlay shape contract; the shape is locked at T-1, the seed content lands at SP04.
+- **OQ-F3** (archetype-template authoring): the exact archetype-conditional field extensions per archetype overlay. Foundation-repo ships the 13-entry consultant-centric list; researcher / developer / manager overlays extend with archetype-specific fields. The extensions land at archetype-template authoring time per Layer 2 overlay shape contract; the shape is locked at the canonical schema, the seed content lands at archetype template build time.
 
 ## Closed questions (with disposition)
 
-- **CQ-F1** Should the schema be split per-type into multiple files (e.g., `schemas/meeting-note.json` + `schemas/prd.json` + ...)? → **No — unified-with-per-archetype-entries.** Decided at T-1 authoring (Session 7, 2026-05-12). Rationale: hook reads schema once via `jq`; case statement switches on `type:` and consumes the matching entry; one runtime artifact across all enforcement points. Multi-file would force N reads, distribute tier definitions, surface as N artifacts the librarian audit walks. Live PoC validates: Peter's `vault-schema.json` has run the unified shape for four weeks; SP09 landed with it.
+- **CQ-F1** Should the schema be split per-type into multiple files (e.g., `schemas/meeting-note.json` + `schemas/prd.json` + ...)? → **No — unified-with-per-archetype-entries.** Rationale: hook reads schema once via `jq`; case statement switches on `type:` and consumes the matching entry; one runtime artifact across all enforcement points. Multi-file would force N reads, distribute tier definitions, surface as N artifacts the librarian audit walks. The reference deployment ran the unified shape through multi-week production validation. See [ADR-0002](../../docs/decisions/0002-unified-with-per-archetype-entries.md).
 
-- **CQ-F2** Should `engagement` and `project` be canonical TYPE values? → **No — retired from TYPE allowlist; preserved as FIELD slots.** Decided at D1 resolution (2026-05-11). Rationale: empirical zero-use at TYPE (no file in the reference vault carried `type: engagement` or `type: project`); structural confusion between "what a file IS" and "where a file LIVES." Replacement: lineage propagates via `engagement:` + `project:` frontmatter *fields* on every file under the folder tree, plus matching `#engagement/<slug>` + `#project/<slug>` tags. The folder is the structural artifact; field + tag is the file-level workaround. Documented in schema's `_retired_types` block.
+- **CQ-F2** Should `engagement` and `project` be canonical TYPE values? → **No — retired from TYPE allowlist; preserved as FIELD slots.** Rationale: empirical zero-use at TYPE (no file in the reference vault carried `type: engagement` or `type: project`); structural confusion between "what a file IS" and "where a file LIVES." Replacement: lineage propagates via `engagement:` + `project:` frontmatter *fields* on every file under the folder tree, plus matching `#engagement/<slug>` + `#project/<slug>` tags. The folder is the structural artifact; field + tag is the file-level workaround. Documented in schema's `_retired_types` block. See [ADR-0003](../../docs/decisions/0003-folder-lineage-as-fields.md).
 
-- **CQ-F3** Should `parent_plan:` be a universal vault frontmatter field? → **No — plan-tree-only.** Decided at T-1 authoring; documented in schema's `_excluded_fields.parent_plan` block. Rationale: plan-tree files live under `~/.claude-plans/`, not under the vault; they validate against `plans-schema.json`, not `vault-schema.json`. Including `parent_plan:` in vault schema would surface misleading drift signals — vault files do not have parent plans, they have engagements or projects or topics. Re-visit when planning methodology generalizes for adopters (deferred from v1).
+- **CQ-F3** Should `parent_plan:` be a universal vault frontmatter field? → **No — plan-tree-only.** Documented in schema's `_excluded_fields.parent_plan` block. Rationale: plan-tree files validate against `plans-schema.json`, not `vault-schema.json`. Including `parent_plan:` in vault schema would surface misleading drift signals — vault files do not have parent plans, they have engagements or projects or topics. Re-visit when planning methodology generalizes for adopters (deferred from v1).
 
-- **CQ-F4** Should the narrative spoke be auto-generated from the schema? → **No — R-37 lockstep + audit.** Decided at Session 4 architecture decision (2026-05-11; see [`enforcement-map-design.md`](./enforcement-map-design.md) CQ-2). Rationale: narrative spokes carry narrative voice, examples, anti-patterns, and citations — content that doesn't round-trip through JSON without lossy transformation. Generated narrative loses pedagogy. R-37 atomic lockstep at write-time + librarian `governance-parity-audit` capability at audit-time catches drift without flattening the spokes. Live PoC validates: four-week dual-surface coexistence at 2-3 types of bounded drift, well within tolerable range.
+- **CQ-F4** Should the narrative spoke be auto-generated from the schema? → **No — R-37 lockstep + audit.** Rationale: narrative spokes carry narrative voice, examples, anti-patterns, and citations — content that doesn't round-trip through JSON without lossy transformation. Generated narrative loses pedagogy. R-37 atomic lockstep at write-time + librarian `governance-parity-audit` capability at audit-time catches drift without flattening the spokes. Multi-week dual-surface coexistence demonstrated 2-3 types of bounded drift, well within tolerable range. See [ADR-0005](../../docs/decisions/0005-two-surface-governance-dual-pattern.md).
 
-- **CQ-F5** Should the `_archetype_conditional_fields` list be closed at the 13 foundation-repo entries? → **No — closed at foundation-repo seed; extensible via Layer 3 vault-overlay.** Decided at T-1 authoring. Rationale: the 13 entries are Peter's empirical instantiation generalized for adopter consumption (consultant archetype). Adopters add archetype-specific fields via Layer 3 vault-overlay without touching the foundation-repo canonical schema. SP04 archetype-template work (T-17) authors the seed extensions per the 4-archetype overlay model. Extensibility is the point of the unified-with-per-archetype-entries model.
+- **CQ-F5** Should the `_archetype_conditional_fields` list be closed at the 13 foundation-repo entries? → **No — closed at foundation-repo seed; extensible via Layer 3 vault-overlay.** Rationale: the 13 entries are the consultant-archetype seed generalized for adopter consumption. Adopters add archetype-specific fields via Layer 3 vault-overlay without touching the foundation-repo canonical schema. Archetype-template work authors the seed extensions per the 4-archetype overlay model. Extensibility is the point of the unified-with-per-archetype-entries model.
 
 ## Source pointers
 
-- **Plan 81 SP03 spec — §Frontmatter schema (3 compliance tiers; unified-with-per-archetype-entries model)**: `~/.claude-plans/81-claude-stem-dogfood-optimization/03-standards/spec.md` L27-46
-- **Plan 81 SP03 spec — §Tagging spec — D2 system-utility dimension exemption**: same file L88-91
-- **Plan 81 SP03 spec — §Universal mandatory file enumeration**: same file L152-172
-- **Plan 81 SP03 D1 resolution — folder-lineage convention**: `~/.claude-plans/81-claude-stem-dogfood-optimization/03-standards/handoff.md` Session 4 follow-up L1044-1120
-- **Plan 81 SP03 D2 resolution — system-utility exemption + log-subtype-registry T-34**: same file Session 4 follow-up L1044-1120
-- **Plan 81 SP03 Session 7 — T-1 canonical schema authoring decisions**: same file L1429-1519
-- **Canonical schema artifact (T-1)**: `~/Code/claude-stem/schemas/vault-schema.json` (schema_version 2.0.0; 13.5K / 474 lines; 21 active type entries; JSON-validates via `python3 -m json.tool`)
-- **Companion packets**: `~/Code/claude-stem/research/vault-construction/{vault-construction-principles,content-length-limits,file-naming-conventions,_index.md-design,enforcement-map-design}.md`
-- **Live PoC artifacts**: `~/.claude/hooks/vault-schema.json` (4-week dual-surface validation; precursor to foundation-repo schema); `~/.claude/hooks/pre-write-guard.sh` L685-694 (SCHEMA_KEY case statement); `~/.claude/hooks/pre-write-guard.sh` L1270 (R-04 known-root allowlist); `~/.claude/hooks/post-write-verify.sh` type_map dict
-- **Live narrative spoke PoC**: `~/Documents/Obsidian Vault/Vault Architecture/Vault Architecture - Frontmatter.md` (proof-of-concept that has held the pattern coherent for four weeks)
-- **Plan 71 SP09 postmortem (R-32 incident class)**: `~/.claude-plans/71-claude-foundations-engine-v2/09-live-mutation-remediation/POSTMORTEM-2026-04-28-live-mutation-creep.md`
-- **ENFORCEMENT-MAP ledger — R-32 / R-37 / R-39 / R-40 rows**: `~/.claude-plans/ENFORCEMENT-MAP.md`
-- **Memory**: `feedback_index_file_convention.md` (whitelisted-name exemptions); `feedback_repo_is_target_not_live_vault.md` (target-state authoring posture); `feedback_hard_constraint_overrides_spec.md` (schema-level enforcement primitive)
-- **R-37 lockstep coupled-surface peers**: `frontmatter-rules.json` (T-24; rule-level peer of the schema) + `Vault Architecture - Frontmatter.md` (T-29; narrative spoke port from live vault)
+- **Canonical schema artifact**: `schemas/vault-schema.json` (schema_version 2.0.0; ~13K / ~470 lines; 21 active type entries; JSON-validates via `python3 -m json.tool`)
+- **ADRs preserving the design provenance**: [ADR-0001](../../docs/decisions/0001-tiered-compliance.md) (tier compliance), [ADR-0002](../../docs/decisions/0002-unified-with-per-archetype-entries.md) (unified model), [ADR-0003](../../docs/decisions/0003-folder-lineage-as-fields.md) (folder-lineage convention), [ADR-0004](../../docs/decisions/0004-system-utility-dimension-exemption.md) (system-utility exemption), [ADR-0005](../../docs/decisions/0005-two-surface-governance-dual-pattern.md) (dual-surface pattern)
+- **Companion packets**: `./vault-construction-principles.md`, `./content-length-limits.md`, `./file-naming-conventions.md`, `./_index.md-design.md`, `./enforcement-map-design.md`
+- **Live runtime artifacts (post-install)**: `$CLAUDE_HOME/schemas/vault-schema.json` (case-statement consumer); `$CLAUDE_HOME/hooks/pre-write-guard.sh` (SCHEMA_KEY case statement + R-04 known-root allowlist); `$CLAUDE_HOME/hooks/post-write-verify.sh` (type_map dict)
+- **R-37 lockstep coupled-surface peers**: `governance/frontmatter-rules.json` (rule-level peer of the schema) + `Vault Architecture - Frontmatter.md` (narrative spoke rendered from the scaffold)

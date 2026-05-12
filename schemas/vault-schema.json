@@ -2,30 +2,24 @@
   "schema_version": "2.0.0",
   "_design_notes": {
     "model": "unified-with-per-archetype-entries",
-    "tiers": "Strict | Standard | Minimal (per Plan 81 SP03 spec §Frontmatter schema, L27-46)",
+    "tiers": "Strict | Standard | Minimal",
     "consumer": "pre-write-guard.sh case statement; loaded at runtime",
-    "lockstep_pair": "frontmatter-rules.json (T-24) ↔ Vault Architecture - Frontmatter.md (T-29)",
-    "evolution_protocol": "R-37 atomic lockstep — schema + hook + docs updated in one commit",
-    "source_decisions": [
-      "Plan 81 SP03 spec L27-46 (3 compliance tiers; unified-with-per-archetype-entries model)",
-      "D1 resolution 2026-05-11 (folder-lineage convention; engagement+project retired from TYPE allowlist, retained as FIELD slots)",
-      "D2 resolution 2026-05-11 (system-utility dimension exemption: #log/* and #status/* exempt from 25-cap; bound to log-subtype-registry T-34)",
-      "vault-construction-principles.md §The four pillars (T-3, L83-109)",
-      "enforcement-map-design.md §Two-surface dual pattern (T-9, L87-143)"
-    ],
-    "downstream_consumers": [
-      "T-4 frontmatter-design.md (narrative pedagogy)",
-      "T-14 multi-archetype union spec",
-      "T-17 archetype templates (4 archetypes; R-32 100% conformant)",
-      "T-19 packet-staleness-audit (reads packet last_reviewed)",
-      "T-20 R-32/R-47/folder-lineage hook contracts",
-      "T-24 frontmatter-rules.json (rule-level peer; binds R-32 Tier 2 DENY to this schema)"
+    "lockstep_pair": "frontmatter-rules.json ↔ Vault Architecture - Frontmatter.md",
+    "evolution_protocol": "atomic lockstep — schema + hook + docs updated in one commit",
+    "source_dependencies": [
+      "../docs/decisions/0001-tiered-compliance.md",
+      "../docs/decisions/0002-unified-with-per-archetype-entries.md",
+      "../docs/decisions/0003-folder-lineage-as-fields.md",
+      "../docs/decisions/0004-system-utility-dimension-exemption.md",
+      "../research/vault-construction/frontmatter-design.md",
+      "../research/vault-construction/vault-construction-principles.md",
+      "../research/vault-construction/enforcement-map-design.md"
     ]
   },
 
   "tiers": {
     "strict": {
-      "description": "System files (scaffold-emitted by SP04, /ingest-routed by SP05, scraper-aggregated to Inbox/). Hard fail at write-time (R-32 Tier 2 DENY).",
+      "description": "System files (scaffold-emitted, /ingest-routed, scraper-aggregated to Inbox/). Hard fail at write-time (R-32 Tier 2 DENY).",
       "validation_behavior": "deny",
       "applies_to": "type entries with tier=strict in this schema",
       "universal_required": ["type", "tags", "updated"],
@@ -48,7 +42,7 @@
   },
 
   "_archetype_conditional_fields": {
-    "_description": "Fields that may appear in any type entry's required/optional list. Per-type entries declare which apply (the 'per-archetype entries' in the unified model). Adopters extend this list via Layer 3 vault-overlay; the 13 entries below are the foundation-repo seed (Peter's empirical instantiation generalized for adopter consumption).",
+    "_description": "Fields that may appear in any type entry's required/optional list. Per-type entries declare which apply (the 'per-archetype entries' in the unified model). Adopters extend this list via Layer 3 vault-overlay; the 13 entries below are the foundation-repo seed.",
     "fields": [
       "engagement",
       "project",
@@ -81,28 +75,26 @@
   "_excluded_fields": {
     "parent_plan": {
       "reason": "Plan-tree-only field; lives in `plans-schema.json`, not vault schema.",
-      "disposition": "Deferred from v1. Re-visit when planning methodology generalizes for adopters (per spec L43).",
-      "do_not": "Do NOT add `parent_plan` to any vault-schema type entry. Plan-tree files live under `~/.claude-plans/` and validate against plans-schema.json."
+      "disposition": "Deferred from v1. Re-visit when planning methodology generalizes for adopters.",
+      "do_not": "Do NOT add `parent_plan` to any vault-schema type entry. Plan-tree files validate against `plans-schema.json` separately."
     }
   },
 
   "_retired_types": {
     "engagement": {
-      "retired_at": "2026-05-11",
-      "decision_ref": "D1 (Plan 81 SP03 Session 4 architecture decision)",
+      "decision_ref": "../docs/decisions/0003-folder-lineage-as-fields.md",
       "reason": "Type information lives at file level only — folders don't have frontmatter. `engagement` is NOT a canonical TYPE; it is a FIELD slot that propagates folder lineage to files. Folders own structural artifact; field + tag propagate to file level.",
       "replacement": "Use `engagement: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see _path_rules.consultant-engagement-project-lineage). For the engagement-level navigation file itself (e.g., `Engagements/<X>/CLAUDE.md`), use type=`navigation`."
     },
     "project": {
-      "retired_at": "2026-05-11",
-      "decision_ref": "D1 (Plan 81 SP03 Session 4 architecture decision)",
+      "decision_ref": "../docs/decisions/0003-folder-lineage-as-fields.md",
       "reason": "Same as `engagement` — folders own project lineage; FIELD `project` propagates lineage to files.",
       "replacement": "Use `project: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see _path_rules.consultant-engagement-project-lineage). For the project-level overview file itself, use type=`context` or type=`navigation` (per file purpose)."
     }
   },
 
   "_path_rules": {
-    "_description": "Cross-cutting folder-lineage validation rules. Hook contract: when a file is written, evaluate matching path rules; if pattern matches, the file MUST satisfy the requires_fields + requires_tags clauses. Encoded generically so adopter archetypes (researcher's Topics/<X>/Studies/<Y>/; developer's Repos/<X>/Epics/<Y>/) extend the array without schema-shape changes. Foundation-repo ships with the consultant default. Hook contract authored by T-20; rule ID assigned by SP01 at lockstep; implementation by SP05.",
+    "_description": "Cross-cutting folder-lineage validation rules. Hook contract: when a file is written, evaluate matching path rules; if pattern matches, the file MUST satisfy the requires_fields + requires_tags clauses. Encoded generically so adopter archetypes (researcher's Topics/<X>/Studies/<Y>/; developer's Repos/<X>/Epics/<Y>/) extend the array without schema-shape changes. Foundation-repo ships with the consultant default.",
     "rules": [
       {
         "id": "consultant-engagement-project-lineage",
@@ -117,8 +109,7 @@
           { "tag_pattern": "#project/{project_slug}" }
         ],
         "tier": "strict",
-        "rule_id_ref": "R-NEW (assigned by SP01 at R-37 lockstep)",
-        "rationale": "Folder-lineage frontmatter convention (D1 resolution, 2026-05-11). Folder is structural artifact; frontmatter fields + tags are file-level workaround that propagates lineage to every file. R-32 hook contract (T-20) validates lineage consistency at write-time.",
+        "rationale": "Folder-lineage convention: folder is structural artifact; frontmatter fields + tags are file-level workaround that propagates lineage to every file. The R-32 hook contract validates lineage consistency at write-time. See ../docs/decisions/0003-folder-lineage-as-fields.md.",
         "exemptions": [
           "Files at Engagements/<X>/CLAUDE.md (engagement-level navigation; type=navigation entry handles)",
           "Files at Engagements/<X>/_index.md (folder index; type=index entry handles)",
@@ -141,7 +132,7 @@
   ],
 
   "_tag_prefixes_meta": {
-    "_description": "Eight-dimension faceted taxonomy (Plan 81 SP03 spec §Tagging spec L47-91). Adopters extend via Layer 3 vault-overlay using per-archetype synonym dictionaries (T-16). System-utility dimensions (#log/*, #status/*) exempt from 25-tag cap per D2; bound to log-subtype-registry (T-34) discipline instead.",
+    "_description": "Eight-dimension faceted taxonomy. Adopters extend via Layer 3 vault-overlay using per-archetype synonym dictionaries. System-utility dimensions (#log/*, #status/*) exempt from 25-tag cap; bound to log-subtype-registry discipline instead. See ../docs/decisions/0004-system-utility-dimension-exemption.md.",
     "system_utility_dimensions": ["log", "status"],
     "user_facing_dimensions": ["engagement", "project", "scope", "initiative", "artefact-bd", "about-me"],
     "cap_25_applies_to": "user_facing_dimensions only"
@@ -457,7 +448,7 @@
 
   "archetype-template": {
     "tier": "strict",
-    "_description": "Scaffold templates at `claude-stem/onboarding/templates/<archetype>/` consumed by SP04 install. Pre-populated frontmatter; R-32 100% conformant per T-17 AC. Anti-drift principle: archetype templates ship pre-populated UPFRONT; user-added files inherit defaults via templates.",
+    "_description": "Scaffold templates at `onboarding/templates/<archetype>/` consumed by install. Pre-populated frontmatter; R-32 100% conformant. Anti-drift principle: archetype templates ship pre-populated upfront; user-added files inherit defaults via templates.",
     "required": [
       "type",
       "archetype",

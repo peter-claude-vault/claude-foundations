@@ -1,9 +1,17 @@
 {
   "version": 2,
-  "description": "Documentation dependency registry. Hand-editable source of truth. Read by pre-write-guard.sh and librarian session-close Step 2c. Mirrored into Logs/librarian-manifest.json -> doc_dependencies on each /librarian full run. Pattern matches drift-allowlist.json (Session 09). Ported to foundation-repo at Plan 81 SP03 T-28 (2026-05-12). Preserves live shape \u2014 cascade registry consumed by pre-write-guard.sh + librarian session-close + entity-parity capability.",
-  "generated_by": "spine-remediation Session 10 (2026-04-13); ported to claude-stem foundation-repo at Plan 81 SP03 T-28 (2026-05-12)",
+  "description": "Documentation dependency registry. Hand-editable source of truth. Read by pre-write-guard.sh and librarian session-close. Mirrored into Logs/librarian-manifest.json -> doc_dependencies on each /librarian full run. Cascade registry consumed by pre-write-guard.sh + librarian session-close + entity-parity capability.",
+  "_path_placeholders": {
+    "_description": "Path placeholders are substituted at install time. Foundation-repo ships paths in this parameterized form; install.sh resolves each placeholder against the adopter's environment.",
+    "{hooks_root}": "Adopter's hooks directory (typical: $CLAUDE_HOME/hooks)",
+    "{schemas_root}": "Adopter's schemas directory (typical: $CLAUDE_HOME/schemas)",
+    "{vault_root}": "Adopter's vault root (per onboarding wizard archetype + user-manifest)",
+    "{skills_root}": "Adopter's skills directory (typical: $CLAUDE_HOME/skills)",
+    "{plans_root}": "Adopter's plans directory (typical: $HOME/.claude-plans)",
+    "{memory_root}": "Adopter's memory directory (typical: $CLAUDE_HOME/projects/<project-slug>/memory)"
+  },
   "schema_notes": {
-    "rename_history": "Plan 67 Sub-plan 02 T-3 (2026-04-22). Append-only audit trail of renames that have touched this entry's primary / mirrors[]. Each row: {\"from\": \"<old-path>\", \"to\": \"<new-path>\", \"at\": \"<ISO8601>\", \"commit\": \"<sha>\"}. Populated by rename-detect.sh at librarian session-close Step 2b. Forward-only: no historical backfill. Empty array means no known renames since instrumentation landed."
+    "rename_history": "Append-only audit trail of renames that have touched an entry's primary / mirrors[]. Each row: {\"from\": \"<old-path>\", \"to\": \"<new-path>\", \"at\": \"<ISO8601>\", \"commit\": \"<sha>\"}. Populated by rename-detect.sh at librarian session-close. Forward-only: no historical backfill. Empty array means no known renames since instrumentation landed."
   },
   "entries": [
     {
@@ -22,7 +30,7 @@
         "navigation",
         "project"
       ],
-      "rationale": "Deny-list (block deliverables) rather than allow-list because scratch/operational concepts don't have first-class type values in vault-schema.json. type=log permitted explicitly; no-type scratch permitted implicitly. MVP: soft-warn; Session 13 may harden to deny.",
+      "rationale": "Deny-list (block deliverables) rather than allow-list because scratch/operational concepts don't have first-class type values in vault-schema.json. type=log permitted explicitly; no-type scratch permitted implicitly. Soft-warn by default; may harden to deny once write-time enforcement is broadly trusted.",
       "rename_history": []
     },
     {
@@ -53,7 +61,7 @@
         },
         {
           "file": "Vault Architecture/Vault Architecture - Engagements.md",
-          "section": "Engagements / Artefact-BD",
+          "section": "Engagements",
           "kind": "extracted-section"
         },
         {
@@ -84,7 +92,7 @@
       ],
       "rule": "hub-stub-must-have-matching-spoke",
       "severity": "warn",
-      "notes": "Session 07 (2026-04-14) split VA.md into hub + 7 spokes. When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200 on most spokes, 250 on Frontmatter and Templates.",
+      "notes": "Vault Architecture.md is a hub with extracted spokes under Vault Architecture/. When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200 on most spokes, 250 on Frontmatter and Templates.",
       "rename_history": []
     },
     {
@@ -106,15 +114,15 @@
     {
       "id": "vault-schema-type-consistency",
       "kind": "cross-file-type-union",
-      "primary": "~/.claude/schemas/vault-schema.json",
+      "primary": "{schemas_root}/vault-schema.json",
       "mirrors": [
         {
-          "file": "~/.claude/hooks/pre-write-guard.sh",
+          "file": "{hooks_root}/pre-write-guard.sh",
           "section": "SCHEMA_KEY case statement",
           "kind": "explicit-type-case"
         },
         {
-          "file": "~/.claude/hooks/post-write-verify.sh",
+          "file": "{hooks_root}/post-write-verify.sh",
           "section": "type_map dict",
           "kind": "explicit-type-case"
         }
@@ -124,7 +132,7 @@
       "path_inferred_exceptions": [
         "daily-note"
       ],
-      "notes": "vault-schema.json has 20 first-class keys (spine-remediation-followup Phase 1 extended from 15 \u2192 19: added briefing, strategic, planning, archive; 56-spine-remediation-finalization Sub-plan 01 T-2 extended from 19 \u2192 20: added historical-brief 2026-04-17). R-32 allowlist (pre-write-guard.sh lines 685-694, Tier 2 DENY) covers 25 values \u2014 20 schema keys + 5 aliases (skill-spec, overview, updates, file-index, tier-2). post-write-verify.sh type_map matches the 25-value allowlist. daily-note remains path-inferred from Daily/ prefix. Any new type requires an R-37 lockstep commit (schema + pre-write-guard SCHEMA_KEY + pre-write-guard R-32 allowlist + post-write-verify type_map + vault CLAUDE.md + librarian SKILL.md, all in one commit).",
+      "notes": "vault-schema.json carries the canonical first-class type allowlist. The R-32 Tier 2 DENY allowlist in pre-write-guard.sh covers all schema keys plus any aliases declared at install time. post-write-verify.sh type_map matches the same allowlist. daily-note remains path-inferred from Daily/ prefix. Any new type requires an R-37 lockstep commit (schema + pre-write-guard SCHEMA_KEY + pre-write-guard R-32 allowlist + post-write-verify type_map + CLAUDE.md + librarian SKILL.md, all in one commit).",
       "rename_history": []
     },
     {
@@ -146,16 +154,15 @@
       ],
       "rule": "if-primary-changes-mirrors-must-be-reviewed",
       "severity": "warn",
-      "notes": "Seeded by spine-remediation Session 12 (2026-04-14) when Personal Initiatives/ was created as a new top-level vault directory. First inhabitant: Claude Foundations/.",
       "rename_history": []
     }
   ],
   "entities": {
-    "_comment": "Entity parity registry. Each entity declares a canonical source path template with {name} placeholder, an instance-enumerator (glob/file-list/directory-index), the canonical field to compare, and mirrors with strict/presence-only flags. Consumed by librarian capability entity-parity.sh. Landed Plan 68 V1 (2026-04-21). V1 ships skill entity only; V2 adds plan + memory-file.",
+    "_comment": "Entity parity registry. Each entity declares a canonical source path template with {name} placeholder, an instance-enumerator (glob/file-list/directory-index), the canonical field to compare, and mirrors with strict/presence-only flags. Consumed by librarian capability entity-parity.sh.",
     "skill": {
-      "canonical": "~/.claude/skills/{name}/SKILL.md",
+      "canonical": "{skills_root}/{name}/SKILL.md",
       "canonical_field": "description",
-      "instance_enumerator": "glob:~/.claude/skills/*/SKILL.md",
+      "instance_enumerator": "glob:{skills_root}/*/SKILL.md",
       "mirrors": [
         {
           "path": "Skills/{name}.md",
@@ -163,7 +170,7 @@
             "description"
           ],
           "strict": true,
-          "notes": "Vault design spec for the skill. Present for most runtime skills; absent for a minority of backend-only skills (enumeration at V1 closeout captured in handoff).",
+          "notes": "Vault design spec for the skill. Present for most runtime skills; absent for a minority of backend-only skills.",
           "match_kind": "frontmatter"
         },
         {
@@ -171,15 +178,15 @@
           "fields": [],
           "strict": false,
           "presence_only": true,
-          "notes": "Master catalog row. Description column is paraphrased-by-design (summary, not mirror). V1 checks row presence only; content-match semantics deferred to V2.",
+          "notes": "Master catalog row. Description column is paraphrased-by-design (summary, not mirror). Presence-only check.",
           "row_kind": "wikilink-row"
         }
       ]
     },
     "plan": {
-      "canonical": "~/.claude-plans/{slug}/spec.md",
+      "canonical": "{plans_root}/{slug}/spec.md",
       "canonical_field": "status",
-      "instance_enumerator": "glob:~/.claude-plans/*/spec.md",
+      "instance_enumerator": "glob:{plans_root}/*/spec.md",
       "mirrors": [
         {
           "path": "System Backlog.md#row[{slug}]",
@@ -187,17 +194,17 @@
           "fields": [],
           "strict": false,
           "presence_only": true,
-          "notes": "Master backlog row. Single-line pointer per sentinel pattern; summary text is paraphrased. Presence-only check in V2."
+          "notes": "Master backlog row. Single-line pointer per sentinel pattern; summary text is paraphrased. Presence-only check."
         },
         {
-          "path": "~/.claude-plans/{slug}/manifest.json",
+          "path": "{plans_root}/{slug}/manifest.json",
           "match_kind": "json-field",
           "fields": [
             "status"
           ],
           "strict": true,
           "optional": true,
-          "notes": "Plan manifest. 12 of 38 plans predate the manifest convention, so mirror is optional; when present, top-level status must match spec frontmatter."
+          "notes": "Plan manifest. Optional because pre-manifest plans may not carry one; when present, top-level status must match spec frontmatter."
         },
         {
           "path": "Logs/backlog-progress/{slug}.md",
@@ -207,25 +214,25 @@
           ],
           "strict": true,
           "optional": true,
-          "notes": "Backlog-progress satellite (sentinel pattern). Only exists for plans with session logs \u2014 5 of 38 today \u2014 hence optional."
+          "notes": "Backlog-progress satellite (sentinel pattern). Only exists for plans with session logs, hence optional."
         }
       ]
     },
     "memory-file": {
-      "canonical": "~/.claude/projects/-Users-petertiktinsky/memory/{filename}",
+      "canonical": "{memory_root}/{filename}",
       "canonical_field": "description",
-      "instance_enumerator": "glob:~/.claude/projects/-Users-petertiktinsky/memory/*.md",
+      "instance_enumerator": "glob:{memory_root}/*.md",
       "exclude_basenames": [
         "MEMORY.md"
       ],
       "mirrors": [
         {
-          "path": "~/.claude/projects/-Users-petertiktinsky/memory/MEMORY.md#row[{filename}]",
+          "path": "{memory_root}/MEMORY.md#row[{filename}]",
           "row_kind": "memory-index-line",
           "fields": [],
           "strict": false,
           "presence_only": true,
-          "notes": "MEMORY.md index entry. Summary after em-dash is paraphrased for scan-readability. Presence-only check in V2."
+          "notes": "MEMORY.md index entry. Summary after em-dash is paraphrased for scan-readability. Presence-only check."
         }
       ]
     }

@@ -4,12 +4,11 @@
   "_description": "Claude-consumed JSON registry for the naming pillar. Loaded by pre-write-guard.sh at runtime. Carries R-04, R-10, R-20, R-27, R-28.",
   "_design_notes": {
     "consumer": "pre-write-guard.sh — naming-rule evaluation branch",
-    "lockstep_pair": "Vault Architecture - Naming.md (T-31 narrative spoke)",
+    "lockstep_pair": "Vault Architecture - Naming.md (narrative spoke)",
     "evolution_protocol": "R-37 atomic lockstep — naming-rules.json + Vault Architecture - Naming.md + pre-write-guard.sh + CLAUDE.md updated in one commit",
-    "source_decisions": [
-      "Plan 81 SP03 spec §Governance Architecture",
-      "T-7 file-naming-conventions.md packet (close 2026-05-12)",
-      "Live pre-write-guard.sh L1270 R-04 allowlist (15 entries verbatim)"
+    "source_dependencies": [
+      "../research/vault-construction/file-naming-conventions.md",
+      "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
     ]
   },
   "rules": [
@@ -17,10 +16,10 @@
       "id": "R-04",
       "pillar": "naming",
       "tier": "3",
-      "source": "ENFORCEMENT-MAP.md R-04 + pre-write-guard.sh L1270",
-      "enforcement_layer": ["pre-write-guard.sh L1270", "pre-write-guard.sh L1277-1281 (5 single-file exemptions)", "librarian placement-validation"],
+      "source": "ENFORCEMENT-MAP.md R-04 + pre-write-guard.sh known-root allowlist",
+      "enforcement_layer": ["pre-write-guard.sh known-root allowlist", "pre-write-guard.sh single-file exemption block", "librarian placement-validation"],
       "failure_mode": "File written to undocumented vault-root drifts structure; Vault Architecture.md falls out of sync; navigation guides stale. Tier 3 advisory: write proceeds; operator told to move file or update Vault Architecture.md.",
-      "rule_text": "Files written to a vault-root directory must reside in a documented root. Known roots are a 15-entry hardcoded allowlist at pre-write-guard.sh:1270. Five top-level files are exempt from the root-must-be-a-directory rule. Adding a new root requires R-10's checklist + R-37 lockstep — not mid-session improvisation.",
+      "rule_text": "Files written to a vault-root directory must reside in a documented root. Known roots are a hardcoded allowlist in pre-write-guard.sh. A small set of top-level files is exempt from the root-must-be-a-directory rule. Adding a new root requires R-10's checklist + R-37 lockstep — not mid-session improvisation.",
       "known_roots": [
         "About Me",
         "Archive",
@@ -50,9 +49,9 @@
       "id": "R-10",
       "pillar": "naming",
       "tier": "3",
-      "source": "ENFORCEMENT-MAP.md R-10 + vault CLAUDE.md New Structure Checklist + T-7 packet L109",
-      "enforcement_layer": ["vault CLAUDE.md documentary", "pre-write-guard.sh L1270 (R-04 surface)", "librarian manifest schema-completeness"],
-      "failure_mode": "New top-level directories created mid-session without schema/hook/librarian/Vault-Architecture entries. Produces orphan roots invisible to walkers. Source: vault-cleanup Plan 10 closed 22 folders of prior drift.",
+      "source": "ENFORCEMENT-MAP.md R-10 + vault CLAUDE.md New Structure Checklist + ../research/vault-construction/file-naming-conventions.md",
+      "enforcement_layer": ["vault CLAUDE.md documentary", "pre-write-guard.sh (R-04 surface)", "librarian manifest schema-completeness"],
+      "failure_mode": "New top-level directories created mid-session without schema/hook/librarian/Vault-Architecture entries. Produces orphan roots invisible to walkers. Source: production-scale folder-drift incident (~20 orphan folders cleaned in a single vault cleanup pass).",
       "rule_text": "Adding a new vault-root directory requires walking the 7-item New Structure Checklist deliberately. The checklist binds CLAUDE.md, vault-schema, hooks, and librarian into R-37 atomic lockstep so a new root cannot land in isolation.",
       "checklist_items": [
         "Declare purpose — what archetype/content the directory holds",
@@ -68,9 +67,9 @@
       "id": "R-20",
       "pillar": "naming",
       "tier": "3",
-      "source": "ENFORCEMENT-MAP.md R-20 + spine-remediation Session 08 + T-7 packet L137-145",
+      "source": "ENFORCEMENT-MAP.md R-20 + production gitignore incident + ../research/vault-construction/file-naming-conventions.md",
       "enforcement_layer": [".gitignore file-level comments (documentary)", "ENFORCEMENT-MAP.md canonical reference", "promotion-pending: pre-commit hook if drift recurs"],
-      "failure_mode": "Silent gitignore bypass — bare-name patterns match only at repo root; deeper instances slip through. 113 files leaked in spine-remediation Session 08's own initial commit before catch.",
+      "failure_mode": "Silent gitignore bypass — bare-name patterns match only at repo root; deeper instances slip through. A production incident saw ~100 files leak through bare-name gitignore in an initial commit of the reference deployment.",
       "rule_text": "Gitignore patterns matching directory names at any depth must use the `**/` prefix. Bare-name patterns match only at repo root; `**/<name>/` matches anywhere in the tree. Documentary-only; promote to pre-commit hook if drift recurs.",
       "pattern_grammar": "**/ prefix required for at-any-depth matching",
       "foundation_repo_defaults": [
@@ -86,9 +85,9 @@
       "id": "R-27",
       "pillar": "naming",
       "tier": "2",
-      "source": "ENFORCEMENT-MAP.md R-27 + pre-write-guard.sh L143-284 + ~/.claude/CLAUDE.md §Plan Creation Conventions",
-      "enforcement_layer": ["pre-write-guard.sh L143-284 (write-time DENY)", "/new-plan skill creation-gate shame-slug regex", "librarian stale-detect step 6", "librarian plan-index status grouping"],
-      "failure_mode": "Plans without numeric prefix or status break librarian plan-index regeneration. Shame slugs (auto-generated adjective-verb-noun) degrade plan-index, backlog routing, and search-by-name. Session 21 surfaced 31 of 52 plans in Unknown status before R-27 landed.",
+      "source": "ENFORCEMENT-MAP.md R-27 + pre-write-guard.sh plan-creation block + vault root CLAUDE.md §Plan Creation Conventions",
+      "enforcement_layer": ["pre-write-guard.sh plan-creation block (write-time DENY)", "/new-plan skill creation-gate shame-slug regex", "librarian stale-detect", "librarian plan-index status grouping"],
+      "failure_mode": "Plans without numeric prefix or status break librarian plan-index regeneration. Shame slugs (auto-generated adjective-verb-noun) degrade plan-index, backlog routing, and search-by-name. A production audit found ~60% of plans in Unknown status before R-27 landed.",
       "rule_text": "New or edited plan-root files must carry (a) an `NN-` numeric prefix on their top-level path segment AND (b) a status marker (`**Status:**` header bullet, YAML `status:` frontmatter, or `manifest.json` top-level `status` field). Sub-task files, handoffs, and orchestrator artifacts inherit from parent per R-28 and are NOT required to carry status. Tier 2 DENY at write-time.",
       "slug_requirements": {
         "case": "lowercase only",
@@ -106,24 +105,24 @@
       ],
       "sanctioned_creation_paths": ["/new-plan", "/backlog-research"],
       "enforcement_scope": [
-        "~/.claude-plans/*.md",
-        "~/.claude-plans/*/spec.md",
-        "~/.claude-plans/*/00-ideation-brief.md",
-        "~/.claude-plans/*/README.md",
-        "~/.claude-plans/*/manifest.json"
+        "{plans_root}/*.md",
+        "{plans_root}/*/spec.md",
+        "{plans_root}/*/00-ideation-brief.md",
+        "{plans_root}/*/README.md",
+        "{plans_root}/*/manifest.json"
       ],
       "whitelist": ["ENFORCEMENT-MAP.md", "_index.md"],
-      "escape_hatch": {"env_var": "PLAN_STATUS_OK=1", "audit_log": "~/Desktop/artefact-daily-logs/hook-audit.log"}
+      "escape_hatch": {"env_var": "PLAN_STATUS_OK=1", "audit_log": "{logdir}/hook-audit.log"}
     },
     {
       "id": "R-28",
       "pillar": "naming",
       "tier": "1",
-      "source": "ENFORCEMENT-MAP.md R-28 + ~/.claude/CLAUDE.md §Plan Creation Conventions item 5 + spine-remediation Session 24 Phase 1",
+      "source": "ENFORCEMENT-MAP.md R-28 + vault root CLAUDE.md §Plan Creation Conventions",
       "enforcement_layer": ["librarian plan-parent-resolve capability (read-time audit)", "librarian plan-index --parent <slug> flag", "librarian lib/frontmatter.sh shared helper"],
-      "failure_mode": "Sub-plan files at depth ≥ 3 without `parent_plan:` frontmatter are invisible to plan-tree walkers — librarian cannot resolve ancestry. Librarian-audit only; drift surfaced as findings, not write-time block. Pre-formalization, 61 spine-remediation files used the convention informally without resolver.",
-      "rule_text": "Sub-task files at depth ≥ 3 under `~/.claude-plans/` must carry `parent_plan: <top-level-slug>` frontmatter. Value is the top-level plan slug (no path, no extension). Plan-root files at depth 2, handoff.md at any depth, files under tests/, and files under _orchestrator/ are EXEMPT. Tier 1 advisory — librarian-audit only; conditional escalation if drift recurs.",
-      "applies_to_depth": "≥ 3 under ~/.claude-plans/",
+      "failure_mode": "Sub-plan files at depth ≥ 3 without `parent_plan:` frontmatter are invisible to plan-tree walkers — librarian cannot resolve ancestry. Librarian-audit only; drift surfaced as findings, not write-time block. Pre-formalization, ~60 sub-plan files used the convention informally without resolver.",
+      "rule_text": "Sub-task files at depth ≥ 3 under `{plans_root}/` must carry `parent_plan: <top-level-slug>` frontmatter. Value is the top-level plan slug (no path, no extension). Plan-root files at depth 2, handoff.md at any depth, files under tests/, and files under _orchestrator/ are EXEMPT. Tier 1 advisory — librarian-audit only; conditional escalation if drift recurs.",
+      "applies_to_depth": "≥ 3 under {plans_root}/",
       "field_value_format": "top-level plan slug (no path, no extension)",
       "exemptions": [
         "Plan-root files at depth 2 (spec.md, tasks.md, handoff.md, 00-ideation-brief.md, README.md, manifest.json) — they ARE the parent",
@@ -131,7 +130,7 @@
         "Files under tests/ (synthetic fixtures, not plan state)",
         "Files under _orchestrator/ (orchestrator runtime, not plan state)"
       ],
-      "escalation_posture": "Librarian-audit only matching Session 23's shame-slug precedent. Escalate to pre-write-guard only if write-time drift recurs despite sanctioned creation paths."
+      "escalation_posture": "Librarian-audit only matching the shame-slug enforcement precedent. Escalate to pre-write-guard only if write-time drift recurs despite sanctioned creation paths."
     }
   ]
 }
