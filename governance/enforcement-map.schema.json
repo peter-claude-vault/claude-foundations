@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://claude-stem.local/governance/enforcement-map.schema.json",
-  "title": "Plan 81 SP03 governance pillar schema",
-  "description": "Validates 4 pillar files (frontmatter/tagging/naming/mandatory-files-rules.json) + _index.json. Enforces canonical rule-entry shape (spec L527-528). R-37 lockstep coupled-surface with the 4 pillar JSONs. additionalProperties:true on rule entries permits adopter Layer 3 overlay.",
+  "title": "Governance pillar schema",
+  "description": "Validates the four pillar files (frontmatter/tagging/naming/mandatory-files-rules.json) plus _index.json. Enforces the canonical rule-entry shape. R-37 lockstep coupled-surface with the four pillar JSONs. additionalProperties:true on rule entries permits adopter Layer 3 overlay.",
   "definitions": {
     "rule_entry": {
       "type": "object",
