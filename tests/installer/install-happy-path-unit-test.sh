@@ -98,6 +98,16 @@ assert_eq "0" "$rc" "T1: install.sh exits 0"
 
 # 14 asset categories:
 assert_path_exists "$CH/hooks/pre-write-guard.sh"            "T1.1: hooks/ landed (pre-write-guard.sh)"
+# Plan 81 SP09 T-3: spec-context-inject.sh ships via Step 2 hooks/*.sh glob.
+# Origin: Plan 81 SP01 Session 20 brief-vs-spec drift (2026-05-10).
+assert_path_exists "$CH/hooks/spec-context-inject.sh"        "T1.1a: hooks/spec-context-inject.sh landed (Plan 81 SP09 T-3)"
+if [ -x "$CH/hooks/spec-context-inject.sh" ]; then
+  printf '  PASS T1.1b: hooks/spec-context-inject.sh executable post-install\n'
+  PASS=$((PASS+1))
+else
+  printf '  FAIL T1.1b: hooks/spec-context-inject.sh not executable post-install\n' >&2
+  FAIL=$((FAIL+1))
+fi
 assert_path_exists "$CH/hooks/lib/paths.sh"                  "T1.2: hooks/lib/ translation landed (paths.sh)"
 assert_path_exists "$CH/hooks/lib/lockf.sh"                  "T1.3: hooks/lib/lockf.sh landed"
 # SP01 T-20 Phase A bootstrap: plan-agnostic gate helpers (Step 3.5).

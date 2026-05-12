@@ -152,6 +152,7 @@ If you've read this README and want more:
 - [`docs/glossary.md`](docs/glossary.md) — every term in the system, defined in one sentence.
 - [`docs/what-runs-on-your-machine.md`](docs/what-runs-on-your-machine.md) — every hook, every cron job, every external network call, with off-by-default flags and how to disable.
 - [`docs/personalization-model.md`](docs/personalization-model.md) — what's universal, what's combined, what's per-user. The clearest summary of the architecture.
+- [`docs/spec-context-inject.md`](docs/spec-context-inject.md) — `UserPromptSubmit` hook that injects authoritative sub-plan spec excerpts into context when a prompt references an active sub-plan. Prevents brief-vs-spec drift by construction.
 
 **For installers:**
 - [`docs/installer.md`](docs/installer.md) — `install.sh` reference (flags, guards, what gets written).

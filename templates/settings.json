@@ -33,6 +33,11 @@
             "type": "command",
             "command": "~/.claude/hooks/prompt-context.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/spec-context-inject.sh",
+            "timeout": 5
           }
         ]
       }

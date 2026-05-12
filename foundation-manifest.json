@@ -57,14 +57,20 @@
     {
       "mode": "0755",
       "path": "hooks/cron-health-banner.sh",
-      "sha256": "d42cfa155a0e0342666566b35172335587a6c97ac38560b07aa8b0e94ed3fd9b",
-      "size": 11008
+      "sha256": "f4132e2ee58360ee7d4027fac5bafd9fa9ba3ec98301ef79250928c370b1acd1",
+      "size": 10586
     },
     {
       "mode": "0644",
       "path": "hooks/lib/cascade-waiver.sh",
       "sha256": "fea531c4fae21ade7a4f75b3175c908c5a47571404aa88bafb512e965d75b299",
       "size": 4237
+    },
+    {
+      "mode": "0755",
+      "path": "hooks/lib/cleanup-stale-session-dirs.sh",
+      "sha256": "fb540671584fc3f9206cf73573251fe3cb95bfdbd5364f8b110bcd9fdc2c6c9a",
+      "size": 4023
     },
     {
       "mode": "0755",
@@ -85,6 +91,12 @@
       "size": 3619
     },
     {
+      "mode": "0644",
+      "path": "hooks/lib/hook-journal.sh",
+      "sha256": "aada94a0dae8dcc1269efcbee03e5396f0c9e22eaadc0e7752cfa3787e496fbd",
+      "size": 4479
+    },
+    {
       "mode": "0755",
       "path": "hooks/lib/l3-pause-helper.sh",
       "sha256": "d0aadde7051b0fc90d06f588acbf04262d9925e6db5a135cdd5a1bf0be9e3fb0",
@@ -93,8 +105,8 @@
     {
       "mode": "0644",
       "path": "hooks/lib/l3-writer-registry.json",
-      "sha256": "08d479825329e27ca159ea4b7bae0aadec9cdca310a2ad0df29712ca214bcdc2",
-      "size": 12954
+      "sha256": "44f88fffde55c52c31c91481b6dd047f2a8fca41df30e83754e521bb3f8e70a6",
+      "size": 13607
     },
     {
       "mode": "0755",
@@ -135,14 +147,20 @@
     {
       "mode": "0644",
       "path": "hooks/lib/registry.sh",
-      "sha256": "2303ee4180adfeb2c780db777d287c68809800d506598781f37cffc5384656a5",
-      "size": 4378
+      "sha256": "68d0f639ddd8df007ce54e102a2572b878912d11abe4cfd015e43579390cad9b",
+      "size": 7179
     },
     {
       "mode": "0755",
       "path": "hooks/lib/research-queue.sh",
       "sha256": "f8406ab72c236c228534b727d3ca8fe811055481762e979e269e4e85905053f2",
       "size": 3329
+    },
+    {
+      "mode": "0644",
+      "path": "hooks/lib/validate-hook-output.sh",
+      "sha256": "ab1adbfe1991169329629d9c59fb02acee38175559d66b2916854cc81e9c1e8b",
+      "size": 3783
     },
     {
       "mode": "0755",
@@ -165,26 +183,26 @@
     {
       "mode": "0755",
       "path": "hooks/post-write-verify.sh",
-      "sha256": "520f8fd85fe57c0f33010b5bcec71b1931d88f3632f79d1f879acf8556ea1e9f",
-      "size": 9101
+      "sha256": "29d81cb0b21b3eb2ce3b381108d1422a912242a0364ab461a3c5006a0bac3d7d",
+      "size": 9144
     },
     {
       "mode": "0755",
       "path": "hooks/pre-compact-checkpoint.sh",
-      "sha256": "4539173b69bdd192414e18b5aed4705c63bfec3865a210ae4314e05372e0ab25",
-      "size": 5984
+      "sha256": "3ad2fa0b841509792ca0dfa20ecab8e19ad3cb24d0deb0487e2c255944e159a7",
+      "size": 8519
     },
     {
       "mode": "0755",
       "path": "hooks/pre-write-guard.sh",
-      "sha256": "961e3f38f2888d184d92c797420e24d6b7a2090aa1d3bd7b02703848cec71270",
-      "size": 62932
+      "sha256": "17f0ed1d81fda856fbbeba62760b3151d98b7957e3447c7cf76c5ab22442b854",
+      "size": 58818
     },
     {
       "mode": "0755",
       "path": "hooks/prompt-context.sh",
-      "sha256": "7a03e5354fcf67a6564bd47501e0fd7aaf7f7fc35ae98cdfc34eb9780f47d139",
-      "size": 7275
+      "sha256": "6143ade47474d4d9463873e86d1784ff500191ebc3b94bc47147bee2eece4da5",
+      "size": 8282
     },
     {
       "mode": "0755",
@@ -201,14 +219,14 @@
     {
       "mode": "0755",
       "path": "hooks/session-deregister.sh",
-      "sha256": "3878deb6e09316ab5a8d8f385328775169cb312c5c3d29c6c690dcecae98a5a3",
-      "size": 2995
+      "sha256": "37761f66fb1dd7b836cbc0c209fc269137f6a180127635b9a9f863ae94d2c7b8",
+      "size": 3421
     },
     {
       "mode": "0755",
       "path": "hooks/session-register.sh",
-      "sha256": "a8f9295e7a0f1a67b9225683305c03da0cff80aa466d9fefa35ea7aa7594cfc0",
-      "size": 3380
+      "sha256": "d14505e8514d278d9bd649022b1b14416eca8c3bf08362cae342bef111506480",
+      "size": 3794
     },
     {
       "mode": "0755",
@@ -224,15 +242,21 @@
     },
     {
       "mode": "0755",
+      "path": "hooks/spec-context-inject.sh",
+      "sha256": "f8f29d4d54df7a2ea095df2bf32107947e5c1ec21d2412d8fbadaa559cb037ad",
+      "size": 5307
+    },
+    {
+      "mode": "0755",
       "path": "hooks/stop-checkpoint-check.sh",
-      "sha256": "7258fc36e4b875cb6e448824c2705e9b811ee64ddaead76ab351c484b4cbb88d",
-      "size": 1773
+      "sha256": "05381dedc2fa30a70d815a301d4039b456699aa2c5b197bf755a54796af2d322",
+      "size": 2551
     },
     {
       "mode": "0755",
       "path": "hooks/stop-drift-scan.sh",
-      "sha256": "d6b2cc202d98ba5adb922b390efdbab1477b64dc8d84180d3bae1ca90873c636",
-      "size": 3066
+      "sha256": "4e98c2f3ed08ecf440969c01012b516a3c0e2a2930dd2eb3c0b4c43db8a95a12",
+      "size": 3151
     },
     {
       "mode": "0755",
@@ -249,8 +273,8 @@
     {
       "mode": "0755",
       "path": "hooks/worker-statusline.sh",
-      "sha256": "ca52d214e4d529ce29001e727a8aebf8db2cad6fdfd302e1ce60ca7c0987dedf",
-      "size": 1084
+      "sha256": "3c0f1fb5c6965191657baa2ce86705924cac0b9b76028e69c04304f081294aba",
+      "size": 1508
     },
     {
       "mode": "0644",
@@ -1273,6 +1297,12 @@
       "size": 17071
     },
     {
+      "mode": "0755",
+      "path": "skills/librarian/capabilities/parallel-run-audit.sh",
+      "sha256": "c36c7a1530956a22765a284f47461550339c255cc03a5c8c24b4f2f16d308dad",
+      "size": 8896
+    },
+    {
       "mode": "0644",
       "path": "skills/librarian/capabilities/people-audit.sh",
       "sha256": "36b953655a7c1fa440bc8db9504ce7cae36447df73b7c846ec614cac76dbaddb",
@@ -1295,12 +1325,6 @@
       "path": "skills/librarian/capabilities/plan-parent-resolve.sh",
       "sha256": "d2ee38d13a6c455281e1f71af6e8fe3ced2fbd61cc6a21b9730d075c2178c42d",
       "size": 8358
-    },
-    {
-      "mode": "0755",
-      "path": "skills/librarian/capabilities/r55-parallel-run-audit.sh",
-      "sha256": "86e2959454e6c5a1594a56572a1d34c0bfc27e4ded7b1216f7edb530c2b07d90",
-      "size": 8744
     },
     {
       "mode": "0755",
@@ -1593,8 +1617,8 @@
     {
       "mode": "0644",
       "path": "templates/claude-home-claude-md-template.md",
-      "sha256": "1f330f704952e99d8ccf3ebe72c9769e58cba625b9443f7b8e5a3efc6ac82a00",
-      "size": 10774
+      "sha256": "6cb0982376d97390d60735a2673a70d57849c2936a4d389c9fb9f9a5afa138a1",
+      "size": 11600
     },
     {
       "mode": "0644",
@@ -1677,8 +1701,8 @@
     {
       "mode": "0644",
       "path": "templates/settings.json",
-      "sha256": "5bec337101597fccf80b4daf74728e0079d61bf28ed63263db78ee05850e61a0",
-      "size": 2175
+      "sha256": "88008ee89d489483ee7108ef29edc3e5f3c4c9bea96dccd3faea2ab7e7710127",
+      "size": 2321
     },
     {
       "mode": "0644",
@@ -1687,7 +1711,7 @@
       "size": 5736
     }
   ],
-  "generated_at": "2026-05-11T06:59:11Z",
+  "generated_at": "2026-05-12T02:10:47Z",
   "generator_sha256": "de83620b27bf4f2a5d33b8af605a72d44e8b0b9c792248b79b9737fafb5e7d38",
   "version": "v2.1.3"
 }

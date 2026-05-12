@@ -885,6 +885,39 @@ fi
 sync 2>/dev/null || true
 mv -f "$tmp_settings" "$target_settings" || { diag "atomic mv failed: $target_settings"; rm -f "$tmp_settings"; exit 11; }
 
+# Step 12.5: idempotent spec-context-inject hook registration in UserPromptSubmit
+# chain (Plan 81 SP09 T-4). The template declares this hook, but Step 12 jq merge
+# `template * user_settings` lets the user's array win on array conflicts — so
+# re-installs against an adopter whose UserPromptSubmit chain lacks the hook
+# would silently drop it. Step 12.5 detects absence and appends to the first
+# bucket's hooks array (preserving user customizations); presence is a no-op
+# (idempotent). Operates on the post-Step-12 result.
+if [ -f "$target_settings" ]; then
+  has_spec_inject=$(jq -r '
+    [.hooks.UserPromptSubmit[]?.hooks[]?.command // ""]
+    | map(test("spec-context-inject\\.sh"))
+    | any
+  ' "$target_settings" 2>/dev/null || echo "error")
+  if [ "$has_spec_inject" = "false" ]; then
+    tmp_settings_125="$CLAUDE_HOME/.settings.json.tmp.125.$$"
+    if ! jq '
+      .hooks.UserPromptSubmit |= (
+        if . == null or length == 0 then
+          [{"hooks":[{"type":"command","command":"~/.claude/hooks/spec-context-inject.sh","timeout":5}]}]
+        else
+          .[0].hooks += [{"type":"command","command":"~/.claude/hooks/spec-context-inject.sh","timeout":5}]
+        end
+      )
+    ' "$target_settings" > "$tmp_settings_125" 2>/dev/null; then
+      diag "jq spec-context-inject registration failed (Step 12.5); manual resolution required"
+      rm -f "$tmp_settings_125"
+      exit 40
+    fi
+    sync 2>/dev/null || true
+    mv -f "$tmp_settings_125" "$target_settings" || { diag "atomic mv failed: $target_settings (Step 12.5)"; rm -f "$tmp_settings_125"; exit 11; }
+  fi
+fi
+
 # Step 13: schema parse validation (post-install)
 for schema in "$CLAUDE_HOME/schemas"/*.json; do
   [ -e "$schema" ] || continue
