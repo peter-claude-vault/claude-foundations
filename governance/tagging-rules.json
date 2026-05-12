@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "pillar": "tagging",
+  "_description": "Claude-consumed JSON registry for the tagging pillar. Loaded by pre-write-guard.sh at runtime. Carries R-05, R-32-taxonomy, R-47, R-50, R-51. Tags are the user-side query surface (Obsidian graph view, filter pane, MOC patterns); frontmatter fields are the Claude-side substrate. See research/vault-construction/tagging-strategy.md §Tags vs fields for the dichotomy.",
+  "_design_notes": {
+    "consumer": "pre-write-guard.sh — tag-validation branch (R-05, R-32-taxonomy, R-51); post-write-verify.sh — tag-presence advisory (R-47); librarian tag-coverage-audit (R-47, R-50)",
+    "lockstep_pair": "Vault Architecture - Tagging.md (narrative spoke) + schemas/vault-schema.json (_tag_prefixes + _tag_prefixes_meta) + log-subtype-registry.json (system-utility canonicality discipline)",
+    "evolution_protocol": "R-37 atomic lockstep — tagging-rules.json + Vault Architecture - Tagging.md + schemas/vault-schema.json _tag_prefixes + pre-write-guard.sh + log-subtype-registry.json updated in one commit",
+    "source_dependencies": [
+      "../research/vault-construction/tagging-strategy.md",
+      "../research/vault-construction/frontmatter-design.md",
+      "../research/vault-construction/enforcement-map-design.md",
+      "../docs/decisions/0004-system-utility-dimension-exemption.md",
+      "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
+    ]
+  },
+  "taxonomy": {
+    "_description": "Eight-dimension faceted taxonomy. Six user-facing dimensions subject to the 25-cap (R-50); two system-utility dimensions exempt per ADR-0004 and governed by the log-subtype registry (R-05).",
+    "tag_pattern_regex": "^#[a-z][a-z0-9-]*/[a-z0-9][a-z0-9-]*$",
+    "dimension_prefixes": ["engagement", "project", "scope", "initiative", "artefact-bd", "about-me", "status", "log"],
+    "user_facing_dimensions": ["engagement", "project", "scope", "initiative", "artefact-bd", "about-me"],
+    "system_utility_dimensions": ["status", "log"],
+    "cap_25_applies_to": "user_facing_dimensions",
+    "system_utility_governance": "log-subtype-registry (canonical values per dimension; near-match DENY via R-05)"
+  },
+  "rules": [
+    {
+      "id": "R-05",
+      "pillar": "tagging",
+      "tier": "2",
+      "source": "ENFORCEMENT-MAP.md R-05 + ../research/vault-construction/tagging-strategy.md §System-utility dimension exemption + ../docs/decisions/0004-system-utility-dimension-exemption.md",
+      "enforcement_layer": ["pre-write-guard.sh tag-validation branch (system-utility dimension DENY on near-match)", "log-subtype-registry.json (canonical-values authority)", "librarian tag-coverage-audit (registered-value coverage)"],
+      "failure_mode": "Near-match drift in system-utility dimensions fragments operational subtypes within weeks. Two runs of the same routine emit two different tag values (e.g., #log/backlog-hygiene vs #log/backlog-cleanup), and the user-side graph filter splits routine activity across variant spellings. The discipline restores stability: every routine activity uses the STABLE, canonical tag value registered at first emission, and the hook DENIES near-match drift.",
+      "rule_text": "Tags within system-utility dimensions (#log/*, #status/*) must match a value registered in log-subtype-registry.json. Near-match writes (Levenshtein distance ≤ 2 or substring containment of an existing canonical value) are DENIED with a 'did you mean #<dim>/<canonical>?' suggestion. Genuinely new subtypes register explicitly via the prompt-and-commit pattern at first emission. The discipline mirrors the canonical-tag-per-concept principle on the system-utility surface where LLM stochasticity would otherwise fragment the vocabulary."
+    },
+    {
+      "id": "R-32-taxonomy",
+      "pillar": "tagging",
+      "tier": "2",
+      "source": "ENFORCEMENT-MAP.md R-32 + ../research/vault-construction/tagging-strategy.md Rules 2 and 4 (hierarchical prefix grammar + no freeform tags)",
+      "enforcement_layer": ["pre-write-guard.sh tag-validation branch (write-time DENY)", "schemas/vault-schema.json _tag_prefixes (allowlist authority)"],
+      "failure_mode": "Freeform tagging produces folksonomy drift within months at scale. Synonymous content scatters across variant spellings (meeting / meetings / meeting-notes), case variants (client-a / ClientA / client_a), and one-off ad-hoc dimensions (#priority/*, #urgency/*). The user-side graph degrades silently — every file carries tags, no query returns the right set. Write-time DENY converts the silent failure into a visible governance signal at the moment of capture.",
+      "rule_text": "Every tag MUST match the hierarchical grammar `#dimension/value` where dimension is one of the registered prefixes in schemas/vault-schema.json _tag_prefixes and value is a kebab-case slug matching [a-z0-9-]. The pre-write-guard hook DENIES any tag that fails the regex or starts with an unregistered prefix. The DENY message enumerates the non-conforming tags. Adopters either pick a tag from the registered vocabulary, omit the tag (the file remains legible to Claude via its frontmatter fields), or run R-37 atomic lockstep to add a new dimension or canonical value with operator review."
+    },
+    {
+      "id": "R-47",
+      "pillar": "tagging",
+      "tier": "1",
+      "source": "ENFORCEMENT-MAP.md R-47 + tags-as-validity-diagnostic principle + ../research/vault-construction/tagging-strategy.md Rule 5 (tagging-failure-as-signal)",
+      "enforcement_layer": ["pre-write-guard.sh tag-presence advisory (Tier 1; never blocks)", "post-write-verify.sh orphan-tag advisory", "librarian tag-coverage-audit (audit-time orphan detection)"],
+      "failure_mode": "Non-exempt files written without tags become orphans in Obsidian graph view — invisible to user-side queries even though the file is legible to Claude-side surfaces via frontmatter fields. Pre-write tag-presence advisory surfaces the omission at the moment of write rather than at the weekly audit, closing a ~7-day detection lag.",
+      "rule_text": "Every non-exempt vault write MUST carry a non-empty `tags:` array in its frontmatter. Pre-write-guard emits a Tier 1 advisory ([R-47 TAG PRESENCE]) when the field is missing or empty (tags: []). Distinguishes 'missing' (no tags: line) vs 'empty' (line present, no items). Exempt paths are enumerated in the registry's `r47_exempt_paths` array — they cover archive surfaces, ideation-brief symlinks, and machine-emitted scratch zones whose tag-absence is structurally legitimate. The librarian tag-coverage-audit walks the vault at audit time and surfaces longer-running orphans + near-miss patterns (#scope/decisions vs #scope/decision — one is likely a typo) as advisory findings the operator triages.",
+      "r47_exempt_paths": [
+        "Archive/**",
+        "Logs/foundations-essays/**",
+        "Logs/backlog-progress/**",
+        "Tags/**",
+        "_test*",
+        ".claude/**",
+        "Logs/ideation-brief-*.md"
+      ],
+      "exempt_path_semantics": "positive-list — unenumerated top-level paths default to the advisory firing (NOT auto-exempt). Adding a new exempt path requires R-37 atomic lockstep updating this rule + pre-write-guard.sh + the narrative spoke."
+    },
+    {
+      "id": "R-50",
+      "pillar": "tagging",
+      "tier": "1",
+      "source": "../research/vault-construction/tagging-strategy.md Rule 1 (25-tag cap on user-facing dimensions) + Forte/Dubois working-vocabulary research + Hedden faceted-classification literature + Adobe AEM and SharePoint enterprise CMS picklist patterns",
+      "enforcement_layer": ["librarian tag-coverage-audit (audit-time consolidation prompt at 80% threshold)", "onboarder consolidation prompt (install-time)", "documentary in Vault Architecture - Tagging.md"],
+      "failure_mode": "Cap-widening defeats the working-memory rationale silently. An adopter activates a new engagement, user-facing tag count approaches 25, and the path of least resistance is 'raise the cap to 30.' Past 25, decision fatigue produces variant-creation rather than canonical-term selection, the vocabulary fragments, and user-side recall collapses. The cap is structural, not aspirational — silent widening is rejected; deliberate Layer 3 override is supported with audit trail.",
+      "rule_text": "Total count of distinct values across user-facing dimensions (engagement, project, scope, initiative, artefact-bd, about-me) MUST stay under 25. System-utility dimensions (log, status) are exempt — they are machine-emitted and governed by the log-subtype registry (R-05). The librarian tag-coverage-audit emits an advisory when user-facing usage approaches 80% of the cap (≥20 active values), surfaces a consolidation prompt with retire-candidate recommendations, and requires deliberate Layer 3 override (`tagging_cap_override.json` with rationale + audit-trail entry) before silent widening can proceed.",
+      "cap_value": 25,
+      "advisory_threshold_pct": 80,
+      "scope": "user_facing_dimensions",
+      "override_mechanism": "Layer 3 vault-overlay at tagging_cap_override.json with rationale + audit-trail entry"
+    },
+    {
+      "id": "R-51",
+      "pillar": "tagging",
+      "tier": "2",
+      "source": "../research/vault-construction/vault-construction-principles.md commitment 4 (multi-archetype union) + ../research/vault-construction/tagging-strategy.md §Per-archetype dimension relabeling + spec §Archetype-binding rule contract",
+      "enforcement_layer": ["pre-write-guard.sh archetype-binding branch (Tier 2 DENY)", "schemas/vault-schema.json _archetype_enum (registered archetypes authority)", "Layer 3 vault-overlay (custom archetype declaration)"],
+      "failure_mode": "Files declaring an archetype field value outside the registered archetype enum drift the multi-archetype union model. Cross-archetype queries fail because the archetype field carries an unrecognized value; the renamed-dimension overlay (e.g., #repo/* in developer archetype) cannot resolve back to its structural slot; the per-archetype synonym dictionary breaks at consumption time.",
+      "rule_text": "Any frontmatter `archetype:` field value MUST match a value registered in schemas/vault-schema.json _archetype_enum (consultant | researcher | developer | manager) OR an adopter-declared custom archetype in Layer 3 vault-overlay archetype_extensions.json. Pre-write-guard DENIES writes with an unrecognized archetype value. The DENY message enumerates the registered values and points to the Layer 3 declaration path. The rule binds the multi-archetype union architectural commitment to write-time — adding a new archetype requires R-37 atomic lockstep updating the schema enum + this rule + the narrative spoke + the archetype-conditional field extensions.",
+      "registered_archetypes": ["consultant", "researcher", "developer", "manager"],
+      "custom_archetype_overlay_path": "Layer 3 vault-overlay archetype_extensions.json"
+    }
+  ]
+}
