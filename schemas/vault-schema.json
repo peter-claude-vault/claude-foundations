@@ -1,6 +1,154 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
+  "_design_notes": {
+    "model": "unified-with-per-archetype-entries",
+    "tiers": "Strict | Standard | Minimal (per Plan 81 SP03 spec §Frontmatter schema, L27-46)",
+    "consumer": "pre-write-guard.sh case statement; loaded at runtime",
+    "lockstep_pair": "frontmatter-rules.json (T-24) ↔ Vault Architecture - Frontmatter.md (T-29)",
+    "evolution_protocol": "R-37 atomic lockstep — schema + hook + docs updated in one commit",
+    "source_decisions": [
+      "Plan 81 SP03 spec L27-46 (3 compliance tiers; unified-with-per-archetype-entries model)",
+      "D1 resolution 2026-05-11 (folder-lineage convention; engagement+project retired from TYPE allowlist, retained as FIELD slots)",
+      "D2 resolution 2026-05-11 (system-utility dimension exemption: #log/* and #status/* exempt from 25-cap; bound to log-subtype-registry T-34)",
+      "vault-construction-principles.md §The four pillars (T-3, L83-109)",
+      "enforcement-map-design.md §Two-surface dual pattern (T-9, L87-143)"
+    ],
+    "downstream_consumers": [
+      "T-4 frontmatter-design.md (narrative pedagogy)",
+      "T-14 multi-archetype union spec",
+      "T-17 archetype templates (4 archetypes; R-32 100% conformant)",
+      "T-19 packet-staleness-audit (reads packet last_reviewed)",
+      "T-20 R-32/R-47/folder-lineage hook contracts",
+      "T-24 frontmatter-rules.json (rule-level peer; binds R-32 Tier 2 DENY to this schema)"
+    ]
+  },
+
+  "tiers": {
+    "strict": {
+      "description": "System files (scaffold-emitted by SP04, /ingest-routed by SP05, scraper-aggregated to Inbox/). Hard fail at write-time (R-32 Tier 2 DENY).",
+      "validation_behavior": "deny",
+      "applies_to": "type entries with tier=strict in this schema",
+      "universal_required": ["type", "tags", "updated"],
+      "conditional_required": ["status"]
+    },
+    "standard": {
+      "description": "User-authored vault content. Soft warning; librarian flags drift via tag-coverage-audit + frontmatter-coverage-audit capabilities.",
+      "validation_behavior": "warn",
+      "applies_to": "type entries with tier=standard in this schema",
+      "universal_required": ["type", "tags", "updated"],
+      "conditional_required": []
+    },
+    "minimal": {
+      "description": "Explicit opt-out files. No validation; flagged 'outside system' by librarian. Used for legacy imports, paste-buffer scratch, archives outside lifecycle.",
+      "validation_behavior": "allow",
+      "applies_to": "files matching _minimal_tier_exemptions glob patterns OR carrying explicit `tier: minimal` frontmatter directive",
+      "universal_required": [],
+      "conditional_required": []
+    }
+  },
+
+  "_archetype_conditional_fields": {
+    "_description": "Fields that may appear in any type entry's required/optional list. Per-type entries declare which apply (the 'per-archetype entries' in the unified model). Adopters extend this list via Layer 3 vault-overlay; the 13 entries below are the foundation-repo seed (Peter's empirical instantiation generalized for adopter consumption).",
+    "fields": [
+      "engagement",
+      "project",
+      "workstream",
+      "owner",
+      "provides",
+      "created",
+      "name",
+      "attendees",
+      "processed",
+      "granola_id",
+      "target_date",
+      "audience",
+      "github_repo"
+    ]
+  },
+
+  "_packet_only_fields": {
+    "_description": "Fields valid only on entries with type=packet (system-altitude research context packets at `claude-stem/research/vault-construction/`). Engagement/topic/initiative altitude packets at the user vault use the same shape via the `packet` type entry below.",
+    "fields": [
+      "altitude",
+      "validity_window",
+      "source_dependencies",
+      "last_reviewed",
+      "canonical_url",
+      "url_stability"
+    ]
+  },
+
+  "_excluded_fields": {
+    "parent_plan": {
+      "reason": "Plan-tree-only field; lives in `plans-schema.json`, not vault schema.",
+      "disposition": "Deferred from v1. Re-visit when planning methodology generalizes for adopters (per spec L43).",
+      "do_not": "Do NOT add `parent_plan` to any vault-schema type entry. Plan-tree files live under `~/.claude-plans/` and validate against plans-schema.json."
+    }
+  },
+
+  "_retired_types": {
+    "engagement": {
+      "retired_at": "2026-05-11",
+      "decision_ref": "D1 (Plan 81 SP03 Session 4 architecture decision)",
+      "reason": "Type information lives at file level only — folders don't have frontmatter. `engagement` is NOT a canonical TYPE; it is a FIELD slot that propagates folder lineage to files. Folders own structural artifact; field + tag propagate to file level.",
+      "replacement": "Use `engagement: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see _path_rules.consultant-engagement-project-lineage). For the engagement-level navigation file itself (e.g., `Engagements/<X>/CLAUDE.md`), use type=`navigation`."
+    },
+    "project": {
+      "retired_at": "2026-05-11",
+      "decision_ref": "D1 (Plan 81 SP03 Session 4 architecture decision)",
+      "reason": "Same as `engagement` — folders own project lineage; FIELD `project` propagates lineage to files.",
+      "replacement": "Use `project: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see _path_rules.consultant-engagement-project-lineage). For the project-level overview file itself, use type=`context` or type=`navigation` (per file purpose)."
+    }
+  },
+
+  "_path_rules": {
+    "_description": "Cross-cutting folder-lineage validation rules. Hook contract: when a file is written, evaluate matching path rules; if pattern matches, the file MUST satisfy the requires_fields + requires_tags clauses. Encoded generically so adopter archetypes (researcher's Topics/<X>/Studies/<Y>/; developer's Repos/<X>/Epics/<Y>/) extend the array without schema-shape changes. Foundation-repo ships with the consultant default. Hook contract authored by T-20; rule ID assigned by SP01 at lockstep; implementation by SP05.",
+    "rules": [
+      {
+        "id": "consultant-engagement-project-lineage",
+        "archetype": "consultant",
+        "pattern": "Engagements/{engagement_slug}/Projects/{project_slug}/**",
+        "requires_fields": [
+          { "field": "engagement", "must_equal_ancestor_segment_at_depth": 1 },
+          { "field": "project", "must_equal_ancestor_segment_at_depth": 3 }
+        ],
+        "requires_tags": [
+          { "tag_pattern": "#engagement/{engagement_slug}" },
+          { "tag_pattern": "#project/{project_slug}" }
+        ],
+        "tier": "strict",
+        "rule_id_ref": "R-NEW (assigned by SP01 at R-37 lockstep)",
+        "rationale": "Folder-lineage frontmatter convention (D1 resolution, 2026-05-11). Folder is structural artifact; frontmatter fields + tags are file-level workaround that propagates lineage to every file. R-32 hook contract (T-20) validates lineage consistency at write-time.",
+        "exemptions": [
+          "Files at Engagements/<X>/CLAUDE.md (engagement-level navigation; type=navigation entry handles)",
+          "Files at Engagements/<X>/_index.md (folder index; type=index entry handles)",
+          "Files at Engagements/<X>/Projects/<Y>/CLAUDE.md (project-level navigation; type=navigation entry handles)",
+          "Files at Engagements/<X>/Projects/<Y>/_index.md (project folder index; type=index entry handles)"
+        ]
+      }
+    ]
+  },
+
+  "_tag_prefixes": [
+    "engagement",
+    "project",
+    "scope",
+    "status",
+    "initiative",
+    "artefact-bd",
+    "about-me",
+    "log"
+  ],
+
+  "_tag_prefixes_meta": {
+    "_description": "Eight-dimension faceted taxonomy (Plan 81 SP03 spec §Tagging spec L47-91). Adopters extend via Layer 3 vault-overlay using per-archetype synonym dictionaries (T-16). System-utility dimensions (#log/*, #status/*) exempt from 25-tag cap per D2; bound to log-subtype-registry (T-34) discipline instead.",
+    "system_utility_dimensions": ["log", "status"],
+    "user_facing_dimensions": ["engagement", "project", "scope", "initiative", "artefact-bd", "about-me"],
+    "cap_25_applies_to": "user_facing_dimensions only"
+  },
+
   "meeting-note": {
+    "tier": "strict",
     "required": [
       "type",
       "date",
@@ -19,8 +167,11 @@
       "granola_url"
     ]
   },
+
   "daily-note": {
+    "tier": "strict",
     "required": [
+      "type",
       "date",
       "day",
       "processed",
@@ -28,28 +179,37 @@
     ],
     "optional": []
   },
+
   "inbox-archive": {
+    "tier": "strict",
     "required": [
+      "type",
       "date",
       "day",
-      "type",
       "sources",
       "created",
       "tags"
     ],
     "optional": []
   },
+
   "log": {
+    "tier": "strict",
     "required": [
       "type",
       "log-type",
       "date",
       "timestamp"
     ],
-    "optional": []
+    "optional": [
+      "tags"
+    ]
   },
+
   "people": {
+    "tier": "standard",
     "required": [
+      "type",
       "name",
       "org",
       "role",
@@ -63,18 +223,9 @@
       "max_lines"
     ]
   },
-  "project": {
-    "required": [
-      "engagement",
-      "project",
-      "owner",
-      "status",
-      "updated",
-      "tags"
-    ],
-    "optional": []
-  },
+
   "prd": {
+    "tier": "standard",
     "required": [
       "title",
       "engagement",
@@ -91,7 +242,9 @@
       "max_lines"
     ]
   },
+
   "context": {
+    "tier": "standard",
     "required": [
       "title",
       "engagement",
@@ -108,17 +261,9 @@
       "max_lines"
     ]
   },
-  "engagement": {
-    "required": [
-      "engagement",
-      "owner",
-      "status",
-      "updated",
-      "tags"
-    ],
-    "optional": []
-  },
+
   "reference": {
+    "tier": "standard",
     "required": [
       "type",
       "updated",
@@ -129,16 +274,21 @@
       "max_lines"
     ]
   },
+
   "index": {
+    "tier": "strict",
     "required": [
       "type",
       "updated"
     ],
     "optional": [
-      "provides"
+      "provides",
+      "tags"
     ]
   },
+
   "weekly-summary": {
+    "tier": "strict",
     "required": [
       "type",
       "week",
@@ -147,7 +297,9 @@
     ],
     "optional": []
   },
+
   "daily-archive": {
+    "tier": "strict",
     "required": [
       "type",
       "month",
@@ -156,17 +308,23 @@
     ],
     "optional": []
   },
+
   "navigation": {
+    "tier": "standard",
     "required": [
       "type",
       "engagement",
       "updated"
     ],
     "optional": [
-      "max_lines"
+      "project",
+      "max_lines",
+      "tags"
     ]
   },
+
   "personal-initiative": {
+    "tier": "standard",
     "required": [
       "type",
       "name",
@@ -185,7 +343,9 @@
       "completed"
     ]
   },
+
   "briefing": {
+    "tier": "strict",
     "required": [
       "type",
       "date",
@@ -196,7 +356,9 @@
       "max_lines"
     ]
   },
+
   "strategic": {
+    "tier": "standard",
     "required": [
       "type",
       "engagement",
@@ -210,7 +372,9 @@
       "max_lines"
     ]
   },
+
   "planning": {
+    "tier": "standard",
     "required": [
       "type",
       "engagement",
@@ -223,7 +387,9 @@
       "max_lines"
     ]
   },
+
   "archive": {
+    "tier": "strict",
     "required": [
       "type",
       "source-path",
@@ -235,7 +401,9 @@
       "project"
     ]
   },
+
   "historical-brief": {
+    "tier": "standard",
     "required": [
       "type",
       "updated",
@@ -248,7 +416,9 @@
       "tags"
     ]
   },
+
   "ideation-brief": {
+    "tier": "strict",
     "required": [
       "type",
       "title",
@@ -258,9 +428,47 @@
     "optional": [
       "status",
       "tags",
-      "parent_plan",
       "backlog_item"
     ]
   },
-  "_tag_prefixes": []
+
+  "packet": {
+    "tier": "strict",
+    "_description": "Research context packets at all four altitudes (system / engagement / topic / initiative). System-altitude packets canonical at `claude-stem/research/vault-construction/`; engagement/topic/initiative at user vault. Surfaces 180-day `last_reviewed` cadence (system) / 90-day (topic) / continuous (engagement) / closed-at-plan-close (initiative).",
+    "required": [
+      "type",
+      "altitude",
+      "scope",
+      "validity_window",
+      "source_dependencies",
+      "last_reviewed",
+      "tags",
+      "updated"
+    ],
+    "optional": [
+      "canonical_url",
+      "url_stability",
+      "provides",
+      "max_lines",
+      "engagement",
+      "project"
+    ]
+  },
+
+  "archetype-template": {
+    "tier": "strict",
+    "_description": "Scaffold templates at `claude-stem/onboarding/templates/<archetype>/` consumed by SP04 install. Pre-populated frontmatter; R-32 100% conformant per T-17 AC. Anti-drift principle: archetype templates ship pre-populated UPFRONT; user-added files inherit defaults via templates.",
+    "required": [
+      "type",
+      "archetype",
+      "template_for",
+      "tags",
+      "updated"
+    ],
+    "optional": [
+      "max_lines",
+      "provides",
+      "lockstep_pair"
+    ]
+  }
 }
