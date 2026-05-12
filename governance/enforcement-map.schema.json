@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claude-stem.local/governance/enforcement-map.schema.json",
+  "title": "Plan 81 SP03 governance pillar schema",
+  "description": "Validates 4 pillar files (frontmatter/tagging/naming/mandatory-files-rules.json) + _index.json. Enforces canonical rule-entry shape (spec L527-528). R-37 lockstep coupled-surface with the 4 pillar JSONs. additionalProperties:true on rule entries permits adopter Layer 3 overlay.",
+  "definitions": {
+    "rule_entry": {
+      "type": "object",
+      "required": ["id", "pillar", "tier", "source", "enforcement_layer", "failure_mode", "rule_text"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^R-[0-9]+(-[a-z0-9]+)?$"},
+        "pillar": {"type": "string", "enum": ["frontmatter", "tagging", "naming", "mandatory-files", "meta"]},
+        "tier": {"oneOf": [{"type": "string", "enum": ["1", "2", "3", "framework"]}, {"type": "integer", "enum": [1, 2, 3]}]},
+        "source": {"type": "string", "minLength": 1},
+        "enforcement_layer": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "failure_mode": {"type": "string", "minLength": 1},
+        "rule_text": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "semver": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "pillar_name": {"type": "string", "enum": ["frontmatter", "tagging", "naming", "mandatory-files"]}
+  },
+  "oneOf": [
+    {
+      "title": "Pillar file. Per-pillar consistency (rule.pillar == top-level pillar) enforced by authoring discipline + librarian governance-parity-audit.",
+      "type": "object",
+      "required": ["schema_version", "pillar", "rules"],
+      "properties": {
+        "schema_version": {"$ref": "#/definitions/semver"},
+        "pillar": {"$ref": "#/definitions/pillar_name"},
+        "_description": {"type": "string"},
+        "_design_notes": {"type": "object"},
+        "rules": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/rule_entry"}}
+      },
+      "additionalProperties": true
+    },
+    {
+      "title": "Index file (_index.json). pillars[] = registry; cross_cutting_meta_rules[] = rule-entry shape.",
+      "type": "object",
+      "required": ["schema_version", "pillars", "cross_cutting_meta_rules"],
+      "properties": {
+        "schema_version": {"$ref": "#/definitions/semver"},
+        "_description": {"type": "string"},
+        "_design_notes": {"type": "object"},
+        "pillars": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "path", "rule_id_range"],
+            "properties": {
+              "id": {"$ref": "#/definitions/pillar_name"},
+              "path": {"type": "string", "minLength": 1},
+              "rule_id_range": {"oneOf": [{"type": "string", "minLength": 1}, {"type": "array", "minItems": 1, "items": {"type": "string"}}]}
+            },
+            "additionalProperties": true
+          }
+        },
+        "cross_cutting_meta_rules": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/rule_entry"}}
+      },
+      "additionalProperties": true
+    }
+  ]
+}

@@ -1,0 +1,233 @@
+{
+  "version": 2,
+  "description": "Documentation dependency registry. Hand-editable source of truth. Read by pre-write-guard.sh and librarian session-close Step 2c. Mirrored into Logs/librarian-manifest.json -> doc_dependencies on each /librarian full run. Pattern matches drift-allowlist.json (Session 09). Ported to foundation-repo at Plan 81 SP03 T-28 (2026-05-12). Preserves live shape \u2014 cascade registry consumed by pre-write-guard.sh + librarian session-close + entity-parity capability.",
+  "generated_by": "spine-remediation Session 10 (2026-04-13); ported to claude-stem foundation-repo at Plan 81 SP03 T-28 (2026-05-12)",
+  "schema_notes": {
+    "rename_history": "Plan 67 Sub-plan 02 T-3 (2026-04-22). Append-only audit trail of renames that have touched this entry's primary / mirrors[]. Each row: {\"from\": \"<old-path>\", \"to\": \"<new-path>\", \"at\": \"<ISO8601>\", \"commit\": \"<sha>\"}. Populated by rename-detect.sh at librarian session-close Step 2b. Forward-only: no historical backfill. Empty array means no known renames since instrumentation landed."
+  },
+  "entries": [
+    {
+      "id": "logs-scratch-only",
+      "kind": "directory-write-constraint",
+      "primary_dir": "Logs/",
+      "rule": "deny-list",
+      "severity": "warn",
+      "denied_types": [
+        "prd",
+        "context",
+        "reference",
+        "overview",
+        "people",
+        "engagement",
+        "navigation",
+        "project"
+      ],
+      "rationale": "Deny-list (block deliverables) rather than allow-list because scratch/operational concepts don't have first-class type values in vault-schema.json. type=log permitted explicitly; no-type scratch permitted implicitly. MVP: soft-warn; Session 13 may harden to deny.",
+      "rename_history": []
+    },
+    {
+      "id": "engagement-list-cascade",
+      "kind": "directory-membership-cascade",
+      "primary_dir": "Engagements/",
+      "primary_scope": "top-level-children",
+      "mirrors": [
+        {
+          "file": "CLAUDE.md",
+          "section": "Engagements",
+          "kind": "directory-listing-mirror"
+        }
+      ],
+      "rule": "if-primary-changes-mirrors-must-be-reviewed",
+      "severity": "warn",
+      "rename_history": []
+    },
+    {
+      "id": "va-hub-spoke",
+      "kind": "hub-spoke-cascade",
+      "primary": "Vault Architecture.md",
+      "mirrors": [
+        {
+          "file": "Vault Architecture/Vault Architecture - Structure.md",
+          "section": "Directory Structure / Reference Material: Three Tiers",
+          "kind": "extracted-section"
+        },
+        {
+          "file": "Vault Architecture/Vault Architecture - Engagements.md",
+          "section": "Engagements / Artefact-BD",
+          "kind": "extracted-section"
+        },
+        {
+          "file": "Vault Architecture/Vault Architecture - People.md",
+          "section": "People Files / Cross-Reference Integrity",
+          "kind": "extracted-section"
+        },
+        {
+          "file": "Vault Architecture/Vault Architecture - Frontmatter.md",
+          "section": "Frontmatter Standards / Pre-Write Validation / Plan Directory Conventions",
+          "kind": "extracted-section"
+        },
+        {
+          "file": "Vault Architecture/Vault Architecture - Tasks.md",
+          "section": "Task System",
+          "kind": "extracted-section"
+        },
+        {
+          "file": "Vault Architecture/Vault Architecture - Inbox.md",
+          "section": "Inbox: Operational Data Surface",
+          "kind": "extracted-section"
+        },
+        {
+          "file": "Vault Architecture/Vault Architecture - Templates.md",
+          "section": "Appendix: Frontmatter Templates",
+          "kind": "extracted-section"
+        }
+      ],
+      "rule": "hub-stub-must-have-matching-spoke",
+      "severity": "warn",
+      "notes": "Session 07 (2026-04-14) split VA.md into hub + 7 spokes. When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200 on most spokes, 250 on Frontmatter and Templates.",
+      "rename_history": []
+    },
+    {
+      "id": "va-structure-claude-md-mirror",
+      "kind": "cross-file-type-union",
+      "primary": "Vault Architecture/Vault Architecture - Structure.md",
+      "mirrors": [
+        {
+          "file": "CLAUDE.md",
+          "section": "Vault Structure",
+          "kind": "directory-tree-mirror"
+        }
+      ],
+      "rule": "directory-tree-must-stay-synchronized",
+      "severity": "warn",
+      "notes": "CLAUDE.md carries an abridged directory tree. The canonical tree lives in Vault Architecture - Structure.md. If top-level vault directories are added/removed, both must update.",
+      "rename_history": []
+    },
+    {
+      "id": "vault-schema-type-consistency",
+      "kind": "cross-file-type-union",
+      "primary": "~/.claude/schemas/vault-schema.json",
+      "mirrors": [
+        {
+          "file": "~/.claude/hooks/pre-write-guard.sh",
+          "section": "SCHEMA_KEY case statement",
+          "kind": "explicit-type-case"
+        },
+        {
+          "file": "~/.claude/hooks/post-write-verify.sh",
+          "section": "type_map dict",
+          "kind": "explicit-type-case"
+        }
+      ],
+      "rule": "union-must-cover-vault-schema-keys",
+      "severity": "warn",
+      "path_inferred_exceptions": [
+        "daily-note"
+      ],
+      "notes": "vault-schema.json has 20 first-class keys (spine-remediation-followup Phase 1 extended from 15 \u2192 19: added briefing, strategic, planning, archive; 56-spine-remediation-finalization Sub-plan 01 T-2 extended from 19 \u2192 20: added historical-brief 2026-04-17). R-32 allowlist (pre-write-guard.sh lines 685-694, Tier 2 DENY) covers 25 values \u2014 20 schema keys + 5 aliases (skill-spec, overview, updates, file-index, tier-2). post-write-verify.sh type_map matches the 25-value allowlist. daily-note remains path-inferred from Daily/ prefix. Any new type requires an R-37 lockstep commit (schema + pre-write-guard SCHEMA_KEY + pre-write-guard R-32 allowlist + post-write-verify type_map + vault CLAUDE.md + librarian SKILL.md, all in one commit).",
+      "rename_history": []
+    },
+    {
+      "id": "personal-initiatives-list-cascade",
+      "kind": "directory-membership-cascade",
+      "primary_dir": "Personal Initiatives/",
+      "primary_scope": "top-level-children",
+      "mirrors": [
+        {
+          "file": "CLAUDE.md",
+          "section": "Personal Initiatives",
+          "kind": "directory-listing-mirror"
+        },
+        {
+          "file": "CLAUDE.md",
+          "section": "Vault Structure",
+          "kind": "directory-tree-mirror"
+        }
+      ],
+      "rule": "if-primary-changes-mirrors-must-be-reviewed",
+      "severity": "warn",
+      "notes": "Seeded by spine-remediation Session 12 (2026-04-14) when Personal Initiatives/ was created as a new top-level vault directory. First inhabitant: Claude Foundations/.",
+      "rename_history": []
+    }
+  ],
+  "entities": {
+    "_comment": "Entity parity registry. Each entity declares a canonical source path template with {name} placeholder, an instance-enumerator (glob/file-list/directory-index), the canonical field to compare, and mirrors with strict/presence-only flags. Consumed by librarian capability entity-parity.sh. Landed Plan 68 V1 (2026-04-21). V1 ships skill entity only; V2 adds plan + memory-file.",
+    "skill": {
+      "canonical": "~/.claude/skills/{name}/SKILL.md",
+      "canonical_field": "description",
+      "instance_enumerator": "glob:~/.claude/skills/*/SKILL.md",
+      "mirrors": [
+        {
+          "path": "Skills/{name}.md",
+          "fields": [
+            "description"
+          ],
+          "strict": true,
+          "notes": "Vault design spec for the skill. Present for most runtime skills; absent for a minority of backend-only skills (enumeration at V1 closeout captured in handoff).",
+          "match_kind": "frontmatter"
+        },
+        {
+          "path": "Skills/_index.md#row[{name}]",
+          "fields": [],
+          "strict": false,
+          "presence_only": true,
+          "notes": "Master catalog row. Description column is paraphrased-by-design (summary, not mirror). V1 checks row presence only; content-match semantics deferred to V2.",
+          "row_kind": "wikilink-row"
+        }
+      ]
+    },
+    "plan": {
+      "canonical": "~/.claude-plans/{slug}/spec.md",
+      "canonical_field": "status",
+      "instance_enumerator": "glob:~/.claude-plans/*/spec.md",
+      "mirrors": [
+        {
+          "path": "System Backlog.md#row[{slug}]",
+          "row_kind": "backlog-row",
+          "fields": [],
+          "strict": false,
+          "presence_only": true,
+          "notes": "Master backlog row. Single-line pointer per sentinel pattern; summary text is paraphrased. Presence-only check in V2."
+        },
+        {
+          "path": "~/.claude-plans/{slug}/manifest.json",
+          "match_kind": "json-field",
+          "fields": [
+            "status"
+          ],
+          "strict": true,
+          "optional": true,
+          "notes": "Plan manifest. 12 of 38 plans predate the manifest convention, so mirror is optional; when present, top-level status must match spec frontmatter."
+        },
+        {
+          "path": "Logs/backlog-progress/{slug}.md",
+          "match_kind": "frontmatter",
+          "fields": [
+            "status"
+          ],
+          "strict": true,
+          "optional": true,
+          "notes": "Backlog-progress satellite (sentinel pattern). Only exists for plans with session logs \u2014 5 of 38 today \u2014 hence optional."
+        }
+      ]
+    },
+    "memory-file": {
+      "canonical": "~/.claude/projects/-Users-petertiktinsky/memory/{filename}",
+      "canonical_field": "description",
+      "instance_enumerator": "glob:~/.claude/projects/-Users-petertiktinsky/memory/*.md",
+      "exclude_basenames": [
+        "MEMORY.md"
+      ],
+      "mirrors": [
+        {
+          "path": "~/.claude/projects/-Users-petertiktinsky/memory/MEMORY.md#row[{filename}]",
+          "row_kind": "memory-index-line",
+          "fields": [],
+          "strict": false,
+          "presence_only": true,
+          "notes": "MEMORY.md index entry. Summary after em-dash is paraphrased for scan-readability. Presence-only check in V2."
+        }
+      ]
+    }
+  }
+}
