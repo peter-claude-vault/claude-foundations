@@ -75,6 +75,45 @@ Maintainer-only. The procedure is at [`docs/release-runbook.md`](docs/release-ru
 - **No marketing language.** Don't add "powerful", "seamless", "revolutionary". Show what the change does, not how impressive it is.
 - **Plain English in user-facing text.** R-NN numbers are fine in audit logs and rule names; user-facing prose attaches a one-line gloss on first mention.
 
+## Content-tier discipline (Consumer / Provenance / Build)
+
+Claude Stem is consumer-facing. Adopters install the foundation-repo, render schemas + governance JSONs + narrative spokes into their vault, and read the GH Pages docs site. Build-tier metadata (internal plan numbers, task identifiers, decision dates, session references, author-personal anecdotes) MUST NOT leak into ship-tier surfaces. The discipline is three tiers:
+
+**Tier 1 — Consumer (ship-tier).** Lives in: `schemas/*.json`, `governance/*.json`, `research/`, `onboarding/scaffold/`, `skills/*/SKILL.md`, `README.md`, install.sh banner. Audience: a vault adopter who has never read a plan. Strip all internal-process references from body text. Reframe empirical signals to remove author-personal context.
+
+**Tier 2 — Provenance (frontmatter-link tier).** Lives in: YAML frontmatter (`schema_version`, `version`, `last_reviewed`, `validity_window`, `canonical_url`, `$id`, `source_dependencies`). `source_dependencies:` arrays carry pointers to companion packets, governance JSONs, and ADRs by stable filename — NOT plan-tree paths, NOT task identifiers, NOT dated session refs.
+
+**Tier 3 — Build (exile tier).** Lives in: `docs/decisions/NNNN-*.md` (ADRs — Cognitect/Nygard format), `~/.claude-plans/` (plan tree), `CHANGELOG.md`, git commit history. Plan numbers, task identifiers, decision dates, incident reports, plan-process names — all preserved here for audit-trail use, never in ship-tier prose.
+
+**Common rewrites:**
+
+| Build-tier (out) | Ship-tier (in) |
+|---|---|
+| `(T-1 close 2026-05-12, schema_version 2.0.0)` | `(canonical, semver-versioned)` |
+| `per Plan 81 SP03 spec L27-46` | inline rule + `[ADR-0001](./docs/decisions/0001-tiered-compliance.md)` |
+| `D1 resolution 2026-05-11` | `the folder-lineage convention` (with ADR link) |
+| `Session 4 architecture decision` | `the governance architecture decision` (with ADR link) |
+| `Peter's vault has 501 untagged files in Logs/` | `production-scale untagged-file backlogs accumulate (~500 files observed) without write-time enforcement` |
+| `spine-remediation Session 08 — 113 files leaked` | `a production incident saw ~100 files leak through this pattern in a single initial commit` |
+| `Peter's live PoC for four weeks` | `the reference deployment ran through a multi-week production validation` |
+| `Peter Tiktinsky` (in worked examples) | `Alice Example` (or per-archetype example name) |
+
+**What gets preserved as Provenance (frontmatter only):**
+- `schema_version`, `version`, `$id`, `$schema`
+- `last_reviewed`, `validity_window` (drives staleness audits)
+- `canonical_url`, `url_stability` (stable-URL contract)
+- `source_dependencies:` reduced to schema refs + companion packet refs + governance refs + ADR refs (relative paths or stable URLs)
+
+**The discipline survives the author.** A future-reader who needs "where did this design come from" answers via `source_dependencies:` → ADR by stable filename → narrative rationale + commit history. NOT via inline plan refs in body prose.
+
+**Industry-converged signal:** Anthropic Skills (`SKILL.md`), Cursor `.cursor/rules/*.mdc`, GitHub Copilot path-scoped instructions, AGENTS.md — none of these scoped-rule formats carry internal plan/task IDs, dated decision references, or build-process metadata in body text. Provenance, when present, lives in frontmatter or commit history.
+
+**Enforcement (planned):**
+- A future librarian capability `content-tier-audit` will scan the repo for build-tier pollution patterns (`Plan \d+`, `T-\d+`, `D\d+ resolution`, dated `Session \d+`) and emit advisory findings.
+- The discipline is the authoring contract; the audit is the regression check.
+
+**ADR authoring:** when stripping build-tier provenance from a ship-tier artifact, PRESERVE the provenance in an ADR at `docs/decisions/`. See [`docs/decisions/README.md`](docs/decisions/README.md) for the format and existing ADRs.
+
 ## Filing an issue
 
 When opening an issue, include:
