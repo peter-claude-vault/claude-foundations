@@ -28,7 +28,7 @@
 set -euo pipefail
 
 source "$HOME/.claude/hooks/lib/paths.sh"
-source "$HOME/.claude/hooks/lib/hook-journal.sh"
+source "$HOME/.claude/hooks/lib/registry.sh"
 
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
@@ -81,14 +81,7 @@ fi
 if [[ "$FILE_PATH" == "$PLANS_DIR_DEAD/README.md" ]]; then
   : # allow (placeholder marker — coexistence README)
 elif [[ "$FILE_PATH" == "$PLANS_DIR_DEAD/"* ]] || [[ "$FILE_PATH" == "$PLANS_DIR_DEAD" ]]; then
-  journal_emission "PreToolUse" "deny:dead-plans-path:$FILE_PATH" 0
-  jq -n '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "deny",
-      permissionDecisionReason: "Dead path ~/.claude/plans/ — migrated to ~/.claude-plans/ on 2026-04-13. This folder is a permanent placeholder; only its README.md may be written. Update your reference to use $PLANS_DIR (from ~/.claude/hooks/lib/paths.sh) or the new absolute path ~/.claude-plans/. See spine-remediation Session 14 handoff for context."
-    }
-  }'
+  format_output_deny "PreToolUse" "Dead path ~/.claude/plans/ — migrated to ~/.claude-plans/ on 2026-04-13. This folder is a permanent placeholder; only its README.md may be written. Update your reference to use \$PLANS_DIR (from ~/.claude/hooks/lib/paths.sh) or the new absolute path ~/.claude-plans/. See spine-remediation Session 14 handoff for context."
   exit 0
 fi
 
@@ -118,14 +111,7 @@ if [[ "$FILE_PATH" == *"/orchestrator/cron-wrappers/"*".sh" ]]; then
     fi
     if [[ -n "$CW_OFFENDER" ]]; then
       CW_REASON="Cron wrapper bash 3.2 compatibility (R-23, spine-remediation Session 19): offending construct — ${CW_OFFENDER}. macOS /bin/bash is 3.2; launchd cron wrappers MUST be bash 3.2-compatible or they will silently fail in cron context. Substitute a 3.2 alternative: parallel indexed arrays instead of declare -A; tr/awk for case conversion; while-read loops instead of readarray; explicit lists instead of step brace expansion; '>>file 2>&1' instead of '&>>file'."
-      journal_emission "PreToolUse" "$CW_REASON" 0
-      jq -n --arg r "$CW_REASON" '{
-        hookSpecificOutput: {
-          hookEventName: "PreToolUse",
-          permissionDecision: "deny",
-          permissionDecisionReason: $r
-        }
-      }'
+      format_output_deny "PreToolUse" "$CW_REASON"
       exit 0
     fi
   fi
@@ -161,14 +147,7 @@ PYEOF
     if ! echo "$CM_CONTENT" | grep -qE 'memory-consolidation-check\.sh|claude-mem'; then
       if [[ "${CLAUDE_MEM_DISABLE_OK:-0}" != "1" ]]; then
         CM_REASON="claude-mem protection (R-24, spine-remediation Session 19): this settings.json write removes the claude-mem / memory-consolidation-check SessionEnd hook. claude-mem is required infrastructure per Peter's explicit instruction (\"do everything else but don't turn Claude Mem off\"). To override intentionally, set CLAUDE_MEM_DISABLE_OK=1 in the environment for this write."
-        journal_emission "PreToolUse" "$CM_REASON" 0
-        jq -n --arg r "$CM_REASON" '{
-          hookSpecificOutput: {
-            hookEventName: "PreToolUse",
-            permissionDecision: "deny",
-            permissionDecisionReason: $r
-          }
-        }'
+        format_output_deny "PreToolUse" "$CM_REASON"
         exit 0
       else
         echo "$(date -Iseconds) | pre-write-guard | CLAUDE_MEM_DISABLE_OK override | $FILE_PATH" >> "$HOME/Desktop/artefact-daily-logs/hook-audit.log" 2>/dev/null || true
@@ -226,14 +205,7 @@ if [[ "$PS_IS_PLAN" == "1" ]]; then
       echo "$(date -Iseconds) | pre-write-guard | PLAN_STATUS_OK override (prefix) | $FILE_PATH" >> "$HOME/Desktop/artefact-daily-logs/hook-audit.log" 2>/dev/null || true
     else
       PS_PREFIX_REASON="Plan naming convention (R-27, feedback_plan_naming_conventions.md): this plan-root path is missing the required NN- numeric prefix. Top segment: '${PS_TOP_SEGMENT}'. New plan files and directories at ~/.claude-plans/ must start with a numeric prefix matching the next-available integer (run 'ls ~/.claude-plans/ | grep -oE \"^[0-9]+\" | sort -n | tail -1' and add 1). Use descriptive slug, not auto-generated. Escape hatch: export PLAN_STATUS_OK=1 (logged to hook-audit.log)."
-      journal_emission "PreToolUse" "$PS_PREFIX_REASON" 0
-      jq -n --arg r "$PS_PREFIX_REASON" '{
-        hookSpecificOutput: {
-          hookEventName: "PreToolUse",
-          permissionDecision: "deny",
-          permissionDecisionReason: $r
-        }
-      }'
+      format_output_deny "PreToolUse" "$PS_PREFIX_REASON"
       exit 0
     fi
   fi
@@ -289,14 +261,7 @@ except Exception:
         echo "$(date -Iseconds) | pre-write-guard | PLAN_STATUS_OK override | $FILE_PATH" >> "$HOME/Desktop/artefact-daily-logs/hook-audit.log" 2>/dev/null || true
       else
         PS_REASON="Plan naming convention (R-27, feedback_plan_naming_conventions.md): this plan file is missing a status marker. Required: one of (a) **Status:** header bullet with value (e.g., **Status:** briefed), (b) YAML frontmatter status: field, or (c) manifest.json top-level status field (for manifest writes). Scope: flat root plans + spec.md + 00-ideation-brief.md + README.md + manifest.json. Sub-task files, handoff.md, and orchestrator artifacts are explicitly NOT required to carry status (they inherit from the parent plan). Escape hatch: export PLAN_STATUS_OK=1 (logged to hook-audit.log)."
-        journal_emission "PreToolUse" "$PS_REASON" 0
-        jq -n --arg r "$PS_REASON" '{
-          hookSpecificOutput: {
-            hookEventName: "PreToolUse",
-            permissionDecision: "deny",
-            permissionDecisionReason: $r
-          }
-        }'
+        format_output_deny "PreToolUse" "$PS_REASON"
         exit 0
       fi
     fi
@@ -355,14 +320,7 @@ with open(sys.argv[5], 'w') as f:
 
   if [[ "$va_new_lines" -gt "$VA_MAX_LINES" ]]; then
     REASON="Vault Architecture.md would become ${va_new_lines} lines, exceeding the navigational-index threshold (${VA_MAX_LINES}). VA.md is the hub; long content belongs in a spoke file at Vault Architecture/Vault Architecture - {Topic}.md. To proceed: (1) identify a self-contained section to extract, (2) create or extend a spoke, (3) replace the section in VA.md with a stub redirect, (4) retry the write."
-    journal_emission "PreToolUse" "$REASON" 0
-    jq -n --arg reason "$REASON" '{
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "deny",
-        permissionDecisionReason: $reason
-      }
-    }'
+    format_output_deny "PreToolUse" "$REASON"
     exit 0
   fi
 fi
@@ -370,14 +328,7 @@ fi
 
 # --- BLOCK: Direct edits to librarian-manifest.json ---
 if [[ "$FILE_PATH" == *"librarian-manifest.json"* ]]; then
-  journal_emission "PreToolUse" "deny:librarian-manifest-direct-edit:$FILE_PATH" 0
-  jq -n '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "deny",
-      permissionDecisionReason: "Direct edits to librarian-manifest.json are prohibited. The manifest must be regenerated through /librarian to maintain holistic consistency (backend_sync.in_sync flags go stale on manual edits). Use /librarian with the appropriate capability instead."
-    }
-  }'
+  format_output_deny "PreToolUse" "Direct edits to librarian-manifest.json are prohibited. The manifest must be regenerated through /librarian to maintain holistic consistency (backend_sync.in_sync flags go stale on manual edits). Use /librarian with the appropriate capability instead."
   exit 0
 fi
 
@@ -480,23 +431,11 @@ PYEOF
   fi
 
   if [[ -z "$PL_CONTEXT" ]]; then
-    # No advisories — pass through allow with no additionalContext
-    journal_emission "PreToolUse" "allow:plan-artifact-no-advisory:$FILE_PATH" 0
-    jq -n '{
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "allow"
-      }
-    }'
+    # No advisories — pass through allow. SP06: format_output_allow with empty
+    # ctx (adds empty additionalContext; decision/permissionDecision unchanged).
+    format_output_allow "PreToolUse" ""
   else
-    journal_emission "PreToolUse" "$PL_CONTEXT" 0
-    jq -n --arg ctx "$PL_CONTEXT" '{
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "allow",
-        additionalContext: $ctx
-      }
-    }'
+    format_output_allow "PreToolUse" "$PL_CONTEXT"
   fi
   exit 0
 fi
@@ -507,27 +446,13 @@ fi
 # (Skills/*.md design docs and .claude/skills/*.md spec mirrors) are not
 # runtime — the skill-change checklist is not relevant to them.
 if [[ "$FILE_PATH" == "$HOME/.claude/skills/"*"/SKILL.md" ]]; then
-  journal_emission "PreToolUse" "allow:skill-change-protocol-reminder:$FILE_PATH" 0
-  jq -n '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "allow",
-      additionalContext: "[SKILL CHANGE PROTOCOL] After this edit, complete the mandatory post-change checklist: (1) Save/update memory for the change (2) Update all affected documentation — specs, CLAUDE.md, MEMORY.md (3) Grep for downstream effects — other skills, hooks, settings that reference this (4) Verify ID emission if applicable. This is a blocking step — do not move to the next task until all four are done."
-    }
-  }'
+  format_output_allow "PreToolUse" "[SKILL CHANGE PROTOCOL] After this edit, complete the mandatory post-change checklist: (1) Save/update memory for the change (2) Update all affected documentation — specs, CLAUDE.md, MEMORY.md (3) Grep for downstream effects — other skills, hooks, settings that reference this (4) Verify ID emission if applicable. This is a blocking step — do not move to the next task until all four are done."
   exit 0
 fi
 
 # --- REMINDER: Tasks.md format validation ---
 if [[ "$FILE_PATH" == *"/Tasks.md" ]]; then
-  journal_emission "PreToolUse" "allow:tasks-md-format-check:$FILE_PATH" 0
-  jq -n '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "allow",
-      additionalContext: "[FORMAT CHECK] After writing to Tasks.md, verify table formatting: one header row + separator per section, consistent cell padding, no blank lines between data rows, no split tables."
-    }
-  }'
+  format_output_allow "PreToolUse" "[FORMAT CHECK] After writing to Tasks.md, verify table formatting: one header row + separator per section, consistent cell padding, no blank lines between data rows, no split tables."
   exit 0
 fi
 
@@ -665,14 +590,7 @@ PYEOF
       [[ -n "$COMBINED" ]] && COMBINED="${COMBINED}\n\n"
       COMBINED="${COMBINED}${SCHEMA_MSG}"
     fi
-    journal_emission "PreToolUse" "$COMBINED" 0
-    jq -n --arg ctx "$COMBINED" '{
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "allow",
-        additionalContext: $ctx
-      }
-    }'
+    format_output_allow "PreToolUse" "$COMBINED"
     exit 0
   fi
 fi
@@ -1137,14 +1055,7 @@ PYEOF
           DENY_REASON="Write blocked — vault schema enforcement:\n${TIER2_MSGS}Add the missing fields/fix the issues and retry."
           # Audit log for Phase 3 monitoring
           echo "$(date -Iseconds) | pre-write-guard | DENY | ${FILE_PATH} | ${TIER2_MSGS}" >> "$HOME/Desktop/artefact-daily-logs/hook-audit.log" 2>/dev/null || true
-          journal_emission "PreToolUse" "$DENY_REASON" 0
-          jq -n --arg reason "$DENY_REASON" '{
-            hookSpecificOutput: {
-              hookEventName: "PreToolUse",
-              permissionDecision: "deny",
-              permissionDecisionReason: $reason
-            }
-          }'
+          format_output_deny "PreToolUse" "$DENY_REASON"
           exit 0
         fi
 
@@ -1191,14 +1102,7 @@ PYEOF
         fi
 
         if [[ -n "$COMBINED_CTX" ]]; then
-          journal_emission "PreToolUse" "$COMBINED_CTX" 0
-          jq -n --arg ctx "$COMBINED_CTX" '{
-            hookSpecificOutput: {
-              hookEventName: "PreToolUse",
-              permissionDecision: "allow",
-              additionalContext: $ctx
-            }
-          }'
+          format_output_allow "PreToolUse" "$COMBINED_CTX"
           exit 0
         fi
       fi
@@ -1221,14 +1125,7 @@ if [[ -f "$REGISTRY" ]] && [[ -n "${CLAUDE_SESSION_ID:-}" ]]; then
     ' "$REGISTRY" 2>/dev/null | head -1)
 
     if [[ -n "$PEER" ]]; then
-      journal_emission "PreToolUse" "multi-session-overlap:$REL_PATH:peer=$PEER" 0
-      jq -n --arg rp "$REL_PATH" --arg peer "$PEER" '{
-        hookSpecificOutput: {
-          hookEventName: "PreToolUse",
-          permissionDecision: "allow",
-          additionalContext: ("[MULTI-SESSION OVERLAP] File " + $rp + " was already modified by peer session " + $peer + ". Coordinate before making conflicting changes.")
-        }
-      }'
+      format_output_allow "PreToolUse" "[MULTI-SESSION OVERLAP] File ${REL_PATH} was already modified by peer session ${PEER}. Coordinate before making conflicting changes."
       exit 0
     fi
   fi
@@ -1239,14 +1136,7 @@ fi
 # write that skipped the 3-tier block), surface the reminder here so the
 # doc-dependency cascade warning never silently drops.
 if [[ -n "${DOC_DEP_CTX:-}" ]]; then
-  journal_emission "PreToolUse" "$DOC_DEP_CTX" 0
-  jq -n --arg ctx "$DOC_DEP_CTX" '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "allow",
-      additionalContext: $ctx
-    }
-  }'
+  format_output_allow "PreToolUse" "$DOC_DEP_CTX"
   exit 0
 fi
 

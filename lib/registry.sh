@@ -96,6 +96,54 @@ format_output() {
   fi
 }
 
+# Format hookSpecificOutput with permissionDecision="allow" + additionalContext.
+# Args: event_name, additional_context.
+# Plan 84 SP06 (Path D): sibling to format_output; same validator + journal pipe
+# plus 9.5KB (9728-byte) soft truncate on additionalContext (AC-3). Session 11
+# precedent — hard cap silently disables guards, so we truncate with a visible
+# in-payload marker + stderr warning instead.
+format_output_allow() {
+  local event="$1" ctx="$2" payload
+  local -r MAX=9728
+  if (( ${#ctx} > MAX )); then
+    ctx="${ctx:0:$((MAX - 60))}"$'\n[... truncated to 9.5KB by format_output_allow]'
+    echo "[format_output_allow] additionalContext exceeded ${MAX}B; soft-truncated. event=$event" >&2
+  fi
+  payload=$(jq -n --arg event "$event" --arg ctx "$ctx" \
+    '{"hookSpecificOutput":{"hookEventName":$event,"permissionDecision":"allow","additionalContext":$ctx}}')
+  if printf '%s' "$payload" | validate_hook_output; then
+    journal_emission "$event" "$payload" 0 "true"
+    printf '%s\n' "$payload"
+    return 0
+  else
+    journal_emission "$event" "$payload" 1 "false"
+    return 1
+  fi
+}
+
+# Format hookSpecificOutput with permissionDecision="deny" + permissionDecisionReason.
+# Args: event_name, deny_reason.
+# Plan 84 SP06 (Path D): same validator + journal + soft-truncate pipeline as
+# format_output_allow, applied to permissionDecisionReason.
+format_output_deny() {
+  local event="$1" reason="$2" payload
+  local -r MAX=9728
+  if (( ${#reason} > MAX )); then
+    reason="${reason:0:$((MAX - 60))}"$'\n[... truncated to 9.5KB by format_output_deny]'
+    echo "[format_output_deny] permissionDecisionReason exceeded ${MAX}B; soft-truncated. event=$event" >&2
+  fi
+  payload=$(jq -n --arg event "$event" --arg reason "$reason" \
+    '{"hookSpecificOutput":{"hookEventName":$event,"permissionDecision":"deny","permissionDecisionReason":$reason}}')
+  if printf '%s' "$payload" | validate_hook_output; then
+    journal_emission "$event" "$payload" 0 "true"
+    printf '%s\n' "$payload"
+    return 0
+  else
+    journal_emission "$event" "$payload" 1 "false"
+    return 1
+  fi
+}
+
 # Peer summary string. Args: registry_json, own_session_id. Empty if solo.
 get_peer_summary() {
   local reg="$1" own_sid="$2" peer_count summaries
