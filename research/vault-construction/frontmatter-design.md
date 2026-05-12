@@ -176,6 +176,20 @@ Four fields are universal across the Strict tier: `type`, `tags`, `updated`, and
 
 **`status:`** — enum value per type entry, where applicable. Strict tier requires `status` *conditionally* — only on types that declare a status enum in their schema entry. `prd` has `status: draft | live | closed`. `personal-initiative` has `status: planned | in-progress | complete | superseded`. `meeting-note` does not have a status enum and does not require it. The conditional encoding is what D2 cleaned up (see commitment below).
 
+## Tags vs fields — who consumes what
+
+The frontmatter block carries both `tags:` (an array of `#dimension/value` strings) and a set of named fields (`type:`, `engagement:`, `project:`, `status:`, `owner:`, `provides:`, etc.). The two surfaces look similar in YAML and adjacent in the file, but they have different consumers and different jobs. Conflating them produces either redundancy (both surfaces carrying the same information with no consumer-side benefit) or gaps (each surface assumed to carry what the other actually does).
+
+**Frontmatter fields are the Claude-side substrate.** Hooks, the librarian, routing skills, and capture pipelines all branch on field values. The pre-write-guard hook's `SCHEMA_KEY` case statement switches on `type:`. The folder-lineage rule consumes `engagement:` + `project:` to validate folder ancestry. Skills read `provides:` to decide what to load. The librarian's coverage audits walk `updated:` for staleness. Field values are how Claude reasons about a file without reading its body — the field IS the API.
+
+**Tags are the user-side surface.** Obsidian's graph view renders tags as nodes; the filter pane queries by tag; Map-of-Content (MOC) patterns surface tag-scoped indexes. A human navigating the vault clicks into `#engagement/acme-corp` from the graph and sees every file in that engagement, regardless of folder hierarchy. The user-side query is the load-bearing consumer for tags.
+
+**The two surfaces mirror, they don't duplicate.** A file under `Engagements/acme-corp/Projects/data-platform/` carries `engagement: acme-corp` + `project: data-platform` as fields AND `#engagement/acme-corp` + `#project/data-platform` as tags. The field gives Claude folder lineage when reading the file out-of-tree (Claude does not climb directory ancestors). The tag gives the user graph-view filterability (Obsidian does not render frontmatter fields as graph nodes). Lose either surface and one consumer goes blind. The folder-mirrors-tag invariant (§Folder-lineage convention above) is the structural commitment that holds both surfaces populated at write-time.
+
+**The write-time hook validates tags but does not query them.** The pre-write-guard hook reads `tags:` to validate the array against the registered taxonomy (prefix grammar, allowlist conformance, near-match detection); the validated tags are then written to the file and the hook does not re-read them at consumption time. This makes tag validation a *hygiene* concern, not a *query* concern. Claude-side query/routing happens on the fields. Tag hygiene is the discipline that keeps the user-side graph queryable; the full discipline lives in [`tagging-strategy.md`](./tagging-strategy.md).
+
+The implication for schema design: the field set and the tag set evolve under separate disciplines. New fields land via R-37 lockstep on the schema + frontmatter rule registry + frontmatter narrative spoke + pre-write-guard SCHEMA_KEY case. New tag dimensions land via R-37 lockstep on the schema's `_tag_prefixes` declaration + tagging rule registry + tagging narrative spoke + pre-write-guard tag-validation branch. The two pillar pipelines are parallel, not the same.
+
 ## Archetype-conditional fields
 
 The 13 archetype-conditional fields live at the top of the schema as `_archetype_conditional_fields.fields`. Per-type entries declare which subset applies to their `required` or `optional` list. The list is the consultant-archetype seed generalized for adopter consumption — researchers extend with `study_phase`, developers with `repo`, managers with `program`, all as Layer 3 vault-overlay additions.

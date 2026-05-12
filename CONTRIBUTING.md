@@ -109,8 +109,8 @@ Claude Stem is consumer-facing. Adopters install the foundation-repo, render sch
 **Industry-converged signal:** Anthropic Skills (`SKILL.md`), Cursor `.cursor/rules/*.mdc`, GitHub Copilot path-scoped instructions, AGENTS.md — none of these scoped-rule formats carry internal plan/task IDs, dated decision references, or build-process metadata in body text. Provenance, when present, lives in frontmatter or commit history.
 
 **Enforcement (planned):**
-- A future librarian capability `content-tier-audit` will scan the repo for build-tier pollution patterns (`Plan \d+`, `T-\d+`, `D\d+ resolution`, dated `Session \d+`) and emit advisory findings.
-- The discipline is the authoring contract; the audit is the regression check.
+- A future foundation-repo CI check (GitHub Actions on PR + on-demand via a `scripts/content-tier-audit.sh` script) will scan the repo for build-tier pollution patterns (`Plan \d+`, `T-\d+`, `D\d+ resolution`, dated `Session \d+`, etc.) and emit advisory findings. The audit is a repo-side concern — it lives in the foundation-repo's CI surface, NOT in the adopter-side librarian (which is scoped to live-vault audits).
+- The discipline is the authoring contract; the CI audit is the regression check.
 
 **ADR authoring:** when stripping build-tier provenance from a ship-tier artifact, PRESERVE the provenance in an ADR at `docs/decisions/`. See [`docs/decisions/README.md`](docs/decisions/README.md) for the format and existing ADRs.
 
