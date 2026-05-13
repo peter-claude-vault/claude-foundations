@@ -64,11 +64,13 @@ Per the frontmatter-design packet (commitment 3, packet-only fields section), di
 | Altitude | `last_reviewed` cadence | Threshold (early / overdue) |
 |---|---|---|
 | `system` | 180-day cycle | 150d / 180d (default) |
-| `topic` | 90-day cycle | 75d / 90d |
-| `engagement` | continuous (lifecycle-driven) | exempt from threshold-based audit; surfaced only on lifecycle close events |
-| `initiative` | closed-at-plan-close | exempt from threshold-based audit |
+| `topic` | 90-day cycle | 75d / 90d *(seed default; Wave-2 validation target — verify against actual topic-packet usage patterns before locking)* |
+| `engagement` | continuous (lifecycle-driven) | exempt from threshold-based audit; surfaced via T-38 governance-authoring hook on lifecycle close events |
+| `initiative` | closed-at-plan-close | exempt from threshold-based audit; surfaced via T-38 governance-authoring hook on plan-close events |
 
 Adopters extend the threshold map via Layer 3 vault-overlay at `packet_staleness_thresholds.json` (sibling to `vault-schema.json` post-install). The capability reads the union of foundation + overlay at audit time.
+
+**Lifecycle-close surfacing for `engagement` / `initiative` altitudes is T-38 scope.** The T-38 governance-authoring hook is the mechanism that surfaces packet-staleness for lifecycle-driven altitudes — at engagement archival or plan-close events, the hook fires and runs a propose-and-confirm review pass on any packets at those altitudes. This audit-time capability does not duplicate that check; weekly cron + on-demand invocation covers `system` and `topic` altitudes only.
 
 ## Input sources
 
