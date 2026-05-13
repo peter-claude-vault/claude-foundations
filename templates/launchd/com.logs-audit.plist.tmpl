@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Launchd template — weekly logs-audit cron.
+
+  Renders into ~/Library/LaunchAgents/com.logs-audit.plist at install time
+  with the following substitutions:
+    {{HOME}}              — adopter HOME dir (typically /Users/<username>)
+    {{PATH}}              — adopter PATH (default: /opt/homebrew/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin)
+    {{CRON_SCRIPT_PATH}}  — path to the logs-audit-cron.sh wrapper (default: {{HOME}}/.claude/orchestrator/cron-wrappers/logs-audit-cron.sh)
+    {{STDOUT_LOG}}        — stdout log path (default: {{HOME}}/Desktop/artefact-daily-logs/logs-audit-stdout.log; adopter-overridable)
+    {{STDERR_LOG}}        — stderr log path (default: {{HOME}}/Desktop/artefact-daily-logs/logs-audit-stderr.log; adopter-overridable)
+    {{WORKING_DIR}}       — working directory (default: {{HOME}})
+
+  Cadence: weekly on the 1st calendar day at 08:23 local time. Aligned with
+  packet-staleness-audit cadence so operators get a single weekly audit
+  summary covering log accumulation + research-packet staleness.
+
+  Adopter customization: edit StartCalendarInterval to shift the cadence.
+  Substitution rendered by install.sh at adopter setup time.
+-->
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>{{HOME}}</string>
+		<key>PATH</key>
+		<string>{{PATH}}</string>
+	</dict>
+	<key>Label</key>
+	<string>com.logs-audit</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>{{CRON_SCRIPT_PATH}}</string>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>{{STDERR_LOG}}</string>
+	<key>StandardOutPath</key>
+	<string>{{STDOUT_LOG}}</string>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Day</key>
+		<integer>1</integer>
+		<key>Hour</key>
+		<integer>8</integer>
+		<key>Minute</key>
+		<integer>23</integer>
+	</dict>
+	<key>WorkingDirectory</key>
+	<string>{{WORKING_DIR}}</string>
+</dict>
+</plist>
