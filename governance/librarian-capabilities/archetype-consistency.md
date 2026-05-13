@@ -44,7 +44,7 @@ The capability is the audit-time counterpart of R-51 archetype-binding DENY in `
 | Category | Severity | Trigger | Findings payload |
 |---|---|---|---|
 | `archetype-field-compliance-drift` | warning | A file declares `archetype: <X>` (or a `type:` with archetype binding to `<X>`) but is missing a field listed in `_archetype_conditional_fields[<X>].required` | `{file_path, archetype, missing_fields[], detected_at, first_seen}` |
-| `archetype-not-in-enum` | warning | A file declares `archetype: <X>` where `<X>` is not in the registered archetype enum (foundation + Layer 3 overlay union) | `{file_path, archetype, registered_archetypes[], detected_at, first_seen}` |
+| `archetype-not-in-enum` | warning | A file declares `archetype: <X>` where `<X>` is not in the registered archetype enum (foundation + Layer 3 overlay union). **Wave-2 redirect:** T-38 governance-authoring hook will intercept unknown-archetype writes and run the propose-and-confirm registration flow inline; this finding category will downgrade to a backstop emitting only when the hook itself fails or is disabled. | `{file_path, archetype, registered_archetypes[], detected_at, first_seen}` |
 | `archetype-field-uses-retired-value` | info | A file carries an archetype-conditional field with a value referencing a retired archetype (per `_archetype_enum._retired[]`) | `{file_path, field, value, retired_decision_ref, detected_at, first_seen}` |
 | `archetype-overlay-orphan` | info | Layer 3 overlay declares an archetype enum value but no file in the vault carries that archetype | `{archetype, overlay_path, detected_at, first_seen}` |
 
@@ -72,12 +72,11 @@ Exemption paths are read from R-41's `exemptions` field at audit time; do not ha
 
 ## Layer-3 collision handling
 
-Per ADR-0006 (Layer-3 Overlay Collision Tiebreaker) + R-52 meta-rule: when adopter Layer-3 overlay and foundation canonical both declare the same archetype enum value, the adopter's declaration wins. The capability MUST:
+Per ADR-0006 (Layer-3 Overlay Collision Tiebreaker) + R-52 meta-rule: when adopter Layer-3 overlay and foundation canonical both declare the same archetype enum value, the adopter's declaration wins. Collision detection itself is **write-time-enforced in `pre-write-guard.sh`** (per R-52); this capability does not perform collision detection at audit-time. The capability's responsibility is field-coverage validation given the resolved (adopter-shadowed) archetype set. Required behavior:
 
 - Read the adopter overlay first; foundation second.
-- For collision detection (separate from this capability's primary purpose): emit a `layer3-collision` finding in the `governance-parity-audit` output, not here. This capability focuses on field-coverage; collision-detection lives in the parity audit.
-- For shadowed archetype enums: use the adopter's `_archetype_conditional_fields[<X>]` declaration even if foundation declares a different field set for the same `<X>`. The shadowing is the intent.
-- For `_rename_history` chains: trace the foundation identifier through `_rename_history` so a foundation upgrade that renames an archetype the adopter has shadowed produces a `foundation-upgrade-touches-shadowed-entry` finding in the parity audit, not a stale-archetype finding here.
+- For shadowed archetype enums: use the adopter's `_archetype_conditional_fields[<X>]` declaration directly (adopter wins). Foundation's declaration for the same `<X>` is preserved-but-shadowed and does not enter the audit's field-coverage computation.
+- Adopter renames are special-case shadows under a new name (per R-52 revision; no `_rename_history` field). The audit reads from the adopter's current declarations; foundation upgrades that touch shadowed entries surface via the `governance-parity-audit` `foundation-upgrade-touches-shadowed-entry` finding category, not via this capability.
 
 ## Implementation hand-off
 
