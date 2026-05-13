@@ -7,7 +7,7 @@ source_dependencies:
   - companion: ./vault-construction-principles.md
   - companion: ./frontmatter-design.md
   - companion: ./_index.md-design.md
-last_reviewed: 2026-05-12
+last_reviewed: 2026-05-13
 canonical_url: https://stem.peter.dev/research/vault-construction/inbox-flow-architecture/
 url_stability: locked-from-2026-05-12
 ---
@@ -18,9 +18,11 @@ url_stability: locked-from-2026-05-12
 
 `Inbox/` is the vault's operational data surface — the place where scrapers, syncs, and capture pipelines write structured aggregations of work happening *outside* the vault. Gmail digests; Teams chat scrolls; GChat conversation summaries; calendar events; meeting transcript queues; pending responses. The files are not loose notes; they're structured aggregations with stable filenames that the dashboard reads from on demand. The discipline is simple and load-bearing: scrapers WRITE in; the dashboard READS out; the user navigates the dashboard, not the Inbox files directly.
 
-The architecture is the answer to a specific anti-pattern the system rejected: **Inbox-as-drop-zone-for-routing.** The original framing imagined the user dragging a file into Inbox/ and Claude auto-routing it to the correct engagement / project. That framing seems clean — drop the file, Claude files it — but it breaks under operational load: the user doesn't *have* loose files to drop most of the time (chat scrolls and email digests are scraped, not dropped); auto-routing produces wrong destinations 10-30% of the time and the corrections cost more than the time saved; the user loses visibility into the routing decision because the file is already moved.
+The architecture is the answer to a specific anti-pattern the system rejected: **Inbox-as-drop-zone-for-routing for engagement/project destinations.** The original framing imagined the user dragging a file into Inbox/ and Claude auto-routing it to the correct engagement / project. That framing seems clean — drop the file, Claude files it — but it breaks under operational load: the user doesn't *have* loose files to drop most of the time (chat scrolls and email digests are scraped, not dropped); auto-routing on engagement/project destinations produces wrong destinations at material rate (corrections cost more than the time saved); the user loses visibility into the routing decision because the file is already moved. (Note: high-signal shape-routing — transcripts to `Meetings/`, reference-shaped notes to `Reference/` — is operationally sound and handled by the `inbox-processor` skill; the rejection is scoped to engagement/project-level routing.)
 
-The replacement architecture is **in-session `/ingest`**: when something lands in the vault (whether through scraper aggregation, manual paste, or external import), the user invokes a routing skill that proposes the destination, the user reviews + accepts (propose-and-confirm), the file moves. The routing decision is explicit and reviewable, not implicit and post-hoc. Inbox/ stays as the aggregation surface; `/ingest` is the routing surface. The two functions are decomposed, and the discipline holds.
+The replacement architecture is **in-session `/ingest`** (a planned skill — runtime engine specified in the auto-routing-enforcement sub-plan; pipeline-design at setup-time specified in the connector-wizard sub-plan): when something lands in the vault (whether through scraper aggregation, manual paste, or external import), the user invokes a routing skill that proposes the destination, the user reviews + accepts (propose-and-confirm), the file moves. The routing decision is explicit and reviewable, not implicit and post-hoc. Inbox/ stays as the aggregation surface; `/ingest` is the routing surface. The two functions are decomposed, and the discipline holds.
+
+**Hybrid routing model (operational note).** A complementary skill — `inbox-processor` in the foundation-repo — handles high-signal shape-routing at runtime: transcripts route to `Meetings/`, reference-shaped notes route to `Reference/`, project-shaped and ambiguous items remain in Inbox/ with `attempted` frontmatter for manual triage. The auto-routing rejection in this packet is specifically about engagement/project-level routing, where adopter vocabulary + context determines destination and the failure rate is high. High-signal shape-routing (where the file shape — `.vtt` transcript, `Reference/`-bound markdown — is itself the routing signal) is operationally sound. The two skills compose: `inbox-processor` handles shape-routing at runtime; `/ingest` handles engagement/project-level routing with propose-and-confirm.
 
 ## Vision / approach — five structural commitments
 
@@ -36,7 +38,7 @@ This commitment has the sharp consequence that **Inbox/ files are not Strict-tie
 
 The original architecture imagined: user drops file in Inbox/ → librarian watches Inbox/ → librarian auto-routes file to engagement / project / meeting / archive. The pattern is intuitive but operationally brittle. Three specific failures collapse the design:
 
-- **Wrong destination 10-30% of the time.** Routing decisions depend on engagement vocabulary, project context, and adopter preference — none of which the auto-router has reliable signal on. Empirical observation in the reference deployment: routing accuracy was around 70-85% on routine files; failures clustered on cross-engagement files, archived engagements with similar slug patterns, and content the user had not yet categorized.
+- **Wrong destination at material rate on engagement/project routing.** Routing decisions depend on engagement vocabulary, project context, and adopter preference — none of which the auto-router has reliable signal on without explicit user-driven configuration. Failures cluster on cross-engagement files, archived engagements with similar slug patterns, and content the user has not yet categorized. (Specific failure-rate measurement deferred to the auto-routing-enforcement sub-plan's runtime instrumentation; the rejection of engagement/project auto-routing-on-drop stands on the routing-visibility and workflow-mismatch failures alone, not on a specific accuracy threshold.)
 - **Loss of routing visibility.** Once the file is moved, the user has no record of the routing decision unless the librarian wrote a log entry — and even then, the routing happened post-hoc. The user discovers the wrong destination by missing the file at the expected location.
 - **The user doesn't have loose files to drop.** Chat scrolls and email digests come from scrapers, not from user drops. Meeting notes come from Granola via the meeting-processor pipeline, not from user drops. The "drop zone" model assumes a workflow that didn't match observed usage.
 
@@ -51,12 +53,12 @@ The reference deployment uses seven Inbox/ aggregation files. Each carries a per
 | File | Source / writer | Reader | Schema |
 |---|---|---|---|
 | `Inbox/Calendar.md` | `calendar-sync` skill (cron-driven) | Dashboard | `{events: [{title, start, end, attendees, location, source}]}` |
-| `Inbox/Gmail-Digest.md` | `gmail-sync` skill (cron-driven) | Dashboard + librarian (auto-extract action items) | Topic-based H2 with `[MSG]`-prefixed action-item rows |
+| `Inbox/Gmail-Digest.md` | `gmail-sync` skill (cron-driven; reference-deployment operationally **disabled** pending the gmail-connector build sub-plan) | Dashboard + librarian (auto-extract action items) | Topic-based H2 with `[MSG]`-prefixed action-item rows |
 | `Inbox/Teams-Digest.md` | `teams-scrape` skill (cron-driven) | Dashboard + librarian | Topic-based H2 per chat with `[MSG]`-prefixed rows |
 | `Inbox/GChat-Digest.md` | `gchat-scrape` skill (cron-driven) | Dashboard + librarian | Topic-based H2 per chat with `[MSG]`-prefixed rows |
 | `Inbox/Meetings.md` | `meeting-processor` skill (digest-run-driven) | Dashboard | Date-keyed entries linking to canonical `Meetings/` files |
 | `Inbox/Pending-Responses.md` | merged from Gmail / Teams / GChat digests | Dashboard (My Action Items section) | Cross-source action-item aggregation |
-| `Inbox/Action-Items.md` (optional adopter extension) | `reconcile-day` skill | Dashboard | Cross-source action-item normalization |
+| `Inbox/Action-Items.md` | `reconcile-day` skill | Dashboard | Cross-source action-item normalization. Foundation seeds this file by default; the reference-deployment populates it via the reconciler skill walking Meetings/Teams/GChat sources. |
 
 The discipline is **per-source schemas, not free-form markdown.** The dashboard's parser is the binding consumer; if a scraper writes outside the schema, the dashboard breaks silently. The schemas are declared at the scraper's SKILL.md + mirrored at the dashboard's parser config; R-37 lockstep applies when schemas evolve.
 
@@ -108,13 +110,15 @@ Written by the reconciler skill (or the per-source scrapers writing through a me
 
 The dashboard's My Action Items section reads from this file primarily. The reconciler routes accepted responses into `Tasks.md` (canonical destination) via the `/ingest` propose-and-confirm pattern; declined responses get logged with their disposition.
 
-### `Inbox/Action-Items.md` — optional adopter extension
+### `Inbox/Action-Items.md` — cross-source action-item aggregation
 
-Some adopters extend the surface with an `Action-Items.md` aggregation that normalizes action items across sources beyond just pending responses (meeting outcomes, decision follow-ups, etc.). Optional; not required by foundation.
+Foundation seeds `Inbox/Action-Items.md` by default. The `reconcile-day` skill populates it by walking meeting outcomes, decision follow-ups, and pending responses across Meetings/Teams/GChat sources. Reference-deployment empirical pattern: this file is the dashboard's primary actionable-items surface alongside `Pending-Responses.md`.
 
-## The `/ingest` routing skill
+## The `/ingest` routing skill — planned at the auto-routing-enforcement + connector-wizard sub-plans
 
-`/ingest` is the in-session routing skill replacing the rejected auto-routing-on-drop pattern. Invocation modes:
+`/ingest` is the in-session routing skill replacing the rejected engagement/project auto-routing-on-drop pattern. **Implementation is planned**; the runtime engine (per-file routing) is specified in the auto-routing-enforcement sub-plan and the pipeline-design layer (landing-place propose-and-confirm + downstream cascade + multi-source survivorship rules) is specified in the connector-wizard sub-plan's Beat 5 extension. This packet describes the contract `/ingest` honors when shipped. Until then, the `inbox-processor` skill handles high-signal shape-routing (transcripts → `Meetings/`); engagement/project-level routing requires manual placement or `/route` invocation patterns documented at the sub-plan handoff.
+
+Invocation modes (planned):
 
 | Invocation | Behavior |
 |---|---|
