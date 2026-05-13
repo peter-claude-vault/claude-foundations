@@ -5,7 +5,7 @@ provides:
   - log-subtype-canonical-capability
   - log-subtype-hook-contract
   - r-05-enforcement
-updated: 2026-05-12
+updated: 2026-05-13
 tags: ["#scope/reference"]
 ---
 
@@ -48,7 +48,7 @@ For each `#log/<value>` or `#status/<value>` tag in the file's `tags:` array:
    - If `levenshtein(value, canonical) <= 2` for any registered `canonical` → near-match.
    - OR if `canonical` is a substring of `value` or `value` is a substring of `canonical` → near-match.
 3. **Near-match DENY.** Surface the closest registered match and DENY the write with: `[R-05 NEAR-MATCH] tag '#<dim>/<value>' near-matches registered '#<dim>/<canonical>' (registered by <owner_skill | owner_cron>). Did you mean #<dim>/<canonical>? If genuinely new, register via /register-log-subtype before writing.`
-4. **Genuinely new (no near-match).** Route through the Hook A registration prompt pattern: prompt the operator to register the new subtype + owner; on confirm, append to the adopter's Layer 3 overlay at `log_subtype_registry_overlay.json` and proceed with the write; on cancel, DENY.
+4. **Genuinely new (no near-match).** Route through the **T-38 governance-authoring hook** (which absorbs the prior "Hook A" registration-prompt pattern from earlier design — see plan-tree Session-02b-hooks-spec.md §A): prompt the operator to register the new subtype + owner; on confirm, append to the adopter's Layer 3 overlay at `log_subtype_registry_overlay.json` and proceed with the write; on cancel, DENY.
 
 ### Output
 
@@ -83,9 +83,10 @@ For each `#log/<value>` or `#status/<value>` tag in the file's `tags:` array:
 | `log-subtype-unregistered` | warning | Vault carries a `#log/*` or `#status/*` tag with no exact match in the registry union | `{file_path, dimension, tag_value, suggested_canonical (if near-match), detected_at, first_seen}` |
 | `log-subtype-near-match-drift` | warning | Two or more registered subtypes are within Levenshtein 2 of each other (near-duplicates in the registry itself) | `{dimension, conflicting_subtypes[], registry_paths[], detected_at, first_seen}` |
 | `log-subtype-owner-orphan` | info | A registered subtype has no `owner_skill` AND no `owner_cron` AND has not been written in >90 days | `{dimension, subtype, last_seen, detected_at, first_seen}` |
-| `log-subtype-registry-overlay-collision` | info | Adopter overlay declares a subtype with the same name as foundation canonical (per R-52 / ADR-0006) | `{dimension, subtype, foundation_definition, overlay_definition, override_reason, detected_at, first_seen}` |
 
 Severity `warning` findings count against the librarian's session-close summary; `info` findings surface but do not block close-out.
+
+**Layer-3 overlay collisions are NOT an audit-time finding category** (per R-52 Session 15 revision): collisions between adopter overlay and foundation canonical on log-subtype values are caught at write-time by the Layer-1 hook (the near-match + registration-prompt flow above already covers the collision case at the moment the adopter writes the overlay). Audit-time backstop is unnecessary because there is no path for a colliding overlay to land without passing through the write-time hook.
 
 ### Invocation modes
 
@@ -136,13 +137,14 @@ The contract is specified here; a downstream implementation sub-plan delivers:
 
 - **Hook implementation** at `~/.claude/hooks/pre-write-guard.sh` tag-validation branch extension. Reads the registry at hook fire; consults near-match algorithm; emits DENY or registration-prompt verdict. bash 3.2 compatible per CONTRIBUTING.md.
 - **Librarian capability implementation** at `~/.claude/skills/librarian/capabilities/log-subtype-canonical.sh`. Atomic writes; survivorship; Output Contract section per CONTRIBUTING.md.
-- **Registration helper** at `~/.claude/skills/register-log-subtype/SKILL.md`. Interactive prompt + commit to Layer 3 overlay path; runs on Hook A "require-registration" verdict.
+- **Registration flow** is delivered by the **T-38 governance-authoring hook** (which absorbs the prior "Hook A" pattern from Session-02b-hooks-spec.md §A and extends it across all governance-authoring trigger conditions — new folder, new file type, unknown archetype, lifecycle-close events, unknown log-subtype). T-38 hook handles the interactive prompt + commit to Layer 3 overlay path; this contract does not need a separate `/register-log-subtype` skill — the unified hook covers it.
 
 ## References
 
 - Companion rule: `governance/tagging-rules.json` R-05
 - Companion registry: `governance/log-subtype-registry.json`
 - Design rationale: ADR-0004 (system-utility dimension exemption)
-- Layer-3 collision tiebreaker: ADR-0006 (R-52)
+- Layer-3 collision tiebreaker: ADR-0006 (R-52) — write-time DENY in pre-write-guard.sh; this contract's Layer-1 hook is the relevant write-time enforcement surface for log-subtype collisions
+- Unified registration flow: T-38 governance-authoring hook (absorbs Session-02b "Hook A" pattern; SP03 plan-tree task entry)
 - Narrative spoke: `Vault Architecture - Tagging.md §System-utility dimension exemption`
 - Schema: `schemas/vault-schema.json _tag_prefixes_meta.system_utility_dimensions`
