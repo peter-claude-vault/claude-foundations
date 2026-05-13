@@ -8,7 +8,10 @@ on:
     paths:
       - "research/**"
       - "docs/**"
+      - "governance/**"
+      - "schemas/**"
       - "mkdocs.yml"
+      - "CNAME"
       - "README.md"
       - "CONTRIBUTING.md"
       - ".github/workflows/docs.yml"

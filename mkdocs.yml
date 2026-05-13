@@ -6,13 +6,33 @@ repo_name: peter-claude-vault/claude-stem
 edit_uri: edit/v2-engine/
 
 docs_dir: .
-site_dir: ../_site
+site_dir: _site
+
+# Scope --strict mode to actual docs sources. Non-docs paths in the repo
+# (governance JSONs, schemas, skills, tests, hooks, templates, installer,
+# connector wizard, drafts, Obsidian metadata) are walked-but-excluded so
+# broken wikilinks in those files don't fail the docs build.
+exclude_docs: |
+  governance/
+  schemas/
+  skills/
+  tests/
+  _doc-overhaul/
+  onboarding/
+  hooks/
+  templates/
+  installer/
+  connectors/
+  git-hooks/
+  .makemd/
+  .obsidian/
+  .space/
+  Logs/
 
 theme:
   name: material
   features:
     - navigation.sections
-    - navigation.expand
     - navigation.indexes
     - navigation.top
     - toc.integrate
