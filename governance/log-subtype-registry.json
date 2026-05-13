@@ -48,9 +48,9 @@
     {
       "subtype": "cron-error",
       "owner_skill": null,
-      "owner_cron": "any",
+      "owner_cron": null,
       "first_registered_at": "2026-05-12",
-      "description": "Error artifacts emitted by cron wrappers on non-zero exit. One file per failure; preserves stderr + invocation context."
+      "description": "Error artifacts emitted by ANY cron wrapper on non-zero exit. owner_cron is null because the subtype is shared across all cron wrappers (each cron emits cron-error on its own failure); no single cron owns the registry entry. One file per failure; preserves stderr + invocation context."
     },
     {
       "subtype": "audit-report",
@@ -130,27 +130,11 @@
       "owner_cron": null,
       "first_registered_at": "2026-05-12",
       "description": "Flagged for operator review. Used on auto-emitted content that needs a triage gate."
-    },
-    {
-      "subtype": "active",
-      "owner_skill": null,
-      "owner_cron": null,
-      "first_registered_at": "2026-05-12",
-      "description": "Engagement, project, or initiative is currently in-flight."
-    },
-    {
-      "subtype": "graduated",
-      "owner_skill": null,
-      "owner_cron": null,
-      "first_registered_at": "2026-05-12",
-      "description": "Strategic-tier artifact has been promoted out of exploratory state into operational use."
-    },
-    {
-      "subtype": "archived",
-      "owner_skill": null,
-      "owner_cron": null,
-      "first_registered_at": "2026-05-12",
-      "description": "Closed-lifecycle artifact preserved for historical reference but not actively maintained."
     }
-  ]
+  ],
+  "_status_subtypes_design_notes": {
+    "scope": "Processing-state values only — `#status/*` tag dimension governs whether a file has been processed by its appropriate pipeline (meeting-processor, inbox-archive, reconcile-day, etc.). Three canonical values: processed, pending, needs-review.",
+    "out_of_scope": "Lifecycle-state values (e.g., `active`, `paused`, `complete`, etc. — exact enum varies per archetype) are NOT in this registry. They live at frontmatter `status:` field per archetype-conditional-fields. The schema enforces the per-archetype enum at write-time; the tag dimension stays focused on processing-state. Tagging files with lifecycle-state values via `#status/*` is NOT the supported pattern.",
+    "rationale": "Blending processing-state and lifecycle-state under the same `#status/*` tag dimension seeds adopter confusion. The two semantic classes are kept separate: tagging covers operational processing; frontmatter `status:` covers archetype lifecycle."
+  }
 }
