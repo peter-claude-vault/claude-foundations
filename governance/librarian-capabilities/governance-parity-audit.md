@@ -5,7 +5,7 @@ provides:
   - governance-parity-audit-capability
   - dual-surface-alignment-mechanism
   - foundation-upgrade-shadowed-entry-detection
-updated: 2026-05-12
+updated: 2026-05-13
 tags: ["#scope/reference"]
 ---
 
@@ -103,7 +103,7 @@ The capability itself is coupled with:
 - `governance/enforcement-map.schema.json` — schema-validation gate for source inputs.
 - `librarian-finding-schema.json` — output schema for findings.
 - `librarian-manifest-schema.json` — `drift_findings.governance_parity` subtree.
-- ADR-0006 (Layer-3 overlay collision tiebreaker) — design hand-off for the two `layer3-*` finding categories.
+- ADR-0006 (Layer-3 overlay collision tiebreaker) — design hand-off for the `foundation-upgrade-touches-shadowed-entry` finding category (the `layer3-collision` finding category was retired Session 15; collision detection moved to pre-write-guard.sh write-time DENY).
 
 ## Implementation hand-off
 
