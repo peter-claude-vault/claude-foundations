@@ -1,10 +1,15 @@
 # {{IDENTITY_NAME}}'s Vault
 
-This vault is the operational database for {{IDENTITY_NAME}}'s work — meeting notes,
-project context, briefings, daily logs, ideation briefs, references. Claude reads
-and writes here under the conventions documented below.
+> **Setup — launch Claude Code from inside this vault.** This file (`CLAUDE.md` at the vault root) plus the `@import` directives below auto-load only when Claude Code launches from this directory or a subfolder. To switch Claude Code's launch location, run `cd "<path-to-this-vault>"` before invoking `claude` (or whatever launch command you use). Launching from elsewhere (e.g., your home directory) loads only the global `~/.claude/CLAUDE.md`, not this file — vault context still works via on-demand reads, but the `@import` block won't fire.
 
-## Identity context
+## 1. Role + Operating Posture
+
+Claude operates as **librarian, secretary, and agent** for this vault:
+- **Librarian:** Place information where it will be most useful. Surface related context without being asked.
+- **Secretary:** Handle filing, meeting prep, note processing, and maintenance without per-action approval.
+- **Agent:** Execute defined workflows (daily processing, briefings, audits) autonomously within established rules.
+
+## 2. User Identity
 
 | Field | Value |
 |---|---|
@@ -14,101 +19,56 @@ and writes here under the conventions documented below.
 | Industry | {{IDENTITY_INDUSTRY}} |
 | Default audience | {{VAULT_DEFAULT_AUDIENCE}} |
 
-Identity values are sourced from `$CLAUDE_HOME/user-manifest.json` at adoption
-time. To update them, re-run `/onboard --section a` (Section A re-record) and
-re-run `/adopt` — the latter is idempotent and will refresh substituted fields
-without re-creating directory scaffolding.
+Identity values are sourced from `$CLAUDE_HOME/user-manifest.json` at adoption time. To update them, re-run `/onboard --section a` and then `/adopt`.
 
-## Vault conventions
+## 3. Hard Rules
 
-- **Organizational method:** {{VAULT_ORGANIZATIONAL_METHOD}}
-- **Top-level folder:** `{{VAULT_TOP_LEVEL_FOLDER}}/` (engagement-based vaults)
-  or flat layout (project-based vaults)
-- **Canonical file types:** populated by `/adopt` at adoption time. Authoritative
-  list lives at `$CLAUDE_HOME/user-manifest.json` `vault.canonical_file_types[]`
-  and at `<vault_root>/.coordination/canonical-file-types.json`. Both are kept
-  in sync by hook automation.
-- **Frontmatter contract:** every non-exempt vault file carries `tags:`. Orphans
-  in graph view are a hygiene alert. Validate frontmatter against
-  `$CLAUDE_HOME/schemas/vault-schema.json` before any vault write.
-- **Plans symlink:** `Plans/` symlinks to `$PLANS_HOME` (typically
-  `$HOME/.claude-plans/`). Plan-state lives outside the vault to escape Claude
-  Code's sensitive-file gate; the symlink is read-only navigation surface.
+- File automatically when the destination is clear; route without asking.
+- Ask before creating new top-level structures (folders, file classes) — surface a proposal, get confirmation.
+- Historical data is frozen — never overwrite past-dated content.
+- `Logs/` is Claude's scratch space — write freely.
+- **Skill check:** Before building any capability from scratch, read `Skills/_index.md`.
+- When the user raises architecture-bearing questions, or you need to make a judgment call on system structure, load `Vault Architecture.md` first.
+- Frontmatter on every non-exempt file. Tags from the controlled taxonomy. Orphans in the graph view are a hygiene alert.
 
-## Directory layout (post-adoption skeleton)
+## 4. Communication Style
 
-| Path | Purpose | Lifecycle |
+{{IDENTITY_NAME}} composes verbally first, then structures. Values firmness over hedging, specificity over generality. Direct feedback with concrete examples. For full preferences, see `About Me/LLM Interaction Preferences.md` (if maintained).
+
+## 5. Active Work Pointers
+
+Paths are stable; contents evolve. Read the relevant index/folder on demand:
+
+- **Client engagements / major projects:** `{{VAULT_TOP_LEVEL_FOLDER}}/` — see cluster `_index.md` for current active set
+- **Personal tracks / initiatives:** named at onboarding — see vault root for folder names
+- **System backlog:** `System Backlog.md` (Claude-system project ideas; librarian-maintained)
+- **Tasks:** `Tasks.md` (P0/P1/P2 + Waiting On Others)
+- **Plans:** `Plans/` (symlink to `$PLANS_HOME`)
+
+## 6. Authoritative References
+
+### `@import` directives (force-loaded at session start)
+
+```
+@$CLAUDE_HOME/schemas/vault-schema.json
+```
+
+The canonical type vocabulary consumed by the R-32 frontmatter validation gate. Small file; high reference frequency; amortizes across the session. Note: this directive only fires when Claude Code launches from inside the vault (see setup note above).
+
+### Pointer table (load on trigger)
+
+| Trigger | Primary read (APPLY) | Rationale read (UNDERSTAND) |
 |---|---|---|
-| `Inbox/` | Capture surface — emails, transcripts, dashboard data | Daily reconcile |
-| `Logs/` | Build logs, ideation briefs, session notes | Append-only |
-| `Logs/backlog-progress/` | Per-backlog-item satellite logs (sentinel pattern: each backlog row carries a pointer; full session history lives in the satellite file) | Sentinel-driven |
-| `.coordination/` | Multi-session shared state, hook artifacts, manifests | Hook-managed |
-| `Plans/` | Symlink to `$PLANS_HOME` (plan-state, manifests, handoffs) | External |
-| `System Backlog.md` | Vault-root index of system-project ideas | librarian-maintained |
+| Architecture-bearing question | `Vault Architecture.md` | — |
+| Authoring/editing a vault file | `$CLAUDE_HOME/governance/frontmatter-rules.json` | `Vault Architecture/Vault Architecture - Frontmatter.md` |
+| Tagging a file | `$CLAUDE_HOME/governance/tagging-rules.json` | `Vault Architecture/Vault Architecture - Tagging.md` |
+| Naming a new file/structure | `$CLAUDE_HOME/governance/naming-rules.json` | `Vault Architecture/Vault Architecture - Naming.md` |
+| Creating new top-level structure | `$CLAUDE_HOME/governance/mandatory-files-rules.json` | `Vault Architecture/Vault Architecture - Mandatory-Files.md` |
+| Governance hooks / R-37 / promotion | — | `Vault Architecture/Vault Architecture - Enforcement.md` |
+| System-project ideas | `System Backlog.md` | — |
+| Task work | `Tasks.md` | — |
+| **Before building any capability** | `Skills/_index.md` | — |
+| Inbox / connector / dashboard work | `Inbox/_index.md` | — |
+| Plan or sub-plan references | `Plans/` | — |
 
-Directory expansion happens organically — `/adopt` ships the minimum viable
-skeleton; subsequent capture and processing populate engagement folders,
-project folders, and people files as needed.
-
-## Working with Claude
-
-Claude reads this CLAUDE.md on session start. Vault-specific conventions
-(naming, tags, frontmatter, engagement structure) belong here, not in
-`~/.claude/CLAUDE.md`. Keep the global file lean — communication and workflow
-rules only — and document vault structure here.
-
-For multi-engagement vaults: nested `<engagement>/CLAUDE.md` files act as
-navigation guides scoped to that engagement; they describe the engagement's
-specific conventions, key files, and active workstreams.
-
-## Index Files
-
-The vault uses two complementary index conventions for routing surfaces and
-file enumeration:
-
-- **`_index.md`** — folder-level routing surface. One per engagement /
-  project / topic root (whichever organizational method you adopted).
-  Frontmatter typically declares `provides:` (the section names this index
-  enumerates — e.g., `provides: [Projects, People, Strategic]`). Body holds
-  Markdown tables or bulleted lists routing to the children. The `librarian`
-  capability `placement-validate.sh` whitelists `_index.md` files, so they
-  are exempt from the per-type frontmatter contract that applies to
-  enumerated content.
-
-- **`File-Index.md`** — flat enumeration of every authoritative file under
-  a folder (or vault-wide). Used when a folder accumulates many files of
-  heterogeneous types and a single routing index is not granular enough.
-  Common locations: vault-root `File-Index.md`, `Reference/File-Index.md`.
-  Treated as `index` type by `frontmatter-enforce` (required: `type`,
-  `updated`).
-
-**When to use which.** Use `_index.md` when you need *typed routing* —
-"projects under this engagement live here, people under this engagement
-live there." Use `File-Index.md` when you need *flat enumeration* — every
-file in this folder, classified by topic. Most users will only need
-`_index.md`; `File-Index.md` is the answer when graph view shows hub-spoke
-density warnings on a folder root.
-
-Auto-generation of `_index.md` scaffolds at onboarding time is **not in the
-current release.** Author the index files yourself as the vault grows. Once
-they exist, `librarian placement-validate` keeps them honest.
-
-## What `/adopt` did
-
-This file was seeded by `/adopt` at adoption time. Identity fields above were
-substituted from `$CLAUDE_HOME/user-manifest.json` — no placeholder tokens
-should remain. If you see `{{...}}` markers below this paragraph, the
-substitution failed; re-run `/adopt` (idempotent) to refresh.
-
-## What's next
-
-- **System backlog.** Open `System Backlog.md` and start capturing system-project
-  ideas. The librarian + architect will work the backlog over time.
-- **First engagement.** Create `{{VAULT_TOP_LEVEL_FOLDER}}/<engagement-name>/`
-  with its own CLAUDE.md, or work in a flat layout if you prefer.
-- **Hook posture.** Section E of `/onboard` decided your hook posture
-  (auto-commit, memory-consolidation, multi-session). Adjust at any time via
-  `~/.claude/settings.json` opt-in fragments.
-- **Plans surface.** `Plans/` is a symlink to your plan-state directory. Use
-  `/new-plan <slug>` to scaffold a plan or `/backlog-research <item>` for
-  research-first creation.
+**Discipline:** JSON for APPLY (machine-readable, applied per-write/per-tag/per-structure). Markdown spoke for UNDERSTAND (rationale, edge cases, pedagogy).

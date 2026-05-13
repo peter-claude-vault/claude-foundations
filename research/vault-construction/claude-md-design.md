@@ -1,12 +1,15 @@
 ---
 altitude: system
-scope: CLAUDE.md as the session-start context file every Claude Code session reads first. Three CLAUDE.md classes (vault-root, engagement-level, folder-scoped); the file-class contract; the index-vs-instruction split; the line-count discipline; and the loading order that lets per-engagement context override vault-root defaults without re-reading the full system manual.
-validity_window: 2026-05-12..2026-11-12
+scope: CLAUDE.md as the session-start context file every Claude Code session reads first. The ONE-CLASS mandate (vault-root only; folder-scoped + per-cluster + per-instance + engagement-level RETIRED Session 16 lock #1 2026-05-13); the index-vs-instruction split; the length discipline tied to content-length-limits.md; the cumulative eager-load cost evidence that drove retirement of the multi-class model; and the replacement read surfaces (cluster + instance `_index.md`; canonical instance files; Vault Architecture spokes) that carry what folder-scoped CLAUDE.md classes used to carry.
+validity_window: 2026-05-13..2026-11-13
 source_dependencies:
   - schema: claude-stem/schemas/vault-schema.json (navigation type entry)
   - companion: ./vault-construction-principles.md
   - companion: ./_index.md-design.md
+  - companion: ./mandatory-file-lock.md
   - companion: ./frontmatter-design.md
+  - companion: ./content-length-limits.md
+  - decision: Plan 81 SP03 Session 16 lock #1 (2026-05-13; handoff.md §Session 16)
   - decision: ../../docs/decisions/0001-tiered-compliance.md
 last_reviewed: 2026-05-13
 canonical_url: https://stem.peter.dev/research/vault-construction/claude-md-design/
@@ -17,162 +20,315 @@ url_stability: locked-from-2026-05-12
 
 ## Theme
 
-CLAUDE.md is the file every Claude Code session reads before doing anything else. It's loaded automatically; it sets the operational frame for the session; its content determines whether Claude opens a session oriented to the user's context or oriented to a generic default. The file is small, dense, navigational — it's an index to depth, not the depth itself. A CLAUDE.md that runs 800 lines defeats its purpose: the session loads slowly, the model burns context on metadata, and the depth it should be pointing to gets ignored because it's already loaded. A CLAUDE.md that runs 50 lines is the contract. It says: here's who the user is, here's what's loaded, here's where to look next.
+CLAUDE.md is the file every Claude Code session reads before doing anything else. It is loaded automatically by the platform on session start; it sets the operational frame for the session; its content determines whether Claude opens oriented to the adopter's context or oriented to a generic default. There is **exactly one CLAUDE.md class**: the vault-root file. Folder-scoped, per-cluster, per-instance, and engagement-level CLAUDE.md classes — proposed by earlier drafts of the architecture and the reference deployment's pre-correction state — are all **retired**. The one-class mandate is the structural answer to a cumulative eager-load cost problem that multi-class designs cannot solve without violating the small-and-dense discipline a session-start file requires.
 
-Three classes of CLAUDE.md exist in a healthy vault. Vault-root `CLAUDE.md` orients every session. Engagement-level `Engagements/<X>/CLAUDE.md` orients sessions that branch into a specific engagement's work. Folder-scoped `Engagements/<X>/Projects/<Y>/CLAUDE.md` orients sessions deep inside a project. Each class has a distinct purpose, a distinct content standard, and a distinct loading discipline. Conflating the classes — putting project-level depth in vault-root, putting vault-root context in every project — collapses the discipline. The classes are the design.
+The reference deployment ran a three-class model (vault-root + engagement-level + folder-scoped) through several months of practice and accumulated ~38K of eager-loaded CLAUDE.md content across 7+ files — past the documented ">5K tokens is almost always too many" Anthropic guidance for session-start auto-loaded surfaces. The retirement (Plan 81 SP03 Session 16 lock #1, 2026-05-13) collapsed that load to ~10–15K from a single file. The depth that used to live in engagement-level and folder-scoped CLAUDE.md files now lives where work actually happens: at cluster + instance `_index.md` for navigation, at the 3-file-per-bucket triad (Overview / Updates / Context) for engagement content, and at the Vault Architecture narrative spokes for governance discipline. Each of those surfaces loads on demand when work scopes there. The session-start budget stays bounded; engagement depth stays available.
+
+This packet codifies the one-class structure, the content standard for the vault-root CLAUDE.md file, the length discipline, the replacement-surface mapping, and the anti-patterns that the retirement was designed to preempt.
 
 ## Vision / approach — five structural commitments
 
-### 1. Vault-root CLAUDE.md is the session opener; under 200 lines
+### 1. Vault-root CLAUDE.md is the ONLY CLAUDE.md class
 
-Vault-root `CLAUDE.md` is loaded on every session start. It sets the operational frame: who the user is, what engagements are active, where the key files live, what the operational rules are. The content is index-and-summary, not depth — the depth lives in `Vault Architecture.md` (the authoritative system manual) and in the engagement-level files. Vault-root `CLAUDE.md` points at depth; depth opens on demand.
+The mandate is ONE class. Vault-root `CLAUDE.md` is mandatory; everything else is retired:
 
-The discipline is a soft line-count ceiling — under 200 lines for the body — because the load cost on every session is real. A 500-line vault-root CLAUDE.md burns context every session, including sessions that never branch into the engagement-scoped work the extra lines tried to anticipate. The fix is structural: keep vault-root CLAUDE.md small and route Claude to engagement-level files when work scopes there.
+| CLAUDE.md class | Status | Replacement read surface |
+|---|---|---|
+| Vault-root `CLAUDE.md` | **MANDATORY — the only class** | n/a (it IS the surface) |
+| Folder-scoped CLAUDE.md (any folder below vault root) | RETIRED Session 16 lock #1 | Cluster + instance `_index.md`; canonical instance files |
+| Per-cluster `CLAUDE.md` (e.g., `Engagements/CLAUDE.md`) | RETIRED Session 16 lock #1 | Cluster-level `_index.md` (active-instance enumeration) |
+| Per-instance `CLAUDE.md` (e.g., `Engagements/<X>/CLAUDE.md`) | RETIRED Session 16 lock #1 | Instance-level `_index.md` (per-instance file enumeration); 3-file triad (Overview / Updates / Context); optional `People/` |
+| Engagement-level CLAUDE.md (navigation-guide framing) | RETIRED Session 16 lock #1 | Same as per-instance row above |
 
-**Length discipline is canonical at `content-length-limits.md`.** That sibling packet declares the load-bearing file-class thresholds (vault-root CLAUDE.md target 8–15K bytes, hard cap 25K bytes); the 200-line target here is the lines-equivalent at typical line width. When the byte threshold and the line target diverge for a specific deployment, the byte threshold wins (it is the operational measurement that matters at session-load time). Adopters seed at ≤15K; the librarian flags overruns as `claude-md-bloat` findings.
+Operator direction at Session 16, verbatim: *"We're not doing folder scope."* The retirement is unconditional and not gated on future evidence; the load-bearing rationale (§2) plus the operational practicality of the replacement surfaces (§4) is the case for closure.
 
-**What belongs in vault-root CLAUDE.md.** A one-paragraph identity / role / contractual frame for the user. A list of active engagements with one-line summaries (link to engagement CLAUDE.md for depth). A pointer to the system manual (`Vault Architecture.md`). The top 5-10 key files the user touches daily. The session-level operational rules (file-automatically, ask-before-creating, log-scratch-freely, historical-data-frozen). A pointer to the Skills index. The vault structure tree (compact). Behavioral conventions that apply across all engagements.
+The session-load semantics under one-class: Claude Code reads `<vault>/CLAUDE.md` automatically; deeper-scope reads happen on demand when Claude scopes work into a cluster/instance. The deeper read targets (`_index.md`, Overview/Updates/Context) are referenced by name in vault-root CLAUDE.md but not auto-loaded; they materialize when needed.
 
-**What does NOT belong in vault-root CLAUDE.md.** Engagement-specific terminology, people, projects, status. Project-level technical detail. Schema definitions (live in `vault-schema.json`). Tag taxonomies (live in `Vault Architecture - Tagging`). Full file content standards (live in `Vault Architecture - Frontmatter`). The content that doesn't belong gets pulled into vault-root by drift — somebody added it once for visibility; nobody removed it later. The 200-line ceiling is the structural pushback against that drift.
+### 2. Length discipline: 60–90 line target / 6–9K bytes / 15K hard cap
 
-### 2. Engagement-level CLAUDE.md is the navigation guide; loaded on engagement scope
+The body of vault-root CLAUDE.md targets **60–90 lines** by line count and **6–9K bytes** by file size, with a **15K-byte hard cap (150 lines)** triggering a librarian `claude-md-bloat` finding. Length is canonical at the companion packet `content-length-limits.md`; this packet propagates the threshold and explains why.
 
-`Engagements/<X>/CLAUDE.md` is loaded when Claude branches into engagement-scoped work. It's not loaded on every session — only when the user asks about engagement X, or when an inbox routing decision lands a file under engagement X, or when a wikilink resolves into engagement X's tree. The file's purpose is engagement-specific orientation: who's on the team, what the engagement's structure looks like, what's active vs archived, where to find what.
+**Why the ceiling.** Vault-root CLAUDE.md loads on every session start — every single one. Multiple convergent sources establish the ceiling:
+- **Anthropic developer guidance**: ">5K tokens is almost always too many" for auto-loaded session-start surfaces.
+- **HumanLayer best-practices** (humanlayer.dev/blog/writing-a-good-claude-md): target <60 lines; failure mode cited — heavy CLAUDE.md triggers Claude's "context may or may not be relevant" deprioritization heuristic, causing Claude to **ignore** CLAUDE.md content.
+- **Bijit Ghosh instruction-slot research** (Medium May 2026): ~150-200 reliable instructions per session, ~50 already consumed by Claude Code's system prompt = **~100-150 usable**. Heavy CLAUDE.md exhausts the budget; adherence degrades.
+- **2026 community convergence** (AGENTS.md, Cursor `.cursor/rules/*.mdc`, GitHub Copilot path-scoped instructions): small root file + path-scoped / topic-scoped satellites is the universal pattern.
 
-The content is a navigation table: every `.md` file in the engagement directory tree appears in the table or in a "Files to Skip" section with explanation. No unlisted files. The table includes line counts (approximate ±20%) so Claude can estimate read cost before loading. The Key People section enumerates everyone in `People/` with name + role + wikilink. The status header matches the engagement's Overview frontmatter `status` field.
+A 500-line vault-root CLAUDE.md burns context every session AND degrades adherence even on the content that is loaded. The structural fix is to keep vault-root CLAUDE.md small AND route Claude to the on-demand surfaces (`_index.md` + canonical instance files + Vault Architecture spokes + governance JSON registries) when work scopes deeper.
 
-**Why navigation, not depth.** Engagement-level CLAUDE.md is read during engagement-scoped sessions, but the actual engagement *work* happens in PRDs, Updates, Context files, meeting notes, and strategic docs. CLAUDE.md is the routing layer — it tells Claude where to look. Depth lives where the work lives. Putting depth in CLAUDE.md means the routing layer gets read every engagement session and the depth gets read again when Claude branches to the work.
+**Length-vs-byte discipline.** When the byte threshold and the line target diverge for a specific deployment (e.g., a vault with long bulleted lines), **the byte threshold wins** — it's the operational measurement that matters at session-load time. The 200-line target is the lines-equivalent at typical line width; bytes is the authoritative ceiling.
 
-The discipline at the engagement level is **completeness over compression** — every file in the engagement tree is listed or skipped, with explanation, so a future-Claude reading the navigation guide doesn't accidentally route past an existing file. Compression happens via skip rules (`Files to Skip: <pattern> — <reason>`), not via omission.
+**Reference-deployment empirical state pre-correction.** ~38K bytes of CLAUDE.md content was eager-loaded across 7+ files (vault-root + engagement-level + per-instance + folder-scoped). That state was a structural failure of the multi-class model: each individual file passed its own length target while the cumulative eager-load cost violated the Anthropic guidance. The one-class collapse is the structural fix.
 
-### 3. Folder-scoped CLAUDE.md is conditional; required at project level when navigation density justifies
+**Enforcement.** R-32 + R-37 governance hooks watch the vault-root file size at write-time; the librarian's `claude-md-bloat` finding surfaces at the next cron run if the cap is exceeded; placement-validate rejects writes of `CLAUDE.md` at any path below vault root.
 
-`Engagements/<X>/Projects/<Y>/CLAUDE.md` is optional. It's required when the project has a non-trivial directory tree (e.g., multiple PRDs + Strategic + Planning + dedicated subdirs) and adopter navigation benefits from a project-level index. It's skipped when the project is small enough that the engagement-level CLAUDE.md plus the project's `Project - Context.md` handle navigation adequately.
+### 3. Index, not depth — CLAUDE.md points at depth; depth lives elsewhere
 
-When present, the folder-scoped CLAUDE.md mirrors the engagement-level shape but at finer granularity: every file in the project tree, line counts, skip rules, key contacts (if distinct from engagement-level), and status. The frontmatter is `type: navigation`, `engagement: <X>`, `project: <Y>`, `updated: <date>`.
+Vault-root CLAUDE.md is the **index**, not the **depth**. It carries:
 
-The conditional discipline is the structural answer to "do we need a CLAUDE.md everywhere?" The answer is no — folder-scoped CLAUDE.md is a heavy artifact (it duplicates structure already visible in the directory tree) and the value is reading-time orientation, which only pays off when the directory is dense enough to benefit. The librarian's `placement-validate` capability flags engagement-level CLAUDE.md misalignment (R-04 + R-10 + R-37 lockstep); folder-scoped CLAUDE.md is not audited for presence, only for shape when present.
+- Identity / role / contractual frame (one paragraph)
+- Active engagements + personal tracks (bulleted, one-line summaries pointing at canonical instance files for depth)
+- Top 5–10 key files (one-line purpose each)
+- Session-level operational rules (file-automatically, ask-before-creating, log-scratch-freely, historical-data-frozen, etc.)
+- Vault structure tree (compact ~25–40 lines)
+- Pointers (wikilinks + one-line gloss) to: `Vault Architecture.md`, the 5 governance spokes, the schemas, the Skills index, the Plans index
+- Tagging taxonomy enumeration (compact: dimension list + current canonical values only)
+- Behavioral conventions
+- Communication style (one paragraph + pointer to `About Me/LLM Interaction Preferences.md`)
 
-### 4. The index-vs-instruction split: separate what's loaded from what's instructed
+It does **NOT** carry:
+
+- Engagement-specific terminology, people, projects, status (lives at the cluster's instance-level Overview/Updates/Context + `_index.md`)
+- Project-level technical detail (same)
+- Schema definitions (live in `schemas/vault-schema.json` + the Frontmatter spoke)
+- Full tag taxonomy discipline (lives at the Tagging spoke; CLAUDE.md carries enumeration only)
+- File-class content standards in full (live at the Frontmatter spoke; CLAUDE.md may carry an operational quick-reference subsection)
+- Pre-write rule details (live at the Enforcement meta-spoke + governance JSON registries)
+- Plan-specific narrative or session-close summaries (live in plan-tree)
+
+The discipline is **stateable as one rule**: every paragraph in vault-root CLAUDE.md is either operational session-start orientation or a pointer to depth elsewhere. Anything that doesn't fit one of those two roles is a candidate for relocation to a Vault Architecture spoke, a canonical instance file, or a Reference plan-tree dossier.
+
+### 4. The replacement read surfaces — where engagement context lives now
+
+Under the retired three-class model, engagement-scoped sessions loaded:
+- Vault-root CLAUDE.md (~150 lines)
+- Engagement-level `Engagements/<X>/CLAUDE.md` (~80–150 lines)
+- Folder-scoped `Engagements/<X>/Projects/<Y>/CLAUDE.md` (~50–100 lines when present)
+
+Total: ~280–450 lines across three files at the deepest scope. Across multiple engagements + instances, the cumulative eager-load cost was the observed ~38K problem.
+
+Under the one-class model, engagement-scoped sessions load only vault-root CLAUDE.md eagerly. When work scopes into a cluster/instance, Claude reads on demand:
+
+| Old surface (retired) | New on-demand read surface |
+|---|---|
+| Engagement-level `Engagements/<X>/CLAUDE.md` (navigation guide; line counts; skip rules; status header) | Cluster-level `_index.md` (active instances + status markers) + instance-level `_index.md` (per-instance file enumeration with line counts + skip rules) |
+| Engagement-level CLAUDE.md "key people" section | Instance-level `People/` subfolder (one file per stakeholder when applicable) + `People/_index.md` for the enumeration |
+| Engagement-level CLAUDE.md status header | Instance Overview frontmatter `status:` field + cluster `_index.md` rollup |
+| Folder-scoped (per-project) CLAUDE.md content table | Instance-level `_index.md` is the navigation surface; finer-grained navigation comes from the directory itself + `_index.md` patterns documented in `_index.md-design.md` |
+| Folder-scoped CLAUDE.md "context handoff" content | Instance `<Instance> - Context.md` (one of the 3-file-per-bucket triad) |
+
+The instance-level `_index.md` is the load-bearing replacement for what folder-scoped CLAUDE.md used to carry. It enumerates every `.md` file in the instance subtree with line counts (approximate ±20%) and skip rules where applicable. This **replaces** the navigation function previously served by folder-scoped CLAUDE.md without adding eager-load cost — `_index.md` is on-demand-read like any other vault file.
+
+The `_index.md-design.md` companion packet codifies the full `_index.md` content shape, mandate scope (mandatory at user-facing folders + `Inbox/`; out-of-scope at `Logs/`, `Tags/`, `Archive/`, `Daily/`), and authoring discipline.
+
+### 5. The index-vs-instruction split — separate what's loaded from what's instructed
 
 CLAUDE.md content splits across two functions: **index** (here's what exists, where to find it) and **instruction** (here's how to operate). The split matters because index content is read-time orientation (Claude loads, learns the layout, navigates) while instruction content is write-time behavior (Claude applies the rule on every write).
 
-Vault-root CLAUDE.md carries both functions. Engagement-level CLAUDE.md is primarily index (the structure is the value). Folder-scoped CLAUDE.md is index-only (instruction lives at the engagement level above).
+Under the one-class model, vault-root CLAUDE.md carries **both functions**, but most instruction content is **delegated by reference** to the Vault Architecture narrative spokes:
 
-**The structural commitment:** instruction content lives at the layer that owns the behavior. Tag rules live in `Vault Architecture - Tagging.md` (the tagging pillar's narrative spoke). Frontmatter rules live in `Vault Architecture - Frontmatter.md`. The Naming pillar's discipline lives in `Vault Architecture - Naming.md`. CLAUDE.md references those spokes by wikilink and gives the one-line operational summary — `tags from the taxonomy; no invented tags` — but the full discipline lives at the spoke. This keeps CLAUDE.md scannable AND keeps instruction content owned by one canonical surface (the spoke), not duplicated across CLAUDE.md plus the spoke.
+| Function | Where it lives |
+|---|---|
+| Index (vault structure, active engagements, key files, schemas/skills pointers) | Vault-root CLAUDE.md (in-line, compact) |
+| Behavioral conventions (file-automatically, ask-before-creating, etc.) | Vault-root CLAUDE.md (in-line, one-line each) |
+| Tag taxonomy enumeration | Vault-root CLAUDE.md (compact list; current values only) |
+| Tag taxonomy discipline (25-cap rationale, prefix-grammar, anti-patterns) | `Vault Architecture - Tagging.md` spoke |
+| Frontmatter schema enumeration | Vault-root CLAUDE.md (one-line pointer to `schemas/vault-schema.json`) |
+| Frontmatter rules (per-type required + optional fields, R-32 contract) | `Vault Architecture - Frontmatter.md` spoke |
+| Naming conventions (compact summary) | Vault-root CLAUDE.md (one-line pointer) |
+| Naming conventions (full discipline) | `Vault Architecture - Naming.md` spoke |
+| Mandatory-file enumeration (compact reference) | Vault-root CLAUDE.md (compact list) |
+| Mandatory-file lock (full rationale + retired set) | `Vault Architecture - Mandatory-Files.md` spoke |
+| R-37 lockstep, promotion framework, structural enforcement | `Vault Architecture - Enforcement.md` thin meta-spoke |
 
-The anti-pattern is duplicating instruction content: a tagging rule restated in vault-root CLAUDE.md plus engagement CLAUDE.md plus the Tagging spoke. Three copies drift independently. The discipline is: one canonical statement at the spoke; CLAUDE.md carries the wikilink + a one-line gloss.
+The structural commitment: **instruction content lives at the spoke that owns the discipline**. Tag rules live at the Tagging spoke. Frontmatter rules at the Frontmatter spoke. Naming conventions at the Naming spoke. Vault-root CLAUDE.md references those spokes by wikilink + a one-line operational summary ("tags from the taxonomy; no invented tags"; "frontmatter per the schema; R-32 denies non-conforming writes"); the full discipline lives at the spoke. This keeps CLAUDE.md scannable AND keeps each instruction content surface owned by exactly one canonical location, not duplicated across CLAUDE.md plus the spoke.
 
-### 5. Loading order: vault-root → engagement-level → folder-scoped; each overrides previous
+The anti-pattern (which the index-vs-instruction split preempts): duplicating instruction content across multiple surfaces. A tagging rule restated in vault-root CLAUDE.md plus a Tagging spoke plus an engagement-level CLAUDE.md (under the retired three-class model) is three copies that drift independently. The discipline is: **one canonical statement at the spoke; CLAUDE.md carries the wikilink + a one-line gloss**.
 
-Claude Code loads CLAUDE.md files in directory ancestry order: vault-root first, then any intermediate ancestor with a CLAUDE.md, then the most-specific scoped file. The loading order is the structural channel for context layering — engagement-specific rules override vault-root defaults; project-specific overrides override engagement-level.
+## Vault-root CLAUDE.md content standard — 6-section framework
 
-The discipline: each layer ADDS or OVERRIDES, never DUPLICATES. Engagement-level CLAUDE.md should not restate vault-root content; it adds engagement-specific orientation. Folder-scoped CLAUDE.md should not restate engagement-level content; it adds project-specific orientation. The override semantics are implicit — the deeper layer's instruction wins for the scoped work — and the duplication anti-pattern (each layer restating the same rule for safety) collapses the override channel.
+The reference structure is **6 sections, in order**, targeting **60–90 lines / 6-9K bytes** of body content. Hard cap 150 lines / 15K bytes — well under the community ~120-line ceiling (HumanLayer, Bijit Ghosh, AGENTS.md convergence). The framework follows the **JSON-for-APPLY, markdown-for-UNDERSTAND** discipline: vault-root CLAUDE.md inlines only what Claude needs for first-action behavior; everything else is delegated via `@import` directives (always-loaded) or pointers (load-on-trigger).
 
-The loading order is also the read-budget primer. Vault-root CLAUDE.md is ~150-200 lines (under 200 ceiling). Engagement-level CLAUDE.md adds ~80-150 lines depending on engagement size. Folder-scoped CLAUDE.md (when present) adds ~50-100 lines. Total context at the deepest scope: ~280-450 lines of CLAUDE.md across three files. Substantially more than the vault-root alone, but the engagement + folder layers only load when work scopes there.
+The 6-section framework was ratified Plan 81 SP03 Session 17 (2026-05-13). It supersedes an earlier 21-section enumerated content standard that pre-dated the post-Session-4 governance architecture (Vault Architecture spokes + governance JSON registries). Under the post-Session-4 architecture, content classes the 21-section standard inlined (file content standards, tag taxonomy values, processing rules, vault structure tree depth, etc.) all live at canonical surfaces elsewhere — inlining them in CLAUDE.md duplicates content + creates a maintenance tax + triggers instruction-slot exhaustion (Bijit Ghosh research: ~150-200 reliable slots, ~50 already consumed by Claude Code's system prompt). The 6-section framework reverses that and pushes load to the spokes + JSON registries via pointers and one `@import` directive.
 
-## Vault-root CLAUDE.md content standard
+### 1. Role + Operating Posture (~3-5 lines)
 
-The reference structure (in order):
+One paragraph declaring Claude's role in THIS vault. Examples: "Claude operates as librarian, secretary, and agent" (consultant archetype); "Claude is the research-pipeline owner" (researcher archetype); "Claude is the strategic-document collaborator" (manager archetype). Maintenance: never changes once locked at onboarding.
 
-1. **Identity / role** — one paragraph. Who the user is, role title, current contractual frame, time horizon.
-2. **Engagements** — bulleted list with one-line status. Each line includes engagement status (ACTIVE / COMPLETE / PLANNING) + capacity estimate + link to engagement CLAUDE.md.
-3. **Business development** (if applicable) — separate from client engagements; one paragraph + link to BD CLAUDE.md.
-4. **Personal initiatives** — adopter's own products distinct from client work; one line per initiative with link.
-5. **About-me** (if applicable) — identity-layer files (career history, interaction preferences, application materials) with links.
-6. **Key files** — top 5-10 daily-touched files with one-line purpose each.
-7. **Claude's role** — operational frame (librarian / secretary / agent) one paragraph.
-8. **Vault structure** — compact tree (~25-40 lines).
-9. **Processing rules** (summary) — 3-5 lines pointing to `Vault Architecture.md` for full detail.
-10. **Task rules** (summary) — 3-5 lines pointing to the Task system docs.
-11. **Behavioral rules** — operational defaults (file-automatically, ask-before-creating, log-scratch-freely, historical-frozen, etc.).
-12. **Vault schema enforcement** — one paragraph + pointer to `schemas/vault-schema.json` + the R-32 enforcement reference.
-13. **New Structure Checklist** — the 7-item walk for new vault-root directories.
-14. **Pre-write checklist** (librarian) — 3-5 lines pointing to the librarian Intake Contract.
-15. **Tagging taxonomy** — bulleted dimension list. **"Compact" = canonical enumeration only**: dimension name + current canonical slug values + optional one-line current-state note per dimension. **NOT in CLAUDE.md**: historical-decision rationale (dated additions, ADR references, lockstep-commit pointers, "added via Plan NN" annotations) — those belong at the Tagging spoke's §Change log or at the ADR. CLAUDE.md is current-state; the spoke is discipline + history.
-16. **People** — top contacts with wikilinks (engagement-level depth lives in engagement CLAUDE.md).
-17. **Communication style** — one paragraph + pointer to `About Me/LLM Interaction Preferences.md`.
-18. **Dashboard** — one-line pointer to dashboard docs.
-19. **Vault conventions** — bulleted (Obsidian-native, frontmatter, daily-note shape, etc.).
-20. **Terminology** — engagement / project / task definitions if archetype-customized.
-21. **File Content Standards** *(optional but typical)* — per-archetype-type content shape summary (e.g., People files / PRD files / Context files / Updates files / Overview files / Meeting Notes / Initiative files). Compact subsection per type: required frontmatter + sections + target length. Detailed content discipline (full sections-and-bodies treatment) lives at `Vault Architecture - Frontmatter.md` (or a dedicated `- Content.md` spoke); CLAUDE.md carries the operational quick-reference. Adopters typically need this inline because routing decisions during file authoring depend on the shape rules and a same-session lookup is friction. Reference-deployment empirical pattern: ~50–70 lines covering 6–8 type entries.
+### 2. User Identity (~3-5 lines)
 
-Target line count: 150-200 lines body content (canonical: 8–15K bytes per `content-length-limits.md`; hard cap 25K bytes). Sections that grow beyond ~10 lines should be moved to a Vault Architecture spoke + replaced with a wikilink + one-line gloss in CLAUDE.md. §21 File Content Standards is the documented exception — it stays inline because it's operationally referenced during write-time routing.
+One paragraph: name, role, contractual frame, time horizon. SP04 install.sh substitutes from the adopter's onboarding `user-manifest.json` at scaffold time. Maintenance: changes only at contract transitions (quarterly+ frequency).
 
-## Engagement-level CLAUDE.md content standard
+### 3. Hard Rules / Behavioral Conventions (~5-10 bullets)
 
-The reference structure:
+The non-negotiables that govern Claude's behavior across every session in this vault. Each rule is one line. Reference examples:
+- File automatically when destination is clear
+- Ask before creating new top-level structures
+- Historical data is frozen — never overwrite past-dated content
+- `Logs/` is Claude's scratch space — write freely
+- Skill check: before building any capability from scratch, read `Skills/_index.md`
+- When the user raises architecture-bearing questions or you need to make a judgment call on system structure, load `Vault Architecture.md` first
 
-1. **Frontmatter** — `type: navigation`, `engagement: <slug>`, `updated: <date>`.
-2. **Title + one-paragraph engagement summary** — what the engagement delivers, client, role.
-3. **Status** — single-line status (matches engagement Overview frontmatter status field).
-4. **File Navigation table** — every `.md` file in the engagement directory tree, with approximate line counts.
-5. **Files to Skip section** — patterns + explanation for files that exist but aren't worth routine loading.
-6. **Key People** — every file under `People/` with name + role + wikilink.
-7. **Workstreams / Projects** — bulleted list with status + link to project CLAUDE.md (if present) or PRD.
-8. **Current Phase** — one paragraph; what the engagement is currently doing.
-9. **Recent Activity** — last 3-5 substantive events with dated entries.
-10. **Engagement-specific conventions** — vocabulary, abbreviations, or rules that apply within this engagement (none if no archetype customization needed).
+Per Bijit Ghosh's instruction-slot research: aim for <10 hard rules. Each rule must change Claude's behavior — if it does not, delete it.
 
-Target line count: 80-150 lines. Larger engagements with deep project trees may justify 200 lines; beyond that, split into per-project CLAUDE.md files at the folder-scoped level.
+### 4. Communication Style (~3-5 lines)
 
-## Folder-scoped CLAUDE.md content standard (when present)
+One paragraph: tone, structure expectations, feedback style. Followed by a pointer to a more detailed preferences file if the adopter maintains one (e.g., `About Me/LLM Interaction Preferences.md` in the reference deployment). Maintenance: rare.
 
-The reference structure:
+### 5. Active Work Pointers (~5-10 lines)
 
-1. **Frontmatter** — `type: navigation`, `engagement: <slug>`, `project: <slug>`, `updated: <date>`.
-2. **Title + one-line project summary**.
-3. **Status** — matches PRD frontmatter status.
-4. **File Navigation table** — project-scoped files with line counts.
-5. **Key contacts** — only if distinct from engagement-level Key People.
-6. **Active work** — what's in flight in this project right now.
+NOT enumerated. Pointers only, with the path stable even as contents churn. Examples:
+- Active client engagements: `<cluster-folder>/` — see cluster `_index.md` for current list
+- Personal tracks: `<tracks-folder>/`
+- System backlog: `System Backlog.md`
+- Tasks: `Tasks.md`
 
-Target line count: 50-100 lines. Beyond 100, the navigation justification is questionable — either the project is small enough that `{Project} - Context.md` handles routing, or the project is big enough that subdividing into sub-projects is appropriate.
+Maintenance: path-stable; only changes when the adopter renames a cluster (rare; R-37 lockstep applies).
+
+### 6. Authoritative References (~15-25 lines)
+
+The eager-load + on-demand reference set. Two sub-blocks:
+
+**A. `@import` directives (force-loaded at session start)**
+
+```
+@$CLAUDE_HOME/schemas/vault-schema.json
+```
+
+ONE file. The type vocabulary — canonical type enumeration consumed by R-32 Tier 2 DENY. Small (~5-10K); session-1-turn-1 critical; read on every write decision; amortizes across the session. SP04 install.sh substitutes `$CLAUDE_HOME` to the adopter's install root (typically `~/.claude/`). Claude Code's `@import` primitive supports absolute paths and `~/` expansion per docs at code.claude.com/docs/en/memory.
+
+The eager-load discipline: ONLY include surfaces that are session-start critical AND small enough to amortize across the session. The 4 governance JSON registries (frontmatter-rules, tagging-rules, naming-rules, mandatory-files-rules) FAIL this test — they're per-write / per-tag / per-rare-structure-decision, not session-start critical. They're pointer-only.
+
+**B. Pointer table (load on trigger)**
+
+| Trigger | Primary read (APPLY) | Rationale read (UNDERSTAND) |
+|---|---|---|
+| Architecture-bearing question (what is the system; why this way) | `Vault Architecture.md` | — (the manual IS the rationale) |
+| Authoring/editing a vault file (frontmatter conformance) | `$CLAUDE_HOME/governance/frontmatter-rules.json` | `Vault Architecture/Vault Architecture - Frontmatter.md` |
+| Tagging a file | `$CLAUDE_HOME/governance/tagging-rules.json` | `Vault Architecture/Vault Architecture - Tagging.md` |
+| Naming a new file or structure | `$CLAUDE_HOME/governance/naming-rules.json` | `Vault Architecture/Vault Architecture - Naming.md` |
+| Creating new top-level structure | `$CLAUDE_HOME/governance/mandatory-files-rules.json` | `Vault Architecture/Vault Architecture - Mandatory-Files.md` |
+| Governance hook / R-37 / promotion question | — | `Vault Architecture/Vault Architecture - Enforcement.md` |
+| System-project ideas; librarian/architect work | `System Backlog.md` | — |
+| Task-related work | `Tasks.md` | — |
+| **Mandatory** before building any capability | `Skills/_index.md` | — |
+| Inbox / connector / dashboard work | `Inbox/_index.md` | — |
+| Plan or sub-plan references | `Plans/` (symlink to plan tree) | — |
+
+The discipline encoded in this table: **JSON for APPLY (machine-readable, applied per-write/per-tag/per-structure), markdown spoke for UNDERSTAND (rationale, edge cases, pedagogy)**. Claude reads PRIMARY when applying a rule mechanically; reads RATIONALE when the user asks "why" or when judgment is required in edge cases the JSON doesn't cover.
+
+### Length budget summary
+
+| Section | Target | Maintenance frequency |
+|---|---|---|
+| 1 Role + Operating Posture | 3-5 lines | Never |
+| 2 User Identity | 3-5 lines | Contract-transition |
+| 3 Hard Rules | 5-10 bullets | Quarterly+ |
+| 4 Communication Style | 3-5 lines | Rare |
+| 5 Active Work Pointers | 5-10 lines | Path-stable; rename-driven only |
+| 6 Authoritative References | 15-25 lines | R-37 lockstep when foundation governance evolves |
+| **Total body** | **34-60 lines** | — |
+
+Plus frontmatter + headers + blank lines: **total file 60-90 lines, 6-9K bytes**. Hard cap 150 lines / 15K bytes triggers librarian `claude-md-bloat` finding.
+
+The framework collapses by ~5x from the pre-correction reference-deployment state (~38K cumulative multi-class CLAUDE.md) and by ~3x from the Session 17 reference vault-root state (286 lines / ~25K). The collapse is enabled by:
+- Vault Architecture spokes carrying governance discipline content (post-Session-4 two-surface architecture)
+- Governance JSON registries carrying machine-readable rules (per-pillar JSONs)
+- `_index.md` at cluster + instance levels carrying navigation (per `_index.md-design.md`)
+- The `@import` primitive force-loading vault-schema.json without inlining its content
+- Hard rules limited to first-action behavior (per Ghosh ~100-150 usable instruction-slot budget)
+
+### Authoring
+
+SP04 install.sh writes the vault-root CLAUDE.md at scaffold step 11.5 (per install.sh L565) by seeding `~/Code/claude-stem/templates/vault-claude-md-template.md` with identity substitution from the adopter's onboarding `user-manifest.json`. Foundation-repo template needs to match the 6-section framework — SP03 T-44 (scaffolded Session 17) authors the template update with R-37 lockstep coupling to this packet. The template is foundation-repo Claude-onboarding reference (Session 16 lock #5); consumed at scaffold-time, not shipped as an adopter artifact.
+
+## What used to be in folder-scoped CLAUDE.md and where it lives now
+
+Under the three-class model, engagement-level `Engagements/<X>/CLAUDE.md` and folder-scoped `Engagements/<X>/Projects/<Y>/CLAUDE.md` carried specific content classes. Their content maps to on-demand read surfaces in the one-class model:
+
+**Was in engagement-level CLAUDE.md → now lives at:**
+
+- Navigation table of every `.md` file in the engagement directory tree, with line counts + skip rules → **instance-level `_index.md`** (per-instance file enumeration). Skip rules become `- skip: <pattern> — <reason>` lines.
+- Engagement status header + capacity estimate → **instance Overview frontmatter `status:` field** + cluster-level `_index.md` rollup row.
+- Key People section enumerating People/ contacts → **`People/_index.md`** inside the instance + the People file frontmatter.
+- Engagement vocabulary + terminology → **instance `<Instance> - Context.md`** (one of the 3-file-per-bucket triad).
+- Active vs archived enumeration → **cluster-level `_index.md`** (active-instance markers; archived instances move to `Archive/`).
+
+**Was in folder-scoped (project-level) CLAUDE.md → now lives at:**
+
+- Project file table → **project-level `_index.md`** (the folder is itself the project; `_index.md` mandate applies per `_index.md-design.md`).
+- Project-specific terminology / context → **`<Project> - Context.md`** (project-level file).
+- Project status → **`<Project> - Overview.md` frontmatter `status:` field**.
+- Project-specific stakeholders distinct from engagement-level → **project-local `People/` subfolder** when applicable.
+
+The replacement pattern composes: cluster → instance → (optional) project subdirectory, each with its own `_index.md` + 3-file-per-bucket triad. The structure carries the same orientation function as the retired CLAUDE.md classes did, with two important differences:
+
+1. **On-demand load.** `_index.md` and instance files load when Claude scopes work there, not at session start. Cumulative eager-load cost stays at ~10–15K (vault-root only) regardless of how many engagements the adopter activates.
+2. **One-class consistency.** Every adopter has exactly one CLAUDE.md file. Future contributors cannot accidentally re-add engagement-level or folder-scoped CLAUDE.md instances without tripping the placement-validate audit.
 
 ## Anti-patterns
 
-| Anti-pattern | What goes wrong | Preempt with |
+The one-class mandate and the index-vs-instruction split together preempt six recurring drift classes:
+
+| Anti-pattern | Drift signature | Preempt with |
 |---|---|---|
-| **Vault-root CLAUDE.md as the system manual** | Vault-root grows past 500 lines as people add depth; session-start load cost balloons; the actual system manual (`Vault Architecture.md`) gets ignored. | 200-line ceiling on vault-root CLAUDE.md. Depth moves to `Vault Architecture.md` and to per-pillar spokes. CLAUDE.md is index. |
-| **Folder-scoped CLAUDE.md everywhere** | Every project gets a CLAUDE.md whether the directory needs it or not. Maintenance burden balloons; navigation files drift out of sync with directory contents. | Folder-scoped CLAUDE.md is conditional. Only when navigation density justifies. The librarian audits engagement-level CLAUDE.md placement; folder-scoped is optional. |
-| **Duplicated instruction content** | A tagging rule restated in vault-root CLAUDE.md + engagement CLAUDE.md + the Tagging spoke. Three copies drift. | One canonical statement at the spoke. CLAUDE.md carries wikilink + one-line gloss. The override channel between layers handles legitimate engagement-specific divergence. |
-| **Missing files in the engagement-level Navigation table** | A file lives in the engagement directory tree but doesn't appear in CLAUDE.md's File Navigation table OR in the Files to Skip section. Claude routing past existing files. | Engagement CLAUDE.md completeness is the discipline. Every `.md` file in the tree is listed or skipped with explanation. The librarian audits this post-write. |
-| **Engagement CLAUDE.md as depth document** | Engagement CLAUDE.md grows past 300 lines as people add project depth, decision history, status logs. The navigation function collapses; the file becomes another long-form document. | Engagement CLAUDE.md is navigation. Status/decision/log content lives in `Engagement - Updates.md` and `Engagement - Overview.md`. CLAUDE.md links to depth, not the depth itself. |
-| **Stale People sections** | A person leaves the engagement but their CLAUDE.md row stays; Claude routes to obsolete CRM data. | Engagement People section mirrors People/ folder. Librarian flags missing or extra entries at session-close. The People file is canonical; CLAUDE.md mirrors. |
-| **No status header on engagement CLAUDE.md** | Status drifts between Overview frontmatter and CLAUDE.md text. | Status header on every engagement CLAUDE.md; mirrors Overview frontmatter `status:` field. Librarian audits parity. |
-| **Vault-root structure tree out of date** | New top-level directory landed; vault-root CLAUDE.md tree stays stale. | R-10 New Structure Checklist requires updating the structure tree on every new root. R-37 lockstep enforces at write-time. |
-| **Tagging-taxonomy historical-decision rationale leaking into CLAUDE.md** | The Tagging Taxonomy section accumulates dated-addition notes, ADR-back-references, lockstep-commit pointers ("added via Plan NN T-X reversal"); section bloats from canonical 5-12 lines to 25+ lines as rationale piles up. | Strict "compact = canonical enumeration only" framing per §Tagging Taxonomy content standard. Historical-decision rationale moves to the Tagging spoke's §Change log or to the ADR. CLAUDE.md is current-state. The librarian audits CLAUDE.md tagging-section depth as part of `claude-md-bloat` findings. |
+| Re-introducing folder-scoped `CLAUDE.md` (anywhere below vault root) | New `CLAUDE.md` files appearing in `<cluster>/<instance>/` or `<cluster>/<instance>/Projects/<Y>/` during dogfood | One-class lock; R-32 governance hook rejects `CLAUDE.md` writes outside `<vault-root>/CLAUDE.md` |
+| Vault-root CLAUDE.md inlining engagement-specific depth | A section like "ACME engagement details" appearing in vault-root with multi-paragraph content because "we used to have an engagement-level CLAUDE.md and now we don't" | Replace with one-line link to `Engagements/ACME/ACME - Overview.md`; the depth lives at the canonical instance file |
+| Instance-level `_index.md` authored as a mini-CLAUDE.md with operational rules | Per-instance `_index.md` grows operational instruction content ("when working on this engagement, always …") | `_index.md` is navigation only per `_index.md-design.md`; behavioral rules live at vault-root CLAUDE.md; engagement-specific behavior lives at instance `<Instance> - Context.md` |
+| Vault-root CLAUDE.md grows past 15K bytes / 150 lines | New session-start auto-load cost; sections that should be at the spokes get inlined "for visibility"; instruction-slot exhaustion (Ghosh research) degrades adherence on remaining rules | Length cap enforced by librarian `claude-md-bloat` finding; 6-section framework discipline tells you what to move; companion `content-length-limits.md` codifies the threshold |
+| 21-section enumerated content standard (engagement list, key files, processing rules, file content standards, tag taxonomy values, vault structure tree all inlined) | Maintenance tax accumulates daily/weekly (engagements churn, tasks change, taxonomies evolve); CLAUDE.md becomes a lie Claude reads; deprioritization heuristic kicks in | 6-section framework (Role / User / Hard Rules / Communication Style / Active Work Pointers / Authoritative References); JSON-for-APPLY + markdown-for-UNDERSTAND discipline pushes content to the spokes + JSON registries; pointers replace enumerations |
+| Instruction content duplicated across CLAUDE.md and the spokes | Tag rules at CLAUDE.md + Tagging spoke; frontmatter rules at CLAUDE.md + Frontmatter spoke; each drifts independently | Spoke is canonical; CLAUDE.md carries wikilink + one-line gloss; governance-parity-audit catches drift |
+| Per-archetype CLAUDE.md (consultant CLAUDE.md vs researcher CLAUDE.md) | Adopter wizard proposes archetype-specific CLAUDE.md variants | Vault-root CLAUDE.md is universal; archetype variation lives in the cluster + instance + canonical-instance-file shapes per Session 16 lock #9; the wizard customizes content within the vault-root file, not the file count |
 
 ## Quality bar self-test (6 criteria)
 
-1. **Citation required.** PASS. Companion packets cited inline (`vault-construction-principles.md`, `_index.md-design.md`, `frontmatter-design.md`). Schema artifact cited (`schemas/vault-schema.json navigation type`). ADR-0001 cited for tiered compliance.
-
-2. **Scope declaration.** PASS. All six packet-only fields present in frontmatter; `validity_window` 2026-05-12..2026-11-12; `canonical_url` locked.
-
-3. **Articulation test.** PASS. Five structural commitments enumerate the load-bearing premises with a *why* per commitment. Per-class content-standard sections give the concrete reference structure. Novice reader exits with: "vault-root CLAUDE.md is the small session opener; engagement-level is the navigation guide; folder-scoped is optional; loading order is ancestor-to-leaf; each layer adds or overrides without duplicating."
-
-4. **Anti-pattern coverage.** PASS. 9-row anti-pattern table covers: vault-root-as-system-manual, folder-scoped-everywhere, duplicated-instruction, navigation-completeness, engagement-as-depth, stale-People-sections, missing-status-header, stale-structure-tree, tagging-historical-decision-leak.
-
-5. **Decision-traceability.** PASS. Loading-order commitment paired with the override channel rationale. Conditional folder-scoped CLAUDE.md called out explicitly. Line-count discipline named at each class with target ranges.
-
-6. **Source pointers.** PASS. `source_dependencies:` frontmatter enumerates schema + 3 companion packets + 1 ADR. Inline references cite ADR-0001 + companion packets by stable filename.
-
-Self-test verdict: 6/6 PASS at first authoring.
+1. **Citation required** — operator direction Session 16 lock #1 (2026-05-13) cited verbatim at §1; Anthropic ">5K tokens" guidance cited at §2; reference-deployment empirical state (~38K pre-correction) cited at §2; install.sh L565 + step 11.5 cited at §Vault-root CLAUDE.md content standard for scaffold-time authoring; `content-length-limits.md` canonical-source citation for length threshold.
+2. **Scope declaration** — frontmatter declares `altitude`, `scope`, `validity_window`, `source_dependencies`, `last_reviewed`, `canonical_url`, `url_stability`. ✓
+3. **Articulation test** — novice user can articulate after reading: (a) there is exactly one CLAUDE.md, at vault root; (b) length stays at 60-90 line target, 15K / 150-line hard cap; (c) CLAUDE.md is index, not depth — it points at the Vault Architecture spokes, governance JSON registries, and canonical instance files for detail; (d) what used to live at engagement-level CLAUDE.md now lives at instance `_index.md` + Overview/Updates/Context; (e) the 6-section framework structure (Role / User Identity / Hard Rules / Communication Style / Active Work Pointers / Authoritative References); (f) the JSON-for-APPLY, markdown-for-UNDERSTAND discipline at §6 Authoritative References; (g) `@import vault-schema.json` is the ONLY eager-load directive, with all other surfaces being pointer-only. ✓
+4. **Anti-pattern coverage** — 6 anti-patterns enumerated with drift signature + preempt mechanism. ✓
+5. **Decision-traceability** — three-class retirement attributed (Session 16 lock #1); replacement read surfaces enumerated against the retired classes; open questions explicit at §Open questions; closed questions named with disposition at §Closed questions.
+6. **Source pointers** — every claim back-linked: companion packets cited inline; downstream consumers + memory references enumerated at §Source pointers.
 
 ## Open questions
 
-- **OQ-CM1** Auto-generation of engagement-level CLAUDE.md from directory contents — defer to librarian-capability design; placement-validate currently audits but does not generate.
-- **OQ-CM2** Cross-archetype CLAUDE.md content patterns — researcher / developer / manager archetypes have different daily-touched-files distributions; the foundation-repo seed reflects consultant archetype. Adopter customization happens at install time via the onboarding wizard.
+| ID | Question | Disposition |
+|---|---|---|
+| **OQ-CMD-1** | Replacement-surface adequacy: does the cluster `_index.md` + instance `_index.md` + 3-file triad fully replace the orientation function that engagement-level CLAUDE.md served, or are there gap classes (e.g., engagement-specific operational rules) that need a new surface? | Defer to SP08 dogfood-harness empirical validation. If gaps surface, the candidate response is a new section in `<Instance> - Context.md` (operational rules per instance) — NOT a re-introduction of engagement-level CLAUDE.md. |
+| **OQ-CMD-2** | Length-cap tightening: should the 15K hard cap drop further (e.g., HumanLayer 60-line target)? Reference deployment empirical validation forthcoming via SP08 dogfood. | Defer to SP08; the 15K cap is the Session 17 framework default; per-adopter Layer-3 overlay can tighten without foundation change. |
+| **OQ-CMD-3** | Identity-substitution boundary: when SP04 install.sh seeds vault-root CLAUDE.md from `templates/claude-home-claude-md-template.md`, which sections accept onboarding-time substitution (identity, engagements, key files) vs which are foundation-locked (behavioral rules, schema enforcement reference)? | Defer to SP04 spec; T-22 sibling-integration verification confirms the substitution map. |
+| **OQ-CMD-4** | Multi-vault adopters: an adopter running two Obsidian vaults (e.g., work + personal) wants different CLAUDE.md per vault — is that the same one-class mandate applied per vault, or a fork? | Same mandate per vault. The mandate is per-vault-root, not per-adopter-globally. Two vaults = two vault-root CLAUDE.md files, each carrying its own one-class. |
 
 ## Closed questions (with disposition)
 
-- **CQ-CM1** Should CLAUDE.md ship with auto-generated content? → **No — hand-authored.** Rationale: CLAUDE.md content includes engagement-specific judgments (which files are daily-touched, which people are key, which conventions matter) that the auto-generator cannot infer. Templates seed the structure; humans author the content.
-- **CQ-CM2** Should the line-count discipline be enforced at write-time? → **No — soft ceiling audited by the librarian.** Rationale: 200-line vault-root CLAUDE.md is a *target*, not a structural requirement. Larger files surface as `claude-md-bloat` findings at the audit; operator triages.
-- **CQ-CM3** Should engagement-level CLAUDE.md be required? → **Yes when the engagement has its own folder; no for archived or zero-content engagements.** R-04 + the librarian `placement-validate` capability audits required-presence per the foundation rule.
+| Question | Disposition |
+|---|---|
+| Three-class CLAUDE.md model (vault-root + engagement-level + folder-scoped) | **RETIRED Session 16 lock #1 (2026-05-13)**. Operator direction verbatim: "We're not doing folder scope." |
+| Engagement-level CLAUDE.md as engagement-scope navigation guide | **RETIRED Session 16 lock #1**. Replacement: instance-level `_index.md` + 3-file-per-bucket triad. |
+| Folder-scoped CLAUDE.md at project level when navigation density justifies | **RETIRED Session 16 lock #1**. Replacement: project-level `_index.md` (per `_index.md-design.md` mandate scope). |
+| Loading-order semantics (vault-root → engagement-level → folder-scoped; each overrides previous) | **MOOT under one-class mandate**. Only vault-root loads at session start; deeper-scope reads are on demand. |
+| Per-cluster `CLAUDE.md` (e.g., `Engagements/CLAUDE.md`) | **RETIRED Session 16 lock #1**. Cluster-level `_index.md` carries active-instance enumeration. |
+| Per-instance `CLAUDE.md` (e.g., `Engagements/<X>/CLAUDE.md`) | **RETIRED Session 16 lock #1**. Per-instance navigation surface is instance-level `_index.md`. |
+| Engagement-as-Skill conversion (audit-agent + main-thread hallucination Session 16) | **RETIRED Session 16 lock #7**. Engagements are CONTEXT storage (read on demand); Skills are invocable capabilities. The conflation was a category error. |
+| 21-section enumerated vault-root CLAUDE.md content standard | **RETIRED Session 17 (2026-05-13)**. Structurally inconsistent with post-Session-4 governance architecture; triggered instruction-slot exhaustion + deprioritization heuristic. Replaced by 6-section framework (Role / User Identity / Hard Rules / Communication Style / Active Work Pointers / Authoritative References) with JSON-for-APPLY + markdown-for-UNDERSTAND discipline at §6 Authoritative References. |
+| Eager-load Vault Architecture.md via `@import` at session start | **RESOLVED Session 17 as pointer-only**. Vault Architecture.md is medium-size (15-25K) prose with grep-friendly sections; eager-loading the full file to consult ~2K of relevant content is wasteful. Hard Rule #6 directs Claude to load when architecture-bearing questions surface. |
+| Eager-load governance JSON registries (frontmatter-rules.json, tagging-rules.json, naming-rules.json, mandatory-files-rules.json) | **RESOLVED Session 17 as pointer-only**. Each registry is per-pillar-application, not session-start critical. Hooks (`pre-write-guard.sh`) enforce structurally regardless of Claude pre-load. Pointer + on-demand read at the moment of authoring/tagging/structure-creation. |
 
 ## Source pointers
 
-- Companion packets: `./vault-construction-principles.md` (capture-is-cheap commitment), `./_index.md-design.md` (sibling navigation surface for non-engagement folders), `./frontmatter-design.md` (`navigation` type entry frontmatter shape)
-- Schema artifact: `schemas/vault-schema.json navigation` type entry
-- Design rationale: [ADR-0001](../../docs/decisions/0001-tiered-compliance.md) (tiered compliance — applies to CLAUDE.md as `Strict` tier when system-emitted, `Standard` when adopter-authored)
-- Runtime: Claude Code's CLAUDE.md auto-loading semantics (directory-ancestry order)
+**Companion packets** (canonical content at `claude-stem/research/vault-construction/`):
+- [`vault-construction-principles.md`](./vault-construction-principles.md) — overarching rationale + four-pillar framing
+- [`mandatory-file-lock.md`](./mandatory-file-lock.md) — vault-root system set including CLAUDE.md; retired-set rationale; replacement surfaces
+- [`_index.md-design.md`](./_index.md-design.md) — `_index.md` content shape + mandate scope (mandatory user-facing + Inbox; out-of-scope Logs/Tags/Archive/Daily); load-bearing for §4 replacement surfaces
+- [`frontmatter-design.md`](./frontmatter-design.md) — schema underpinning the vault-root CLAUDE.md frontmatter + governance hook contracts
+- [`content-length-limits.md`](./content-length-limits.md) — canonical 8–15K target / 25K hard cap source; `claude-md-bloat` finding threshold
+- [`enforcement-map-design.md`](./enforcement-map-design.md) — R-32 / R-37 governance hooks that enforce the one-class write-time discipline
+
+**Downstream consumers** (bind against this packet):
+- `~/Code/claude-stem/templates/vault-claude-md-template.md` — onboarding reference template SP04 consumes at scaffold step 11.5
+- `~/Code/claude-stem/install.sh` step 11.5 — vault-root CLAUDE.md seed with identity substitution
+- `~/Code/claude-stem/onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md` (T-32) — narrative spoke surfaces the one-class mandate as discipline
+- `~/Code/claude-stem/onboarding/scaffold/vault-architecture/Vault Architecture - Enforcement.md` (T-32) — thin meta-spoke for R-32 / R-37 lockstep
+- SP04 wizard — surfaces the one-class mandate as part of onboarder pedagogy moment (per SP06 pedagogy spec)
+- SP08 dogfood-harness — verifies no `CLAUDE.md` files exist below vault root (placement-validate assertion)
+
+**Decision-authority sessions**:
+- Plan 81 SP03 Session 16 (2026-05-13) — 13 LOCKS RATIFIED; lock #1 is load-bearing for §1 + §Closed questions
+- Plan 81 SP03 Session 4 (2026-05-11) — two-surface governance architecture; load-bearing for §5 index-vs-instruction split between CLAUDE.md and spokes
+- Reference deployment empirical state pre-correction (~38K cumulative CLAUDE.md load) — load-bearing for §2 length-discipline rationale
+
+**Memory cross-references** (live `~/.claude/projects/-Users-petertiktinsky/memory/`):
+- `feedback_claude_md_two_class_model` — one-class CLAUDE.md mandate (file slug retained for cross-link history; content is one-class)
+- `feedback_engagement_is_context_not_skill` — engagement folders as CONTEXT not Skills; preempts the closed-question category-error
+- `feedback_index_file_convention` — `_index.md` mandate scope; load-bearing for §4 replacement surfaces
+- `feedback_user_defines_clusters` — system folders vs user-named cluster shapes; vault-root CLAUDE.md addresses both
+- `feedback_no_live_edits_during_foundation_repo_build` — separation discipline during SP03–SP08 build

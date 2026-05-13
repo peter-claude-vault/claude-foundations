@@ -18,3 +18,7 @@
 __pycache__/
 # Documentation overhaul scratch directory
 /_doc-overhaul/
+# Obsidian vault config (local UI state — workspace layout, theme, file
+# order, etc.). Created automatically when foundation-repo is opened as
+# an Obsidian vault for review. Not source; never shipped via install.sh.
+/.obsidian/
