@@ -4,7 +4,7 @@ description: Librarian governance-parity-audit capability contract. Audit-time a
 provides:
   - governance-parity-audit-capability
   - dual-surface-alignment-mechanism
-  - layer3-collision-detection
+  - foundation-upgrade-shadowed-entry-detection
 updated: 2026-05-12
 tags: ["#scope/reference"]
 ---
@@ -48,12 +48,11 @@ The capability is the load-bearing companion to the dual-surface design. Without
 | `field-missing` | warning | A rule entry in pillar JSON declares a field (e.g., `r47_exempt_paths`) that is not documented in the narrative spoke's corresponding section | `{pillar, rule_id, field, json_value, spoke_section, detected_at, first_seen}` |
 | `tier-mismatch` | warning | A rule's `tier` declared in pillar JSON differs from the tier label used in the narrative spoke's discussion of that rule | `{pillar, rule_id, json_tier, spoke_tier_reference, detected_at, first_seen}` |
 | `source-divergence` | info | A rule entry's `source:` field cites a research-packet path that does not exist or has been renamed | `{pillar, rule_id, json_source_pointer, resolution, detected_at, first_seen}` |
-| `layer3-collision` | info | Adopter Layer-3 overlay declares the same rule ID, archetype enum, or extensible-entry kind as foundation canonical (per R-52 / ADR-0006) | `{kind, entity_id, foundation_path, overlay_path, override_reason, detected_at, first_seen}` |
-| `foundation-upgrade-touches-shadowed-entry` | warning | A foundation upgrade has touched an entity the adopter overlay shadows; surfaces at `git fetch` cadence | `{kind, entity_id, foundation_diff_summary, overlay_path, detected_at, first_seen}` |
+| `foundation-upgrade-touches-shadowed-entry` | warning | A foundation upgrade has touched an entity the adopter overlay shadows; surfaces at `git fetch` cadence (per R-52 / ADR-0006) | `{kind, entity_id, foundation_diff_summary, overlay_path, detected_at, first_seen}` |
 | `meta-rule-coverage-gap` | warning | A meta-rule (cross-cutting in `_index.json cross_cutting_meta_rules[]`) is not referenced in the meta-spoke (Vault Architecture - Enforcement.md) | `{rule_id, meta_spoke_section, detected_at, first_seen}` |
 | `pillar-schema-malformed` | warning | A pillar JSON fails `enforcement-map.schema.json` validation at audit-time | `{pillar, schema_validation_error, detected_at, first_seen}` |
 
-Severity `warning` findings count against the librarian's session-close summary; `info` findings surface but do not block close-out. The two `layer3-*` finding categories are the hand-off surface from ADR-0006 / R-52 (the Layer-3 overlay collision tiebreaker).
+Severity `warning` findings count against the librarian's session-close summary; `info` findings surface but do not block close-out. The `foundation-upgrade-touches-shadowed-entry` finding is the hand-off surface from ADR-0006 / R-52 (the Layer-3 overlay collision tiebreaker); collisions at adopter-write time are caught by pre-write-guard.sh's write-time DENY, not by this audit.
 
 ## Audit cadence
 
@@ -73,7 +72,7 @@ For each pillar (frontmatter / tagging / naming / mandatory-files / meta):
 2. **Field-coverage check.** For each rule in pillar JSON, check whether the narrative spoke covers the rule's structural fields (`rule_text` summary, `failure_mode` reference, `enforcement_layer` enumeration). Emit `field-missing` for gaps.
 3. **Tier-label consistency.** Cross-check `tier:` declarations in pillar JSON against the tier framing in the narrative spoke. Emit `tier-mismatch` when the spoke describes a rule at a different tier than the JSON declares.
 4. **Source-pointer resolution.** Resolve `rules[].source:` pointers to filesystem paths. Emit `source-divergence` for unresolvable paths.
-5. **Layer-3 collision walk.** For each adopter overlay file (declared in `_index.json _path_rules` or sibling-discoverable), compute the union of overlay + foundation identifiers; emit `layer3-collision` for every overlap; consult git-diff context (when available) for `foundation-upgrade-touches-shadowed-entry` finding emission.
+5. **Foundation-upgrade shadowed-entry walk.** For each adopter overlay file (declared in `_index.json _path_rules` or sibling-discoverable), consult git-diff context (`--upgrade` flag set) to detect foundation upgrades touching entries the adopter overlay shadows. Emit `foundation-upgrade-touches-shadowed-entry` for every match. Adopter-write-time collisions are caught upstream by pre-write-guard.sh's write-time DENY (per R-52 / ADR-0006); this audit does not duplicate that check.
 6. **Meta-rule coverage.** Read `_index.json cross_cutting_meta_rules[]`; verify each meta-rule is referenced in the meta-spoke. Emit `meta-rule-coverage-gap` for missed references.
 
 The comparison is intentionally conservative: drift surfaces as findings the operator triages, not as auto-fixes. Auto-fix would conflict with the dual-surface design — narrative spokes carry voice + examples + anti-patterns that cannot be auto-generated from JSON, and JSON carries structured fields that should not be inferred from prose.
@@ -93,7 +92,7 @@ The capability reads from (in order):
 
 The `archetype-consistency` capability (specified at `governance/librarian-capabilities/archetype-consistency.md`) focuses on per-file archetype-field coverage; this `governance-parity-audit` capability focuses on cross-surface drift between governance JSONs and narrative spokes. The two are companion audits with distinct scopes — both run weekly via the cron template.
 
-Layer-3 collision finding categories (`layer3-collision` + `foundation-upgrade-touches-shadowed-entry`) are emitted by governance-parity-audit, not archetype-consistency, per ADR-0006's design hand-off.
+The `foundation-upgrade-touches-shadowed-entry` finding category is emitted by governance-parity-audit, not archetype-consistency, per ADR-0006's design hand-off. Adopter-write-time shadow detection is the responsibility of pre-write-guard.sh (write-time DENY), not the audit.
 
 ## R-37 lockstep coupled surfaces
 
@@ -121,7 +120,7 @@ The capability is specified at this contract; a downstream implementation sub-pl
 ## References
 
 - Design rationale: ADR-0005 (two-surface governance dual pattern)
-- Collision design: ADR-0006 (Layer-3 overlay collision tiebreaker) → R-52 in `_index.json`
+- Collision design: ADR-0006 (Layer-3 overlay collision tiebreaker) → R-52 in `_index.json` — write-time DENY in pre-write-guard.sh; this capability covers only the upgrade-time finding
 - Source narrative: `research/vault-construction/enforcement-map-design.md`
 - Sibling capability: `governance/librarian-capabilities/archetype-consistency.md`
 - Schema validation: `governance/enforcement-map.schema.json`
