@@ -6,7 +6,7 @@ provides:
   - folder-allowlist
   - plan-slug-format
   - date-prefix-patterns
-updated: 2026-05-12
+updated: 2026-05-13
 max_lines: 250
 tags: ["#scope/reference"]
 ---
@@ -71,6 +71,22 @@ A small set of top-level files is exempt from the root-must-be-a-directory rule:
 
 Pre-write-guard emits a Tier 3 advisory when a file is written to an unenumerated vault-root path. The advisory never blocks — adopter-customized archetypes legitimately add roots — but the addition should land via the New Structure Checklist so the schema, the hook, the librarian capability, and this spoke move in lockstep.
 
+## New Structure Checklist (R-10)
+
+Adding a new top-level directory requires the 7-item checklist before the first production write. Mid-session improvisation produces orphan roots invisible to walkers and breaks the cross-surface contract this pillar holds.
+
+| # | Step |
+|---|---|
+| 1 | Declare purpose — what archetype/content the directory holds |
+| 2 | Declare consumer — which skill, hook, capability, or query parses this path |
+| 3 | Update `Vault Architecture.md` (or the relevant pillar spoke) |
+| 4 | Add `vault-schema.json` archetype + frontmatter contract |
+| 5 | Extend `pre-write-guard.sh` known-root list (R-04 allowlist update) |
+| 6 | Add librarian-capability entry (placement-validation / plan-index / walker) |
+| 7 | Commit R-37 atomic lockstep — all four surfaces move in one commit |
+
+The checklist is the documented exception to mid-session improvisation. The pre-write-guard's Tier 3 advisory is the trigger to run the checklist; the R-37 atomic commit is the gate that lands the change.
+
 ## Plan slugs (R-27)
 
 Plans live in the plan-tree root (symlinked into the vault at `Plans/`). The slug grammar is stricter than the general slug grammar because plan-tree walkers and librarian `plan-index` regeneration depend on parseable structure.
@@ -81,6 +97,8 @@ Plans live in the plan-tree root (symlinked into the vault at `Plans/`). The slu
 - **Status marker required.** Every plan's top-level doc must have either a `**Status:**` header line OR a `manifest.json` with a `status` field. Missing status breaks the `librarian plan-index` capability.
 
 Pre-write-guard's plan-creation block DENIES new plan-root files (depth-2 `spec.md`, `tasks.md`, `00-ideation-brief.md`, `README.md`, `manifest.json`) that lack the numeric prefix or the status marker. Sanctioned creation paths are `/new-plan <slug>` (ad-hoc scaffolding) and `/backlog-research <item>` (research-first creation).
+
+**Whitelist:** two filenames are exempt from the plan-creation block — `ENFORCEMENT-MAP.md` (cross-cutting meta-spoke that can land at plan-root depth without the numeric-prefix discipline) and `_index.md` (index-file convention; same exemption pattern). These names pass the guard at any depth under the plan-tree root.
 
 ## Sub-plan files at depth ≥ 3 (R-28)
 
@@ -106,7 +124,18 @@ Gitignore patterns matching directory names at any depth must use the `**/` pref
 | `.env` | Only repo-root `.env` file |
 | `**/.obsidian/workspace*.json` | Workspace files at any depth |
 
-The default `.gitignore` for foundation-repo + adopter vaults ships with `**/`-anchored entries for `Tags/`, `.obsidian/workspace*.json`, and other at-depth patterns. Bare-name patterns survive only for repo-root-only artifacts (`.DS_Store`, `node_modules/`).
+The default `.gitignore` for foundation-repo + adopter vaults ships with the following entries:
+
+| Pattern | Anchor | Purpose |
+|---|---|---|
+| `.DS_Store` | repo-root only | macOS Finder metadata; usually scattered shallow enough that bare name suffices |
+| `**/Tags/` | at-any-depth | Obsidian tag pane metadata directories |
+| `.env` | repo-root only | Repo-root environment file |
+| `.env.local` | repo-root only | Per-machine environment override |
+| `node_modules/` | repo-root only | Node dependency tree (typically only at repo root) |
+| `**/.obsidian/workspace*.json` | at-any-depth | Obsidian workspace state files at any nested vault depth |
+
+Bare-name patterns survive only for repo-root-only artifacts. Anything that can land at depth requires the `**/` anchor.
 
 ## Anti-patterns
 
