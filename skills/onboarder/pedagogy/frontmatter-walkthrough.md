@@ -3,7 +3,7 @@ type: reference
 description: Step 6 pedagogical moment — frontmatter walkthrough. Inline TL;DR + canonical-URL link + personalized output for the adopter's vault.
 provides:
   - frontmatter-walkthrough-pedagogy
-updated: 2026-05-12
+updated: 2026-05-13
 tags: ["#scope/reference"]
 ---
 

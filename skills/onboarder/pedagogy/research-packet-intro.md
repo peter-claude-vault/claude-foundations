@@ -3,7 +3,7 @@ type: reference
 description: Step 6 pedagogical moment — research context packet introduction. Inline TL;DR + canonical-URL link + personalized output for the adopter's altitudes.
 provides:
   - research-packet-intro-pedagogy
-updated: 2026-05-12
+updated: 2026-05-13
 tags: ["#scope/reference"]
 ---
 
@@ -32,16 +32,19 @@ Your packet stack (rendered into your vault):
   (READ-ONLY mirrors of foundation-repo research/vault-construction/*.
    Updated on foundation-repo upgrade via R-37 lockstep.)
 
-  Engagement-altitude packets — author at <vault-root>/Engagements/<X>/Packets/
+  Engagement-altitude packets — author at <vault-root>/<your-engagement-dimension>/<X>/Packets/
   (Optional; for engagements with substantial context worth durable framing)
+  Path adapts to your archetype's structural dimension (consultant: Engagements/;
+  developer: Repos/; researcher: Topics/; manager: Programs/; or your overlay-customized name)
   Required frontmatter: type: packet, altitude: engagement, scope, last_reviewed, tags, updated
 
   Topic-altitude packets — author at <vault-root>/Reference/topic-packets/<topic>/
   (Cross-engagement reference material that outlives any single engagement)
   Validity window default: 90 days; surfaces staleness at 75 days
 
-  Initiative-altitude packets — author at <vault-root>/Personal Initiatives/<X>/Packets/
+  Initiative-altitude packets — author at <vault-root>/<your-initiative-dimension>/<X>/Packets/
   (Project-lifecycle-scoped; closes at plan close)
+  Path adapts to your archetype (Personal Initiatives/, Studies/, Initiatives/, etc.)
 ```
 
 The wizard offers a "Generate first engagement packet" follow-up that uses the adopter's archetype + chosen engagement to render a packet template ready for content authoring. Adopters who don't want engagement packets can skip — the foundation packet stack is the load-bearing reference; engagement / topic / initiative packets are optional adopter extensions.

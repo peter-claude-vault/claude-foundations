@@ -3,7 +3,7 @@ type: reference
 description: Step 6 pedagogical moment — tag taxonomy + discipline walkthrough. Inline TL;DR + canonical-URL link + personalized output for the adopter's archetype.
 provides:
   - tagging-walkthrough-pedagogy
-updated: 2026-05-12
+updated: 2026-05-13
 tags: ["#scope/reference"]
 ---
 
@@ -26,7 +26,7 @@ The canonical packet covers the 8-dimension taxonomy, the five discipline rules 
 The wizard renders the adopter's archetype-customized tag dimension table inline at this step. The render reads:
 
 - `schemas/vault-schema.json _tag_prefixes` + `_tag_prefixes_meta` for the foundation taxonomy
-- The adopter's selected archetype's structural dimensions (consultant uses `#engagement/*` + `#project/*`; developer uses `#repo/*` + `#epic/*`; researcher uses `#topic/*` + `#study/*`; manager uses `#program/*` + `#initiative/*`)
+- The adopter's selected archetype's structural dimensions — **these are seed defaults; adopters customize via Layer 3 overlay per the archetypes-as-references principle**. Foundation seeds: consultant uses `#engagement/*` + `#project/*`; developer uses `#repo/*` + `#epic/*`; researcher uses `#topic/*` + `#study/*`; manager uses `#program/*` + `#initiative/*`. Adopter overlays may rename, extend, or retire these dimensions freely.
 - Adopter Layer-3 overlay if present for custom-dimension extensions
 
 Render format:
@@ -45,7 +45,7 @@ Your 8 tag dimensions (6 user-facing + 2 system-utility):
 
   System-utility (exempt from cap; canonical-value registry):
     #log/<subtype>   e.g., #log/session-close, #log/digest-run, #log/audit-report
-    #status/<value>  e.g., #status/processed, #status/active
+    #status/<value>  e.g., #status/processed, #status/pending, #status/needs-review
 
 25-cap budget: user-facing dimensions can carry a total of ~25 distinct values across them.
 The librarian surfaces a consolidation prompt at ≥20 (80% of cap).
