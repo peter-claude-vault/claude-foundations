@@ -1,6 +1,6 @@
 {
   "schema_version": "1.1.0",
-  "_description": "Pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded.",
+  "_description": "6-pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded.",
   "_design_notes": {
     "consumer": "pre-write-guard.sh, post-write-verify.sh, librarian governance-parity-audit",
     "lockstep_pair": "Vault Architecture - Enforcement.md",
@@ -86,6 +86,24 @@
         "hooks/pre-write-guard.sh (cascade propagation)",
         "hooks/config/doc-dependencies.json (interim — RETIRES under SP13 T-6)",
         "governance/foundation-master.json (forward)"
+      ]
+    },
+    {
+      "id": "file-type-contracts",
+      "path": "file-type-contracts/",
+      "kind": "subfolder-registry",
+      "pattern": "governance/file-type-contracts/<file>.json",
+      "size_bytes": "5-15K per contract",
+      "loaded_by": ["pre-write-guard.sh", "post-write-verify.sh"],
+      "spoke": "File-Type-Contracts.md",
+      "_first_class_provenance": "SP13 Session 4 Phase 1a (2026-05-14): file-type-contracts elevated to 6th pillar per canonical §A. Per-file-type body-structure contracts following k8s ValidatingAdmissionPolicy paramKind pattern. Currently shipped: _index.md.json (SP03 Session 20). Pending T-12: CLAUDE.md.json + System Backlog.md.json + Vault Architecture.md.json (body-shape design pending operator direction — sections, max line counts, sentinel patterns).",
+      "r37_coupled_surfaces": [
+        "governance/file-type-contracts/*.json",
+        "governance/mandatory-files-rules.json (mandates[<file_type>].body_structure_contract pointer)",
+        "onboarding/scaffold/vault-architecture/Vault Architecture - File-Type-Contracts.md (forward — pending §D spokes landing)",
+        "hooks/pre-write-guard.sh (body-structure validation lookup; pending T-12 logic)",
+        "hooks/post-write-verify.sh (body-structure validation)",
+        "governance/foundation-master.json (forward — composed file_type_contracts slot)"
       ]
     }
   ],
@@ -198,5 +216,6 @@
     }
   },
   "_sp13_t4_provenance": "SP13 T-4 closing commit 2026-05-14: vault-schema dissolved into pillars; R-37 coupled_surfaces declarations added for frontmatter + tagging + mandatory-files + doc-dependencies pillars; gate-config interim references documented; foundation-master.json forward-references added (built under T-2 in same session). Closes OQ-13-1 + OQ-13-2 (revised) + OQ-13-3 governance side.",
-  "_sp13_t3_provenance": "SP13 T-3 closing commit 2026-05-14: gate-config.json dissolved with marker (mirror T-4 vault-schema pattern); foundation-master.json bundle extended with r32_type_aliases + r32_exempt_paths + r47_tag_cap top-level slots (schema_version 1.0.0 → 1.1.0; bundle_version regenerated); hooks/pre-write-guard.sh + hooks/post-write-verify.sh migrated to foundation-master.json bundle-only reads (one file read per invocation via $(cat ...) shell-var pattern + jq-on-stdin slicing). Closes R-37 reconciliation entry 5 (hook direct-reads of source pillar JSONs)."
+  "_sp13_t3_provenance": "SP13 T-3 closing commit 2026-05-14: gate-config.json dissolved with marker (mirror T-4 vault-schema pattern); foundation-master.json bundle extended with r32_type_aliases + r32_exempt_paths + r47_tag_cap top-level slots (schema_version 1.0.0 → 1.1.0; bundle_version regenerated); hooks/pre-write-guard.sh + hooks/post-write-verify.sh migrated to foundation-master.json bundle-only reads (one file read per invocation via $(cat ...) shell-var pattern + jq-on-stdin slicing). Closes R-37 reconciliation entry 5 (hook direct-reads of source pillar JSONs).",
+  "_sp13_session_4_phase_1a_provenance": "SP13 Session 4 Phase 1a commit 2026-05-14: pillar registry expanded from 5 to 6 by adding file-type-contracts as 6th pillar entry per canonical §A (closes C1 audit Check #1 + Phase 1 P1.1). Companion change: mandatory-files-rules.json#mandates._index_md.exemption_paths shrunk from 10 entries to 5 (Archive/Daily/Inbox/Logs/Meetings) per canonical §E (closes C1 audit Check #2 + Phase 1 P1.4). Bundle rebuilt deterministically; bundle_version regenerated. Out-of-scope for Phase 1a: T-12 file-type-contract authoring (3 contracts pending operator body-shape direction); _design_notes.lockstep_pair retired-Enforcement-spoke cleanup (Phase 3 P3.2); librarian-capability dissolved-schema migration (Phase 2 P2.1)."
 }

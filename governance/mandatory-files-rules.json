@@ -27,24 +27,18 @@
       "frontmatter_contract": "governance/frontmatter-rules.json#types.index",
       "_frontmatter_contract_provenance": "SP13 T-4 (2026-05-14): flipped from schemas/vault-schema.json#types.index to governance/frontmatter-rules.json#types.index after vault-schema dissolution. vault-schema.json file remains frozen with `_dissolved: true` marker until last consumer migrates.",
       "exemption_paths": [
-        "Templates/**",
         "Archive/**",
         "Daily/**",
-        "Meetings/**",
         "Inbox/**",
         "Logs/**",
-        "Tags/**",
-        "_orchestrator/**",
-        "tests/fixtures/**",
-        "tests/**"
+        "Meetings/**"
       ],
+      "_exemption_paths_provenance": "SP13 Session 4 Phase 1a (2026-05-14): shrunk from 10 entries to 5 per canonical §E. Foundation ships ONLY these 5 folders into adopter vault; user-created folders with non-shipped names (Templates/, Tags/, _orchestrator/, tests/, tests/fixtures/) get normal _index.md auto-bootstrap fire. The 5 retained entries each carry a single-concern justification: Archive/ = cold storage append-only history; Daily/ = date-prefixed file collection; Inbox/ = scraper aggregation surface; Logs/ = Claude scratch-space emissions; Meetings/ = date-prefixed file collection.",
       "exemption_semantics": "positive-list — unenumerated user-facing folders default to the mandate firing. Adding a new exemption requires R-37 atomic lockstep updating this entry + hooks/post-write-verify.sh exemption-check + skills/librarian/capabilities/index-maintain.sh exemption-check + Vault Architecture - Mandatory-Files.md narrative spoke.",
       "exemption_categories": [
         "date-prefixed sequence folders (Daily/, Meetings/, Archive/<YYYY>/)",
         "scraper aggregation surfaces (Inbox/ — uses inbox-index-refresh capability, not index-maintain)",
-        "scratch-space emissions (Logs/)",
-        "non-vault infrastructure (Tags/ Obsidian Make.md artifacts; _orchestrator/ plan-tree state; tests/fixtures/)",
-        "template seed directories (Templates/)"
+        "scratch-space emissions (Logs/)"
       ],
       "enforcement_mechanism": "structural — post-write-verify.sh Tier 1 auto-bootstrap creates _index.md at first-write to a non-exempt folder lacking one; librarian index-maintain Tier 2 sweep catches hand-created folders never written to. One-line self-exempt loop guard at hook entry (`[[ \"$FILE_PATH\" == */_index.md ]] && exit 0`) prevents recursion on the hook's own writes.",
       "consumers": [

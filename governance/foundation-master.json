@@ -1,7 +1,7 @@
 {
   "_description": "Composed foundation governance bundle (SP13 T-2 + T-3). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
   "_index": {
-    "_description": "Pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded.",
+    "_description": "6-pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded.",
     "_design_notes": {
       "consumer": "pre-write-guard.sh, post-write-verify.sh, librarian governance-parity-audit",
       "evolution_protocol": "R-37 atomic lockstep",
@@ -11,6 +11,7 @@
         "../research/vault-construction/enforcement-map-design.md"
       ]
     },
+    "_sp13_session_4_phase_1a_provenance": "SP13 Session 4 Phase 1a commit 2026-05-14: pillar registry expanded from 5 to 6 by adding file-type-contracts as 6th pillar entry per canonical §A (closes C1 audit Check #1 + Phase 1 P1.1). Companion change: mandatory-files-rules.json#mandates._index_md.exemption_paths shrunk from 10 entries to 5 (Archive/Daily/Inbox/Logs/Meetings) per canonical §E (closes C1 audit Check #2 + Phase 1 P1.4). Bundle rebuilt deterministically; bundle_version regenerated. Out-of-scope for Phase 1a: T-12 file-type-contract authoring (3 contracts pending operator body-shape direction); _design_notes.lockstep_pair retired-Enforcement-spoke cleanup (Phase 3 P3.2); librarian-capability dissolved-schema migration (Phase 2 P2.1).",
     "_sp13_t3_provenance": "SP13 T-3 closing commit 2026-05-14: gate-config.json dissolved with marker (mirror T-4 vault-schema pattern); foundation-master.json bundle extended with r32_type_aliases + r32_exempt_paths + r47_tag_cap top-level slots (schema_version 1.0.0 → 1.1.0; bundle_version regenerated); hooks/pre-write-guard.sh + hooks/post-write-verify.sh migrated to foundation-master.json bundle-only reads (one file read per invocation via $(cat ...) shell-var pattern + jq-on-stdin slicing). Closes R-37 reconciliation entry 5 (hook direct-reads of source pillar JSONs).",
     "_sp13_t4_provenance": "SP13 T-4 closing commit 2026-05-14: vault-schema dissolved into pillars; R-37 coupled_surfaces declarations added for frontmatter + tagging + mandatory-files + doc-dependencies pillars; gate-config interim references documented; foundation-master.json forward-references added (built under T-2 in same session). Closes OQ-13-1 + OQ-13-2 (revised) + OQ-13-3 governance side.",
     "_spoke_prefix": "Vault Architecture - ",
@@ -245,6 +246,27 @@
         ],
         "size_bytes": "8-12K",
         "spoke": "Doc-Dependencies.md (SP13 T-10)"
+      },
+      {
+        "_first_class_provenance": "SP13 Session 4 Phase 1a (2026-05-14): file-type-contracts elevated to 6th pillar per canonical §A. Per-file-type body-structure contracts following k8s ValidatingAdmissionPolicy paramKind pattern. Currently shipped: _index.md.json (SP03 Session 20). Pending T-12: CLAUDE.md.json + System Backlog.md.json + Vault Architecture.md.json (body-shape design pending operator direction — sections, max line counts, sentinel patterns).",
+        "id": "file-type-contracts",
+        "kind": "subfolder-registry",
+        "loaded_by": [
+          "pre-write-guard.sh",
+          "post-write-verify.sh"
+        ],
+        "path": "file-type-contracts/",
+        "pattern": "governance/file-type-contracts/<file>.json",
+        "r37_coupled_surfaces": [
+          "governance/file-type-contracts/*.json",
+          "governance/mandatory-files-rules.json (mandates[<file_type>].body_structure_contract pointer)",
+          "onboarding/scaffold/vault-architecture/Vault Architecture - File-Type-Contracts.md (forward — pending §D spokes landing)",
+          "hooks/pre-write-guard.sh (body-structure validation lookup; pending T-12 logic)",
+          "hooks/post-write-verify.sh (body-structure validation)",
+          "governance/foundation-master.json (forward — composed file_type_contracts slot)"
+        ],
+        "size_bytes": "5-15K per contract",
+        "spoke": "File-Type-Contracts.md"
       }
     ],
     "schema_version": "1.1.0"
@@ -252,14 +274,14 @@
   "_meta": {
     "_provenance": "SP13 T-2 build. Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
     "build_tool": "tools/build-foundation-master.sh",
-    "built_at": "2026-05-14T20:33:03Z",
-    "bundle_version": "e4ee1c1b4fa4c00a7828cefac199455472ca529b5996b3e53106b8b4d3f16ebd",
+    "built_at": "2026-05-14T22:44:22Z",
+    "bundle_version": "e93685449b3277c3c746e30d1902810fd326c19b1210d56237bde593118d07ab",
     "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
     "source_file_mtimes": {
-      "governance/_index.json": "2026-05-14T20:21:51Z",
+      "governance/_index.json": "2026-05-14T22:43:53Z",
       "governance/doc-dependencies.json": "2026-05-12T21:59:36Z",
       "governance/frontmatter-rules.json": "2026-05-14T19:41:02Z",
-      "governance/mandatory-files-rules.json": "2026-05-14T19:42:47Z",
+      "governance/mandatory-files-rules.json": "2026-05-14T22:44:07Z",
       "governance/naming-rules.json": "2026-05-12T22:00:51Z",
       "governance/tagging-rules.json": "2026-05-14T19:42:11Z"
     },
@@ -1333,6 +1355,7 @@
     "mandates": {
       "_description": "Per-file-type mandate registry. Each entry is a `matcher` (the file type this mandate applies to + path/scope conditions) bound to its `body_structure_contract` (the parameter resource carrying the contract). Hooks consume `mandates[<file_type>]` to determine WHETHER a mandate fires for a given write; consume `body_structure_contract` to determine WHAT the file's contract is. The two-resource separation follows the k8s ValidatingAdmissionPolicy pattern (matcher in pillar; paramKind in separate resource).",
       "_index_md": {
+        "_exemption_paths_provenance": "SP13 Session 4 Phase 1a (2026-05-14): shrunk from 10 entries to 5 per canonical §E. Foundation ships ONLY these 5 folders into adopter vault; user-created folders with non-shipped names (Templates/, Tags/, _orchestrator/, tests/, tests/fixtures/) get normal _index.md auto-bootstrap fire. The 5 retained entries each carry a single-concern justification: Archive/ = cold storage append-only history; Daily/ = date-prefixed file collection; Inbox/ = scraper aggregation surface; Logs/ = Claude scratch-space emissions; Meetings/ = date-prefixed file collection.",
         "_frontmatter_contract_provenance": "SP13 T-4 (2026-05-14): flipped from schemas/vault-schema.json#types.index to governance/frontmatter-rules.json#types.index after vault-schema dissolution. vault-schema.json file remains frozen with `_dissolved: true` marker until last consumer migrates.",
         "body_structure_contract": "governance/file-type-contracts/_index.md.json",
         "consumers": [
@@ -1343,21 +1366,14 @@
         "exemption_categories": [
           "date-prefixed sequence folders (Daily/, Meetings/, Archive/<YYYY>/)",
           "scraper aggregation surfaces (Inbox/ — uses inbox-index-refresh capability, not index-maintain)",
-          "scratch-space emissions (Logs/)",
-          "non-vault infrastructure (Tags/ Obsidian Make.md artifacts; _orchestrator/ plan-tree state; tests/fixtures/)",
-          "template seed directories (Templates/)"
+          "scratch-space emissions (Logs/)"
         ],
         "exemption_paths": [
-          "Templates/**",
           "Archive/**",
           "Daily/**",
-          "Meetings/**",
           "Inbox/**",
           "Logs/**",
-          "Tags/**",
-          "_orchestrator/**",
-          "tests/fixtures/**",
-          "tests/**"
+          "Meetings/**"
         ],
         "exemption_semantics": "positive-list — unenumerated user-facing folders default to the mandate firing. Adding a new exemption requires R-37 atomic lockstep updating this entry + hooks/post-write-verify.sh exemption-check + skills/librarian/capabilities/index-maintain.sh exemption-check + Vault Architecture - Mandatory-Files.md narrative spoke.",
         "file_pattern": "**/_index.md",
