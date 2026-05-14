@@ -3,15 +3,17 @@
   "_index": {
     "_description": "6-pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded.",
     "_design_notes": {
+      "_lockstep_pair_provenance": "SP13 Session 4 Phase 1b (2026-05-14): pointer rewritten from retired `Vault Architecture - Enforcement.md` meta-spoke (canonical §G retirement) to the 6-spoke folder per canonical §D (Frontmatter.md / Tagging.md / Naming.md / Mandatory-Files.md / Doc-Dependencies.md / File-Type-Contracts.md). The pillar registry IS the pillar surface; its R-37 lockstep couples across all 6 mirror spokes. Closes C1 audit M1.",
       "consumer": "pre-write-guard.sh, post-write-verify.sh, librarian governance-parity-audit",
       "evolution_protocol": "R-37 atomic lockstep",
-      "lockstep_pair": "Vault Architecture - Enforcement.md",
+      "lockstep_pair": "Vault Architecture/ folder narrative spokes (6, one per pillar) per canonical §D",
       "source_dependencies": [
         "../docs/decisions/0005-two-surface-governance-dual-pattern.md",
         "../research/vault-construction/enforcement-map-design.md"
       ]
     },
     "_sp13_session_4_phase_1a_provenance": "SP13 Session 4 Phase 1a commit 2026-05-14: pillar registry expanded from 5 to 6 by adding file-type-contracts as 6th pillar entry per canonical §A (closes C1 audit Check #1 + Phase 1 P1.1). Companion change: mandatory-files-rules.json#mandates._index_md.exemption_paths shrunk from 10 entries to 5 (Archive/Daily/Inbox/Logs/Meetings) per canonical §E (closes C1 audit Check #2 + Phase 1 P1.4). Bundle rebuilt deterministically; bundle_version regenerated. Out-of-scope for Phase 1a: T-12 file-type-contract authoring (3 contracts pending operator body-shape direction); _design_notes.lockstep_pair retired-Enforcement-spoke cleanup (Phase 3 P3.2); librarian-capability dissolved-schema migration (Phase 2 P2.1).",
+    "_sp13_session_4_phase_1b_provenance": "SP13 Session 4 Phase 1b commit 2026-05-14: retired-class cleanup atomic. naming-rules.json#R-04.known_roots reduced 15 → 8 per canonical §F (foundation-shipped system folders only); naming-rules.json#R-04.vault_root_file_exemptions dropped Tasks.md per canonical §G; mandatory-files-rules.json#_design_notes.scope_note rewritten to canonical §C inventory (drops retired-class references); _index.json#_design_notes.lockstep_pair rewritten from retired `Vault Architecture - Enforcement.md` to 6-spoke folder per canonical §D. Bundle rebuilt deterministically. Closes C1 audit H6 + H7 + M1 + scope_note narrative cleanup.",
     "_sp13_t3_provenance": "SP13 T-3 closing commit 2026-05-14: gate-config.json dissolved with marker (mirror T-4 vault-schema pattern); foundation-master.json bundle extended with r32_type_aliases + r32_exempt_paths + r47_tag_cap top-level slots (schema_version 1.0.0 → 1.1.0; bundle_version regenerated); hooks/pre-write-guard.sh + hooks/post-write-verify.sh migrated to foundation-master.json bundle-only reads (one file read per invocation via $(cat ...) shell-var pattern + jq-on-stdin slicing). Closes R-37 reconciliation entry 5 (hook direct-reads of source pillar JSONs).",
     "_sp13_t4_provenance": "SP13 T-4 closing commit 2026-05-14: vault-schema dissolved into pillars; R-37 coupled_surfaces declarations added for frontmatter + tagging + mandatory-files + doc-dependencies pillars; gate-config interim references documented; foundation-master.json forward-references added (built under T-2 in same session). Closes OQ-13-1 + OQ-13-2 (revised) + OQ-13-3 governance side.",
     "_spoke_prefix": "Vault Architecture - ",
@@ -274,15 +276,15 @@
   "_meta": {
     "_provenance": "SP13 T-2 build. Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
     "build_tool": "tools/build-foundation-master.sh",
-    "built_at": "2026-05-14T22:44:22Z",
-    "bundle_version": "e93685449b3277c3c746e30d1902810fd326c19b1210d56237bde593118d07ab",
+    "built_at": "2026-05-14T22:48:47Z",
+    "bundle_version": "f4c34365ad7b04323f4323250e25e12c28395b999edd6f2853546a24bbe1fc59",
     "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
     "source_file_mtimes": {
-      "governance/_index.json": "2026-05-14T22:43:53Z",
+      "governance/_index.json": "2026-05-14T22:48:35Z",
       "governance/doc-dependencies.json": "2026-05-12T21:59:36Z",
       "governance/frontmatter-rules.json": "2026-05-14T19:41:02Z",
-      "governance/mandatory-files-rules.json": "2026-05-14T22:44:07Z",
-      "governance/naming-rules.json": "2026-05-12T22:00:51Z",
+      "governance/mandatory-files-rules.json": "2026-05-14T22:48:15Z",
+      "governance/naming-rules.json": "2026-05-14T22:48:04Z",
       "governance/tagging-rules.json": "2026-05-14T19:42:11Z"
     },
     "source_files_count": 6
@@ -1342,7 +1344,7 @@
       "evolution_protocol": "R-37 atomic lockstep — this registry + Vault Architecture - Mandatory-Files.md + governance/file-type-contracts/<file>.json + hooks/post-write-verify.sh updated in one commit",
       "lockstep_pair": "Vault Architecture - Mandatory-Files.md (narrative spoke) + governance/file-type-contracts/_index.md.json (per-file-type body-structure contract) + hooks/post-write-verify.sh (auto-bootstrap implementation)",
       "phase_d_e_gap_reference": "No single canonical R-XX registry exists yet (per the governance-enforcement-baseline audit gap #1). R-44 is allocated for the _index.md universal mandate as a fresh ID outside the pillar's initial assigned range (R-07/R-09/R-12/R-14). Phase D-E session reconciles all R-XX allocations into a registry; until then, new rule-ID allocations must grep governance/ + schemas/ + hooks/ + onboarding/scaffold/vault-architecture/ for duplicates before authoring.",
-      "scope_note": "Session 20 stub. Only the `_index.md` mandate (R-44) and its exemption list have landed. T-32 fills the full universal mandatory-file body (CLAUDE.md vault-root only per Session 16 lock #1; Tasks.md; System Backlog.md; Vault Architecture.md; Vault Architecture/ spoke folder; Inbox/ + Inbox/_index.md; About Me/; Meetings/; per-folder/per-cluster mandatories; the original R-07 / R-09 / R-12 / R-14 rule range) per the vault-root rollout roadmap.",
+      "scope_note": "SP13 Session 4 Phase 1b stub. Only the `_index.md` mandate (R-44) has landed with full body + file-type-contract. T-12 authors the 3 vault-root file-type-contracts per canonical §C (governance/file-type-contracts/{CLAUDE.md,System Backlog.md,Vault Architecture.md}.json) + 3 corresponding `mandates._<file>_md` entries here in this pillar. Canonical §G EXPLICITLY RETIRES Tasks.md / About Me/ / per-cluster CLAUDE.md / enforcement-map.md / Vault Architecture - Enforcement.md meta-spoke — those surfaces are NOT in the mandate roadmap. Authoritative inventory: ~/.claude-plans/81-claude-stem-dogfood-optimization/foundation-governance-target-state.md §C + §G. The original R-07 / R-09 / R-12 / R-14 rule range allocation predates Session 3 amendments; reconciliation deferred to Phase D-E pillar.",
       "source_dependencies": [
         "../research/vault-construction/mandatory-file-lock.md",
         "../research/vault-construction/_index.md-design.md",
@@ -1425,6 +1427,7 @@
     "pillar": "naming",
     "rules": [
       {
+        "_sp13_session_4_phase_1b_provenance": "SP13 Session 4 Phase 1b (2026-05-14): known_roots reduced 15 → 8 per canonical §F (foundation-shipped system folders only: Archive/Daily/Inbox/Logs/Meetings/Plans/Skills/Vault Architecture). REMOVED user-named clusters (About Me / Artefact-BD / Engagements / Personal Initiatives / Reference / Tags / Dashboard) — user-named clusters belong in overlay-master.frontmatter.path_routing per canonical §H. About Me + Tags also retired per canonical §G (About Me/ folder retired entirely; Tags/ is Obsidian Make.md plugin artifact, not foundation-shipped). vault_root_file_exemptions: dropped Tasks.md per canonical §G (foundation-imposing a single task-tracking shape is unwarranted). System Backlog - Archive.md retained (consequence-of-lifecycle satellite; operator-disposition deferred). Closes C1 audit H6 + H7.",
         "enforcement_layer": [
           "pre-write-guard.sh known-root allowlist",
           "pre-write-guard.sh single-file exemption block",
@@ -1433,30 +1436,22 @@
         "failure_mode": "File written to undocumented vault-root drifts structure; Vault Architecture.md falls out of sync; navigation guides stale. Tier 3 advisory: write proceeds; operator told to move file or update Vault Architecture.md.",
         "id": "R-04",
         "known_roots": [
-          "About Me",
           "Archive",
-          "Artefact-BD",
           "Daily",
-          "Dashboard",
-          "Engagements",
           "Inbox",
           "Logs",
           "Meetings",
-          "Personal Initiatives",
           "Plans",
-          "Reference",
           "Skills",
-          "Tags",
           "Vault Architecture"
         ],
         "pillar": "naming",
-        "rule_text": "Files written to a vault-root directory must reside in a documented root. Known roots are a hardcoded allowlist in pre-write-guard.sh. A small set of top-level files is exempt from the root-must-be-a-directory rule. Adding a new root requires R-10's checklist + R-37 lockstep — not mid-session improvisation.",
+        "rule_text": "Files written to a vault-root directory must reside in a documented root. Known roots are a hardcoded allowlist in pre-write-guard.sh covering foundation-shipped system folders only (per canonical §F); user-created top-level folders register via overlay-master.frontmatter.path_routing extensions per canonical §H. A small set of top-level files is exempt from the root-must-be-a-directory rule (canonical §C mandatory files + System Backlog satellite). Adding a new foundation-shipped root requires R-10's checklist + R-37 lockstep — not mid-session improvisation.",
         "source": "ENFORCEMENT-MAP.md R-04 + pre-write-guard.sh known-root allowlist",
         "tier": "3",
         "vault_root_file_exemptions": [
           "CLAUDE.md",
           "Vault Architecture.md",
-          "Tasks.md",
           "System Backlog.md",
           "System Backlog - Archive.md"
         ]

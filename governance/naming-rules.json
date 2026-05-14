@@ -19,31 +19,24 @@
       "source": "ENFORCEMENT-MAP.md R-04 + pre-write-guard.sh known-root allowlist",
       "enforcement_layer": ["pre-write-guard.sh known-root allowlist", "pre-write-guard.sh single-file exemption block", "librarian placement-validation"],
       "failure_mode": "File written to undocumented vault-root drifts structure; Vault Architecture.md falls out of sync; navigation guides stale. Tier 3 advisory: write proceeds; operator told to move file or update Vault Architecture.md.",
-      "rule_text": "Files written to a vault-root directory must reside in a documented root. Known roots are a hardcoded allowlist in pre-write-guard.sh. A small set of top-level files is exempt from the root-must-be-a-directory rule. Adding a new root requires R-10's checklist + R-37 lockstep — not mid-session improvisation.",
+      "rule_text": "Files written to a vault-root directory must reside in a documented root. Known roots are a hardcoded allowlist in pre-write-guard.sh covering foundation-shipped system folders only (per canonical §F); user-created top-level folders register via overlay-master.frontmatter.path_routing extensions per canonical §H. A small set of top-level files is exempt from the root-must-be-a-directory rule (canonical §C mandatory files + System Backlog satellite). Adding a new foundation-shipped root requires R-10's checklist + R-37 lockstep — not mid-session improvisation.",
       "known_roots": [
-        "About Me",
         "Archive",
-        "Artefact-BD",
         "Daily",
-        "Dashboard",
-        "Engagements",
         "Inbox",
         "Logs",
         "Meetings",
-        "Personal Initiatives",
         "Plans",
-        "Reference",
         "Skills",
-        "Tags",
         "Vault Architecture"
       ],
       "vault_root_file_exemptions": [
         "CLAUDE.md",
         "Vault Architecture.md",
-        "Tasks.md",
         "System Backlog.md",
         "System Backlog - Archive.md"
-      ]
+      ],
+      "_sp13_session_4_phase_1b_provenance": "SP13 Session 4 Phase 1b (2026-05-14): known_roots reduced 15 → 8 per canonical §F (foundation-shipped system folders only: Archive/Daily/Inbox/Logs/Meetings/Plans/Skills/Vault Architecture). REMOVED user-named clusters (About Me / Artefact-BD / Engagements / Personal Initiatives / Reference / Tags / Dashboard) — user-named clusters belong in overlay-master.frontmatter.path_routing per canonical §H. About Me + Tags also retired per canonical §G (About Me/ folder retired entirely; Tags/ is Obsidian Make.md plugin artifact, not foundation-shipped). vault_root_file_exemptions: dropped Tasks.md per canonical §G (foundation-imposing a single task-tracking shape is unwarranted). System Backlog - Archive.md retained (consequence-of-lifecycle satellite; operator-disposition deferred). Closes C1 audit H6 + H7."
     },
     {
       "id": "R-10",
