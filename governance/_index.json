@@ -1,1 +1,177 @@
-{"schema_version":"1.0.0","_description":"Pillar registry + cross-cutting meta-rules. Hook-loaded.","_design_notes":{"consumer":"pre-write-guard.sh, post-write-verify.sh","lockstep_pair":"Vault Architecture - Enforcement.md","evolution_protocol":"R-37 atomic lockstep","source_dependencies":["../docs/decisions/0005-two-surface-governance-dual-pattern.md","../research/vault-construction/enforcement-map-design.md"]},"_spoke_prefix":"Vault Architecture - ","pillars":[{"id":"frontmatter","path":"frontmatter-rules.json","rule_id_range":["R-32","R-33","R-37","R-39","R-40","R-41"],"size_bytes":"3-5K","loaded_by":["pre-write-guard.sh","post-write-verify.sh"],"spoke":"Frontmatter.md"},{"id":"tagging","path":"tagging-rules.json","rule_id_range":["R-05","R-32-taxonomy","R-47","R-50","R-51"],"size_bytes":"3-5K","loaded_by":["pre-write-guard.sh"],"spoke":"Tagging.md"},{"id":"naming","path":"naming-rules.json","rule_id_range":["R-04","R-10","R-20","R-27","R-28"],"size_bytes":"3-5K","loaded_by":["pre-write-guard.sh"],"spoke":"Naming.md"},{"id":"mandatory-files","path":"mandatory-files-rules.json","rule_id_range":["R-07","R-09","R-12","R-14","R-44"],"rule_id_range_note":"R-07/R-09/R-12/R-14 are the originally-assigned range (T-32 fills body; pending T-13 closure). R-44 was allocated SP03 Session 20 for the _index.md universal mandate (Session 16 lock #2) — fresh ID outside the originally-assigned range; Phase D-E session reconciles all R-XX allocations into a single registry.","size_bytes":"3-5K","loaded_by":["pre-write-guard.sh","post-write-verify.sh"],"spoke":"Mandatory-Files.md","file_type_contracts_subfolder":"file-type-contracts/","file_type_contracts_pattern":"governance/file-type-contracts/<file>.json carries the per-file-type body-structure contract (k8s ValidatingAdmissionPolicy paramKind pattern); the pillar's `mandates.<file_type>` block declares the matcher + exemption list. SP03 Session 20 ships the _index.md contract as the first instance."}],"cross_cutting_meta_rules":[{"id":"R-37","pillar":"meta","name":"Atomic lockstep","scope":"all","tier":2,"rule_text":"Commits update JSON + narrative + ENFORCEMENT-MAP + CLAUDE.md atomically.","failure_mode":"Drift from partial landings.","enforcement_layer":["pre-write-guard","git"],"source":"EM R-37"},{"id":"R-35","pillar":"meta","name":"Promotion framework","scope":"all","tier":"framework","rule_text":"Tier 1 advisory + promotion_criterion. Clean data \u2192 Tier 2; none \u2192 retire.","failure_mode":"Ossify or promote without data.","enforcement_layer":["doc","librarian"],"source":"EM R-35"},{"id":"R-34","pillar":"meta","name":"Self-healing boundary","scope":"all","tier":"framework","rule_text":"Mechanical drift auto-fixes; semantic drift self-flags.","failure_mode":"Over-reach or under-reach.","enforcement_layer":["doc","librarian"],"source":"EM R-34"},{"id":"R-52","pillar":"meta","name":"Layer-3 Overlay Collision Tiebreaker","scope":"all","tier":2,"rule_text":"When adopter Layer-3 overlay and foundation canonical both declare the same rule ID, archetype enum value, or extensible entry kind: adopter Layer-3 SHADOWS foundation (adopter wins). Foundation declaration is preserved but does not fire. Adopter MUST carry `_override_reason` (free-text, mandatory) on every shadowing entry. Write-time enforcement via pre-write-guard.sh: shadowing writes without `_override_reason` are DENIED at write-time. Per-write `--force-override` flag bypasses the DENY for a single write; no persistent disable. Adopter renames are special-case shadows under a new name (no separate `_rename_history` field; adopter manifest is canonical naming). Foundation upgrades touching shadowed entries surface as merge conflicts in the adopter's vault repo plus `foundation-upgrade-touches-shadowed-entry` warning from librarian governance-parity-audit (audit-time, because foundation upgrades are not adopter writes). ADR-0006 documents the design rationale + 6 rejected alternatives (foundation-wins / newest-timestamp-wins / hard-rename-required / schema-side-disjoint-namespaces / audit-time-only / persistent-disable-config).","failure_mode":"Silent collisions between adopter customization and foundation canonical produce unpredictable runtime behavior \u2014 rules with the same ID compete, archetype lookups fail, overlay edits silently disable foundation rules. Without the tiebreaker, every foundation upgrade is a potentially-breaking change for adopters with overlays on those entries; without write-time DENY, adopters discover collisions days later in audit reports rather than at the write itself. Write-time enforcement plus the upgrade-time audit finding close both gaps without forcing adopters into rename-or-refuse-upgrade choices.","enforcement_layer":["pre-write-guard.sh write-time DENY on shadowing writes missing `_override_reason`","`--force-override` per-write escape hatch (no persistent disable)","librarian governance-parity-audit `foundation-upgrade-touches-shadowed-entry` finding category (upstream upgrade-time)","version-control merge-conflict surfacing on foundation upgrades touching shadowed entries","_override_reason field documentary discipline (human-only; free-text)"],"source":"ADR-0006 + personalization-seams audit (HIGH IMPACT gap)"}]}
+{
+  "schema_version": "1.1.0",
+  "_description": "Pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded.",
+  "_design_notes": {
+    "consumer": "pre-write-guard.sh, post-write-verify.sh, librarian governance-parity-audit",
+    "lockstep_pair": "Vault Architecture - Enforcement.md",
+    "evolution_protocol": "R-37 atomic lockstep",
+    "source_dependencies": [
+      "../docs/decisions/0005-two-surface-governance-dual-pattern.md",
+      "../research/vault-construction/enforcement-map-design.md"
+    ]
+  },
+  "_spoke_prefix": "Vault Architecture - ",
+  "pillars": [
+    {
+      "id": "frontmatter",
+      "path": "frontmatter-rules.json",
+      "rule_id_range": ["R-32", "R-33", "R-37", "R-39", "R-40", "R-41"],
+      "size_bytes": "20-30K",
+      "loaded_by": ["pre-write-guard.sh", "post-write-verify.sh"],
+      "spoke": "Frontmatter.md",
+      "absorbs": "types{} registry + tier_compliance + archetype_enum + archetype_conditional_fields + packet_only_fields + excluded_fields + retired_types + path_routing (SP13 T-4 absorbed from dissolved schemas/vault-schema.json 2026-05-14)",
+      "r37_coupled_surfaces": [
+        "governance/frontmatter-rules.json",
+        "onboarding/scaffold/vault-architecture/Vault Architecture - Frontmatter.md",
+        "hooks/pre-write-guard.sh (SCHEMA_KEY case)",
+        "hooks/post-write-verify.sh (type_map)",
+        "hooks/config/gate-config.json (interim — until SP13 T-6 retirement)",
+        "governance/foundation-master.json (forward — composed from this pillar via tools/build-foundation-master.sh)"
+      ]
+    },
+    {
+      "id": "tagging",
+      "path": "tagging-rules.json",
+      "rule_id_range": ["R-05", "R-32-taxonomy", "R-47", "R-50", "R-51"],
+      "size_bytes": "10-15K",
+      "loaded_by": ["pre-write-guard.sh"],
+      "spoke": "Tagging.md",
+      "absorbs": "canonical tag-prefix taxonomy (SP13 T-4 absorbed from dissolved schemas/vault-schema._tag_prefixes + _tag_prefixes_meta 2026-05-14)",
+      "r37_coupled_surfaces": [
+        "governance/tagging-rules.json",
+        "onboarding/scaffold/vault-architecture/Vault Architecture - Tagging.md",
+        "hooks/pre-write-guard.sh (tag-validation branch)",
+        "governance/log-subtype-registry.json (system-utility canonicality discipline)",
+        "hooks/config/gate-config.json (interim — until SP13 T-6 retirement)",
+        "governance/foundation-master.json (forward — composed r47_exempt_paths_composed union)"
+      ]
+    },
+    {
+      "id": "naming",
+      "path": "naming-rules.json",
+      "rule_id_range": ["R-04", "R-10", "R-20", "R-27", "R-28"],
+      "size_bytes": "3-5K",
+      "loaded_by": ["pre-write-guard.sh"],
+      "spoke": "Naming.md"
+    },
+    {
+      "id": "mandatory-files",
+      "path": "mandatory-files-rules.json",
+      "rule_id_range": ["R-07", "R-09", "R-12", "R-14", "R-44"],
+      "rule_id_range_note": "R-07/R-09/R-12/R-14 are the originally-assigned range (T-32 fills body; pending T-13 closure). R-44 was allocated SP03 Session 20 for the _index.md universal mandate (Session 16 lock #2) — fresh ID outside the originally-assigned range; Phase D-E session reconciles all R-XX allocations into a single registry.",
+      "size_bytes": "8-10K",
+      "loaded_by": ["pre-write-guard.sh", "post-write-verify.sh"],
+      "spoke": "Mandatory-Files.md",
+      "file_type_contracts_subfolder": "file-type-contracts/",
+      "file_type_contracts_pattern": "governance/file-type-contracts/<file>.json carries the per-file-type body-structure contract (k8s ValidatingAdmissionPolicy paramKind pattern); the pillar's `mandates.<file_type>` block declares the matcher + exemption list. SP03 Session 20 ships the _index.md contract as the first instance.",
+      "r37_coupled_surfaces": [
+        "governance/mandatory-files-rules.json",
+        "governance/file-type-contracts/*.json (registry pattern)",
+        "onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md",
+        "hooks/post-write-verify.sh (auto-bootstrap)",
+        "skills/librarian/capabilities/index-maintain.sh",
+        "governance/foundation-master.json (forward)"
+      ]
+    },
+    {
+      "id": "doc-dependencies",
+      "path": "doc-dependencies.json",
+      "size_bytes": "8-12K",
+      "loaded_by": ["pre-write-guard.sh", "post-write-verify.sh"],
+      "spoke": "Doc-Dependencies.md (SP13 T-10)",
+      "_first_class_provenance": "SP13 Session 1 follow-on (2026-05-14): LIFTED to first-class authoring pillar per feedback_doc_deps_first_class. Was originally framed as a retirement-fold target; reframed as the canonical authoring home for both hub-spoke cascades AND upstream→downstream write-time propagation edges. hooks/config/doc-dependencies.json retires under SP13 T-6 (canonical successor: this pillar). The validator schemas/doc-dependencies-schema.json is preserved.",
+      "r37_coupled_surfaces": [
+        "governance/doc-dependencies.json",
+        "schemas/doc-dependencies-schema.json (validator)",
+        "hooks/pre-write-guard.sh (cascade propagation)",
+        "hooks/config/doc-dependencies.json (interim — RETIRES under SP13 T-6)",
+        "governance/foundation-master.json (forward)"
+      ]
+    }
+  ],
+  "cross_cutting_meta_rules": [
+    {
+      "id": "R-37",
+      "pillar": "meta",
+      "name": "Atomic lockstep",
+      "scope": "all",
+      "tier": 2,
+      "rule_text": "Commits update JSON + narrative + ENFORCEMENT-MAP + CLAUDE.md atomically.",
+      "failure_mode": "Drift from partial landings.",
+      "enforcement_layer": ["pre-write-guard", "git"],
+      "source": "EM R-37"
+    },
+    {
+      "id": "R-35",
+      "pillar": "meta",
+      "name": "Promotion framework",
+      "scope": "all",
+      "tier": "framework",
+      "rule_text": "Tier 1 advisory + promotion_criterion. Clean data → Tier 2; none → retire.",
+      "failure_mode": "Ossify or promote without data.",
+      "enforcement_layer": ["doc", "librarian"],
+      "source": "EM R-35"
+    },
+    {
+      "id": "R-34",
+      "pillar": "meta",
+      "name": "Self-healing boundary",
+      "scope": "all",
+      "tier": "framework",
+      "rule_text": "Mechanical drift auto-fixes; semantic drift self-flags.",
+      "failure_mode": "Over-reach or under-reach.",
+      "enforcement_layer": ["doc", "librarian"],
+      "source": "EM R-34"
+    },
+    {
+      "id": "R-52",
+      "pillar": "meta",
+      "name": "Layer-3 Overlay Collision Tiebreaker",
+      "scope": "all",
+      "tier": 2,
+      "rule_text": "When adopter Layer-3 overlay and foundation canonical both declare the same rule ID, archetype enum value, or extensible entry kind: adopter Layer-3 SHADOWS foundation (adopter wins). Foundation declaration is preserved but does not fire. Adopter MUST carry `_override_reason` (free-text, mandatory) on every shadowing entry. Write-time enforcement via pre-write-guard.sh: shadowing writes without `_override_reason` are DENIED at write-time. Per-write `--force-override` flag bypasses the DENY for a single write; no persistent disable. Adopter renames are special-case shadows under a new name (no separate `_rename_history` field; adopter manifest is canonical naming). Foundation upgrades touching shadowed entries surface as merge conflicts in the adopter's vault repo plus `foundation-upgrade-touches-shadowed-entry` warning from librarian governance-parity-audit (audit-time, because foundation upgrades are not adopter writes). ADR-0006 documents the design rationale + 6 rejected alternatives.",
+      "failure_mode": "Silent collisions between adopter customization and foundation canonical produce unpredictable runtime behavior — rules with the same ID compete, archetype lookups fail, overlay edits silently disable foundation rules. Without the tiebreaker, every foundation upgrade is a potentially-breaking change for adopters with overlays on those entries; without write-time DENY, adopters discover collisions days later in audit reports rather than at the write itself.",
+      "enforcement_layer": [
+        "pre-write-guard.sh write-time DENY on shadowing writes missing `_override_reason`",
+        "`--force-override` per-write escape hatch (no persistent disable)",
+        "librarian governance-parity-audit `foundation-upgrade-touches-shadowed-entry` finding category (upstream upgrade-time)",
+        "version-control merge-conflict surfacing on foundation upgrades touching shadowed entries",
+        "_override_reason field documentary discipline (human-only; free-text)"
+      ],
+      "source": "ADR-0006 + personalization-seams audit (HIGH IMPACT gap)"
+    }
+  ],
+  "dissolved_schemas": {
+    "_description": "SP13 T-4 (2026-05-14): registry of schemas that have been semantically dissolved into pillars. Files remain physically present in foundation-repo until the last consumer migrates (T-3 hooks, T-6 gate-config retirement, T-8 install.sh ship list, T-9 tests, T-10 docs). 'Dissolved' = no new authoring; canonical authority has moved to the named successors. Each entry carries `frozen_at`, `dissolution_sp_task`, `successors`, `consumer_migration_status`, `final_deletion_gating_task`.",
+    "schemas/vault-schema.json": {
+      "frozen_at": "2026-05-14",
+      "dissolution_sp_task": "SP13 T-4",
+      "successors": {
+        "types": "governance/frontmatter-rules.json#types",
+        "tiers": "governance/frontmatter-rules.json#tier_compliance",
+        "archetype_enum": "governance/frontmatter-rules.json#archetype_enum",
+        "archetype_conditional_fields": "governance/frontmatter-rules.json#archetype_conditional_fields",
+        "packet_only_fields": "governance/frontmatter-rules.json#packet_only_fields",
+        "excluded_fields": "governance/frontmatter-rules.json#excluded_fields",
+        "retired_types": "governance/frontmatter-rules.json#retired_types",
+        "_path_rules": "governance/frontmatter-rules.json#path_routing (renamed for clarity)",
+        "_tag_prefixes": "governance/tagging-rules.json#taxonomy.dimension_prefixes",
+        "_tag_prefixes_meta": "governance/tagging-rules.json#taxonomy (system_utility_dimensions + user_facing_dimensions + cap_25_applies_to fields)"
+      },
+      "consumer_migration_status": {
+        "governance_authoring": "MIGRATED in SP13 T-4 (this commit)",
+        "hooks_pre_write_guard": "PENDING — migrates under SP13 T-3 (Session 3) to read foundation-master.json",
+        "hooks_post_write_verify": "PENDING — migrates under SP13 T-3 (Session 3) to read foundation-master.json",
+        "hooks_config_gate_config": "PENDING — gate-config retires under SP13 T-6 (Session 4); schema_path field references vault-schema.json until then",
+        "install_sh": "PENDING — install.sh schema-copy list updates under SP13 T-8 (Session 5-6)",
+        "onboarding_bootstrap_schemas_sh": "PENDING — bootstrap-schemas.sh updates under SP13 T-8",
+        "tests": "PENDING — SP13 T-9 (Session 5-6) updates fixtures",
+        "docs": "PENDING — SP13 T-10 updates research/* + target-state/* + docs/*"
+      },
+      "final_deletion_gating_task": "SP13 T-9 or T-10 (whichever closes last; the physical file deletion happens atomically with the last consumer migration per OQ-13-4 'migrate-then-drop in same commit')",
+      "drop_then_fail_loudly_disallowed": true,
+      "frozen_artifact_policy": "File at schemas/vault-schema.json remains intact (content preserved) and carries `_dissolved: true` top-level marker + `_canonical_successors` pointer block. No new authoring against this file — all updates go to the named successors. install.sh continues to ship the file until SP13 T-8 updates the ship list."
+    }
+  },
+  "_sp13_t4_provenance": "SP13 T-4 closing commit 2026-05-14: vault-schema dissolved into pillars; R-37 coupled_surfaces declarations added for frontmatter + tagging + mandatory-files + doc-dependencies pillars; gate-config interim references documented; foundation-master.json forward-references added (built under T-2 in same session). Closes OQ-13-1 + OQ-13-2 (revised) + OQ-13-3 governance side."
+}

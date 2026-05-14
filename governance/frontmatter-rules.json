@@ -1,11 +1,21 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
   "pillar": "frontmatter",
-  "_description": "Claude-consumed JSON registry for the frontmatter pillar. Loaded by pre-write-guard.sh at runtime and read by the librarian frontmatter-coverage-audit. Carries R-32, R-33, R-37, R-39, R-40, R-41. Frontmatter is the API every file exposes to the system; vault-schema.json declares the fields and per-type contracts, and this registry declares the rules that enforce them. See research/vault-construction/frontmatter-design.md for the narrative rationale.",
+  "_description": "Claude-consumed JSON registry for the frontmatter pillar. Loaded by pre-write-guard.sh at runtime and read by the librarian frontmatter-coverage-audit. Carries R-32, R-33, R-37, R-39, R-40, R-41 plus the type registry, tier compliance, archetype-conditional fields, path-routing rules, and the archetype enum. Frontmatter is the API every file exposes to the system; this pillar declares the fields, per-type contracts, AND the rules that enforce them. SP13 T-4 dissolved schemas/vault-schema.json into this pillar (types + tier assignment + path routing + archetype binding) plus governance/tagging-rules.json (tag-prefix taxonomy). See research/vault-construction/frontmatter-design.md for the narrative rationale.",
   "_design_notes": {
     "consumer": "pre-write-guard.sh — SCHEMA_KEY case statement + R-32 type-allowlist DENY + R-33 placement advisory; post-write-verify.sh — R-39 provides-presence advisory + R-41 archetype-field-compliance audit; librarian frontmatter-coverage-audit (R-39, R-40, R-41)",
-    "lockstep_pair": "Vault Architecture - Frontmatter.md (narrative spoke) + schemas/vault-schema.json (canonical schema) + pre-write-guard.sh (SCHEMA_KEY case) + post-write-verify.sh (type_map)",
-    "evolution_protocol": "R-37 atomic lockstep — frontmatter-rules.json + Vault Architecture - Frontmatter.md + schemas/vault-schema.json + pre-write-guard.sh SCHEMA_KEY case + post-write-verify.sh type_map updated in one commit",
+    "absorbed_from_vault_schema": [
+      "tiers (canonical tier definitions; was vault-schema.json `tiers`)",
+      "types (21 per-type entries; were top-level type keys in vault-schema.json)",
+      "archetype_conditional_fields (was vault-schema.json `_archetype_conditional_fields`)",
+      "packet_only_fields (was vault-schema.json `_packet_only_fields`)",
+      "excluded_fields (was vault-schema.json `_excluded_fields`)",
+      "retired_types (was vault-schema.json `_retired_types`)",
+      "path_routing (was vault-schema.json `_path_rules`; renamed for clarity per SP13 spec)",
+      "archetype_enum (was implicit in vault-schema.json; now explicit declaration)"
+    ],
+    "lockstep_pair": "Vault Architecture - Frontmatter.md (narrative spoke) + pre-write-guard.sh (SCHEMA_KEY case) + post-write-verify.sh (type_map)",
+    "evolution_protocol": "R-37 atomic lockstep — frontmatter-rules.json + Vault Architecture - Frontmatter.md + pre-write-guard.sh SCHEMA_KEY case + post-write-verify.sh type_map updated in one commit. NOTE: schemas/vault-schema.json was DISSOLVED in SP13 T-4 (2026-05-14) into this pillar + governance/tagging-rules.json; the file remains physically present as a frozen artifact carrying a `_dissolved: true` marker until the last consumer migrates (T-3 hooks, T-8 install, T-9 tests, T-10 docs) — no new authoring against the dissolved file.",
     "source_dependencies": [
       "../research/vault-construction/frontmatter-design.md",
       "../research/vault-construction/enforcement-map-design.md",
@@ -16,34 +26,282 @@
       "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
     ]
   },
+
   "tier_compliance": {
-    "_description": "Three compliance tiers declared at schemas/vault-schema.json `tiers`. Reproduced here as enforcement-input metadata so pre-write-guard.sh can branch on tier without re-reading the schema.",
-    "strict": {"validation_behavior": "deny", "universal_required": ["type", "tags", "updated"], "conditional_required": ["status"]},
-    "standard": {"validation_behavior": "warn", "universal_required": ["type", "tags", "updated"], "conditional_required": []},
-    "minimal": {"validation_behavior": "allow", "universal_required": [], "conditional_required": []}
+    "_description": "Canonical three-tier compliance definitions (SP13 T-4: absorbed from dissolved vault-schema.json `tiers` block; this pillar is now the single source of truth for tier semantics + enforcement metadata).",
+    "strict": {
+      "description": "System files (scaffold-emitted, /ingest-routed, scraper-aggregated to Inbox/). Hard fail at write-time (R-32 Tier 2 DENY).",
+      "validation_behavior": "deny",
+      "applies_to": "type entries with tier=strict in this pillar's `types` block",
+      "universal_required": ["type", "tags", "updated"],
+      "conditional_required": ["status"]
+    },
+    "standard": {
+      "description": "User-authored vault content. Soft warning; librarian flags drift via tag-coverage-audit + frontmatter-coverage-audit capabilities.",
+      "validation_behavior": "warn",
+      "applies_to": "type entries with tier=standard in this pillar's `types` block",
+      "universal_required": ["type", "tags", "updated"],
+      "conditional_required": []
+    },
+    "minimal": {
+      "description": "Explicit opt-out files. No validation; flagged 'outside system' by librarian. Used for legacy imports, paste-buffer scratch, archives outside lifecycle.",
+      "validation_behavior": "allow",
+      "applies_to": "files matching minimal_tier_exemptions glob patterns OR carrying explicit `tier: minimal` frontmatter directive",
+      "universal_required": [],
+      "conditional_required": []
+    }
   },
+
+  "archetype_enum": {
+    "_description": "Canonical registered archetypes (SP13 T-4: absorbed from vault-schema._archetype_enum; was implicit reference target from R-51). Adopters extend via Layer 3 overlay-master.json archetype_extensions per R-52 collision-tiebreaker.",
+    "values": ["consultant", "researcher", "developer", "manager"],
+    "overlay_extension_path": "Layer 3 overlay-master.json archetype_extensions"
+  },
+
+  "archetype_conditional_fields": {
+    "_description": "Fields that may appear in any type entry's required/optional list. Per-type entries declare which apply (the 'per-archetype entries' in the unified model). Adopters extend this list via Layer 3 overlay-master.json; the 14 entries below are the foundation-repo seed. (SP13 T-4: absorbed from vault-schema._archetype_conditional_fields.)",
+    "fields": [
+      "engagement",
+      "project",
+      "workstream",
+      "owner",
+      "provides",
+      "created",
+      "name",
+      "attendees",
+      "processed",
+      "granola_id",
+      "target_date",
+      "audience",
+      "github_repo",
+      "parent_folder"
+    ]
+  },
+
+  "packet_only_fields": {
+    "_description": "Fields valid only on entries with type=packet (system-altitude research context packets at claude-stem/research/vault-construction/). Engagement/topic/initiative altitude packets at the user vault use the same shape via the `packet` type entry below. (SP13 T-4: absorbed from vault-schema._packet_only_fields.)",
+    "fields": [
+      "altitude",
+      "validity_window",
+      "source_dependencies",
+      "last_reviewed",
+      "canonical_url",
+      "url_stability"
+    ]
+  },
+
+  "excluded_fields": {
+    "parent_plan": {
+      "reason": "Plan-tree-only field; lives in plans-schema.json + plan-manifest-schema.json, not vault content governance.",
+      "disposition": "Deferred from v1. Re-visit when planning methodology generalizes for adopters.",
+      "do_not": "Do NOT add `parent_plan` to any type entry in this pillar. Plan-tree files validate against plans-schema.json + plan-manifest-schema.json separately."
+    }
+  },
+
+  "retired_types": {
+    "_description": "Types removed from the active type registry; preserved for write-time DENY messaging (R-32 retired_types_handling). (SP13 T-4: absorbed from vault-schema._retired_types.)",
+    "engagement": {
+      "decision_ref": "../docs/decisions/0003-folder-lineage-as-fields.md",
+      "reason": "Type information lives at file level only — folders don't have frontmatter. `engagement` is NOT a canonical TYPE; it is a FIELD slot that propagates folder lineage to files. Folders own structural artifact; field + tag propagate to file level.",
+      "replacement": "Use `engagement: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see path_routing.consultant-engagement-project-lineage). For the engagement-level navigation file itself (e.g., `Engagements/<X>/CLAUDE.md`), use type=`navigation`."
+    },
+    "project": {
+      "decision_ref": "../docs/decisions/0003-folder-lineage-as-fields.md",
+      "reason": "Same as `engagement` — folders own project lineage; FIELD `project` propagates lineage to files.",
+      "replacement": "Use `project: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see path_routing.consultant-engagement-project-lineage). For the project-level overview file itself, use type=`context` or type=`navigation` (per file purpose)."
+    }
+  },
+
+  "path_routing": {
+    "_description": "Cross-cutting folder-lineage validation rules (SP13 T-4: absorbed from vault-schema._path_rules; renamed for clarity). Hook contract: when a file is written, evaluate matching path rules; if pattern matches, the file MUST satisfy the requires_fields + requires_tags clauses. Encoded generically so adopter archetypes (researcher's Topics/<X>/Studies/<Y>/; developer's Repos/<X>/Epics/<Y>/) extend the array without schema-shape changes. Foundation-repo ships with the consultant default.",
+    "rules": [
+      {
+        "id": "consultant-engagement-project-lineage",
+        "archetype": "consultant",
+        "pattern": "Engagements/{engagement_slug}/Projects/{project_slug}/**",
+        "requires_fields": [
+          { "field": "engagement", "must_equal_ancestor_segment_at_depth": 1 },
+          { "field": "project", "must_equal_ancestor_segment_at_depth": 3 }
+        ],
+        "requires_tags": [
+          { "tag_pattern": "#engagement/{engagement_slug}" },
+          { "tag_pattern": "#project/{project_slug}" }
+        ],
+        "tier": "strict",
+        "rationale": "Folder-lineage convention: folder is structural artifact; frontmatter fields + tags are file-level workaround that propagates lineage to every file. The R-32 hook contract validates lineage consistency at write-time. See ../docs/decisions/0003-folder-lineage-as-fields.md.",
+        "exemptions": [
+          "Files at Engagements/<X>/CLAUDE.md (engagement-level navigation; type=navigation entry handles)",
+          "Files at Engagements/<X>/_index.md (folder index; type=index entry handles)",
+          "Files at Engagements/<X>/Projects/<Y>/CLAUDE.md (project-level navigation; type=navigation entry handles)",
+          "Files at Engagements/<X>/Projects/<Y>/_index.md (project folder index; type=index entry handles)"
+        ]
+      }
+    ]
+  },
+
+  "types": {
+    "_description": "Canonical type registry — 21 active type entries plus retired_types reference. Each entry declares tier + universal_required + per-type required + optional + conditional_required + (optional) body_structure_contract. (SP13 T-4: absorbed from vault-schema.json top-level type keys; this pillar is the single source of truth.)",
+
+    "meeting-note": {
+      "tier": "strict",
+      "required": ["type", "date", "meeting_title", "attendees", "tags", "processed", "updated"],
+      "optional": ["engagement", "project", "previous_instance", "granola_id", "granola_ids", "granola_url"]
+    },
+
+    "daily-note": {
+      "tier": "strict",
+      "required": ["type", "date", "day", "processed", "tags"],
+      "optional": []
+    },
+
+    "inbox-archive": {
+      "tier": "strict",
+      "required": ["type", "date", "day", "sources", "created", "tags"],
+      "optional": []
+    },
+
+    "log": {
+      "tier": "strict",
+      "required": ["type", "log-type", "date", "timestamp"],
+      "optional": ["tags"]
+    },
+
+    "people": {
+      "tier": "standard",
+      "required": ["type", "name", "org", "role", "engagement", "updated", "tags"],
+      "optional": ["email", "projects", "max_lines"]
+    },
+
+    "prd": {
+      "tier": "standard",
+      "required": ["title", "engagement", "project", "type", "status", "owner", "updated", "tags"],
+      "optional": ["workstream", "provides", "max_lines"]
+    },
+
+    "context": {
+      "tier": "standard",
+      "required": ["title", "engagement", "project", "type", "status", "owner", "updated", "tags"],
+      "optional": ["workstream", "provides", "max_lines"]
+    },
+
+    "reference": {
+      "tier": "standard",
+      "required": ["type", "updated", "tags"],
+      "optional": ["provides", "max_lines"]
+    },
+
+    "index": {
+      "tier": "strict",
+      "required": ["type", "tags", "updated"],
+      "conditional_required": {
+        "parent_folder": {
+          "condition": "path_depth >= 2",
+          "condition_semantics": "depth is the number of path segments between the vault root and the file; depth 1 = `<cluster>/_index.md` (parent_folder omitted because the parent IS the vault root); depth >= 2 = `<cluster>/<instance>/_index.md` or deeper (parent_folder mandatory).",
+          "rationale": "Navigation-side lineage pointer auto-populated by post-write-verify auto-bootstrap; librarian index-maintain audits for path-vs-frontmatter drift. Distinct from the content-side folder-lineage convention (`engagement:`/`project:`) which uses path_routing. See ../research/vault-construction/_index.md-design.md §parent_folder."
+        }
+      },
+      "optional": ["provides", "description"],
+      "body_structure_contract": "governance/file-type-contracts/_index.md.json",
+      "body_structure_contract_rationale": "Body-structure rules (H1, folder-context paragraph, contents-enum table with column shape + sentinel markers + ordering convention) live in the per-file-type contract following the k8s ValidatingAdmissionPolicy paramKind pattern (matcher in pillar/schema; parameters in separate replaceable resource). See ../research/vault-construction/_index.md-design.md + ../target-state/_index.md-design/structural-requirements.md."
+    },
+
+    "weekly-summary": {
+      "tier": "strict",
+      "required": ["type", "week", "date-range", "tags"],
+      "optional": []
+    },
+
+    "daily-archive": {
+      "tier": "strict",
+      "required": ["type", "month", "date-range", "tags"],
+      "optional": []
+    },
+
+    "navigation": {
+      "tier": "standard",
+      "required": ["type", "engagement", "updated"],
+      "optional": ["project", "max_lines", "tags"]
+    },
+
+    "personal-initiative": {
+      "tier": "standard",
+      "required": ["type", "name", "status", "owner", "updated", "tags"],
+      "optional": ["github_repo", "audience", "lines", "max_lines", "provides", "started", "completed"]
+    },
+
+    "briefing": {
+      "tier": "strict",
+      "required": ["type", "date", "generated", "tags"],
+      "optional": ["max_lines"]
+    },
+
+    "strategic": {
+      "tier": "standard",
+      "required": ["type", "engagement", "status", "updated", "tags"],
+      "optional": ["project", "provides", "max_lines"]
+    },
+
+    "planning": {
+      "tier": "standard",
+      "required": ["type", "engagement", "updated", "tags"],
+      "optional": ["project", "provides", "max_lines"]
+    },
+
+    "archive": {
+      "tier": "strict",
+      "required": ["type", "source-path", "archived-date", "tags"],
+      "optional": ["engagement", "project"]
+    },
+
+    "historical-brief": {
+      "tier": "standard",
+      "required": ["type", "updated", "marked-historical-by"],
+      "optional": ["kept-as", "merged-into", "copied-to", "tags"]
+    },
+
+    "ideation-brief": {
+      "tier": "strict",
+      "required": ["type", "title", "created", "updated"],
+      "optional": ["status", "tags", "backlog_item"]
+    },
+
+    "packet": {
+      "tier": "strict",
+      "_description": "Research context packets at all four altitudes (system / engagement / topic / initiative). System-altitude packets canonical at `claude-stem/research/vault-construction/`; engagement/topic/initiative at user vault. Surfaces 180-day `last_reviewed` cadence (system) / 90-day (topic) / continuous (engagement) / closed-at-plan-close (initiative).",
+      "required": ["type", "altitude", "scope", "validity_window", "source_dependencies", "last_reviewed", "tags", "updated"],
+      "optional": ["canonical_url", "url_stability", "provides", "max_lines", "engagement", "project"]
+    },
+
+    "archetype-template": {
+      "tier": "strict",
+      "_description": "Scaffold templates at `onboarding/templates/<archetype>/` consumed by install. Pre-populated frontmatter; R-32 100% conformant. Anti-drift principle: archetype templates ship pre-populated upfront; user-added files inherit defaults via templates.",
+      "required": ["type", "archetype", "template_for", "tags", "updated"],
+      "optional": ["max_lines", "provides", "lockstep_pair"]
+    }
+  },
+
   "rules": [
     {
       "id": "R-32",
       "pillar": "frontmatter",
       "tier": "2",
       "source": "ENFORCEMENT-MAP.md R-32 + ../research/vault-construction/frontmatter-design.md §The 3 compliance tiers in detail + ../docs/decisions/0001-tiered-compliance.md",
-      "enforcement_layer": ["pre-write-guard.sh SCHEMA_KEY case-statement (write-time DENY)", "schemas/vault-schema.json (type allowlist + per-type required/optional field declarations)", "post-write-verify.sh type_map (parallel runtime mirror)"],
+      "enforcement_layer": ["pre-write-guard.sh SCHEMA_KEY case-statement (write-time DENY)", "governance/frontmatter-rules.json `types` (type allowlist + per-type required/optional field declarations)", "post-write-verify.sh type_map (parallel runtime mirror)"],
       "failure_mode": "Files written with an unknown `type:` value or with missing Strict-tier required fields drift the schema contract silently. Downstream consumers (auto-routing, librarian, scaffold) cannot reason about the file because the contract has been violated. Without write-time DENY, the schema becomes documentation rather than enforcement — production-scale untagged-file backlogs (~500 files observed in a reference deployment) accumulate before audit catches up. The Tier 2 DENY closes the gap at the moment of capture, returning a structured error that enumerates the missing fields and points to the schema entry.",
-      "rule_text": "Every Strict-tier vault write MUST declare a `type:` value drawn from the schemas/vault-schema.json type allowlist (21 canonical type entries; 2 retired types preserved in `_retired_types`). For Strict-tier files, the universal required fields (`type`, `tags`, `updated`) AND the per-type `required` field list MUST all be present in the YAML frontmatter. Pre-write-guard DENIES writes failing either check; the DENY message enumerates the missing fields plus the schema entry path. Adding a new type or extending a required-field list requires R-37 atomic lockstep updating schema + this rule registry + the narrative spoke + pre-write-guard SCHEMA_KEY case + post-write-verify type_map in one commit. Standard-tier writes emit a warning instead of DENY (operator triages via librarian frontmatter-coverage-audit); Minimal-tier writes proceed without validation.",
-      "schema_source": "schemas/vault-schema.json",
-      "retired_types_handling": "Files declaring a retired `type:` value (currently `engagement`, `project` — retired per ADR-0003) are DENIED with the retirement reference and `replacement` guidance pointing the author to the folder-lineage convention (field-level propagation via `engagement:` + `project:` frontmatter fields plus matching tags)."
+      "rule_text": "Every Strict-tier vault write MUST declare a `type:` value drawn from the governance/frontmatter-rules.json `types` allowlist (21 canonical type entries; 2 retired types preserved in `retired_types`). For Strict-tier files, the universal required fields (`type`, `tags`, `updated`) AND the per-type `required` field list MUST all be present in the YAML frontmatter. Pre-write-guard DENIES writes failing either check; the DENY message enumerates the missing fields plus the pillar entry path. Adding a new type or extending a required-field list requires R-37 atomic lockstep updating this pillar + the narrative spoke + pre-write-guard SCHEMA_KEY case + post-write-verify type_map in one commit. Standard-tier writes emit a warning instead of DENY (operator triages via librarian frontmatter-coverage-audit); Minimal-tier writes proceed without validation.",
+      "schema_source": "governance/frontmatter-rules.json#types",
+      "retired_types_handling": "Files declaring a retired `type:` value (currently `engagement`, `project` — retired per ADR-0003) are DENIED with the retirement reference and `replacement` guidance pointing the author to the folder-lineage convention (field-level propagation via `engagement:` + `project:` frontmatter fields plus matching tags). See `retired_types` block."
     },
     {
       "id": "R-33",
       "pillar": "frontmatter",
       "tier": "1",
       "source": "ENFORCEMENT-MAP.md R-33 + ../research/vault-construction/frontmatter-design.md §Folder-lineage convention + ../research/vault-construction/file-naming-conventions.md §Anti-patterns",
-      "enforcement_layer": ["pre-write-guard.sh folder-placement advisory branch (Tier 1; never blocks)", "schemas/vault-schema.json `_path_rules` (per-archetype lineage rules)", "librarian placement-validation (audit-time)"],
+      "enforcement_layer": ["pre-write-guard.sh folder-placement advisory branch (Tier 1; never blocks)", "governance/frontmatter-rules.json `path_routing` (per-archetype lineage rules)", "librarian placement-validation (audit-time)"],
       "failure_mode": "Files written outside the canonical folder for their declared `type:` produce structural drift that compounds — the file is invisible to type-scoped queries, lives in a folder that does not match its archetype, and creates the impression that 'this type lives anywhere.' Once the precedent lands, follow-on writes drift further. The Tier 1 advisory fires at write-time rather than waiting for weekly audit so the operator sees the misplacement at the moment of capture and can move the file before publishing wikilinks.",
-      "rule_text": "Files declaring a `type:` value SHOULD reside under the canonical folder for that type per schemas/vault-schema.json `_path_rules` (the per-archetype lineage rules). Pre-write-guard emits a Tier 1 advisory `[R-33 FOLDER PLACEMENT]` when the file's path does not match the type's expected folder pattern. The advisory never blocks — engagement-specific exceptions, cross-engagement reference docs, and adopter-customized folder structures are legitimate causes for divergence. The advisory text enumerates the expected folder pattern and the current path so the author can decide. Persistent advisory firings on the same type/folder pair surface as `placement-drift` findings in the librarian audit.",
+      "rule_text": "Files declaring a `type:` value SHOULD reside under the canonical folder for that type per governance/frontmatter-rules.json `path_routing` (the per-archetype lineage rules). Pre-write-guard emits a Tier 1 advisory `[R-33 FOLDER PLACEMENT]` when the file's path does not match the type's expected folder pattern. The advisory never blocks — engagement-specific exceptions, cross-engagement reference docs, and adopter-customized folder structures are legitimate causes for divergence. The advisory text enumerates the expected folder pattern and the current path so the author can decide. Persistent advisory firings on the same type/folder pair surface as `placement-drift` findings in the librarian audit.",
       "advisory_only": true,
-      "placement_source": "schemas/vault-schema.json `_path_rules.rules[]`"
+      "placement_source": "governance/frontmatter-rules.json#path_routing.rules"
     },
     {
       "id": "R-37",
@@ -51,15 +309,16 @@
       "tier": "2",
       "source": "ENFORCEMENT-MAP.md R-37 (cross-cutting meta-rule; canonical entry in governance/_index.json `cross_cutting_meta_rules[]`) + ../research/vault-construction/frontmatter-design.md §R-37 atomic-lockstep protocol + ../research/vault-construction/enforcement-map-design.md §R-37 atomic-lockstep protocol + ../docs/decisions/0005-two-surface-governance-dual-pattern.md",
       "enforcement_layer": ["pre-write-guard.sh atomic-lockstep branch (DENY on partial-surface writes)", "git pre-commit hook (advisory)", "librarian governance-parity-audit (audit-time drift detection)"],
-      "failure_mode": "Schema-touching changes that land in one surface without the others produce silent drift — the schema declares a new type the hook does not recognize; the narrative spoke documents fields the schema has not added; the rule registry references a field name the schema spells differently. Within weeks the four surfaces diverge enough that no single artifact is authoritative. Drift is detectable but already-broken when the audit surfaces it. R-37 closes the gap at write-time by treating partial-surface commits as the structural error they are.",
-      "rule_text": "The frontmatter pillar binds four coupled surfaces under R-37 atomic lockstep: (1) schemas/vault-schema.json (canonical schema declaring types, tiers, and per-type field contracts), (2) governance/frontmatter-rules.json (this rule registry), (3) onboarding/scaffold/vault-architecture/Vault Architecture - Frontmatter.md (narrative spoke), (4) hooks/pre-write-guard.sh SCHEMA_KEY case-statement + hooks/post-write-verify.sh type_map (runtime mirror). Adding, modifying, or retiring a `type:` value, changing a required-field list, introducing a new field class, or updating the tier-compliance contract requires touching ALL FOUR surfaces in a single commit. Pre-write-guard's atomic-lockstep branch DENIES writes that touch one surface without the others, with the missing surfaces enumerated. This entry is the pillar-scoped instantiation of the canonical R-37 meta-rule at governance/_index.json `cross_cutting_meta_rules[]`.",
+      "failure_mode": "Schema-touching changes that land in one surface without the others produce silent drift — the pillar declares a new type the hook does not recognize; the narrative spoke documents fields the pillar has not added; the rule registry references a field name the pillar spells differently. Within weeks the surfaces diverge enough that no single artifact is authoritative. Drift is detectable but already-broken when the audit surfaces it. R-37 closes the gap at write-time by treating partial-surface commits as the structural error they are.",
+      "rule_text": "The frontmatter pillar binds three coupled surfaces under R-37 atomic lockstep: (1) governance/frontmatter-rules.json (canonical pillar declaring types, tiers, archetype enum, archetype-conditional fields, path-routing rules, and rule registry; SP13 T-4 absorbed the former schemas/vault-schema.json), (2) onboarding/scaffold/vault-architecture/Vault Architecture - Frontmatter.md (narrative spoke), (3) hooks/pre-write-guard.sh SCHEMA_KEY case-statement + hooks/post-write-verify.sh type_map (runtime mirror). Adding, modifying, or retiring a `type:` value, changing a required-field list, introducing a new field class, or updating the tier-compliance contract requires touching ALL THREE surfaces in a single commit. Pre-write-guard's atomic-lockstep branch DENIES writes that touch one surface without the others, with the missing surfaces enumerated. This entry is the pillar-scoped instantiation of the canonical R-37 meta-rule at governance/_index.json `cross_cutting_meta_rules[]`. The interim coupled-surfaces declaration in governance/_index.json carries hooks/config/gate-config.json (until T-6 retirement) and governance/foundation-master.json (forward) per SP13 retirement-order discipline.",
       "meta_rule_reference": "governance/_index.json cross_cutting_meta_rules[] R-37",
       "coupled_surfaces": [
-        "schemas/vault-schema.json",
         "governance/frontmatter-rules.json",
         "onboarding/scaffold/vault-architecture/Vault Architecture - Frontmatter.md",
         "hooks/pre-write-guard.sh (SCHEMA_KEY case)",
-        "hooks/post-write-verify.sh (type_map)"
+        "hooks/post-write-verify.sh (type_map)",
+        "hooks/config/gate-config.json (interim until SP13 T-6 retirement)",
+        "governance/foundation-master.json (forward; built from this pillar via tools/build-foundation-master.sh)"
       ]
     },
     {
@@ -107,12 +366,12 @@
       "pillar": "frontmatter",
       "tier": "1",
       "source": "../research/vault-construction/vault-construction-principles.md commitment 4 (multi-archetype union) + ../research/vault-construction/frontmatter-design.md §Archetype-conditional fields + spec §Archetype-binding rule contract (sibling to R-51 in governance/tagging-rules.json)",
-      "enforcement_layer": ["librarian archetype-consistency audit (audit-time; per-archetype field-coverage verification)", "post-write-verify.sh archetype-field advisory (Tier 1; warning on incomplete archetype field-set)", "schemas/vault-schema.json `_archetype_conditional_fields` (per-archetype field-set authority)"],
+      "enforcement_layer": ["librarian archetype-consistency audit (audit-time; per-archetype field-coverage verification)", "post-write-verify.sh archetype-field advisory (Tier 1; warning on incomplete archetype field-set)", "governance/frontmatter-rules.json `archetype_conditional_fields` (per-archetype field-set authority)"],
       "failure_mode": "Files declaring an archetype (via `archetype:` frontmatter field or via per-type entry with archetype binding) but missing required archetype-conditional fields fragment the multi-archetype union model. A consultant archetype file missing `engagement:`/`project:` cannot be filtered to engagement-scoped views. A researcher archetype file missing `topic:`/`study:` cannot resolve to the topic taxonomy. The renamed-dimension overlay (developer's `#repo/*` mapping to the consultant's `#engagement/*` structural slot) breaks at consumption time. The audit closes the gap by walking every archetype-declaring file and verifying the required field set per archetype is fully populated.",
-      "rule_text": "Files declaring an archetype affiliation (either via the `archetype:` frontmatter field or via a `type:` entry with archetype binding declared in schemas/vault-schema.json) MUST carry the full required-field set for that archetype per schemas/vault-schema.json `_archetype_conditional_fields[<archetype>]` declaration. The librarian archetype-consistency audit walks every archetype-declaring file, computes the per-archetype required-field intersection, and emits `archetype-field-compliance-drift` findings when any required field is missing. Severity is `warning` (Tier 1 advisory) — the file lands; the audit surfaces drift at session-close. Adopters extending the archetype enum via Layer 3 vault-overlay must extend `_archetype_conditional_fields` in the same overlay; otherwise the audit reports the unknown archetype as `archetype-not-in-enum` (R-51 sibling at tagging-rules.json carries the write-time DENY for archetype enum violations). The pair (R-41 advisory at audit-time + R-51 DENY at write-time) is the field-side and tag-side enforcement of the multi-archetype binding contract.",
+      "rule_text": "Files declaring an archetype affiliation (either via the `archetype:` frontmatter field or via a `type:` entry with archetype binding declared in governance/frontmatter-rules.json) MUST carry the full required-field set for that archetype per governance/frontmatter-rules.json `archetype_conditional_fields[<archetype>]` declaration. The librarian archetype-consistency audit walks every archetype-declaring file, computes the per-archetype required-field intersection, and emits `archetype-field-compliance-drift` findings when any required field is missing. Severity is `warning` (Tier 1 advisory) — the file lands; the audit surfaces drift at session-close. Adopters extending the archetype enum via Layer 3 overlay-master.json must extend `archetype_conditional_fields` in the same overlay; otherwise the audit reports the unknown archetype as `archetype-not-in-enum` (R-51 sibling at tagging-rules.json carries the write-time DENY for archetype enum violations). The pair (R-41 advisory at audit-time + R-51 DENY at write-time) is the field-side and tag-side enforcement of the multi-archetype binding contract.",
       "audit_only": true,
-      "archetype_conditional_fields_source": "schemas/vault-schema.json `_archetype_conditional_fields`",
-      "archetype_enum_source": "schemas/vault-schema.json `_archetype_enum` (referenced by R-51 in governance/tagging-rules.json)",
+      "archetype_conditional_fields_source": "governance/frontmatter-rules.json#archetype_conditional_fields",
+      "archetype_enum_source": "governance/frontmatter-rules.json#archetype_enum",
       "sibling_rule": "R-51 (governance/tagging-rules.json) — archetype-binding DENY at write-time on `archetype:` field value",
       "exemptions": [
         "Files declaring `tier: minimal` — opt-out from validation",

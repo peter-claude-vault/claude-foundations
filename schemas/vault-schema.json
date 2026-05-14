@@ -1,5 +1,34 @@
 {
   "schema_version": "2.0.0",
+  "_dissolved": true,
+  "_dissolved_marker": {
+    "status": "DISSOLVED — DO NOT AUTHOR HERE",
+    "frozen_at": "2026-05-14",
+    "dissolution_sp_task": "SP13 T-4",
+    "rationale": "This kitchen-sink schema dissolved into single-concern governance pillars per feedback_no_kitchen_sink_pillars. Content remains intact below for backward-compatibility during the bridge period; consumers progressively migrate to the named successors below. File deletion is scheduled atomically with the last consumer migration (SP13 T-9 or T-10) per OQ-13-4 'migrate-then-drop in same commit' + 'drop-then-fail-loudly disallowed.'",
+    "canonical_successors": {
+      "types (21 type entries)": "governance/frontmatter-rules.json#types",
+      "tiers (strict/standard/minimal)": "governance/frontmatter-rules.json#tier_compliance",
+      "_archetype_conditional_fields": "governance/frontmatter-rules.json#archetype_conditional_fields",
+      "_archetype_enum (was implicit)": "governance/frontmatter-rules.json#archetype_enum",
+      "_packet_only_fields": "governance/frontmatter-rules.json#packet_only_fields",
+      "_excluded_fields": "governance/frontmatter-rules.json#excluded_fields",
+      "_retired_types": "governance/frontmatter-rules.json#retired_types",
+      "_path_rules (renamed path_routing)": "governance/frontmatter-rules.json#path_routing",
+      "_tag_prefixes + _tag_prefixes_meta": "governance/tagging-rules.json#taxonomy"
+    },
+    "consumer_migration_status": {
+      "governance_authoring_pillars": "MIGRATED in SP13 T-4 (this commit)",
+      "hooks/pre-write-guard.sh + hooks/post-write-verify.sh": "PENDING SP13 T-3 (Session 3) — migrate to foundation-master.json reads",
+      "hooks/config/gate-config.json schema_path field": "PENDING SP13 T-6 (gate-config retirement)",
+      "install.sh schema-copy ship list": "PENDING SP13 T-8 — remove vault-schema from ship list",
+      "onboarding/bootstrap-schemas.sh _tag_prefixes assertion": "PENDING SP13 T-8 — replace with tagging-rules.json assertion",
+      "tests/*": "PENDING SP13 T-9 — update fixtures",
+      "docs + research + target-state narratives": "PENDING SP13 T-10 — flip references"
+    },
+    "policy": "(1) No new authoring against this file — all updates go to the named successors. (2) Content below is FROZEN as of 2026-05-14; reads from this file return historical state. (3) Until the last consumer migrates, this file ships via install.sh and validates via bootstrap-schemas.sh exactly as before — runtime semantics preserved. (4) The governance/_index.json `dissolved_schemas` registry tracks final-deletion gating.",
+    "registry_entry": "governance/_index.json#dissolved_schemas.\"schemas/vault-schema.json\""
+  },
   "_design_notes": {
     "model": "unified-with-per-archetype-entries",
     "tiers": "Strict | Standard | Minimal",
