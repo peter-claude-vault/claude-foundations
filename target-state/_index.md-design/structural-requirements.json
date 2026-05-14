@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "claude-stem/target-state/_index.md-design/structural-requirements.json",
+  "title": "_index.md structural contract",
+  "description": "Machine-readable contract for what every _index.md must contain. Consumed by the post-write hook (Tier 1 live-sync + auto-bootstrap), the librarian index-maintain capability (Tier 2 audit sweep + Tier 3 --deep semantic validation), and any future tooling that needs to validate _index.md compliance. PLACEHOLDER — fields are specified at contract level; runtime details (exact sentinel marker syntax, exact enum lookup mechanism, exact path-parsing logic) bind at implementation time in SP05.",
+  "version": "1.0.0-placeholder",
+  "status": "target-state-spec",
+  "implementation_owner": "SP05 auto-routing-enforcement",
+  "runtime_deployment_target": "$CLAUDE_HOME/governance/_index-md-rules.json",
+
+  "frontmatter": {
+    "type": "object",
+    "required": ["type", "tags", "updated"],
+    "conditional_required": {
+      "parent_folder": {
+        "condition": "depth >= 2",
+        "rationale": "parent_folder is the navigation-side lineage pointer; omitted at depth 1 because vault-root-direct folders have no folder-parent in the meaningful sense",
+        "depth_derivation": "PLACEHOLDER — derived from the file's path relative to vault root; depth 1 = `<cluster>/_index.md`; depth ≥ 2 = `<cluster>/<instance>/_index.md` or deeper"
+      }
+    },
+    "properties": {
+      "type": {
+        "const": "index",
+        "rationale": "Hooks branch on type; type:index activates _index.md validation logic"
+      },
+      "parent_folder": {
+        "type": "string",
+        "pattern": "^[A-Za-z][A-Za-z0-9 /._-]+$",
+        "rationale": "Relative path from vault root naming the parent folder of this _index.md. Auto-populated by the post-write hook at bootstrap (Tier 1 step 2); librarian index-maintain audits for path-vs-frontmatter drift at Tier 2/3."
+      },
+      "tags": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^#[a-z][a-z0-9-]*/[a-z0-9-]+$"
+        },
+        "minItems": 1,
+        "rationale": "Folder-mirrors-tag invariant. Tag matches the folder's structural-dimension lineage."
+      },
+      "updated": {
+        "type": "string",
+        "format": "date",
+        "rationale": "ISO-8601 date; bumped by every maintenance pass on the file"
+      },
+      "description": {
+        "type": "string",
+        "maxLength": 200,
+        "rationale": "Optional one-line scope description; useful for downstream librarian summaries"
+      },
+      "provides": {
+        "type": "array",
+        "items": {"type": "string"},
+        "rationale": "Optional cross-folder grep handle (R-39). NOT surfaced in the contents-enum table; lives in frontmatter only as a queryable handle for cross-folder discovery."
+      }
+    }
+  },
+
+  "body_structure": {
+    "h1": {
+      "required": true,
+      "level": 1,
+      "match_rule": "PLACEHOLDER — exact match or close variant of the folder name",
+      "rationale": "Matches the folder name or close variant. Reinforces folder-mirrors-tag invariant — the heading reads like a tag value."
+    },
+    "folder_context_paragraph": {
+      "required": true,
+      "placement": "between H1 and contents-enum table",
+      "min_sentences": 2,
+      "max_sentences": 4,
+      "rationale": "Load-bearing pedagogy content. Without it, the index is regeneratable boilerplate; humans skip it because `ls` produces the same information; LLMs gain nothing from reading it. NOT auto-generated — adopter or operator authors the paragraph; bootstrap hook emits a placeholder for fill-in."
+    },
+    "contents_enum_table": {
+      "required": true,
+      "sentinel_markers": {
+        "start": "PLACEHOLDER — e.g., `<!-- contents-enum:start -->`",
+        "end": "PLACEHOLDER — e.g., `<!-- contents-enum:end -->`",
+        "rationale": "Automated maintenance (Tier 1 hook + Tier 2 librarian) touches only content between markers; preserves hand-authored prose outside (folder-context paragraph, cross-references)."
+      },
+      "columns": [
+        {
+          "position": 1,
+          "name": "File",
+          "value_type": "wikilink",
+          "rationale": "Folder navigation; the unambiguous identifier; clickable in any Obsidian reader"
+        },
+        {
+          "position": 2,
+          "name": "Lines",
+          "value_type": "approximate_integer",
+          "value_pattern": "^~?[0-9]+$",
+          "derivation": "wc -l on the referenced file at maintenance time",
+          "rationale": "Cost-to-load signal — token-budget approximation before Claude decides to read it"
+        },
+        {
+          "position": 3,
+          "name": "Type",
+          "value_type": "enum",
+          "enum_source": "schemas/vault-schema.json#types",
+          "derivation": "extracted from the referenced file's frontmatter `type:` field",
+          "rationale": "Structural role identifier — distinguishes the engagement's overview from reference from people without needing separate sectioning; R-32-enforced via vault-schema.json"
+        },
+        {
+          "position": 4,
+          "name": "Description",
+          "value_type": "prose_oneliner",
+          "max_chars": 200,
+          "derivation": "extracted from the referenced file's H1, `description:` frontmatter field, or first body paragraph (in that fallback order)",
+          "rationale": "What reading this file gives you in plain language"
+        }
+      ],
+      "ordering_convention": {
+        "enforced_at": "Tier 3 --deep audit only (advisory, not auto-reordered)",
+        "key_role_types_first": ["overview", "context", "updates", "prd", "navigation"],
+        "supporting_role_types_after": ["reference", "people"],
+        "rationale": "Key-role types listed before supporting types makes the load-priority signal explicit; convention not enforced as DENY — surfaces in librarian Tier 3 --deep audit so adopters can hand-tune ordering when convention doesn't fit."
+      },
+      "light_content_fallback": {
+        "condition": "folder carries fewer than PLACEHOLDER (target ~3) child files of distinct types",
+        "alternative": "prose 'Current Contents' section replaces the table",
+        "rationale": "Table enumeration is premature when the folder has very few children; prose is more readable"
+      }
+    }
+  },
+
+  "exemption_list_pointer": {
+    "canonical_source": "PLACEHOLDER — governance/mandatory-files-rules.json#_index_md_exemption_paths",
+    "exempt_path_categories": [
+      "date-prefixed sequence folders (Daily/, Meetings/, Archive/<YYYY>/)",
+      "scraper aggregation surfaces (Inbox/ — uses inbox-index-refresh capability, not index-maintain)",
+      "scratch-space emissions (Logs/)",
+      "non-vault infrastructure (Tags/ make-md artifacts; _orchestrator/ plan-tree state; tests/fixtures/)",
+      "template seed directories (Templates/)"
+    ],
+    "rationale": "Single source of truth for which folders are exempt from _index.md mandate. The post-write hook + librarian index-maintain consume from there at runtime — when a write hits an exempt folder, the hook does not auto-create _index.md and the librarian does not flag missing-index as drift."
+  },
+
+  "consumers": [
+    {
+      "name": "post-write-verify.sh",
+      "type": "hook",
+      "status": "existing-hook-extension",
+      "role": "Tier 1 live-sync + auto-bootstrap on Edit/Write tool calls",
+      "loop_guard": "if written file path matches *_index.md → exit 0 before any work",
+      "implementation_target": "extends existing hook at hooks/post-write-verify.sh"
+    },
+    {
+      "name": "index-maintain.sh",
+      "type": "librarian-capability",
+      "status": "new-capability",
+      "role": "Tier 2 audit sweep (auto-fix missing/orphan/drift); Tier 3 --deep semantic validation (description-vs-H1, ordering coherence)",
+      "implementation_target": "new file at skills/librarian/capabilities/index-maintain.sh; SP05 implements per the SP03-authors-contract / SP05-implements pattern used for governance-parity-audit"
+    }
+  ],
+
+  "validation_levels": {
+    "tier_1_live_sync": {
+      "trigger": "PostToolUse hook fires on Edit/Write tool calls",
+      "scope": "single folder of the written file",
+      "writes": "auto-bootstrap (if missing + non-exempt) + reconcile entry for written file + bump updated:",
+      "blast_radius": "the sibling _index.md only"
+    },
+    "tier_2_audit_sweep": {
+      "trigger": "/librarian full + scheduled (default daily)",
+      "scope": "every non-exempt folder in the vault",
+      "writes": "auto-fix missing entries + remove orphan rows + correct drifted line counts and types + bump updated:",
+      "blast_radius": "every _index.md in the vault that has drift"
+    },
+    "tier_3_deep_audit": {
+      "trigger": "/librarian index-maintain --deep (opt-in)",
+      "scope": "same as Tier 2",
+      "writes": "auto-corrects mechanical drift (line counts, type values); FLAGS semantic drift (description-vs-content mismatch, ordering incoherence) for operator review — does NOT auto-overwrite hand-tuned content",
+      "blast_radius": "same as Tier 2 + advisory findings emitted via librarian audit log"
+    }
+  }
+}
