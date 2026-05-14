@@ -32,6 +32,15 @@ if [[ "$FILE_PATH" != *.md ]]; then
   exit 0
 fi
 
+# --- _index.md self-exempt loop guard (SP03 Session 20 — R-44 / _index.md mandate) ---
+# Per governance/file-type-contracts/_index.md.json `consumers[0].loop_guard`: the post-write
+# hook must self-exempt on _index.md writes to prevent the Tier 1 bootstrap+live-sync section
+# below from recursing on its own writes. Pre-write-guard validates _index.md frontmatter at
+# write-time; post-write validation surface is intentionally skipped here per the contract.
+if [[ "$FILE_PATH" == */_index.md ]]; then
+  exit 0
+fi
+
 # Skip operational files (manifests, coordination, etc.)
 REL_PATH="${FILE_PATH#$VAULT_ROOT/}"
 if [[ "$REL_PATH" == Logs/librarian-manifest* ]] || [[ "$REL_PATH" == Logs/.coordination/* ]]; then
@@ -261,6 +270,139 @@ fi
 
 if [[ -n "$EMIT_MSG" ]]; then
   format_output "PostToolUse" "$EMIT_MSG" || true
+fi
+
+# --- Tier 1 — _index.md auto-bootstrap (SP03 Session 20 — R-44 / _index.md mandate) ---
+#
+# Per governance/mandatory-files-rules.json `mandates._index_md` + governance/file-type-contracts/_index.md.json:
+# when a write hits a non-exempt folder lacking a sibling _index.md, auto-create it with
+# frontmatter stub + H1 + placeholder folder-context paragraph + empty sentinel-wrapped
+# contents-enum table. The loop guard above prevents recursion when this section's write
+# triggers the hook on the new _index.md.
+#
+# Tier 2 (audit sweep) and Tier 3 (--deep semantic audit) live in
+# skills/librarian/capabilities/index-maintain.sh (contract at
+# governance/librarian-capabilities/index-maintain.md; SP05 implements per
+# SP03-authors-contract / SP05-implements pattern).
+#
+# Live-sync of the contents-enum table for the written sibling file is part of this
+# Tier 1 surface per the contract but deferred to a subsequent commit (the bootstrap
+# is the load-bearing structural mandate; live-sync is convenience surfaced by the
+# Tier 2 daily sweep). Search this file for [SP03-Session-20-live-sync-deferred].
+GOVERNANCE_MANDATES_FILE="${GOVERNANCE_DIR:-$HOME/.claude/governance}/mandatory-files-rules.json"
+if [[ -f "$GOVERNANCE_MANDATES_FILE" ]]; then
+  FOLDER_DIR=$(dirname "$FILE_PATH")
+  SIBLING_INDEX="$FOLDER_DIR/_index.md"
+  if [[ ! -f "$SIBLING_INDEX" ]]; then
+    BOOTSTRAP_RESULT=$(python3 - "$FOLDER_DIR" "$SIBLING_INDEX" "$FILE_PATH" "$VAULT_ROOT" "$GOVERNANCE_MANDATES_FILE" <<'PY' 2>&1 || true
+import sys, os, json, fnmatch, datetime
+
+folder_dir, sibling_index, file_path, vault_root, mandates_file = sys.argv[1:6]
+
+# Bail out cleanly if folder is not under vault root
+if not folder_dir.startswith(vault_root + os.sep) and folder_dir != vault_root:
+    print("SKIP: not under vault root")
+    sys.exit(0)
+
+rel_folder = folder_dir[len(vault_root) + 1:] if folder_dir != vault_root else ""
+
+# Don't bootstrap at vault root — vault-root _index.md is out of mandate scope
+if not rel_folder:
+    print("SKIP: vault root")
+    sys.exit(0)
+
+# Load exemption list from mandatory-files-rules.json
+try:
+    with open(mandates_file) as fh:
+        mandates = json.load(fh)
+    exempt_globs = mandates.get("mandates", {}).get("_index_md", {}).get("exemption_paths", [])
+except Exception as e:
+    print(f"SKIP: mandates file unreadable: {e}")
+    sys.exit(0)
+
+# Match folder against exemption globs (fnmatch on the **/* glob shape)
+for glob in exempt_globs:
+    glob_stripped = glob.rstrip("/").rstrip("*").rstrip("/")
+    if not glob_stripped:
+        continue
+    if rel_folder == glob_stripped or rel_folder.startswith(glob_stripped + "/"):
+        print(f"SKIP: exempt path matched glob '{glob}'")
+        sys.exit(0)
+
+# Derive frontmatter values from path
+folder_name = os.path.basename(folder_dir)
+path_depth = rel_folder.count(os.sep) + 1  # 1 for top-level (depth 1)
+
+# Infer tag from structural-dimension lineage (best-effort; first path segment maps to a dimension prefix)
+inferred_tags = []
+segments = rel_folder.split(os.sep)
+if segments:
+    first_segment = segments[0]
+    # Conservative tag inference — vault-specific dimension mapping
+    tag_prefix_map = {
+        "Engagements": ("engagement", segments[1] if len(segments) > 1 else None),
+        "Personal Initiatives": ("initiative", segments[1] if len(segments) > 1 else None),
+        "About Me": ("about-me", segments[1] if len(segments) > 1 else "general"),
+    }
+    if first_segment in tag_prefix_map:
+        prefix, value = tag_prefix_map[first_segment]
+        if value:
+            slug = value.lower().replace(" ", "-").replace("_", "-")
+            inferred_tags.append(f"#{prefix}/{slug}")
+    if not inferred_tags:
+        # Fallback: tag the folder by its lineage as a generic scope
+        slug = first_segment.lower().replace(" ", "-").replace("_", "-")
+        inferred_tags.append(f"#scope/{slug}")
+
+# Build frontmatter
+today = datetime.date.today().isoformat()
+fm_lines = ["---", "type: index"]
+if path_depth >= 2:
+    fm_lines.append(f"parent_folder: {rel_folder}")
+fm_lines.append("tags:")
+for tag in inferred_tags:
+    fm_lines.append(f'  - "{tag}"')
+fm_lines.append(f"updated: {today}")
+fm_lines.append("---")
+fm_lines.append("")
+
+# Build body
+body_lines = [
+    f"# {folder_name}",
+    "",
+    "*[Folder context paragraph: 2-4 sentences describing what lives here, what doesn't, why the folder exists. Pedagogical. Replace this placeholder on next visit.]*",
+    "",
+    "<!-- contents-enum:start -->",
+    "",
+    "| File | Lines | Type | Description |",
+    "|---|---|---|---|",
+    "",
+    "<!-- contents-enum:end -->",
+    "",
+]
+
+content = "\n".join(fm_lines + body_lines) + "\n"
+try:
+    # Atomic temp+rename — never partial state visible
+    tmp_path = sibling_index + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as fh:
+        fh.write(content)
+    os.rename(tmp_path, sibling_index)
+    print(f"BOOTSTRAP_OK: {sibling_index}")
+except Exception as e:
+    print(f"BOOTSTRAP_FAIL: {e}")
+    sys.exit(1)
+PY
+)
+    if [[ "$BOOTSTRAP_RESULT" == BOOTSTRAP_OK:* ]]; then
+      mkdir -p "$HOOKS_STATE" 2>/dev/null || true
+      echo "$(date -Iseconds) | post-write-verify | bootstrap-auto-created | ${SIBLING_INDEX} | triggered-by ${FILE_PATH}" >> "$HOOKS_STATE/hook-audit.log" 2>/dev/null || true
+      format_output "PostToolUse" "[R-44 _INDEX.MD AUTO-BOOTSTRAPPED] Created ${SIBLING_INDEX#$VAULT_ROOT/} at first-write to non-exempt folder. Fill the placeholder folder-context paragraph on next visit. Live-sync of the contents-enum table is deferred to the Tier 2 daily sweep ([SP03-Session-20-live-sync-deferred]); /librarian full reconciles." || true
+    elif [[ "$BOOTSTRAP_RESULT" == BOOTSTRAP_FAIL:* ]]; then
+      mkdir -p "$HOOKS_STATE" 2>/dev/null || true
+      echo "$(date -Iseconds) | post-write-verify | bootstrap-failed | ${SIBLING_INDEX} | ${BOOTSTRAP_RESULT}" >> "$HOOKS_STATE/hook-audit.log" 2>/dev/null || true
+    fi
+  fi
 fi
 
 exit 0

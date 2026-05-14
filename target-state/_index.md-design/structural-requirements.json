@@ -6,7 +6,10 @@
   "version": "1.0.0-placeholder",
   "status": "target-state-spec",
   "implementation_owner": "SP05 auto-routing-enforcement",
-  "runtime_deployment_target": "$CLAUDE_HOME/governance/_index-md-rules.json",
+  "runtime_artifact_foundation_repo": "governance/file-type-contracts/_index.md.json",
+  "runtime_artifact_adopter_install_target": "$CLAUDE_HOME/governance/file-type-contracts/_index.md.json",
+  "runtime_artifact_status_note": "SP03 Session 20 landed the resolved runtime artifact at governance/file-type-contracts/_index.md.json — PLACEHOLDER markers resolved, design-rationale prose moved to the .md companions, structure optimized for jq + bash 3.2 hook consumption. This target-state spec remains the design source per operator decision (two homes: target-state/ = design source; governance/file-type-contracts/ = runtime artifact). R-37 lockstep applies — changes to body-structure rules touch BOTH this file and the runtime artifact in one commit.",
+  "runtime_deployment_target_legacy": "$CLAUDE_HOME/governance/_index-md-rules.json (superseded by file-type-contracts/_index.md.json per SP03 Session 20)",
 
   "frontmatter": {
     "type": "object",

@@ -42,7 +42,7 @@
   },
 
   "_archetype_conditional_fields": {
-    "_description": "Fields that may appear in any type entry's required/optional list. Per-type entries declare which apply (the 'per-archetype entries' in the unified model). Adopters extend this list via Layer 3 vault-overlay; the 13 entries below are the foundation-repo seed.",
+    "_description": "Fields that may appear in any type entry's required/optional list. Per-type entries declare which apply (the 'per-archetype entries' in the unified model). Adopters extend this list via Layer 3 vault-overlay; the 14 entries below are the foundation-repo seed.",
     "fields": [
       "engagement",
       "project",
@@ -56,7 +56,8 @@
       "granola_id",
       "target_date",
       "audience",
-      "github_repo"
+      "github_repo",
+      "parent_folder"
     ]
   },
 
@@ -270,12 +271,22 @@
     "tier": "strict",
     "required": [
       "type",
+      "tags",
       "updated"
     ],
+    "conditional_required": {
+      "parent_folder": {
+        "condition": "path_depth >= 2",
+        "condition_semantics": "depth is the number of path segments between the vault root and the file; depth 1 = `<cluster>/_index.md` (parent_folder omitted because the parent IS the vault root); depth >= 2 = `<cluster>/<instance>/_index.md` or deeper (parent_folder mandatory).",
+        "rationale": "Navigation-side lineage pointer auto-populated by post-write-verify auto-bootstrap; librarian index-maintain audits for path-vs-frontmatter drift. Distinct from the content-side folder-lineage convention (`engagement:`/`project:`) which uses `_path_rules`. See ../research/vault-construction/_index.md-design.md §parent_folder."
+      }
+    },
     "optional": [
       "provides",
-      "tags"
-    ]
+      "description"
+    ],
+    "body_structure_contract": "governance/file-type-contracts/_index.md.json",
+    "body_structure_contract_rationale": "Body-structure rules (H1, folder-context paragraph, contents-enum table with column shape + sentinel markers + ordering convention) live in the per-file-type contract following the k8s ValidatingAdmissionPolicy paramKind pattern (matcher in pillar/schema; parameters in separate replaceable resource). See ../research/vault-construction/_index.md-design.md + ../target-state/_index.md-design/structural-requirements.md."
   },
 
   "weekly-summary": {

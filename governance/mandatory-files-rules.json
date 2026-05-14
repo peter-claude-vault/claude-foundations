@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0.0",
+  "pillar": "mandatory-files",
+  "_description": "Claude-consumed JSON registry for the mandatory-files pillar. Loaded by pre-write-guard.sh + post-write-verify.sh at runtime. Carries the universal mandatory-file enumeration (Session 16 13-locks) plus per-file mandate metadata. Following the k8s ValidatingAdmissionPolicy pattern, the `mandates` block carries matchers + parameters per file type; per-file-type body-structure contracts live at governance/file-type-contracts/<file>.json. See research/vault-construction/mandatory-file-lock.md for the narrative.",
+  "_design_notes": {
+    "consumer": "pre-write-guard.sh (mandate-presence DENY); post-write-verify.sh (Tier 1 auto-bootstrap + live-sync); librarian index-maintain capability (Tier 2 sweep + Tier 3 deep audit)",
+    "lockstep_pair": "Vault Architecture - Mandatory-Files.md (narrative spoke) + governance/file-type-contracts/_index.md.json (per-file-type body-structure contract) + hooks/post-write-verify.sh (auto-bootstrap implementation)",
+    "evolution_protocol": "R-37 atomic lockstep — this registry + Vault Architecture - Mandatory-Files.md + governance/file-type-contracts/<file>.json + hooks/post-write-verify.sh updated in one commit",
+    "source_dependencies": [
+      "../research/vault-construction/mandatory-file-lock.md",
+      "../research/vault-construction/_index.md-design.md",
+      "../target-state/_index.md-design/structural-requirements.md",
+      "../target-state/_index.md-design/structural-requirements.json",
+      "../target-state/_index.md-design/governance.md",
+      "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
+    ],
+    "scope_note": "Session 20 stub. Only the `_index.md` mandate (R-44) and its exemption list have landed. T-32 fills the full universal mandatory-file body (CLAUDE.md vault-root only per Session 16 lock #1; Tasks.md; System Backlog.md; Vault Architecture.md; Vault Architecture/ spoke folder; Inbox/ + Inbox/_index.md; About Me/; Meetings/; per-folder/per-cluster mandatories; the original R-07 / R-09 / R-12 / R-14 rule range) per the vault-root rollout roadmap.",
+    "phase_d_e_gap_reference": "No single canonical R-XX registry exists yet (per the governance-enforcement-baseline audit gap #1). R-44 is allocated for the _index.md universal mandate as a fresh ID outside the pillar's initial assigned range (R-07/R-09/R-12/R-14). Phase D-E session reconciles all R-XX allocations into a registry; until then, new rule-ID allocations must grep governance/ + schemas/ + hooks/ + onboarding/scaffold/vault-architecture/ for duplicates before authoring."
+  },
+  "mandates": {
+    "_description": "Per-file-type mandate registry. Each entry is a `matcher` (the file type this mandate applies to + path/scope conditions) bound to its `body_structure_contract` (the parameter resource carrying the contract). Hooks consume `mandates[<file_type>]` to determine WHETHER a mandate fires for a given write; consume `body_structure_contract` to determine WHAT the file's contract is. The two-resource separation follows the k8s ValidatingAdmissionPolicy pattern (matcher in pillar; paramKind in separate resource).",
+    "_index_md": {
+      "rule_id": "R-44",
+      "scope": "every non-exempt user-facing folder MUST carry a sibling _index.md",
+      "file_pattern": "**/_index.md",
+      "body_structure_contract": "governance/file-type-contracts/_index.md.json",
+      "frontmatter_contract": "schemas/vault-schema.json#types.index",
+      "exemption_paths": [
+        "Templates/**",
+        "Archive/**",
+        "Daily/**",
+        "Meetings/**",
+        "Inbox/**",
+        "Logs/**",
+        "Tags/**",
+        "_orchestrator/**",
+        "tests/fixtures/**",
+        "tests/**"
+      ],
+      "exemption_semantics": "positive-list — unenumerated user-facing folders default to the mandate firing. Adding a new exemption requires R-37 atomic lockstep updating this entry + hooks/post-write-verify.sh exemption-check + skills/librarian/capabilities/index-maintain.sh exemption-check + Vault Architecture - Mandatory-Files.md narrative spoke.",
+      "exemption_categories": [
+        "date-prefixed sequence folders (Daily/, Meetings/, Archive/<YYYY>/)",
+        "scraper aggregation surfaces (Inbox/ — uses inbox-index-refresh capability, not index-maintain)",
+        "scratch-space emissions (Logs/)",
+        "non-vault infrastructure (Tags/ Obsidian Make.md artifacts; _orchestrator/ plan-tree state; tests/fixtures/)",
+        "template seed directories (Templates/)"
+      ],
+      "enforcement_mechanism": "structural — post-write-verify.sh Tier 1 auto-bootstrap creates _index.md at first-write to a non-exempt folder lacking one; librarian index-maintain Tier 2 sweep catches hand-created folders never written to. One-line self-exempt loop guard at hook entry (`[[ \"$FILE_PATH\" == */_index.md ]] && exit 0`) prevents recursion on the hook's own writes.",
+      "consumers": [
+        "hooks/post-write-verify.sh (Tier 1 auto-bootstrap + live-sync)",
+        "skills/librarian/capabilities/index-maintain.sh (Tier 2 audit sweep + Tier 3 --deep semantic validation; SP05 implements per the SP03-authors-contract / SP05-implements pattern used for governance-parity-audit)"
+      ],
+      "source_packet": "../research/vault-construction/_index.md-design.md",
+      "target_state_spec": "../target-state/_index.md-design/"
+    }
+  },
+  "rules": [
+    {
+      "id": "R-44",
+      "pillar": "mandatory-files",
+      "tier": "2",
+      "source": "Session 16 lock #2 (universal mandatory-file enumeration; feedback_index_file_convention) + ../research/vault-construction/_index.md-design.md + ../research/vault-construction/mandatory-file-lock.md + ../target-state/_index.md-design/governance.md §Maintenance architecture",
+      "enforcement_layer": [
+        "hooks/post-write-verify.sh Tier 1 auto-bootstrap (creates _index.md at first-write to non-exempt folder)",
+        "hooks/post-write-verify.sh Tier 1 live-sync (reconciles contents-enum entry for written sibling files)",
+        "hooks/post-write-verify.sh self-exempt loop guard (one-line filename check at hook entry)",
+        "skills/librarian/capabilities/index-maintain.sh Tier 2 audit sweep (catches hand-created folders + cron + direct-Obsidian writes the hook misses)",
+        "skills/librarian/capabilities/index-maintain.sh Tier 3 --deep semantic validation (opt-in description/ordering audit)",
+        "schemas/vault-schema.json #types.index frontmatter contract (parent_folder depth-conditional + tags universal-required at strict tier)",
+        "governance/file-type-contracts/_index.md.json body-structure contract (H1 + folder-context paragraph + contents-enum table with sentinel markers)"
+      ],
+      "failure_mode": "Folders without an _index.md appear as leaves in graph view; LLMs reading the folder have no orientation document and must read each child file individually at full token cost; human readers fall back to filename-by-filename scanning. Pre-mandate baseline in reference deployment showed folder-level navigation breaking past ~10 children and collapsing past ~50. The mandate is structural: post-write-verify auto-bootstrap creates _index.md at first-write to a non-exempt folder — the adopter never has to remember to author the index. Without the auto-bootstrap + Tier 2 sweep, the mandate degrades to advisory and recurring drift accumulates silently between audit runs.",
+      "rule_text": "Every non-exempt user-facing folder in the vault MUST carry a sibling _index.md at folder root. The _index.md file MUST conform to the frontmatter contract at schemas/vault-schema.json #types.index (`type: index`; `tags:` mandatory; `parent_folder:` required at path_depth >= 2 / omitted at depth 1; `updated:` mandatory) AND the body-structure contract at governance/file-type-contracts/_index.md.json (H1 matching folder name; folder-context paragraph 2-4 sentences; contents-enum table with `File | Lines | Type | Description` columns wrapped in sentinel markers). Exempt paths are enumerated in `mandates._index_md.exemption_paths` (positive-list). The mandate is enforced structurally via the three-tier maintenance architecture: Tier 1 post-write-verify auto-bootstrap + live-sync on every Edit/Write tool call (with one-line self-exempt loop guard at hook entry); Tier 2 librarian index-maintain audit sweep on /librarian full + scheduled daily; Tier 3 librarian index-maintain --deep opt-in semantic validation. The two-resource architecture (matcher in this pillar's `mandates._index_md` block + parameters in governance/file-type-contracts/_index.md.json) follows the k8s ValidatingAdmissionPolicy pattern; hooks load the matcher to decide whether to fire, then load the parameter contract to validate body structure.",
+      "matcher_path": "mandates._index_md",
+      "body_structure_contract": "governance/file-type-contracts/_index.md.json",
+      "frontmatter_contract": "schemas/vault-schema.json#types.index",
+      "exemption_paths_source": "mandates._index_md.exemption_paths",
+      "self_healing_capability": "skills/librarian/capabilities/index-maintain.sh (R-34 self-healing boundary — mutations bounded to mechanically-derivable values; semantic content like descriptions / ordering / exemption decisions is flagged for review, never auto-overwritten)"
+    }
+  ]
+}

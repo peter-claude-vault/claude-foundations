@@ -1007,6 +1007,33 @@ PYEOF
               TIER2_MSGS="${TIER2_MSGS}Missing required fields [${MISSING_FIELDS}] for file type '${SCHEMA_KEY}'.\n"
             fi
           fi
+
+          # Check conditional_required fields (SP03 Session 20 — R-37 lockstep with schema #types.index + governance/file-type-contracts/_index.md.json).
+          # Schema shape: .[$key].conditional_required = { "<field>": { "condition": "path_depth >= N", ... } }
+          # Currently only one condition kind supported: "path_depth >= N" — REL_PATH segment count.
+          # Extensible: future condition kinds register here without schema-shape changes.
+          CONDITIONAL_FIELDS=$(jq -r --arg key "$SCHEMA_KEY" '.[$key].conditional_required // {} | to_entries[] | "\(.key)|\(.value.condition // "")"' "$SCHEMA_FILE" 2>/dev/null)
+          if [[ -n "$CONDITIONAL_FIELDS" ]]; then
+            COND_PATH_DEPTH=$(echo "$REL_PATH" | tr -cd '/' | wc -c | tr -d ' ')
+            COND_MISSING=""
+            while IFS='|' read -r cf_field cf_cond; do
+              [[ -z "$cf_field" ]] && continue
+              cf_condition_met=false
+              if [[ "$cf_cond" =~ ^path_depth[[:space:]]+\>=[[:space:]]+([0-9]+)$ ]]; then
+                cf_threshold="${BASH_REMATCH[1]}"
+                if [[ "$COND_PATH_DEPTH" -ge "$cf_threshold" ]]; then
+                  cf_condition_met=true
+                fi
+              fi
+              if [[ "$cf_condition_met" == "true" ]] && ! fm_has "$cf_field"; then
+                COND_MISSING="${COND_MISSING}${cf_field} (${cf_cond}), "
+              fi
+            done <<< "$CONDITIONAL_FIELDS"
+            COND_MISSING="${COND_MISSING%, }"
+            if [[ -n "$COND_MISSING" ]]; then
+              TIER2_MSGS="${TIER2_MSGS}Missing conditional_required fields [${COND_MISSING}] for file type '${SCHEMA_KEY}' at path '${REL_PATH}'.\n"
+            fi
+          fi
         fi
 
         # Check tags conform to taxonomy prefixes (hard block if clearly wrong).
