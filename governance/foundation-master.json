@@ -276,13 +276,13 @@
   "_meta": {
     "_provenance": "SP13 T-2 build. Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
     "build_tool": "tools/build-foundation-master.sh",
-    "built_at": "2026-05-14T22:59:08Z",
-    "bundle_version": "24218946bc7dc417a005357e00f3c0417692a88b4f1c0988c9bd84b8a334f548",
+    "built_at": "2026-05-14T23:52:53Z",
+    "bundle_version": "7d840728a8eb6c222017bebb3016a0c77ce5b39a02b6755759242ca705b4fc0e",
     "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
     "source_file_mtimes": {
       "governance/_index.json": "2026-05-14T22:48:35Z",
       "governance/doc-dependencies.json": "2026-05-12T21:59:36Z",
-      "governance/frontmatter-rules.json": "2026-05-14T19:41:02Z",
+      "governance/frontmatter-rules.json": "2026-05-14T23:52:32Z",
       "governance/mandatory-files-rules.json": "2026-05-14T22:48:15Z",
       "governance/naming-rules.json": "2026-05-14T22:58:02Z",
       "governance/tagging-rules.json": "2026-05-14T19:42:11Z"
@@ -812,53 +812,45 @@
       ]
     },
     "path_routing": {
-      "_description": "Cross-cutting folder-lineage validation rules (SP13 T-4: absorbed from vault-schema._path_rules; renamed for clarity). Hook contract: when a file is written, evaluate matching path rules; if pattern matches, the file MUST satisfy the requires_fields + requires_tags clauses. Encoded generically so adopter archetypes (researcher's Topics/<X>/Studies/<Y>/; developer's Repos/<X>/Epics/<Y>/) extend the array without schema-shape changes. Foundation-repo ships with the consultant default.",
-      "rules": [
-        {
-          "archetype": "consultant",
-          "exemptions": [
-            "Files at Engagements/<X>/CLAUDE.md (engagement-level navigation; type=navigation entry handles)",
-            "Files at Engagements/<X>/_index.md (folder index; type=index entry handles)",
-            "Files at Engagements/<X>/Projects/<Y>/CLAUDE.md (project-level navigation; type=navigation entry handles)",
-            "Files at Engagements/<X>/Projects/<Y>/_index.md (project folder index; type=index entry handles)"
-          ],
-          "id": "consultant-engagement-project-lineage",
-          "pattern": "Engagements/{engagement_slug}/Projects/{project_slug}/**",
-          "rationale": "Folder-lineage convention: folder is structural artifact; frontmatter fields + tags are file-level workaround that propagates lineage to every file. The R-32 hook contract validates lineage consistency at write-time. See ../docs/decisions/0003-folder-lineage-as-fields.md.",
-          "requires_fields": [
-            {
-              "field": "engagement",
-              "must_equal_ancestor_segment_at_depth": 1
-            },
-            {
-              "field": "project",
-              "must_equal_ancestor_segment_at_depth": 3
-            }
-          ],
-          "requires_tags": [
-            {
-              "tag_pattern": "#engagement/{engagement_slug}"
-            },
-            {
-              "tag_pattern": "#project/{project_slug}"
-            }
-          ],
-          "tier": "strict"
-        }
-      ]
+      "_adopter_extension_path": "overlay-master.frontmatter.path_routing.rules[]",
+      "_description": "Cross-cutting folder-lineage validation rules (SP13 T-4 2026-05-14: absorbed from vault-schema._path_rules; renamed for clarity). Hook contract: when a file is written, evaluate matching path rules; if pattern matches, the file MUST satisfy the requires_fields + requires_tags clauses. SP13 Phase 1c 2026-05-14: foundation ships an EMPTY rules[] array per canonical §G+§H — archetype-specific folder patterns belong to adopter overlay-master.frontmatter.path_routing.rules[], not foundation governance. Onboarding wizard (successor sub-plan scope) offers archetype seeds at install time and writes the adopter's selection into overlay-master. Foundation declares the SHAPE (rules[] array contract + per-rule field semantics via _rule_shape_contract below); adopter provides the CONTENT.",
+      "_onboarding_seed_location_pending": "onboarding/scaffold/archetype-seeds/<archetype>.json (deferred to onboarding successor sub-plan; SP13 stays scoped to foundation governance abstraction per Session 5 Phase 1c lock 2026-05-14)",
+      "_rule_shape_contract": {
+        "_description": "Per-rule object shape that adopter overlay-master.frontmatter.path_routing.rules[] entries MUST conform to. Reference contract for the wizard (onboarding successor) when authoring archetype seeds into overlay-master at install time.",
+        "archetype": "<one of archetype_enum.values>",
+        "exemptions": [
+          "<file-path patterns that bypass this rule (e.g., folder-level navigation/index files)>"
+        ],
+        "id": "<archetype>-<lineage-name>",
+        "pattern": "<glob path with {placeholder} segments for field-bound depth markers>",
+        "rationale": "<one-line why this lineage is enforced>",
+        "requires_fields": [
+          {
+            "field": "<field-name>",
+            "must_equal_ancestor_segment_at_depth": "<int — depth from vault root>"
+          }
+        ],
+        "requires_tags": [
+          {
+            "tag_pattern": "<tag with {placeholders} matching requires_fields slugs>"
+          }
+        ],
+        "tier": "strict | standard | minimal"
+      },
+      "rules": []
     },
     "pillar": "frontmatter",
     "retired_types": {
-      "_description": "Types removed from the active type registry; preserved for write-time DENY messaging (R-32 retired_types_handling). (SP13 T-4: absorbed from vault-schema._retired_types.)",
+      "_description": "Types removed from the active type registry; preserved for write-time DENY messaging (R-32 retired_types_handling). (SP13 T-4 2026-05-14: absorbed from vault-schema._retired_types. SP13 Phase 1c 2026-05-14: replacement text abstracted off user-vocabulary folder names per canonical §G; concrete adopter folder patterns live in overlay-master.frontmatter.path_routing.rules[].)",
       "engagement": {
         "decision_ref": "../docs/decisions/0003-folder-lineage-as-fields.md",
         "reason": "Type information lives at file level only — folders don't have frontmatter. `engagement` is NOT a canonical TYPE; it is a FIELD slot that propagates folder lineage to files. Folders own structural artifact; field + tag propagate to file level.",
-        "replacement": "Use `engagement: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see path_routing.consultant-engagement-project-lineage). For the engagement-level navigation file itself (e.g., `Engagements/<X>/CLAUDE.md`), use type=`navigation`."
+        "replacement": "Use `engagement: <slug>` as FIELD on any file living under the adopter's engagement-archetype lineage folder. Foundation declares the field; adopter's overlay-master.frontmatter.path_routing.rules[] declares the lineage glob (consultant archetype seed or extension). For the engagement-level navigation file itself, use type=`navigation`."
       },
       "project": {
         "decision_ref": "../docs/decisions/0003-folder-lineage-as-fields.md",
         "reason": "Same as `engagement` — folders own project lineage; FIELD `project` propagates lineage to files.",
-        "replacement": "Use `project: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see path_routing.consultant-engagement-project-lineage). For the project-level overview file itself, use type=`context` or type=`navigation` (per file purpose)."
+        "replacement": "Use `project: <slug>` as FIELD on any file living under the adopter's project sub-cluster lineage folder. Foundation declares the field; adopter's overlay-master.frontmatter.path_routing.rules[] declares the lineage glob. For the project-level overview file itself, use type=`context` or type=`navigation` (per file purpose)."
       }
     },
     "rules": [
@@ -935,6 +927,20 @@
         "tier": "1"
       },
       {
+        "_exemption_classes": {
+          "_description": "SP13 Phase 1c 2026-05-14: foundation declares the EXEMPTION CLASS shape per canonical §G+§H; concrete adopter folder names (engagement-scoped subfolders, project-scoped subfolders, archetype-cluster subfolders, etc.) live in overlay-master.frontmatter.canonical_scope_exemptions[]. Foundation governance stays archetype-agnostic.",
+          "adopter_extension_path": "overlay-master.frontmatter.canonical_scope_exemptions[]",
+          "classes": [
+            {
+              "name": "instance-scoped",
+              "rationale": "files inside an archetype-cluster instance (engagement / topic / repo / etc.) are scoped to that instance, not vault-wide canonical"
+            },
+            {
+              "name": "sub-cluster-scoped",
+              "rationale": "files inside an archetype's sub-cluster (project / study / epic / etc.) carry sub-cluster-scoped `provides:` vocabulary, not vault-wide canonical"
+            }
+          ]
+        },
         "audit_only": true,
         "canonical_scope": [
           "vault root depth-1",
@@ -953,10 +959,8 @@
         "pillar": "frontmatter",
         "rule_text": "Within the canonical-scope of the vault (vault root depth-1 + Vault Architecture/** + Skills/**), no two files SHOULD declare the same capability in their `provides:` array. The librarian frontmatter-coverage-audit walks every Standard- and Strict-tier file's `provides:` declaration, builds an inverted index, and emits a `provides-canonicality-drift` finding whenever a capability is claimed by 2+ canonical-scope owners. Severity is `blocking` when any owner sits at vault root or inside Vault Architecture/**; `warning` otherwise. Engagement reference docs, meeting notes, project context files, and daily notes are EXCLUDED from canonical-scope — `provides:` is project-scoped vocabulary there, not vault-wide canonical. Deliberate co-canonical pairs (e.g., a research packet plus its consumer-rendered spoke) register at hooks/config/drift-allowlist.json `provides_overlap[].capability` with rationale + audit-trail entry; allowlist entries mirror into librarian-manifest.json on every run and suppress the finding.",
         "scope_exemptions": [
-          "Engagements/**/People/** — people are engagement-scoped",
-          "Engagements/**/Projects/** — `provides:` is project-scoped vocabulary",
-          "Meetings/** — meeting `provides:` is cross-reference helper, not canonical claim",
-          "Daily/** — daily notes are temporally-scoped"
+          "Meetings/** — meeting `provides:` is cross-reference helper, not canonical claim (foundation-shipped folder per canonical §F)",
+          "Daily/** — daily notes are temporally-scoped (foundation-shipped folder per canonical §F)"
         ],
         "source": "ENFORCEMENT-MAP.md R-40 + ../research/vault-construction/frontmatter-design.md §Archetype-conditional fields (`provides` row) + ../research/vault-construction/enforcement-map-design.md §Categorized findings",
         "tier": "1"
