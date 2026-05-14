@@ -11,8 +11,8 @@ tags: ["#scope/reference"]
 # Librarian capability — packet-staleness-audit
 
 **Status:** specified (implementation deferred to a downstream sub-plan)
-**Pillar consumer:** packet `last_reviewed` discipline (frontmatter pillar; `_packet_only_fields`)
-**Source rules:** `schemas/vault-schema.json packet.required.last_reviewed`
+**Pillar consumer:** packet `last_reviewed` discipline (frontmatter pillar; `governance/frontmatter-rules.json#packet_only_fields`)
+**Source rules:** `governance/frontmatter-rules.json#types.packet.required.last_reviewed`
 
 ## Purpose
 
@@ -68,7 +68,7 @@ Per the frontmatter-design packet (commitment 3, packet-only fields section), di
 | `engagement` | continuous (lifecycle-driven) | exempt from threshold-based audit; surfaced via T-38 governance-authoring hook on lifecycle close events |
 | `initiative` | closed-at-plan-close | exempt from threshold-based audit; surfaced via T-38 governance-authoring hook on plan-close events |
 
-Adopters extend the threshold map via Layer 3 vault-overlay at `packet_staleness_thresholds.json` (sibling to `vault-schema.json` post-install). The capability reads the union of foundation + overlay at audit time.
+Adopters extend the threshold map via Layer 3 overlay-master at `overlay-master.packet_staleness_thresholds` (sibling to foundation pillars post-install per canonical §H; `_path_placeholders.{schemas_root}` resolves to `~/.claude/governance/`). The capability reads the union of foundation + overlay at audit time.
 
 **Lifecycle-close surfacing for `engagement` / `initiative` altitudes is T-38 scope.** The T-38 governance-authoring hook is the mechanism that surfaces packet-staleness for lifecycle-driven altitudes — at engagement archival or plan-close events, the hook fires and runs a propose-and-confirm review pass on any packets at those altitudes. This audit-time capability does not duplicate that check; weekly cron + on-demand invocation covers `system` and `topic` altitudes only.
 
@@ -76,8 +76,8 @@ Adopters extend the threshold map via Layer 3 vault-overlay at `packet_staleness
 
 The capability reads from (in order):
 
-1. **`schemas/vault-schema.json`** — `packet.required.last_reviewed` (validates the field is contract-required); `_packet_only_fields` (full packet field set).
-2. **`packet_staleness_thresholds.json`** (Layer 3 overlay; optional) — per-altitude threshold extensions / overrides.
+1. **`governance/frontmatter-rules.json`** — `types.packet.required.last_reviewed` (validates the field is contract-required); `packet_only_fields` (full packet field set; SP13 T-4 absorbed from dissolved schemas/vault-schema.json).
+2. **`overlay-master.packet_staleness_thresholds`** (Layer 3 overlay; optional) — per-altitude threshold extensions / overrides.
 3. **`research/vault-construction/*.md`** + adopter packet roots (configured at install time) — every file with `type: packet` is in scope.
 
 ## Exemptions
@@ -88,9 +88,9 @@ The capability reads from (in order):
 
 ## R-37 lockstep coupled surfaces
 
-- `schemas/vault-schema.json` `packet.required.last_reviewed` + `_packet_only_fields`
+- `governance/frontmatter-rules.json` `types.packet.required.last_reviewed` + `packet_only_fields` (SP13 T-4 absorbed from dissolved schemas/vault-schema.json)
 - `research/vault-construction/frontmatter-design.md` §Packet-only fields (the canonical narrative on the packet-only field class)
-- Adopter Layer 3 overlay `packet_staleness_thresholds.json` (when present)
+- Adopter Layer 3 `overlay-master.packet_staleness_thresholds` (when present)
 
 Changes to packet frontmatter required-field shape or to the `last_reviewed` semantics trigger R-37 lockstep including this contract spec.
 
@@ -111,7 +111,7 @@ The packet-staleness audit ships alongside the `log-archive` capability (`skills
 
 ## References
 
-- Packet schema: `schemas/vault-schema.json` `packet` type entry
+- Packet schema: `governance/frontmatter-rules.json` `types.packet` entry (SP13 T-4 absorbed from dissolved schemas/vault-schema.json)
 - Research narrative: `research/vault-construction/frontmatter-design.md` §Packet-only fields
 - Companion capability: `skills/librarian/capabilities/log-archive.sh`
 - Launchd template: `templates/launchd/com.logs-audit.plist.tmpl`

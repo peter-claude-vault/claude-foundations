@@ -1,6 +1,6 @@
 ---
 type: reference
-description: Librarian governance-parity-audit capability contract. Audit-time alignment-mechanism backstop for the dual-surface governance pattern — walks the four pillar JSONs + their narrative spokes + meta-spoke, emits drift findings categorized by pillar.
+description: Librarian governance-parity-audit capability contract. Audit-time alignment-mechanism backstop for the dual-surface governance pattern — walks the six pillar surfaces + their six narrative spokes, emits drift findings categorized by pillar.
 provides:
   - governance-parity-audit-capability
   - dual-surface-alignment-mechanism
@@ -12,7 +12,7 @@ tags: ["#scope/reference"]
 # Librarian capability — governance-parity-audit
 
 **Status:** specified (implementation deferred to a downstream sub-plan)
-**Pillar consumer:** the dual-surface governance pattern (cross-pillar; all four pillars + meta)
+**Pillar consumer:** the dual-surface governance pattern (cross-pillar; all six pillars per canonical §A + meta-rules in `_index.json#cross_cutting_meta_rules[]`)
 **Source decision:** [ADR-0005 Two-Surface Governance Dual Pattern](../../docs/decisions/0005-two-surface-governance-dual-pattern.md)
 
 ## Purpose
@@ -32,8 +32,8 @@ The capability is the load-bearing companion to the dual-surface design. Without
 - Source-input validation: each pillar JSON validates against `governance/enforcement-map.schema.json` before the audit runs; failure aborts the audit with a `pillar-schema-malformed` log entry.
 
 **Pre-write validation steps:**
-- Read all 5 governance JSONs (`_index.json`, `frontmatter-rules.json`, `tagging-rules.json`, `naming-rules.json`, `mandatory-files-rules.json`) + `enforcement-map.schema.json`.
-- Read all 5 narrative spokes (`Vault Architecture - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Enforcement.md`).
+- Read all 6 governance pillar surfaces (`_index.json` registry, `frontmatter-rules.json`, `tagging-rules.json`, `naming-rules.json`, `mandatory-files-rules.json`, `doc-dependencies.json`, `file-type-contracts/*.json`) + `enforcement-map.schema.json` (meta-validator for rule-entry shape).
+- Read all 6 narrative spokes (`Vault Architecture - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Doc-Dependencies.md`, `- File-Type-Contracts.md`) per canonical §D.
 - Validate every input against its source schema before walking the parity comparison.
 
 **Failure mode:**
@@ -49,7 +49,7 @@ The capability is the load-bearing companion to the dual-surface design. Without
 | `tier-mismatch` | warning | A rule's `tier` declared in pillar JSON differs from the tier label used in the narrative spoke's discussion of that rule | `{pillar, rule_id, json_tier, spoke_tier_reference, detected_at, first_seen}` |
 | `source-divergence` | info | A rule entry's `source:` field cites a research-packet path that does not exist or has been renamed | `{pillar, rule_id, json_source_pointer, resolution, detected_at, first_seen}` |
 | `foundation-upgrade-touches-shadowed-entry` | warning | A foundation upgrade has touched an entity the adopter overlay shadows; surfaces at `git fetch` cadence (per R-52 / ADR-0006) | `{kind, entity_id, foundation_diff_summary, overlay_path, detected_at, first_seen}` |
-| `meta-rule-coverage-gap` | warning | A meta-rule (cross-cutting in `_index.json cross_cutting_meta_rules[]`) is not referenced in the meta-spoke (Vault Architecture - Enforcement.md) | `{rule_id, meta_spoke_section, detected_at, first_seen}` |
+| `meta-rule-coverage-gap` | warning | A meta-rule (cross-cutting in `_index.json cross_cutting_meta_rules[]`) is not referenced in any of the 6 narrative spokes per pillar mapping (canonical §D dissolved the Enforcement meta-spoke; meta-rule coverage now distributes across the 6 mirror spokes) | `{rule_id, candidate_spokes[], detected_at, first_seen}` |
 | `pillar-schema-malformed` | warning | A pillar JSON fails `enforcement-map.schema.json` validation at audit-time | `{pillar, schema_validation_error, detected_at, first_seen}` |
 
 Severity `warning` findings count against the librarian's session-close summary; `info` findings surface but do not block close-out. The `foundation-upgrade-touches-shadowed-entry` finding is the hand-off surface from ADR-0006 / R-52 (the Layer-3 overlay collision tiebreaker); collisions at adopter-write time are caught by pre-write-guard.sh's write-time DENY, not by this audit.
@@ -66,14 +66,14 @@ The capability is designed to run at three invocation modes:
 
 ## Comparison method
 
-For each pillar (frontmatter / tagging / naming / mandatory-files / meta):
+For each pillar (frontmatter / tagging / naming / mandatory-files / doc-dependencies / file-type-contracts):
 
 1. **Rule-ID set comparison.** Read pillar JSON `rules[].id`; read narrative spoke body for all `R-NN` references. Emit `rule-id-mismatch` for any ID present in one but not the other.
 2. **Field-coverage check.** For each rule in pillar JSON, check whether the narrative spoke covers the rule's structural fields (`rule_text` summary, `failure_mode` reference, `enforcement_layer` enumeration). Emit `field-missing` for gaps.
 3. **Tier-label consistency.** Cross-check `tier:` declarations in pillar JSON against the tier framing in the narrative spoke. Emit `tier-mismatch` when the spoke describes a rule at a different tier than the JSON declares.
 4. **Source-pointer resolution.** Resolve `rules[].source:` pointers to filesystem paths. Emit `source-divergence` for unresolvable paths.
 5. **Foundation-upgrade shadowed-entry walk.** For each adopter overlay file (declared in `_index.json _path_rules` or sibling-discoverable), consult git-diff context (`--upgrade` flag set) to detect foundation upgrades touching entries the adopter overlay shadows. Emit `foundation-upgrade-touches-shadowed-entry` for every match. Adopter-write-time collisions are caught upstream by pre-write-guard.sh's write-time DENY (per R-52 / ADR-0006); this audit does not duplicate that check.
-6. **Meta-rule coverage.** Read `_index.json cross_cutting_meta_rules[]`; verify each meta-rule is referenced in the meta-spoke. Emit `meta-rule-coverage-gap` for missed references.
+6. **Meta-rule coverage.** Read `_index.json cross_cutting_meta_rules[]`; verify each meta-rule is referenced in at least one of the 6 narrative spokes (canonical §D dissolved the Enforcement meta-spoke; meta-rule coverage distributes across the 6 mirror spokes). Emit `meta-rule-coverage-gap` for missed references.
 
 The comparison is intentionally conservative: drift surfaces as findings the operator triages, not as auto-fixes. Auto-fix would conflict with the dual-surface design — narrative spokes carry voice + examples + anti-patterns that cannot be auto-generated from JSON, and JSON carries structured fields that should not be inferred from prose.
 
@@ -81,11 +81,11 @@ The comparison is intentionally conservative: drift surfaces as findings the ope
 
 The capability reads from (in order):
 
-1. **`governance/_index.json`** — pillar registry + `cross_cutting_meta_rules[]` + `_path_rules` for overlay discovery.
-2. **`governance/{frontmatter,tagging,naming,mandatory-files}-rules.json`** — the four pillar registries.
-3. **`governance/enforcement-map.schema.json`** — schema validation gate for each pillar JSON.
-4. **`onboarding/scaffold/vault-architecture/Vault Architecture - {Frontmatter,Tagging,Naming,Mandatory-Files,Enforcement}.md`** — the five narrative spokes.
-5. **Adopter overlay roots** — `archetype_extensions.json`, `tagging_cap_override.json`, `packet_staleness_thresholds.json`, and any other Layer-3 overlay files declared in `_index.json _path_rules`.
+1. **`governance/_index.json`** — pillar registry + `cross_cutting_meta_rules[]` + adopter overlay discovery (via `overlay-master.frontmatter.path_routing` per canonical §H).
+2. **`governance/{frontmatter,tagging,naming,mandatory-files,doc-dependencies}-rules.json`** + **`governance/file-type-contracts/*.json`** — the six pillar registries per canonical §A.
+3. **`governance/enforcement-map.schema.json`** — schema validation gate for each pillar JSON (meta-validator for rule-entry shape).
+4. **`onboarding/scaffold/vault-architecture/Vault Architecture - {Frontmatter,Tagging,Naming,Mandatory-Files,Doc-Dependencies,File-Type-Contracts}.md`** — the six narrative spokes per canonical §D.
+5. **Adopter overlay-master** — `~/.claude/governance/overlay-master.json` per canonical §H (6-pillar parallel of foundation-master; if a slot doesn't exist in foundation-master, it doesn't exist in overlay-master).
 6. **Foundation diff context** (when `--upgrade` flag set) — `git diff foundation/<previous-tag>..foundation/<current-tag> -- governance/`.
 
 ## Companion: archetype-consistency capability
@@ -96,7 +96,7 @@ The `foundation-upgrade-touches-shadowed-entry` finding category is emitted by g
 
 ## R-37 lockstep coupled surfaces
 
-This capability sits OUTSIDE the per-pillar R-37 lockstep — it is the audit-time backstop FOR the R-37 lockstep, not a peer of it. Changes to any of the four pillar JSONs, the five narrative spokes, or `_index.json` should trigger this capability's next run to detect drift introduced by the change.
+This capability sits OUTSIDE the per-pillar R-37 lockstep — it is the audit-time backstop FOR the R-37 lockstep, not a peer of it. Changes to any of the six pillar surfaces, the six narrative spokes, or `_index.json` should trigger this capability's next run to detect drift introduced by the change.
 
 The capability itself is coupled with:
 

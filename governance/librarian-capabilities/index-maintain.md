@@ -30,19 +30,19 @@ This is the **first canonical self-healing capability under the R-34 boundary**.
 
 **Schema each is gated by:**
 - Body-structure contract at `governance/file-type-contracts/_index.md.json` validates every write to `_index.md` (sentinel-marker presence; column count + order; row pattern).
-- Frontmatter contract at `schemas/vault-schema.json#types.index` validates every write to `_index.md` frontmatter (`type: index`; `tags:` non-empty; `parent_folder:` depth-conditional; `updated:` ISO-8601).
+- Frontmatter contract at `governance/frontmatter-rules.json#types.index` validates every write to `_index.md` frontmatter (`type: index`; `tags:` non-empty; `parent_folder:` depth-conditional; `updated:` ISO-8601).
 - NDJSON output validates against `librarian-finding-schema.json`.
 - Manifest subtree mirror validates against `librarian-manifest-schema.json` `drift_findings.index_maintain` (open `additionalProperties: true` object).
 
 **Pre-write validation steps:**
 - Read `governance/mandatory-files-rules.json` `mandates._index_md` (matcher + exemption list).
 - Read `governance/file-type-contracts/_index.md.json` (body-structure contract + sentinel markers + column shape).
-- Read `schemas/vault-schema.json#types.index` + `_archetype_conditional_fields` (frontmatter contract).
+- Read `governance/frontmatter-rules.json#types.index` + `governance/frontmatter-rules.json#archetype_conditional_fields` (frontmatter contract).
 - Validate every input read against its source schema (`governance/enforcement-map.schema.json` for the mandatory-files pillar; JSON Schema draft-07 for the body-structure contract).
 - Abort the audit run with a `pillar-schema-malformed` log entry if any input fails validation; never `write and hope`.
 
 **Failure mode:**
-- `block and log` on schema-validation failure of source rules / mandatory-files-rules.json / file-type-contracts/_index.md.json / vault-schema.json.
+- `block and log` on schema-validation failure of source rules / mandatory-files-rules.json / file-type-contracts/_index.md.json / frontmatter-rules.json.
 - `block and log` on `_index.md` write that would fail post-write `pre-write-guard` validation (the capability never writes content the hook would have rejected at write-time).
 - Never `write and hope`.
 
@@ -99,7 +99,7 @@ The capability reads from (in order):
 
 1. **`governance/mandatory-files-rules.json`** — `mandates._index_md` (matcher + exemption list).
 2. **`governance/file-type-contracts/_index.md.json`** — body-structure contract (sentinel markers, columns, ordering, fallback rules).
-3. **`schemas/vault-schema.json`** — `#types.index` (frontmatter contract) + `_archetype_conditional_fields` (depth-conditional parent_folder semantics).
+3. **`governance/frontmatter-rules.json`** — `#types.index` (frontmatter contract) + `#archetype_conditional_fields` (depth-conditional parent_folder semantics; SP13 T-4 absorbed from dissolved schemas/vault-schema.json).
 4. **`governance/enforcement-map.schema.json`** — schema validation gate for the mandatory-files pillar JSON.
 5. **Adopter Layer-3 overlays** — `$CLAUDE_HOME/governance/file-type-contracts/_index.md.adopter.json` (if present); shadows foundation per R-52 with `_override_reason`.
 6. **Vault walk** — every folder under the configured vault root, filtered by `mandates._index_md.exemption_paths`.
@@ -142,7 +142,7 @@ This contract is an R-37 lockstep peer with:
 
 - `governance/mandatory-files-rules.json` R-44 + `mandates._index_md` (matcher + exemption list)
 - `governance/file-type-contracts/_index.md.json` (body-structure contract)
-- `schemas/vault-schema.json#types.index` + `_archetype_conditional_fields` (frontmatter contract)
+- `governance/frontmatter-rules.json#types.index` + `governance/frontmatter-rules.json#archetype_conditional_fields` (frontmatter contract)
 - `onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md` (narrative spoke)
 - `hooks/post-write-verify.sh` (Tier 1 sibling — auto-bootstrap + live-sync + loop guard)
 - `target-state/_index.md-design/` (design source — conventions-and-rationale.md + structural-requirements.md + structural-requirements.json + governance.md)
@@ -165,7 +165,7 @@ The capability is specified at this contract; SP05 delivers the runtime at `skil
 
 - R-44 rule entry: `governance/mandatory-files-rules.json` `rules[0]` + `mandates._index_md`
 - Body-structure contract: `governance/file-type-contracts/_index.md.json`
-- Frontmatter contract: `schemas/vault-schema.json#types.index`
+- Frontmatter contract: `governance/frontmatter-rules.json#types.index`
 - Narrative spoke: `onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md`
 - Tier 1 sibling: `hooks/post-write-verify.sh` (auto-bootstrap + live-sync + loop guard)
 - Sibling capabilities: `governance/librarian-capabilities/archetype-consistency.md`, `governance-parity-audit.md`, `packet-staleness-audit.md`, `log-subtype-canonical.md`
