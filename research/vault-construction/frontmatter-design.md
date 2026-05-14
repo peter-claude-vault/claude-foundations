@@ -57,17 +57,17 @@ The schema partitions fields into three classes. The class determines who applie
 
 **Universal fields.** Apply to every Strict-tier type. The Strict tier requires `type`, `tags`, `updated`. Conditional on `status` (some types carry an archetype-specific status enum; some don't). These four fields are the minimum machine-readable surface every system file exposes. Standard tier requires the same three (`type`, `tags`, `updated`) without `status`. Minimal requires nothing.
 
-**Archetype-conditional fields.** The schema declares a 13-entry list of fields that *may* appear on any type entry's required or optional list, depending on the type's archetype-relevance. The list:
+**Archetype-conditional fields.** The schema declares a 14-entry list of fields that *may* appear on any type entry's required or optional list, depending on the type's archetype-relevance. The list:
 
 ```
 engagement       project          workstream
 owner            provides         created
 name             attendees        processed
 granola_id       target_date      audience
-github_repo
+github_repo      parent_folder
 ```
 
-Per-type entries in the unified schema declare which subset applies. A `meeting-note` requires `attendees`, `processed`; optionally carries `engagement`, `project`, `granola_id`. A `prd` requires `engagement`, `project`, `status`, `owner`; optionally carries `workstream`, `provides`. The 13 entries are the foundation-repo seed — adopters extend the list via Layer 3 vault-overlay when their archetype contributes new conditional fields (researcher's `study_phase`, developer's `repo`, manager's `program`).
+Per-type entries in the unified schema declare which subset applies. A `meeting-note` requires `attendees`, `processed`; optionally carries `engagement`, `project`, `granola_id`. A `prd` requires `engagement`, `project`, `status`, `owner`; optionally carries `workstream`, `provides`. An `index` requires `parent_folder` at depth ≥ 2 (omitted at depth 1; auto-populated by the new-folder bootstrap hook per [`_index.md-design.md`](./_index.md-design.md) §Maintenance architecture Tier 1). The 14 entries are the foundation-repo seed — adopters extend the list via Layer 3 vault-overlay when their archetype contributes new conditional fields (researcher's `study_phase`, developer's `repo`, manager's `program`).
 
 **Packet-only fields.** Apply only to files with `type: packet`. The foundation ships SYSTEM-altitude packets only — the 9 research context packets at `claude-stem/research/vault-construction/`. The 4-altitude taxonomy (system / engagement / topic / initiative) imagined in earlier drafts is RETIRED from foundation imposition (Session 16 lock #8, 2026-05-13). If an adopter chooses to author their own research packets in their user vault, they MAY use this shape and they MAY assign an altitude label of their choosing — but the foundation does not prescribe non-system altitudes, does not impose a taxonomy on adopter-authored packets, and does not audit non-system altitudes via the staleness capability. Six fields:
 
@@ -209,8 +209,9 @@ The 13 archetype-conditional fields live at the top of the schema as `_archetype
 | `target_date` | (reserved; not currently on any required list) | Future-dated artifact deadline |
 | `audience` | `personal-initiative` | Who the artifact is for; distinct from `owner` |
 | `github_repo` | `personal-initiative` | GitHub repo URL for code-bearing initiatives |
+| `parent_folder` | `index` (required at depth ≥ 2; omitted at depth 1) | Path string relative to vault root naming the parent folder of an `_index.md`. Gives Claude a programmatic parent-pointer for index-tree traversal without path-parsing. Auto-populated by the new-folder bootstrap hook (see [`_index.md-design.md`](./_index.md-design.md) §Maintenance architecture Tier 1); librarian `index-maintain` audits for path-vs-frontmatter drift. Navigation-side lineage — distinct from the content-side folder-lineage convention which propagates `engagement:`/`project:` from directory ancestry. |
 
-The list is open-ended in the sense that adopters add to it via Layer 3 vault-overlay (`vault-schema.json` deploys to `$CLAUDE_HOME/schemas/vault-schema.json` post-install; adopters extend via the overlay mechanism without touching the foundation-repo canonical). The 13 entries are the seed; archetype-template work introduces archetype-specific extensions per the 4-archetype overlay model (consultant / researcher / developer / manager).
+The list is open-ended in the sense that adopters add to it via Layer 3 vault-overlay (`vault-schema.json` deploys to `$CLAUDE_HOME/schemas/vault-schema.json` post-install; adopters extend via the overlay mechanism without touching the foundation-repo canonical). The 14 entries are the seed; archetype-template work introduces archetype-specific extensions per the 4-archetype overlay model (consultant / researcher / developer / manager).
 
 ## Packet-only fields
 

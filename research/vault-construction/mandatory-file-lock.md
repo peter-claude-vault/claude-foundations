@@ -101,7 +101,7 @@ Folder-navigation scaffolding (`_index.md`) carries different obligations at dif
 | `Archive/` | OUT OF SCOPE | Cold storage; no ongoing maintenance value. |
 | `Daily/` | OUT OF SCOPE | Date-keyed convention; an index would re-churn daily. |
 
-R-32 / R-47 governance hooks treat missing `_index.md` at mandated locations as drift; the librarian's placement-audit surfaces findings on the next cron run. At out-of-scope locations, the librarian does NOT flag missing-index — the absence is correct.
+The mandate is enforced **structurally**, not advisorily. The post-write hook auto-creates `_index.md` at first-write to a non-exempt folder lacking one (per [`_index.md-design.md`](./_index.md-design.md) §Maintenance architecture Tier 1 step 2 — the auto-bootstrap is the first action in the broader new-folder bootstrap action set registered in [`enforcement-map-design.md`](./enforcement-map-design.md) §Hook gate categories). The librarian's `index-maintain` capability (Tier 2 sweep) catches folders the hook misses — most commonly hand-created folders never written to. At out-of-scope locations the librarian does NOT flag missing-index; the absence is correct.
 
 ### 5. Governance applies AUTOMATICALLY to all net-new user-created artifacts
 
