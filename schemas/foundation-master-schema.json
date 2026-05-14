@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stem.peter.dev/schemas/foundation-master/v1.json",
+  "title": "Foundation Master Bundle",
+  "description": "Composed foundation governance bundle (SP13 T-2). Built deterministically from foundation-repo authoring pillars (governance/{frontmatter,tagging,naming,mandatory-files}-rules.json + doc-dependencies.json + file-type-contracts/*.json + _index.json) by tools/build-foundation-master.sh and committed at governance/foundation-master.json. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer. This validator is intentionally light: structural shape only; inner pillar content is governed by each pillar's own contracts (frontmatter-rules.json carries its own rule registry shape, etc.). Stricter inner-shape validation can be added under SP13 T-9 or SP14 if needed.",
+  "type": "object",
+  "required": ["schema_version", "_meta", "frontmatter", "tagging", "naming", "mandatory_files", "doc_dependencies", "file_type_contracts", "_index", "r47_exempt_paths_composed", "types"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "_description": {
+      "type": "string"
+    },
+    "_meta": {
+      "type": "object",
+      "required": ["bundle_version", "built_at", "source_file_mtimes", "build_tool", "deterministic_serialization"],
+      "additionalProperties": false,
+      "properties": {
+        "bundle_version": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "sha256 of the canonical-serialized bundle content (excluding _meta block itself). Same source files -> same hash. Hook bundle-read path uses this for cache-invalidation."
+        },
+        "built_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO8601 UTC build timestamp"
+        },
+        "source_file_mtimes": {
+          "type": "object",
+          "description": "Map of source-file path -> ISO8601 UTC mtime. Hook bundle-read path may use this for staleness detection.",
+          "patternProperties": {
+            "^governance/.+\\.json$": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        },
+        "build_tool": {
+          "type": "string",
+          "const": "tools/build-foundation-master.sh"
+        },
+        "deterministic_serialization": {
+          "type": "string",
+          "description": "Note declaring the serialization discipline used (e.g., 'jq -S sorted-keys canonical JSON')"
+        },
+        "source_files_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "_provenance": {
+          "type": "string"
+        }
+      }
+    },
+    "frontmatter": {
+      "type": "object",
+      "description": "Full governance/frontmatter-rules.json content (SP13 T-4 absorbed types + tiers + path_routing + archetype enum/fields)",
+      "required": ["schema_version", "pillar", "rules", "types", "tier_compliance"],
+      "additionalProperties": true,
+      "properties": {
+        "pillar": {"const": "frontmatter"}
+      }
+    },
+    "tagging": {
+      "type": "object",
+      "description": "Full governance/tagging-rules.json content (SP13 T-4 canonical taxonomy)",
+      "required": ["schema_version", "pillar", "rules", "taxonomy"],
+      "additionalProperties": true,
+      "properties": {
+        "pillar": {"const": "tagging"}
+      }
+    },
+    "naming": {
+      "type": "object",
+      "description": "Full governance/naming-rules.json content",
+      "required": ["schema_version", "pillar", "rules"],
+      "additionalProperties": true,
+      "properties": {
+        "pillar": {"const": "naming"}
+      }
+    },
+    "mandatory_files": {
+      "type": "object",
+      "description": "Full governance/mandatory-files-rules.json content",
+      "required": ["schema_version", "pillar", "rules", "mandates"],
+      "additionalProperties": true,
+      "properties": {
+        "pillar": {"const": "mandatory-files"}
+      }
+    },
+    "doc_dependencies": {
+      "type": "object",
+      "description": "Full governance/doc-dependencies.json content (SP13 T-4 first-class authoring pillar per feedback_doc_deps_first_class)",
+      "required": ["version", "entries"],
+      "additionalProperties": true
+    },
+    "file_type_contracts": {
+      "type": "object",
+      "description": "Map of file-type-name -> contract object. Each key matches a file in governance/file-type-contracts/<name>.json (k8s paramKind pattern; matcher in mandatory-files-rules.json mandates.<file_type>). SP03 Session 20 shipped _index.md as first instance.",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "_index": {
+      "type": "object",
+      "description": "Full governance/_index.json content (pillar registry + cross-cutting meta-rules + dissolved_schemas registry)",
+      "required": ["schema_version", "pillars", "cross_cutting_meta_rules"],
+      "additionalProperties": true
+    },
+    "r47_exempt_paths_composed": {
+      "type": "array",
+      "description": "Deterministic union of R-47 exempt-paths from all contributing pillars (SP13 T-4: tagging-rules.json#r47_exempt_paths is the canonical declaration; gate-config.json contributes interim entries until T-6 retirement). Deduped + sorted for deterministic ordering.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "types": {
+      "type": "object",
+      "description": "Convenience lift: governance/frontmatter-rules.json#types block surfaced at top level for hook fast-path. Mirrors frontmatter.types exactly; deterministic build asserts equality at compose time.",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "_sp13_provenance": {
+      "type": "string"
+    }
+  }
+}

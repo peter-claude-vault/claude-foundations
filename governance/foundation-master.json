@@ -1,0 +1,2013 @@
+{
+  "_description": "Composed foundation governance bundle (SP13 T-2). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
+  "_index": {
+    "_description": "Pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded.",
+    "_design_notes": {
+      "consumer": "pre-write-guard.sh, post-write-verify.sh, librarian governance-parity-audit",
+      "evolution_protocol": "R-37 atomic lockstep",
+      "lockstep_pair": "Vault Architecture - Enforcement.md",
+      "source_dependencies": [
+        "../docs/decisions/0005-two-surface-governance-dual-pattern.md",
+        "../research/vault-construction/enforcement-map-design.md"
+      ]
+    },
+    "_sp13_t4_provenance": "SP13 T-4 closing commit 2026-05-14: vault-schema dissolved into pillars; R-37 coupled_surfaces declarations added for frontmatter + tagging + mandatory-files + doc-dependencies pillars; gate-config interim references documented; foundation-master.json forward-references added (built under T-2 in same session). Closes OQ-13-1 + OQ-13-2 (revised) + OQ-13-3 governance side.",
+    "_spoke_prefix": "Vault Architecture - ",
+    "cross_cutting_meta_rules": [
+      {
+        "enforcement_layer": [
+          "pre-write-guard",
+          "git"
+        ],
+        "failure_mode": "Drift from partial landings.",
+        "id": "R-37",
+        "name": "Atomic lockstep",
+        "pillar": "meta",
+        "rule_text": "Commits update JSON + narrative + ENFORCEMENT-MAP + CLAUDE.md atomically.",
+        "scope": "all",
+        "source": "EM R-37",
+        "tier": 2
+      },
+      {
+        "enforcement_layer": [
+          "doc",
+          "librarian"
+        ],
+        "failure_mode": "Ossify or promote without data.",
+        "id": "R-35",
+        "name": "Promotion framework",
+        "pillar": "meta",
+        "rule_text": "Tier 1 advisory + promotion_criterion. Clean data → Tier 2; none → retire.",
+        "scope": "all",
+        "source": "EM R-35",
+        "tier": "framework"
+      },
+      {
+        "enforcement_layer": [
+          "doc",
+          "librarian"
+        ],
+        "failure_mode": "Over-reach or under-reach.",
+        "id": "R-34",
+        "name": "Self-healing boundary",
+        "pillar": "meta",
+        "rule_text": "Mechanical drift auto-fixes; semantic drift self-flags.",
+        "scope": "all",
+        "source": "EM R-34",
+        "tier": "framework"
+      },
+      {
+        "enforcement_layer": [
+          "pre-write-guard.sh write-time DENY on shadowing writes missing `_override_reason`",
+          "`--force-override` per-write escape hatch (no persistent disable)",
+          "librarian governance-parity-audit `foundation-upgrade-touches-shadowed-entry` finding category (upstream upgrade-time)",
+          "version-control merge-conflict surfacing on foundation upgrades touching shadowed entries",
+          "_override_reason field documentary discipline (human-only; free-text)"
+        ],
+        "failure_mode": "Silent collisions between adopter customization and foundation canonical produce unpredictable runtime behavior — rules with the same ID compete, archetype lookups fail, overlay edits silently disable foundation rules. Without the tiebreaker, every foundation upgrade is a potentially-breaking change for adopters with overlays on those entries; without write-time DENY, adopters discover collisions days later in audit reports rather than at the write itself.",
+        "id": "R-52",
+        "name": "Layer-3 Overlay Collision Tiebreaker",
+        "pillar": "meta",
+        "rule_text": "When adopter Layer-3 overlay and foundation canonical both declare the same rule ID, archetype enum value, or extensible entry kind: adopter Layer-3 SHADOWS foundation (adopter wins). Foundation declaration is preserved but does not fire. Adopter MUST carry `_override_reason` (free-text, mandatory) on every shadowing entry. Write-time enforcement via pre-write-guard.sh: shadowing writes without `_override_reason` are DENIED at write-time. Per-write `--force-override` flag bypasses the DENY for a single write; no persistent disable. Adopter renames are special-case shadows under a new name (no separate `_rename_history` field; adopter manifest is canonical naming). Foundation upgrades touching shadowed entries surface as merge conflicts in the adopter's vault repo plus `foundation-upgrade-touches-shadowed-entry` warning from librarian governance-parity-audit (audit-time, because foundation upgrades are not adopter writes). ADR-0006 documents the design rationale + 6 rejected alternatives.",
+        "scope": "all",
+        "source": "ADR-0006 + personalization-seams audit (HIGH IMPACT gap)",
+        "tier": 2
+      }
+    ],
+    "dissolved_schemas": {
+      "_description": "SP13 T-4 (2026-05-14): registry of schemas that have been semantically dissolved into pillars. Files remain physically present in foundation-repo until the last consumer migrates (T-3 hooks, T-6 gate-config retirement, T-8 install.sh ship list, T-9 tests, T-10 docs). 'Dissolved' = no new authoring; canonical authority has moved to the named successors. Each entry carries `frozen_at`, `dissolution_sp_task`, `successors`, `consumer_migration_status`, `final_deletion_gating_task`.",
+      "schemas/vault-schema.json": {
+        "consumer_migration_status": {
+          "docs": "PENDING — SP13 T-10 updates research/* + target-state/* + docs/*",
+          "governance_authoring": "MIGRATED in SP13 T-4 (this commit)",
+          "hooks_config_gate_config": "PENDING — gate-config retires under SP13 T-6 (Session 4); schema_path field references vault-schema.json until then",
+          "hooks_post_write_verify": "PENDING — migrates under SP13 T-3 (Session 3) to read foundation-master.json",
+          "hooks_pre_write_guard": "PENDING — migrates under SP13 T-3 (Session 3) to read foundation-master.json",
+          "install_sh": "PENDING — install.sh schema-copy list updates under SP13 T-8 (Session 5-6)",
+          "onboarding_bootstrap_schemas_sh": "PENDING — bootstrap-schemas.sh updates under SP13 T-8",
+          "tests": "PENDING — SP13 T-9 (Session 5-6) updates fixtures"
+        },
+        "dissolution_sp_task": "SP13 T-4",
+        "drop_then_fail_loudly_disallowed": true,
+        "final_deletion_gating_task": "SP13 T-9 or T-10 (whichever closes last; the physical file deletion happens atomically with the last consumer migration per OQ-13-4 'migrate-then-drop in same commit')",
+        "frozen_artifact_policy": "File at schemas/vault-schema.json remains intact (content preserved) and carries `_dissolved: true` top-level marker + `_canonical_successors` pointer block. No new authoring against this file — all updates go to the named successors. install.sh continues to ship the file until SP13 T-8 updates the ship list.",
+        "frozen_at": "2026-05-14",
+        "successors": {
+          "_path_rules": "governance/frontmatter-rules.json#path_routing (renamed for clarity)",
+          "_tag_prefixes": "governance/tagging-rules.json#taxonomy.dimension_prefixes",
+          "_tag_prefixes_meta": "governance/tagging-rules.json#taxonomy (system_utility_dimensions + user_facing_dimensions + cap_25_applies_to fields)",
+          "archetype_conditional_fields": "governance/frontmatter-rules.json#archetype_conditional_fields",
+          "archetype_enum": "governance/frontmatter-rules.json#archetype_enum",
+          "excluded_fields": "governance/frontmatter-rules.json#excluded_fields",
+          "packet_only_fields": "governance/frontmatter-rules.json#packet_only_fields",
+          "retired_types": "governance/frontmatter-rules.json#retired_types",
+          "tiers": "governance/frontmatter-rules.json#tier_compliance",
+          "types": "governance/frontmatter-rules.json#types"
+        }
+      }
+    },
+    "pillars": [
+      {
+        "absorbs": "types{} registry + tier_compliance + archetype_enum + archetype_conditional_fields + packet_only_fields + excluded_fields + retired_types + path_routing (SP13 T-4 absorbed from dissolved schemas/vault-schema.json 2026-05-14)",
+        "id": "frontmatter",
+        "loaded_by": [
+          "pre-write-guard.sh",
+          "post-write-verify.sh"
+        ],
+        "path": "frontmatter-rules.json",
+        "r37_coupled_surfaces": [
+          "governance/frontmatter-rules.json",
+          "onboarding/scaffold/vault-architecture/Vault Architecture - Frontmatter.md",
+          "hooks/pre-write-guard.sh (SCHEMA_KEY case)",
+          "hooks/post-write-verify.sh (type_map)",
+          "hooks/config/gate-config.json (interim — until SP13 T-6 retirement)",
+          "governance/foundation-master.json (forward — composed from this pillar via tools/build-foundation-master.sh)"
+        ],
+        "rule_id_range": [
+          "R-32",
+          "R-33",
+          "R-37",
+          "R-39",
+          "R-40",
+          "R-41"
+        ],
+        "size_bytes": "20-30K",
+        "spoke": "Frontmatter.md"
+      },
+      {
+        "absorbs": "canonical tag-prefix taxonomy (SP13 T-4 absorbed from dissolved schemas/vault-schema._tag_prefixes + _tag_prefixes_meta 2026-05-14)",
+        "id": "tagging",
+        "loaded_by": [
+          "pre-write-guard.sh"
+        ],
+        "path": "tagging-rules.json",
+        "r37_coupled_surfaces": [
+          "governance/tagging-rules.json",
+          "onboarding/scaffold/vault-architecture/Vault Architecture - Tagging.md",
+          "hooks/pre-write-guard.sh (tag-validation branch)",
+          "governance/log-subtype-registry.json (system-utility canonicality discipline)",
+          "hooks/config/gate-config.json (interim — until SP13 T-6 retirement)",
+          "governance/foundation-master.json (forward — composed r47_exempt_paths_composed union)"
+        ],
+        "rule_id_range": [
+          "R-05",
+          "R-32-taxonomy",
+          "R-47",
+          "R-50",
+          "R-51"
+        ],
+        "size_bytes": "10-15K",
+        "spoke": "Tagging.md"
+      },
+      {
+        "id": "naming",
+        "loaded_by": [
+          "pre-write-guard.sh"
+        ],
+        "path": "naming-rules.json",
+        "rule_id_range": [
+          "R-04",
+          "R-10",
+          "R-20",
+          "R-27",
+          "R-28"
+        ],
+        "size_bytes": "3-5K",
+        "spoke": "Naming.md"
+      },
+      {
+        "file_type_contracts_pattern": "governance/file-type-contracts/<file>.json carries the per-file-type body-structure contract (k8s ValidatingAdmissionPolicy paramKind pattern); the pillar's `mandates.<file_type>` block declares the matcher + exemption list. SP03 Session 20 ships the _index.md contract as the first instance.",
+        "file_type_contracts_subfolder": "file-type-contracts/",
+        "id": "mandatory-files",
+        "loaded_by": [
+          "pre-write-guard.sh",
+          "post-write-verify.sh"
+        ],
+        "path": "mandatory-files-rules.json",
+        "r37_coupled_surfaces": [
+          "governance/mandatory-files-rules.json",
+          "governance/file-type-contracts/*.json (registry pattern)",
+          "onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md",
+          "hooks/post-write-verify.sh (auto-bootstrap)",
+          "skills/librarian/capabilities/index-maintain.sh",
+          "governance/foundation-master.json (forward)"
+        ],
+        "rule_id_range": [
+          "R-07",
+          "R-09",
+          "R-12",
+          "R-14",
+          "R-44"
+        ],
+        "rule_id_range_note": "R-07/R-09/R-12/R-14 are the originally-assigned range (T-32 fills body; pending T-13 closure). R-44 was allocated SP03 Session 20 for the _index.md universal mandate (Session 16 lock #2) — fresh ID outside the originally-assigned range; Phase D-E session reconciles all R-XX allocations into a single registry.",
+        "size_bytes": "8-10K",
+        "spoke": "Mandatory-Files.md"
+      },
+      {
+        "_first_class_provenance": "SP13 Session 1 follow-on (2026-05-14): LIFTED to first-class authoring pillar per feedback_doc_deps_first_class. Was originally framed as a retirement-fold target; reframed as the canonical authoring home for both hub-spoke cascades AND upstream→downstream write-time propagation edges. hooks/config/doc-dependencies.json retires under SP13 T-6 (canonical successor: this pillar). The validator schemas/doc-dependencies-schema.json is preserved.",
+        "id": "doc-dependencies",
+        "loaded_by": [
+          "pre-write-guard.sh",
+          "post-write-verify.sh"
+        ],
+        "path": "doc-dependencies.json",
+        "r37_coupled_surfaces": [
+          "governance/doc-dependencies.json",
+          "schemas/doc-dependencies-schema.json (validator)",
+          "hooks/pre-write-guard.sh (cascade propagation)",
+          "hooks/config/doc-dependencies.json (interim — RETIRES under SP13 T-6)",
+          "governance/foundation-master.json (forward)"
+        ],
+        "size_bytes": "8-12K",
+        "spoke": "Doc-Dependencies.md (SP13 T-10)"
+      }
+    ],
+    "schema_version": "1.1.0"
+  },
+  "_meta": {
+    "_provenance": "SP13 T-2 build. Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
+    "build_tool": "tools/build-foundation-master.sh",
+    "built_at": "2026-05-14T19:51:00Z",
+    "bundle_version": "61fa996bda847e85e89985622015a1b83a3561f7410d6516b58dff5eb6cfe697",
+    "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
+    "source_file_mtimes": {
+      "governance/_index.json": "2026-05-14T19:43:55Z",
+      "governance/doc-dependencies.json": "2026-05-12T21:59:36Z",
+      "governance/frontmatter-rules.json": "2026-05-14T19:41:02Z",
+      "governance/mandatory-files-rules.json": "2026-05-14T19:42:47Z",
+      "governance/naming-rules.json": "2026-05-12T22:00:51Z",
+      "governance/tagging-rules.json": "2026-05-14T19:42:11Z"
+    },
+    "source_files_count": 6
+  },
+  "_sp13_provenance": "SP13 T-2 (2026-05-14) initial build. Composes 6 pillar files + N file-type-contracts. R-47 exempt-paths union from tagging-rules.json + (interim) gate-config.json — gate-config retires under SP13 T-6 at which point this build drops the gate-config dependency.",
+  "doc_dependencies": {
+    "_path_placeholders": {
+      "_description": "Path placeholders are substituted at install time. Foundation-repo ships paths in this parameterized form; install.sh resolves each placeholder against the adopter's environment.",
+      "{hooks_root}": "Adopter's hooks directory (typical: $CLAUDE_HOME/hooks)",
+      "{memory_root}": "Adopter's memory directory (typical: $CLAUDE_HOME/projects/<project-slug>/memory)",
+      "{plans_root}": "Adopter's plans directory (typical: $HOME/.claude-plans)",
+      "{schemas_root}": "Adopter's schemas directory (typical: $CLAUDE_HOME/schemas)",
+      "{skills_root}": "Adopter's skills directory (typical: $CLAUDE_HOME/skills)",
+      "{vault_root}": "Adopter's vault root (per onboarding wizard archetype + user-manifest)"
+    },
+    "description": "Documentation dependency registry. Hand-editable source of truth. Read by pre-write-guard.sh and librarian session-close. Mirrored into Logs/librarian-manifest.json -> doc_dependencies on each /librarian full run. Cascade registry consumed by pre-write-guard.sh + librarian session-close + entity-parity capability.",
+    "entities": {
+      "_comment": "Entity parity registry. Each entity declares a canonical source path template with {name} placeholder, an instance-enumerator (glob/file-list/directory-index), the canonical field to compare, and mirrors with strict/presence-only flags. Consumed by librarian capability entity-parity.sh.",
+      "memory-file": {
+        "canonical": "{memory_root}/{filename}",
+        "canonical_field": "description",
+        "exclude_basenames": [
+          "MEMORY.md"
+        ],
+        "instance_enumerator": "glob:{memory_root}/*.md",
+        "mirrors": [
+          {
+            "fields": [],
+            "notes": "MEMORY.md index entry. Summary after em-dash is paraphrased for scan-readability. Presence-only check.",
+            "path": "{memory_root}/MEMORY.md#row[{filename}]",
+            "presence_only": true,
+            "row_kind": "memory-index-line",
+            "strict": false
+          }
+        ]
+      },
+      "plan": {
+        "canonical": "{plans_root}/{slug}/spec.md",
+        "canonical_field": "status",
+        "instance_enumerator": "glob:{plans_root}/*/spec.md",
+        "mirrors": [
+          {
+            "fields": [],
+            "notes": "Master backlog row. Single-line pointer per sentinel pattern; summary text is paraphrased. Presence-only check.",
+            "path": "System Backlog.md#row[{slug}]",
+            "presence_only": true,
+            "row_kind": "backlog-row",
+            "strict": false
+          },
+          {
+            "fields": [
+              "status"
+            ],
+            "match_kind": "json-field",
+            "notes": "Plan manifest. Optional because pre-manifest plans may not carry one; when present, top-level status must match spec frontmatter.",
+            "optional": true,
+            "path": "{plans_root}/{slug}/manifest.json",
+            "strict": true
+          },
+          {
+            "fields": [
+              "status"
+            ],
+            "match_kind": "frontmatter",
+            "notes": "Backlog-progress satellite (sentinel pattern). Only exists for plans with session logs, hence optional.",
+            "optional": true,
+            "path": "Logs/backlog-progress/{slug}.md",
+            "strict": true
+          }
+        ]
+      },
+      "skill": {
+        "canonical": "{skills_root}/{name}/SKILL.md",
+        "canonical_field": "description",
+        "instance_enumerator": "glob:{skills_root}/*/SKILL.md",
+        "mirrors": [
+          {
+            "fields": [
+              "description"
+            ],
+            "match_kind": "frontmatter",
+            "notes": "Vault design spec for the skill. Present for most runtime skills; absent for a minority of backend-only skills.",
+            "path": "Skills/{name}.md",
+            "strict": true
+          },
+          {
+            "fields": [],
+            "notes": "Master catalog row. Description column is paraphrased-by-design (summary, not mirror). Presence-only check.",
+            "path": "Skills/_index.md#row[{name}]",
+            "presence_only": true,
+            "row_kind": "wikilink-row",
+            "strict": false
+          }
+        ]
+      }
+    },
+    "entries": [
+      {
+        "denied_types": [
+          "prd",
+          "context",
+          "reference",
+          "overview",
+          "people",
+          "engagement",
+          "navigation",
+          "project"
+        ],
+        "id": "logs-scratch-only",
+        "kind": "directory-write-constraint",
+        "primary_dir": "Logs/",
+        "rationale": "Deny-list (block deliverables) rather than allow-list because scratch/operational concepts don't have first-class type values in vault-schema.json. type=log permitted explicitly; no-type scratch permitted implicitly. Soft-warn by default; may harden to deny once write-time enforcement is broadly trusted.",
+        "rename_history": [],
+        "rule": "deny-list",
+        "severity": "warn"
+      },
+      {
+        "id": "engagement-list-cascade",
+        "kind": "directory-membership-cascade",
+        "mirrors": [
+          {
+            "file": "CLAUDE.md",
+            "kind": "directory-listing-mirror",
+            "section": "Engagements"
+          }
+        ],
+        "primary_dir": "Engagements/",
+        "primary_scope": "top-level-children",
+        "rename_history": [],
+        "rule": "if-primary-changes-mirrors-must-be-reviewed",
+        "severity": "warn"
+      },
+      {
+        "id": "va-hub-spoke",
+        "kind": "hub-spoke-cascade",
+        "mirrors": [
+          {
+            "file": "Vault Architecture/Vault Architecture - Structure.md",
+            "kind": "extracted-section",
+            "section": "Directory Structure / Reference Material: Three Tiers"
+          },
+          {
+            "file": "Vault Architecture/Vault Architecture - Engagements.md",
+            "kind": "extracted-section",
+            "section": "Engagements"
+          },
+          {
+            "file": "Vault Architecture/Vault Architecture - People.md",
+            "kind": "extracted-section",
+            "section": "People Files / Cross-Reference Integrity"
+          },
+          {
+            "file": "Vault Architecture/Vault Architecture - Frontmatter.md",
+            "kind": "extracted-section",
+            "section": "Frontmatter Standards / Pre-Write Validation / Plan Directory Conventions"
+          },
+          {
+            "file": "Vault Architecture/Vault Architecture - Tasks.md",
+            "kind": "extracted-section",
+            "section": "Task System"
+          },
+          {
+            "file": "Vault Architecture/Vault Architecture - Inbox.md",
+            "kind": "extracted-section",
+            "section": "Inbox: Operational Data Surface"
+          },
+          {
+            "file": "Vault Architecture/Vault Architecture - Templates.md",
+            "kind": "extracted-section",
+            "section": "Appendix: Frontmatter Templates"
+          }
+        ],
+        "notes": "Vault Architecture.md is a hub with extracted spokes under Vault Architecture/. When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200 on most spokes, 250 on Frontmatter and Templates.",
+        "primary": "Vault Architecture.md",
+        "rename_history": [],
+        "rule": "hub-stub-must-have-matching-spoke",
+        "severity": "warn"
+      },
+      {
+        "id": "va-structure-claude-md-mirror",
+        "kind": "cross-file-type-union",
+        "mirrors": [
+          {
+            "file": "CLAUDE.md",
+            "kind": "directory-tree-mirror",
+            "section": "Vault Structure"
+          }
+        ],
+        "notes": "CLAUDE.md carries an abridged directory tree. The canonical tree lives in Vault Architecture - Structure.md. If top-level vault directories are added/removed, both must update.",
+        "primary": "Vault Architecture/Vault Architecture - Structure.md",
+        "rename_history": [],
+        "rule": "directory-tree-must-stay-synchronized",
+        "severity": "warn"
+      },
+      {
+        "id": "vault-schema-type-consistency",
+        "kind": "cross-file-type-union",
+        "mirrors": [
+          {
+            "file": "{hooks_root}/pre-write-guard.sh",
+            "kind": "explicit-type-case",
+            "section": "SCHEMA_KEY case statement"
+          },
+          {
+            "file": "{hooks_root}/post-write-verify.sh",
+            "kind": "explicit-type-case",
+            "section": "type_map dict"
+          }
+        ],
+        "notes": "vault-schema.json carries the canonical first-class type allowlist. The R-32 Tier 2 DENY allowlist in pre-write-guard.sh covers all schema keys plus any aliases declared at install time. post-write-verify.sh type_map matches the same allowlist. daily-note remains path-inferred from Daily/ prefix. Any new type requires an R-37 lockstep commit (schema + pre-write-guard SCHEMA_KEY + pre-write-guard R-32 allowlist + post-write-verify type_map + CLAUDE.md + librarian SKILL.md, all in one commit).",
+        "path_inferred_exceptions": [
+          "daily-note"
+        ],
+        "primary": "{schemas_root}/vault-schema.json",
+        "rename_history": [],
+        "rule": "union-must-cover-vault-schema-keys",
+        "severity": "warn"
+      },
+      {
+        "id": "personal-initiatives-list-cascade",
+        "kind": "directory-membership-cascade",
+        "mirrors": [
+          {
+            "file": "CLAUDE.md",
+            "kind": "directory-listing-mirror",
+            "section": "Personal Initiatives"
+          },
+          {
+            "file": "CLAUDE.md",
+            "kind": "directory-tree-mirror",
+            "section": "Vault Structure"
+          }
+        ],
+        "primary_dir": "Personal Initiatives/",
+        "primary_scope": "top-level-children",
+        "rename_history": [],
+        "rule": "if-primary-changes-mirrors-must-be-reviewed",
+        "severity": "warn"
+      }
+    ],
+    "schema_notes": {
+      "rename_history": "Append-only audit trail of renames that have touched an entry's primary / mirrors[]. Each row: {\"from\": \"<old-path>\", \"to\": \"<new-path>\", \"at\": \"<ISO8601>\", \"commit\": \"<sha>\"}. Populated by rename-detect.sh at librarian session-close. Forward-only: no historical backfill. Empty array means no known renames since instrumentation landed."
+    },
+    "version": 2
+  },
+  "file_type_contracts": {
+    "_index.md": {
+      "$id": "claude-stem/governance/file-type-contracts/_index.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/post-write-verify.sh — Tier 1 auto-bootstrap + live-sync on every Edit/Write tool call to a vault folder; skills/librarian/capabilities/index-maintain.sh — Tier 2 audit sweep + Tier 3 --deep semantic validation (SP05 implements per the SP03-authors-contract / SP05-implements pattern)",
+        "evolution_protocol": "R-37 atomic lockstep — runtime artifact + schema #types.index + mandatory-files-rules.json mandates entry + Mandatory-Files spoke + target-state spec updated in one commit",
+        "lockstep_pair": "schemas/vault-schema.json #types.index (frontmatter contract) + governance/mandatory-files-rules.json `mandates._index_md` (matcher + exemption list) + Vault Architecture - Mandatory-Files.md (narrative spoke) + target-state/_index.md-design/* (design source)",
+        "shape_optimization_for_hooks": "Single-document JSON loadable in one `jq` pass; flat keys for sentinel patterns, regexes, columns ordered by `position` (1-indexed); enums resolved to concrete arrays (no PLACEHOLDER strings). Adopter Layer-3 overlays at $CLAUDE_HOME/governance/file-type-contracts/_index.md.adopter.json shadow this file per R-52 with `_override_reason` discipline."
+      },
+      "body_structure": {
+        "contents_enum_table": {
+          "columns": [
+            {
+              "derivation": "filename of the child .md file rendered as Obsidian wikilink",
+              "name": "File",
+              "position": 1,
+              "value_pattern": "^\\[\\[[^\\[\\]]+\\.md\\]\\]$",
+              "value_type": "wikilink"
+            },
+            {
+              "derivation": "wc -l on the referenced file at maintenance time; rendered with leading ~ when approximated",
+              "name": "Lines",
+              "position": 2,
+              "value_pattern": "^~?[0-9]+$",
+              "value_type": "approximate_integer"
+            },
+            {
+              "derivation": "extracted from the referenced file's frontmatter `type:` field",
+              "enum_source": "schemas/vault-schema.json (type entry keys excluding underscore-prefixed metadata blocks)",
+              "name": "Type",
+              "position": 3,
+              "value_type": "enum"
+            },
+            {
+              "derivation_fallback_order": [
+                "referenced file's frontmatter `description:` field",
+                "referenced file's H1 heading text",
+                "first non-frontmatter paragraph of referenced file"
+              ],
+              "max_chars": 200,
+              "name": "Description",
+              "position": 4,
+              "value_type": "prose_oneliner"
+            }
+          ],
+          "header_row": "| File | Lines | Type | Description |",
+          "light_content_fallback": {
+            "alternative": "prose 'Current Contents' section replaces the table",
+            "condition": "folder carries fewer than 3 child .md files of distinct types",
+            "rationale": "Table enumeration is premature when folder has very few children; prose is more readable"
+          },
+          "ordering_convention": {
+            "enforced_at_tier": "3",
+            "enforced_behavior": "advisory_only",
+            "key_role_types_first": [
+              "overview",
+              "context",
+              "updates",
+              "prd",
+              "navigation"
+            ],
+            "rationale": "Key-role types listed before supporting types makes load-priority signal explicit; convention not enforced as DENY — Tier 3 --deep audit flags drift for hand-tune review",
+            "supporting_role_types_after": [
+              "reference",
+              "people"
+            ]
+          },
+          "required": true,
+          "sentinel_markers": {
+            "end": "<!-- contents-enum:end -->",
+            "rationale": "Tier 1 + Tier 2 maintenance touches only content between markers; preserves hand-authored prose outside the block",
+            "start": "<!-- contents-enum:start -->"
+          },
+          "separator_row": "|---|---|---|---|"
+        },
+        "folder_context_paragraph": {
+          "auto_generation_policy": "bootstrap emits a placeholder string `*[Folder context paragraph: 2-4 sentences describing what lives here, what doesn't, why the folder exists. Pedagogical.]*` for adopter fill-in; subsequent maintenance passes preserve hand-authored content via survivorship pattern",
+          "max_sentences": 4,
+          "min_sentences": 2,
+          "placement": "between H1 and contents-enum table",
+          "rationale": "Load-bearing pedagogy content; without it the file is regeneratable boilerplate",
+          "required": true
+        },
+        "h1": {
+          "level": 1,
+          "match_rule": "must equal the folder name or a close variant (case-insensitive substring match against the parent folder's basename)",
+          "rationale": "Matches folder name; reinforces folder-mirrors-tag invariant — heading reads like a tag value",
+          "required": true
+        }
+      },
+      "consumers": [
+        {
+          "implementation_target": "hooks/post-write-verify.sh",
+          "loop_guard": "if [[ \"$FILE_PATH\" == */_index.md ]]; then exit 0; fi  (one-line check at hook entry)",
+          "name": "post-write-verify.sh",
+          "role": "Tier 1 live-sync + auto-bootstrap on Edit/Write tool calls",
+          "status": "existing-hook-extension",
+          "type": "hook"
+        },
+        {
+          "contract_path": "governance/librarian-capabilities/index-maintain.md",
+          "implementation_target": "skills/librarian/capabilities/index-maintain.sh (SP05 implements)",
+          "name": "index-maintain.sh",
+          "role": "Tier 2 audit sweep (auto-fix missing/orphan/drift); Tier 3 --deep semantic validation (description-vs-H1 match, ordering coherence)",
+          "status": "new-capability",
+          "type": "librarian-capability"
+        }
+      ],
+      "description": "Hook-consumable runtime artifact for the _index.md body-structure contract. Loaded by hooks/post-write-verify.sh (Tier 1 auto-bootstrap + live-sync) and skills/librarian/capabilities/index-maintain.sh (Tier 2 sweep + Tier 3 --deep audit). The k8s ValidatingAdmissionPolicy paramKind for the matcher declared at governance/mandatory-files-rules.json `mandates._index_md`. Design source: target-state/_index.md-design/structural-requirements.json + structural-requirements.md + governance.md. R-37 atomic-lockstep peer with the source files; this runtime artifact is RESOLVED (no PLACEHOLDER markers) and HOOK-OPTIMIZED for jq + bash 3.2 consumption.",
+      "design_source": "target-state/_index.md-design/",
+      "exemption_list_pointer": {
+        "canonical_jq_path": ".mandates._index_md.exemption_paths",
+        "canonical_source": "governance/mandatory-files-rules.json",
+        "rationale": "Single source of truth for which folders are exempt from _index.md mandate. The post-write hook + librarian index-maintain consume from there at runtime — when a write hits an exempt folder, the hook does not auto-create _index.md and the librarian does not flag missing-index as drift. Exemption changes require R-37 lockstep updating mandatory-files-rules.json + this file's `last_synced_exemption_count` + Mandatory-Files spoke."
+      },
+      "frontmatter": {
+        "conditional_required": {
+          "parent_folder": {
+            "auto_populate_source": "post-write-verify.sh bootstrap step 2 — derived from $FILE_PATH dirname relative to $VAULT_ROOT",
+            "condition": "path_depth >= 2",
+            "condition_semantics": "path_depth = number of segments between vault root and the _index.md file; depth 1 = `<cluster>/_index.md` (parent_folder omitted); depth >= 2 = `<cluster>/<instance>/_index.md` or deeper (parent_folder mandatory)."
+          }
+        },
+        "optional": [
+          "provides",
+          "description"
+        ],
+        "property_constraints": {
+          "description": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "parent_folder": {
+            "pattern": "^[A-Za-z][A-Za-z0-9 /._-]+$",
+            "rationale": "Vault-relative path naming the parent folder of this _index.md",
+            "type": "string"
+          },
+          "provides": {
+            "item_type": "string",
+            "rationale": "Cross-folder grep handle (R-39); NOT surfaced in contents-enum table",
+            "type": "array"
+          },
+          "tags": {
+            "item_pattern": "^#[a-z][a-z0-9-]*/[a-z0-9][a-z0-9-]*$",
+            "minItems": 1,
+            "rationale": "Folder-mirrors-tag invariant; tag matches the folder's structural-dimension lineage",
+            "type": "array"
+          },
+          "type": {
+            "const": "index"
+          },
+          "updated": {
+            "format": "date",
+            "rationale": "ISO-8601 date; bumped by every maintenance pass",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "tags",
+          "updated"
+        ]
+      },
+      "frontmatter_contract_source": "schemas/vault-schema.json#types.index",
+      "matcher_entry": "mandates._index_md",
+      "matcher_pillar": "governance/mandatory-files-rules.json",
+      "status": "runtime",
+      "title": "_index.md runtime body-structure contract",
+      "validation_tiers": {
+        "tier_1_live_sync": {
+          "blast_radius": "the sibling _index.md only",
+          "loop_guard_required": true,
+          "scope": "single folder of the written file",
+          "trigger": "PostToolUse hook fires on Edit/Write tool calls",
+          "writes": [
+            "auto-bootstrap (if _index.md missing AND folder non-exempt): create with frontmatter stub + H1 + placeholder folder-context paragraph + empty contents-enum table wrapped in sentinel markers",
+            "reconcile entry for written file (append/update/refresh row by wikilink)",
+            "bump _index.md frontmatter `updated:` to today"
+          ]
+        },
+        "tier_2_audit_sweep": {
+          "blast_radius": "every _index.md in the vault with drift",
+          "scope": "every non-exempt folder in the vault",
+          "self_healing_boundary": "R-34 — mutations bounded to mechanically-derivable values; descriptions / ordering / exemption decisions NEVER auto-overwritten",
+          "trigger": "/librarian full + scheduled daily (cron)",
+          "writes": [
+            "add missing rows (new files since last sweep)",
+            "remove orphan rows (deleted/renamed files)",
+            "correct drifted Lines values (wc -l mismatch)",
+            "correct drifted Type values (frontmatter type: mismatch)",
+            "bump _index.md frontmatter `updated:` if any change"
+          ]
+        },
+        "tier_3_deep_audit": {
+          "auto_overwrite_policy": "NEVER auto-overwrites hand-tuned descriptions or hand-ordered rows; flags for operator review",
+          "blast_radius": "same as Tier 2 + advisory findings emitted via librarian-finding output stream",
+          "scope": "same as Tier 2",
+          "trigger": "/librarian index-maintain --deep (opt-in)",
+          "writes": [
+            "auto-corrects mechanical drift (Lines, Type)",
+            "FLAGS semantic drift via librarian-finding NDJSON: description-vs-H1 mismatch; ordering incoherence (key-role types not first)"
+          ]
+        }
+      },
+      "version": "1.0.0"
+    }
+  },
+  "frontmatter": {
+    "_description": "Claude-consumed JSON registry for the frontmatter pillar. Loaded by pre-write-guard.sh at runtime and read by the librarian frontmatter-coverage-audit. Carries R-32, R-33, R-37, R-39, R-40, R-41 plus the type registry, tier compliance, archetype-conditional fields, path-routing rules, and the archetype enum. Frontmatter is the API every file exposes to the system; this pillar declares the fields, per-type contracts, AND the rules that enforce them. SP13 T-4 dissolved schemas/vault-schema.json into this pillar (types + tier assignment + path routing + archetype binding) plus governance/tagging-rules.json (tag-prefix taxonomy). See research/vault-construction/frontmatter-design.md for the narrative rationale.",
+    "_design_notes": {
+      "absorbed_from_vault_schema": [
+        "tiers (canonical tier definitions; was vault-schema.json `tiers`)",
+        "types (21 per-type entries; were top-level type keys in vault-schema.json)",
+        "archetype_conditional_fields (was vault-schema.json `_archetype_conditional_fields`)",
+        "packet_only_fields (was vault-schema.json `_packet_only_fields`)",
+        "excluded_fields (was vault-schema.json `_excluded_fields`)",
+        "retired_types (was vault-schema.json `_retired_types`)",
+        "path_routing (was vault-schema.json `_path_rules`; renamed for clarity per SP13 spec)",
+        "archetype_enum (was implicit in vault-schema.json; now explicit declaration)"
+      ],
+      "consumer": "pre-write-guard.sh — SCHEMA_KEY case statement + R-32 type-allowlist DENY + R-33 placement advisory; post-write-verify.sh — R-39 provides-presence advisory + R-41 archetype-field-compliance audit; librarian frontmatter-coverage-audit (R-39, R-40, R-41)",
+      "evolution_protocol": "R-37 atomic lockstep — frontmatter-rules.json + Vault Architecture - Frontmatter.md + pre-write-guard.sh SCHEMA_KEY case + post-write-verify.sh type_map updated in one commit. NOTE: schemas/vault-schema.json was DISSOLVED in SP13 T-4 (2026-05-14) into this pillar + governance/tagging-rules.json; the file remains physically present as a frozen artifact carrying a `_dissolved: true` marker until the last consumer migrates (T-3 hooks, T-8 install, T-9 tests, T-10 docs) — no new authoring against the dissolved file.",
+      "lockstep_pair": "Vault Architecture - Frontmatter.md (narrative spoke) + pre-write-guard.sh (SCHEMA_KEY case) + post-write-verify.sh (type_map)",
+      "source_dependencies": [
+        "../research/vault-construction/frontmatter-design.md",
+        "../research/vault-construction/enforcement-map-design.md",
+        "../research/vault-construction/vault-construction-principles.md",
+        "../docs/decisions/0001-tiered-compliance.md",
+        "../docs/decisions/0002-unified-with-per-archetype-entries.md",
+        "../docs/decisions/0003-folder-lineage-as-fields.md",
+        "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
+      ]
+    },
+    "archetype_conditional_fields": {
+      "_description": "Fields that may appear in any type entry's required/optional list. Per-type entries declare which apply (the 'per-archetype entries' in the unified model). Adopters extend this list via Layer 3 overlay-master.json; the 14 entries below are the foundation-repo seed. (SP13 T-4: absorbed from vault-schema._archetype_conditional_fields.)",
+      "fields": [
+        "engagement",
+        "project",
+        "workstream",
+        "owner",
+        "provides",
+        "created",
+        "name",
+        "attendees",
+        "processed",
+        "granola_id",
+        "target_date",
+        "audience",
+        "github_repo",
+        "parent_folder"
+      ]
+    },
+    "archetype_enum": {
+      "_description": "Canonical registered archetypes (SP13 T-4: absorbed from vault-schema._archetype_enum; was implicit reference target from R-51). Adopters extend via Layer 3 overlay-master.json archetype_extensions per R-52 collision-tiebreaker.",
+      "overlay_extension_path": "Layer 3 overlay-master.json archetype_extensions",
+      "values": [
+        "consultant",
+        "researcher",
+        "developer",
+        "manager"
+      ]
+    },
+    "excluded_fields": {
+      "parent_plan": {
+        "disposition": "Deferred from v1. Re-visit when planning methodology generalizes for adopters.",
+        "do_not": "Do NOT add `parent_plan` to any type entry in this pillar. Plan-tree files validate against plans-schema.json + plan-manifest-schema.json separately.",
+        "reason": "Plan-tree-only field; lives in plans-schema.json + plan-manifest-schema.json, not vault content governance."
+      }
+    },
+    "packet_only_fields": {
+      "_description": "Fields valid only on entries with type=packet (system-altitude research context packets at claude-stem/research/vault-construction/). Engagement/topic/initiative altitude packets at the user vault use the same shape via the `packet` type entry below. (SP13 T-4: absorbed from vault-schema._packet_only_fields.)",
+      "fields": [
+        "altitude",
+        "validity_window",
+        "source_dependencies",
+        "last_reviewed",
+        "canonical_url",
+        "url_stability"
+      ]
+    },
+    "path_routing": {
+      "_description": "Cross-cutting folder-lineage validation rules (SP13 T-4: absorbed from vault-schema._path_rules; renamed for clarity). Hook contract: when a file is written, evaluate matching path rules; if pattern matches, the file MUST satisfy the requires_fields + requires_tags clauses. Encoded generically so adopter archetypes (researcher's Topics/<X>/Studies/<Y>/; developer's Repos/<X>/Epics/<Y>/) extend the array without schema-shape changes. Foundation-repo ships with the consultant default.",
+      "rules": [
+        {
+          "archetype": "consultant",
+          "exemptions": [
+            "Files at Engagements/<X>/CLAUDE.md (engagement-level navigation; type=navigation entry handles)",
+            "Files at Engagements/<X>/_index.md (folder index; type=index entry handles)",
+            "Files at Engagements/<X>/Projects/<Y>/CLAUDE.md (project-level navigation; type=navigation entry handles)",
+            "Files at Engagements/<X>/Projects/<Y>/_index.md (project folder index; type=index entry handles)"
+          ],
+          "id": "consultant-engagement-project-lineage",
+          "pattern": "Engagements/{engagement_slug}/Projects/{project_slug}/**",
+          "rationale": "Folder-lineage convention: folder is structural artifact; frontmatter fields + tags are file-level workaround that propagates lineage to every file. The R-32 hook contract validates lineage consistency at write-time. See ../docs/decisions/0003-folder-lineage-as-fields.md.",
+          "requires_fields": [
+            {
+              "field": "engagement",
+              "must_equal_ancestor_segment_at_depth": 1
+            },
+            {
+              "field": "project",
+              "must_equal_ancestor_segment_at_depth": 3
+            }
+          ],
+          "requires_tags": [
+            {
+              "tag_pattern": "#engagement/{engagement_slug}"
+            },
+            {
+              "tag_pattern": "#project/{project_slug}"
+            }
+          ],
+          "tier": "strict"
+        }
+      ]
+    },
+    "pillar": "frontmatter",
+    "retired_types": {
+      "_description": "Types removed from the active type registry; preserved for write-time DENY messaging (R-32 retired_types_handling). (SP13 T-4: absorbed from vault-schema._retired_types.)",
+      "engagement": {
+        "decision_ref": "../docs/decisions/0003-folder-lineage-as-fields.md",
+        "reason": "Type information lives at file level only — folders don't have frontmatter. `engagement` is NOT a canonical TYPE; it is a FIELD slot that propagates folder lineage to files. Folders own structural artifact; field + tag propagate to file level.",
+        "replacement": "Use `engagement: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see path_routing.consultant-engagement-project-lineage). For the engagement-level navigation file itself (e.g., `Engagements/<X>/CLAUDE.md`), use type=`navigation`."
+      },
+      "project": {
+        "decision_ref": "../docs/decisions/0003-folder-lineage-as-fields.md",
+        "reason": "Same as `engagement` — folders own project lineage; FIELD `project` propagates lineage to files.",
+        "replacement": "Use `project: <slug>` as FIELD on any file living under `Engagements/<X>/Projects/<Y>/` (see path_routing.consultant-engagement-project-lineage). For the project-level overview file itself, use type=`context` or type=`navigation` (per file purpose)."
+      }
+    },
+    "rules": [
+      {
+        "enforcement_layer": [
+          "pre-write-guard.sh SCHEMA_KEY case-statement (write-time DENY)",
+          "governance/frontmatter-rules.json `types` (type allowlist + per-type required/optional field declarations)",
+          "post-write-verify.sh type_map (parallel runtime mirror)"
+        ],
+        "failure_mode": "Files written with an unknown `type:` value or with missing Strict-tier required fields drift the schema contract silently. Downstream consumers (auto-routing, librarian, scaffold) cannot reason about the file because the contract has been violated. Without write-time DENY, the schema becomes documentation rather than enforcement — production-scale untagged-file backlogs (~500 files observed in a reference deployment) accumulate before audit catches up. The Tier 2 DENY closes the gap at the moment of capture, returning a structured error that enumerates the missing fields and points to the schema entry.",
+        "id": "R-32",
+        "pillar": "frontmatter",
+        "retired_types_handling": "Files declaring a retired `type:` value (currently `engagement`, `project` — retired per ADR-0003) are DENIED with the retirement reference and `replacement` guidance pointing the author to the folder-lineage convention (field-level propagation via `engagement:` + `project:` frontmatter fields plus matching tags). See `retired_types` block.",
+        "rule_text": "Every Strict-tier vault write MUST declare a `type:` value drawn from the governance/frontmatter-rules.json `types` allowlist (21 canonical type entries; 2 retired types preserved in `retired_types`). For Strict-tier files, the universal required fields (`type`, `tags`, `updated`) AND the per-type `required` field list MUST all be present in the YAML frontmatter. Pre-write-guard DENIES writes failing either check; the DENY message enumerates the missing fields plus the pillar entry path. Adding a new type or extending a required-field list requires R-37 atomic lockstep updating this pillar + the narrative spoke + pre-write-guard SCHEMA_KEY case + post-write-verify type_map in one commit. Standard-tier writes emit a warning instead of DENY (operator triages via librarian frontmatter-coverage-audit); Minimal-tier writes proceed without validation.",
+        "schema_source": "governance/frontmatter-rules.json#types",
+        "source": "ENFORCEMENT-MAP.md R-32 + ../research/vault-construction/frontmatter-design.md §The 3 compliance tiers in detail + ../docs/decisions/0001-tiered-compliance.md",
+        "tier": "2"
+      },
+      {
+        "advisory_only": true,
+        "enforcement_layer": [
+          "pre-write-guard.sh folder-placement advisory branch (Tier 1; never blocks)",
+          "governance/frontmatter-rules.json `path_routing` (per-archetype lineage rules)",
+          "librarian placement-validation (audit-time)"
+        ],
+        "failure_mode": "Files written outside the canonical folder for their declared `type:` produce structural drift that compounds — the file is invisible to type-scoped queries, lives in a folder that does not match its archetype, and creates the impression that 'this type lives anywhere.' Once the precedent lands, follow-on writes drift further. The Tier 1 advisory fires at write-time rather than waiting for weekly audit so the operator sees the misplacement at the moment of capture and can move the file before publishing wikilinks.",
+        "id": "R-33",
+        "pillar": "frontmatter",
+        "placement_source": "governance/frontmatter-rules.json#path_routing.rules",
+        "rule_text": "Files declaring a `type:` value SHOULD reside under the canonical folder for that type per governance/frontmatter-rules.json `path_routing` (the per-archetype lineage rules). Pre-write-guard emits a Tier 1 advisory `[R-33 FOLDER PLACEMENT]` when the file's path does not match the type's expected folder pattern. The advisory never blocks — engagement-specific exceptions, cross-engagement reference docs, and adopter-customized folder structures are legitimate causes for divergence. The advisory text enumerates the expected folder pattern and the current path so the author can decide. Persistent advisory firings on the same type/folder pair surface as `placement-drift` findings in the librarian audit.",
+        "source": "ENFORCEMENT-MAP.md R-33 + ../research/vault-construction/frontmatter-design.md §Folder-lineage convention + ../research/vault-construction/file-naming-conventions.md §Anti-patterns",
+        "tier": "1"
+      },
+      {
+        "coupled_surfaces": [
+          "governance/frontmatter-rules.json",
+          "onboarding/scaffold/vault-architecture/Vault Architecture - Frontmatter.md",
+          "hooks/pre-write-guard.sh (SCHEMA_KEY case)",
+          "hooks/post-write-verify.sh (type_map)",
+          "hooks/config/gate-config.json (interim until SP13 T-6 retirement)",
+          "governance/foundation-master.json (forward; built from this pillar via tools/build-foundation-master.sh)"
+        ],
+        "enforcement_layer": [
+          "pre-write-guard.sh atomic-lockstep branch (DENY on partial-surface writes)",
+          "git pre-commit hook (advisory)",
+          "librarian governance-parity-audit (audit-time drift detection)"
+        ],
+        "failure_mode": "Schema-touching changes that land in one surface without the others produce silent drift — the pillar declares a new type the hook does not recognize; the narrative spoke documents fields the pillar has not added; the rule registry references a field name the pillar spells differently. Within weeks the surfaces diverge enough that no single artifact is authoritative. Drift is detectable but already-broken when the audit surfaces it. R-37 closes the gap at write-time by treating partial-surface commits as the structural error they are.",
+        "id": "R-37",
+        "meta_rule_reference": "governance/_index.json cross_cutting_meta_rules[] R-37",
+        "pillar": "frontmatter",
+        "rule_text": "The frontmatter pillar binds three coupled surfaces under R-37 atomic lockstep: (1) governance/frontmatter-rules.json (canonical pillar declaring types, tiers, archetype enum, archetype-conditional fields, path-routing rules, and rule registry; SP13 T-4 absorbed the former schemas/vault-schema.json), (2) onboarding/scaffold/vault-architecture/Vault Architecture - Frontmatter.md (narrative spoke), (3) hooks/pre-write-guard.sh SCHEMA_KEY case-statement + hooks/post-write-verify.sh type_map (runtime mirror). Adding, modifying, or retiring a `type:` value, changing a required-field list, introducing a new field class, or updating the tier-compliance contract requires touching ALL THREE surfaces in a single commit. Pre-write-guard's atomic-lockstep branch DENIES writes that touch one surface without the others, with the missing surfaces enumerated. This entry is the pillar-scoped instantiation of the canonical R-37 meta-rule at governance/_index.json `cross_cutting_meta_rules[]`. The interim coupled-surfaces declaration in governance/_index.json carries hooks/config/gate-config.json (until T-6 retirement) and governance/foundation-master.json (forward) per SP13 retirement-order discipline.",
+        "source": "ENFORCEMENT-MAP.md R-37 (cross-cutting meta-rule; canonical entry in governance/_index.json `cross_cutting_meta_rules[]`) + ../research/vault-construction/frontmatter-design.md §R-37 atomic-lockstep protocol + ../research/vault-construction/enforcement-map-design.md §R-37 atomic-lockstep protocol + ../docs/decisions/0005-two-surface-governance-dual-pattern.md",
+        "tier": "2"
+      },
+      {
+        "advisory_only": true,
+        "enforcement_layer": [
+          "post-write-verify.sh provides-presence advisory (Tier 1; combined with R-38 blockquote-summary block)",
+          "librarian frontmatter-coverage-audit (audit-time coverage tracking)"
+        ],
+        "exemptions": [
+          "Archive/** — archived content; provides-declaration is structurally unnecessary",
+          "Daily/** — daily notes are temporally-scoped, not capability-scoped",
+          "Logs/** — machine-emitted log surfaces; lifecycle is closed at write-time",
+          "Inbox/** — aggregation surfaces; provides lives at the canonical destination, not the staging copy"
+        ],
+        "failure_mode": "Long-form files (>200 lines) without a `provides:` declaration become opaque to consumers that route by capability rather than by path. The router cannot determine what concepts the file is canonical for; the librarian cannot detect provides-canonicality drift (R-40) because there is no claim to compare against; downstream agents loading the file have no fast way to decide whether the content is relevant. The advisory surfaces the omission at write-time so the author either declares `provides:` deliberately or accepts the file as content-only.",
+        "id": "R-39",
+        "line_threshold": 200,
+        "pillar": "frontmatter",
+        "rule_text": "Files exceeding 200 lines SHOULD declare a `provides:` array in their YAML frontmatter enumerating the concepts, rules, or capabilities the file is the canonical source for. Post-write-verify emits a Tier 1 advisory `[R-39 PROVIDES PRESENCE]` when a file over the line threshold lacks `provides:` or has `provides: []`. The advisory never blocks — content-only long-form files (raw transcripts, archive imports, daily-note dumps) are legitimate and the author can ignore the advisory. The librarian frontmatter-coverage-audit tracks recurring R-39 firings as `provides-coverage-drift` findings so the operator can triage at session-close.",
+        "source": "ENFORCEMENT-MAP.md R-39 + ../research/vault-construction/frontmatter-design.md §Anti-patterns (frontmatter-is-decoration anti-pattern) + ../research/vault-construction/content-length-limits.md (200-line threshold rationale)",
+        "tier": "1"
+      },
+      {
+        "audit_only": true,
+        "canonical_scope": [
+          "vault root depth-1",
+          "Vault Architecture/**",
+          "Skills/**"
+        ],
+        "drift_allowlist_path": "hooks/config/drift-allowlist.json",
+        "enforcement_layer": [
+          "librarian frontmatter-coverage-audit (`provides-canonicality-drift` finding category)",
+          "drift-allowlist override at hooks/config/drift-allowlist.json (`provides_overlap[]` for deliberate co-canonical pairs)",
+          "manifest mirror at librarian-manifest.json `drift_findings.provides_canonicality`"
+        ],
+        "failure_mode": "Two or more canonical-scope files claiming the same `provides:` capability fragment authority. A consumer routing to the capability does not know which file to read; updates to one canonical do not propagate to the other; the two files drift into mutually-contradictory statements within months. Without an audit, the drift is invisible — `grep provides:` returns both files and the consumer picks one by accident. The librarian-audit finding surfaces the collision and asks the operator to either consolidate, archive one source, or register the overlap as deliberate in the drift-allowlist.",
+        "id": "R-40",
+        "manifest_mirror_path": "librarian-manifest.json drift_findings.provides_canonicality",
+        "pillar": "frontmatter",
+        "rule_text": "Within the canonical-scope of the vault (vault root depth-1 + Vault Architecture/** + Skills/**), no two files SHOULD declare the same capability in their `provides:` array. The librarian frontmatter-coverage-audit walks every Standard- and Strict-tier file's `provides:` declaration, builds an inverted index, and emits a `provides-canonicality-drift` finding whenever a capability is claimed by 2+ canonical-scope owners. Severity is `blocking` when any owner sits at vault root or inside Vault Architecture/**; `warning` otherwise. Engagement reference docs, meeting notes, project context files, and daily notes are EXCLUDED from canonical-scope — `provides:` is project-scoped vocabulary there, not vault-wide canonical. Deliberate co-canonical pairs (e.g., a research packet plus its consumer-rendered spoke) register at hooks/config/drift-allowlist.json `provides_overlap[].capability` with rationale + audit-trail entry; allowlist entries mirror into librarian-manifest.json on every run and suppress the finding.",
+        "scope_exemptions": [
+          "Engagements/**/People/** — people are engagement-scoped",
+          "Engagements/**/Projects/** — `provides:` is project-scoped vocabulary",
+          "Meetings/** — meeting `provides:` is cross-reference helper, not canonical claim",
+          "Daily/** — daily notes are temporally-scoped"
+        ],
+        "source": "ENFORCEMENT-MAP.md R-40 + ../research/vault-construction/frontmatter-design.md §Archetype-conditional fields (`provides` row) + ../research/vault-construction/enforcement-map-design.md §Categorized findings",
+        "tier": "1"
+      },
+      {
+        "archetype_conditional_fields_source": "governance/frontmatter-rules.json#archetype_conditional_fields",
+        "archetype_enum_source": "governance/frontmatter-rules.json#archetype_enum",
+        "audit_only": true,
+        "enforcement_layer": [
+          "librarian archetype-consistency audit (audit-time; per-archetype field-coverage verification)",
+          "post-write-verify.sh archetype-field advisory (Tier 1; warning on incomplete archetype field-set)",
+          "governance/frontmatter-rules.json `archetype_conditional_fields` (per-archetype field-set authority)"
+        ],
+        "exemptions": [
+          "Files declaring `tier: minimal` — opt-out from validation",
+          "Archive/** — closed lifecycle; archetype-completeness is preserved as a historical record, not a live audit target",
+          "Files without any archetype declaration — pre-archetype-era content remains in Standard tier without binding"
+        ],
+        "failure_mode": "Files declaring an archetype (via `archetype:` frontmatter field or via per-type entry with archetype binding) but missing required archetype-conditional fields fragment the multi-archetype union model. A consultant archetype file missing `engagement:`/`project:` cannot be filtered to engagement-scoped views. A researcher archetype file missing `topic:`/`study:` cannot resolve to the topic taxonomy. The renamed-dimension overlay (developer's `#repo/*` mapping to the consultant's `#engagement/*` structural slot) breaks at consumption time. The audit closes the gap by walking every archetype-declaring file and verifying the required field set per archetype is fully populated.",
+        "id": "R-41",
+        "pillar": "frontmatter",
+        "rule_text": "Files declaring an archetype affiliation (either via the `archetype:` frontmatter field or via a `type:` entry with archetype binding declared in governance/frontmatter-rules.json) MUST carry the full required-field set for that archetype per governance/frontmatter-rules.json `archetype_conditional_fields[<archetype>]` declaration. The librarian archetype-consistency audit walks every archetype-declaring file, computes the per-archetype required-field intersection, and emits `archetype-field-compliance-drift` findings when any required field is missing. Severity is `warning` (Tier 1 advisory) — the file lands; the audit surfaces drift at session-close. Adopters extending the archetype enum via Layer 3 overlay-master.json must extend `archetype_conditional_fields` in the same overlay; otherwise the audit reports the unknown archetype as `archetype-not-in-enum` (R-51 sibling at tagging-rules.json carries the write-time DENY for archetype enum violations). The pair (R-41 advisory at audit-time + R-51 DENY at write-time) is the field-side and tag-side enforcement of the multi-archetype binding contract.",
+        "sibling_rule": "R-51 (governance/tagging-rules.json) — archetype-binding DENY at write-time on `archetype:` field value",
+        "source": "../research/vault-construction/vault-construction-principles.md commitment 4 (multi-archetype union) + ../research/vault-construction/frontmatter-design.md §Archetype-conditional fields + spec §Archetype-binding rule contract (sibling to R-51 in governance/tagging-rules.json)",
+        "tier": "1"
+      }
+    ],
+    "schema_version": "2.0.0",
+    "tier_compliance": {
+      "_description": "Canonical three-tier compliance definitions (SP13 T-4: absorbed from dissolved vault-schema.json `tiers` block; this pillar is now the single source of truth for tier semantics + enforcement metadata).",
+      "minimal": {
+        "applies_to": "files matching minimal_tier_exemptions glob patterns OR carrying explicit `tier: minimal` frontmatter directive",
+        "conditional_required": [],
+        "description": "Explicit opt-out files. No validation; flagged 'outside system' by librarian. Used for legacy imports, paste-buffer scratch, archives outside lifecycle.",
+        "universal_required": [],
+        "validation_behavior": "allow"
+      },
+      "standard": {
+        "applies_to": "type entries with tier=standard in this pillar's `types` block",
+        "conditional_required": [],
+        "description": "User-authored vault content. Soft warning; librarian flags drift via tag-coverage-audit + frontmatter-coverage-audit capabilities.",
+        "universal_required": [
+          "type",
+          "tags",
+          "updated"
+        ],
+        "validation_behavior": "warn"
+      },
+      "strict": {
+        "applies_to": "type entries with tier=strict in this pillar's `types` block",
+        "conditional_required": [
+          "status"
+        ],
+        "description": "System files (scaffold-emitted, /ingest-routed, scraper-aggregated to Inbox/). Hard fail at write-time (R-32 Tier 2 DENY).",
+        "universal_required": [
+          "type",
+          "tags",
+          "updated"
+        ],
+        "validation_behavior": "deny"
+      }
+    },
+    "types": {
+      "_description": "Canonical type registry — 21 active type entries plus retired_types reference. Each entry declares tier + universal_required + per-type required + optional + conditional_required + (optional) body_structure_contract. (SP13 T-4: absorbed from vault-schema.json top-level type keys; this pillar is the single source of truth.)",
+      "archetype-template": {
+        "_description": "Scaffold templates at `onboarding/templates/<archetype>/` consumed by install. Pre-populated frontmatter; R-32 100% conformant. Anti-drift principle: archetype templates ship pre-populated upfront; user-added files inherit defaults via templates.",
+        "optional": [
+          "max_lines",
+          "provides",
+          "lockstep_pair"
+        ],
+        "required": [
+          "type",
+          "archetype",
+          "template_for",
+          "tags",
+          "updated"
+        ],
+        "tier": "strict"
+      },
+      "archive": {
+        "optional": [
+          "engagement",
+          "project"
+        ],
+        "required": [
+          "type",
+          "source-path",
+          "archived-date",
+          "tags"
+        ],
+        "tier": "strict"
+      },
+      "briefing": {
+        "optional": [
+          "max_lines"
+        ],
+        "required": [
+          "type",
+          "date",
+          "generated",
+          "tags"
+        ],
+        "tier": "strict"
+      },
+      "context": {
+        "optional": [
+          "workstream",
+          "provides",
+          "max_lines"
+        ],
+        "required": [
+          "title",
+          "engagement",
+          "project",
+          "type",
+          "status",
+          "owner",
+          "updated",
+          "tags"
+        ],
+        "tier": "standard"
+      },
+      "daily-archive": {
+        "optional": [],
+        "required": [
+          "type",
+          "month",
+          "date-range",
+          "tags"
+        ],
+        "tier": "strict"
+      },
+      "daily-note": {
+        "optional": [],
+        "required": [
+          "type",
+          "date",
+          "day",
+          "processed",
+          "tags"
+        ],
+        "tier": "strict"
+      },
+      "historical-brief": {
+        "optional": [
+          "kept-as",
+          "merged-into",
+          "copied-to",
+          "tags"
+        ],
+        "required": [
+          "type",
+          "updated",
+          "marked-historical-by"
+        ],
+        "tier": "standard"
+      },
+      "ideation-brief": {
+        "optional": [
+          "status",
+          "tags",
+          "backlog_item"
+        ],
+        "required": [
+          "type",
+          "title",
+          "created",
+          "updated"
+        ],
+        "tier": "strict"
+      },
+      "inbox-archive": {
+        "optional": [],
+        "required": [
+          "type",
+          "date",
+          "day",
+          "sources",
+          "created",
+          "tags"
+        ],
+        "tier": "strict"
+      },
+      "index": {
+        "body_structure_contract": "governance/file-type-contracts/_index.md.json",
+        "body_structure_contract_rationale": "Body-structure rules (H1, folder-context paragraph, contents-enum table with column shape + sentinel markers + ordering convention) live in the per-file-type contract following the k8s ValidatingAdmissionPolicy paramKind pattern (matcher in pillar/schema; parameters in separate replaceable resource). See ../research/vault-construction/_index.md-design.md + ../target-state/_index.md-design/structural-requirements.md.",
+        "conditional_required": {
+          "parent_folder": {
+            "condition": "path_depth >= 2",
+            "condition_semantics": "depth is the number of path segments between the vault root and the file; depth 1 = `<cluster>/_index.md` (parent_folder omitted because the parent IS the vault root); depth >= 2 = `<cluster>/<instance>/_index.md` or deeper (parent_folder mandatory).",
+            "rationale": "Navigation-side lineage pointer auto-populated by post-write-verify auto-bootstrap; librarian index-maintain audits for path-vs-frontmatter drift. Distinct from the content-side folder-lineage convention (`engagement:`/`project:`) which uses path_routing. See ../research/vault-construction/_index.md-design.md §parent_folder."
+          }
+        },
+        "optional": [
+          "provides",
+          "description"
+        ],
+        "required": [
+          "type",
+          "tags",
+          "updated"
+        ],
+        "tier": "strict"
+      },
+      "log": {
+        "optional": [
+          "tags"
+        ],
+        "required": [
+          "type",
+          "log-type",
+          "date",
+          "timestamp"
+        ],
+        "tier": "strict"
+      },
+      "meeting-note": {
+        "optional": [
+          "engagement",
+          "project",
+          "previous_instance",
+          "granola_id",
+          "granola_ids",
+          "granola_url"
+        ],
+        "required": [
+          "type",
+          "date",
+          "meeting_title",
+          "attendees",
+          "tags",
+          "processed",
+          "updated"
+        ],
+        "tier": "strict"
+      },
+      "navigation": {
+        "optional": [
+          "project",
+          "max_lines",
+          "tags"
+        ],
+        "required": [
+          "type",
+          "engagement",
+          "updated"
+        ],
+        "tier": "standard"
+      },
+      "packet": {
+        "_description": "Research context packets at all four altitudes (system / engagement / topic / initiative). System-altitude packets canonical at `claude-stem/research/vault-construction/`; engagement/topic/initiative at user vault. Surfaces 180-day `last_reviewed` cadence (system) / 90-day (topic) / continuous (engagement) / closed-at-plan-close (initiative).",
+        "optional": [
+          "canonical_url",
+          "url_stability",
+          "provides",
+          "max_lines",
+          "engagement",
+          "project"
+        ],
+        "required": [
+          "type",
+          "altitude",
+          "scope",
+          "validity_window",
+          "source_dependencies",
+          "last_reviewed",
+          "tags",
+          "updated"
+        ],
+        "tier": "strict"
+      },
+      "people": {
+        "optional": [
+          "email",
+          "projects",
+          "max_lines"
+        ],
+        "required": [
+          "type",
+          "name",
+          "org",
+          "role",
+          "engagement",
+          "updated",
+          "tags"
+        ],
+        "tier": "standard"
+      },
+      "personal-initiative": {
+        "optional": [
+          "github_repo",
+          "audience",
+          "lines",
+          "max_lines",
+          "provides",
+          "started",
+          "completed"
+        ],
+        "required": [
+          "type",
+          "name",
+          "status",
+          "owner",
+          "updated",
+          "tags"
+        ],
+        "tier": "standard"
+      },
+      "planning": {
+        "optional": [
+          "project",
+          "provides",
+          "max_lines"
+        ],
+        "required": [
+          "type",
+          "engagement",
+          "updated",
+          "tags"
+        ],
+        "tier": "standard"
+      },
+      "prd": {
+        "optional": [
+          "workstream",
+          "provides",
+          "max_lines"
+        ],
+        "required": [
+          "title",
+          "engagement",
+          "project",
+          "type",
+          "status",
+          "owner",
+          "updated",
+          "tags"
+        ],
+        "tier": "standard"
+      },
+      "reference": {
+        "optional": [
+          "provides",
+          "max_lines"
+        ],
+        "required": [
+          "type",
+          "updated",
+          "tags"
+        ],
+        "tier": "standard"
+      },
+      "strategic": {
+        "optional": [
+          "project",
+          "provides",
+          "max_lines"
+        ],
+        "required": [
+          "type",
+          "engagement",
+          "status",
+          "updated",
+          "tags"
+        ],
+        "tier": "standard"
+      },
+      "weekly-summary": {
+        "optional": [],
+        "required": [
+          "type",
+          "week",
+          "date-range",
+          "tags"
+        ],
+        "tier": "strict"
+      }
+    }
+  },
+  "mandatory_files": {
+    "_description": "Claude-consumed JSON registry for the mandatory-files pillar. Loaded by pre-write-guard.sh + post-write-verify.sh at runtime. Carries the universal mandatory-file enumeration (Session 16 13-locks) plus per-file mandate metadata. Following the k8s ValidatingAdmissionPolicy pattern, the `mandates` block carries matchers + parameters per file type; per-file-type body-structure contracts live at governance/file-type-contracts/<file>.json. See research/vault-construction/mandatory-file-lock.md for the narrative.",
+    "_design_notes": {
+      "consumer": "pre-write-guard.sh (mandate-presence DENY); post-write-verify.sh (Tier 1 auto-bootstrap + live-sync); librarian index-maintain capability (Tier 2 sweep + Tier 3 deep audit)",
+      "evolution_protocol": "R-37 atomic lockstep — this registry + Vault Architecture - Mandatory-Files.md + governance/file-type-contracts/<file>.json + hooks/post-write-verify.sh updated in one commit",
+      "lockstep_pair": "Vault Architecture - Mandatory-Files.md (narrative spoke) + governance/file-type-contracts/_index.md.json (per-file-type body-structure contract) + hooks/post-write-verify.sh (auto-bootstrap implementation)",
+      "phase_d_e_gap_reference": "No single canonical R-XX registry exists yet (per the governance-enforcement-baseline audit gap #1). R-44 is allocated for the _index.md universal mandate as a fresh ID outside the pillar's initial assigned range (R-07/R-09/R-12/R-14). Phase D-E session reconciles all R-XX allocations into a registry; until then, new rule-ID allocations must grep governance/ + schemas/ + hooks/ + onboarding/scaffold/vault-architecture/ for duplicates before authoring.",
+      "scope_note": "Session 20 stub. Only the `_index.md` mandate (R-44) and its exemption list have landed. T-32 fills the full universal mandatory-file body (CLAUDE.md vault-root only per Session 16 lock #1; Tasks.md; System Backlog.md; Vault Architecture.md; Vault Architecture/ spoke folder; Inbox/ + Inbox/_index.md; About Me/; Meetings/; per-folder/per-cluster mandatories; the original R-07 / R-09 / R-12 / R-14 rule range) per the vault-root rollout roadmap.",
+      "source_dependencies": [
+        "../research/vault-construction/mandatory-file-lock.md",
+        "../research/vault-construction/_index.md-design.md",
+        "../target-state/_index.md-design/structural-requirements.md",
+        "../target-state/_index.md-design/structural-requirements.json",
+        "../target-state/_index.md-design/governance.md",
+        "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
+      ]
+    },
+    "mandates": {
+      "_description": "Per-file-type mandate registry. Each entry is a `matcher` (the file type this mandate applies to + path/scope conditions) bound to its `body_structure_contract` (the parameter resource carrying the contract). Hooks consume `mandates[<file_type>]` to determine WHETHER a mandate fires for a given write; consume `body_structure_contract` to determine WHAT the file's contract is. The two-resource separation follows the k8s ValidatingAdmissionPolicy pattern (matcher in pillar; paramKind in separate resource).",
+      "_index_md": {
+        "_frontmatter_contract_provenance": "SP13 T-4 (2026-05-14): flipped from schemas/vault-schema.json#types.index to governance/frontmatter-rules.json#types.index after vault-schema dissolution. vault-schema.json file remains frozen with `_dissolved: true` marker until last consumer migrates.",
+        "body_structure_contract": "governance/file-type-contracts/_index.md.json",
+        "consumers": [
+          "hooks/post-write-verify.sh (Tier 1 auto-bootstrap + live-sync)",
+          "skills/librarian/capabilities/index-maintain.sh (Tier 2 audit sweep + Tier 3 --deep semantic validation; SP05 implements per the SP03-authors-contract / SP05-implements pattern used for governance-parity-audit)"
+        ],
+        "enforcement_mechanism": "structural — post-write-verify.sh Tier 1 auto-bootstrap creates _index.md at first-write to a non-exempt folder lacking one; librarian index-maintain Tier 2 sweep catches hand-created folders never written to. One-line self-exempt loop guard at hook entry (`[[ \"$FILE_PATH\" == */_index.md ]] && exit 0`) prevents recursion on the hook's own writes.",
+        "exemption_categories": [
+          "date-prefixed sequence folders (Daily/, Meetings/, Archive/<YYYY>/)",
+          "scraper aggregation surfaces (Inbox/ — uses inbox-index-refresh capability, not index-maintain)",
+          "scratch-space emissions (Logs/)",
+          "non-vault infrastructure (Tags/ Obsidian Make.md artifacts; _orchestrator/ plan-tree state; tests/fixtures/)",
+          "template seed directories (Templates/)"
+        ],
+        "exemption_paths": [
+          "Templates/**",
+          "Archive/**",
+          "Daily/**",
+          "Meetings/**",
+          "Inbox/**",
+          "Logs/**",
+          "Tags/**",
+          "_orchestrator/**",
+          "tests/fixtures/**",
+          "tests/**"
+        ],
+        "exemption_semantics": "positive-list — unenumerated user-facing folders default to the mandate firing. Adding a new exemption requires R-37 atomic lockstep updating this entry + hooks/post-write-verify.sh exemption-check + skills/librarian/capabilities/index-maintain.sh exemption-check + Vault Architecture - Mandatory-Files.md narrative spoke.",
+        "file_pattern": "**/_index.md",
+        "frontmatter_contract": "governance/frontmatter-rules.json#types.index",
+        "rule_id": "R-44",
+        "scope": "every non-exempt user-facing folder MUST carry a sibling _index.md",
+        "source_packet": "../research/vault-construction/_index.md-design.md",
+        "target_state_spec": "../target-state/_index.md-design/"
+      }
+    },
+    "pillar": "mandatory-files",
+    "rules": [
+      {
+        "body_structure_contract": "governance/file-type-contracts/_index.md.json",
+        "enforcement_layer": [
+          "hooks/post-write-verify.sh Tier 1 auto-bootstrap (creates _index.md at first-write to non-exempt folder)",
+          "hooks/post-write-verify.sh Tier 1 live-sync (reconciles contents-enum entry for written sibling files)",
+          "hooks/post-write-verify.sh self-exempt loop guard (one-line filename check at hook entry)",
+          "skills/librarian/capabilities/index-maintain.sh Tier 2 audit sweep (catches hand-created folders + cron + direct-Obsidian writes the hook misses)",
+          "skills/librarian/capabilities/index-maintain.sh Tier 3 --deep semantic validation (opt-in description/ordering audit)",
+          "governance/frontmatter-rules.json #types.index frontmatter contract (parent_folder depth-conditional + tags universal-required at strict tier; SP13 T-4 absorbed from dissolved schemas/vault-schema.json)",
+          "governance/file-type-contracts/_index.md.json body-structure contract (H1 + folder-context paragraph + contents-enum table with sentinel markers)"
+        ],
+        "exemption_paths_source": "mandates._index_md.exemption_paths",
+        "failure_mode": "Folders without an _index.md appear as leaves in graph view; LLMs reading the folder have no orientation document and must read each child file individually at full token cost; human readers fall back to filename-by-filename scanning. Pre-mandate baseline in reference deployment showed folder-level navigation breaking past ~10 children and collapsing past ~50. The mandate is structural: post-write-verify auto-bootstrap creates _index.md at first-write to a non-exempt folder — the adopter never has to remember to author the index. Without the auto-bootstrap + Tier 2 sweep, the mandate degrades to advisory and recurring drift accumulates silently between audit runs.",
+        "frontmatter_contract": "governance/frontmatter-rules.json#types.index",
+        "id": "R-44",
+        "matcher_path": "mandates._index_md",
+        "pillar": "mandatory-files",
+        "rule_text": "Every non-exempt user-facing folder in the vault MUST carry a sibling _index.md at folder root. The _index.md file MUST conform to the frontmatter contract at governance/frontmatter-rules.json #types.index (`type: index`; `tags:` mandatory; `parent_folder:` required at path_depth >= 2 / omitted at depth 1; `updated:` mandatory; SP13 T-4 canonical location absorbed from dissolved schemas/vault-schema.json) AND the body-structure contract at governance/file-type-contracts/_index.md.json (H1 matching folder name; folder-context paragraph 2-4 sentences; contents-enum table with `File | Lines | Type | Description` columns wrapped in sentinel markers). Exempt paths are enumerated in `mandates._index_md.exemption_paths` (positive-list). The mandate is enforced structurally via the three-tier maintenance architecture: Tier 1 post-write-verify auto-bootstrap + live-sync on every Edit/Write tool call (with one-line self-exempt loop guard at hook entry); Tier 2 librarian index-maintain audit sweep on /librarian full + scheduled daily; Tier 3 librarian index-maintain --deep opt-in semantic validation. The two-resource architecture (matcher in this pillar's `mandates._index_md` block + parameters in governance/file-type-contracts/_index.md.json) follows the k8s ValidatingAdmissionPolicy pattern; hooks load the matcher to decide whether to fire, then load the parameter contract to validate body structure.",
+        "self_healing_capability": "skills/librarian/capabilities/index-maintain.sh (R-34 self-healing boundary — mutations bounded to mechanically-derivable values; semantic content like descriptions / ordering / exemption decisions is flagged for review, never auto-overwritten)",
+        "source": "Session 16 lock #2 (universal mandatory-file enumeration; feedback_index_file_convention) + ../research/vault-construction/_index.md-design.md + ../research/vault-construction/mandatory-file-lock.md + ../target-state/_index.md-design/governance.md §Maintenance architecture",
+        "tier": "2"
+      }
+    ],
+    "schema_version": "1.0.0"
+  },
+  "naming": {
+    "_description": "Claude-consumed JSON registry for the naming pillar. Loaded by pre-write-guard.sh at runtime. Carries R-04, R-10, R-20, R-27, R-28.",
+    "_design_notes": {
+      "consumer": "pre-write-guard.sh — naming-rule evaluation branch",
+      "evolution_protocol": "R-37 atomic lockstep — naming-rules.json + Vault Architecture - Naming.md + pre-write-guard.sh + CLAUDE.md updated in one commit",
+      "lockstep_pair": "Vault Architecture - Naming.md (narrative spoke)",
+      "source_dependencies": [
+        "../research/vault-construction/file-naming-conventions.md",
+        "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
+      ]
+    },
+    "pillar": "naming",
+    "rules": [
+      {
+        "enforcement_layer": [
+          "pre-write-guard.sh known-root allowlist",
+          "pre-write-guard.sh single-file exemption block",
+          "librarian placement-validation"
+        ],
+        "failure_mode": "File written to undocumented vault-root drifts structure; Vault Architecture.md falls out of sync; navigation guides stale. Tier 3 advisory: write proceeds; operator told to move file or update Vault Architecture.md.",
+        "id": "R-04",
+        "known_roots": [
+          "About Me",
+          "Archive",
+          "Artefact-BD",
+          "Daily",
+          "Dashboard",
+          "Engagements",
+          "Inbox",
+          "Logs",
+          "Meetings",
+          "Personal Initiatives",
+          "Plans",
+          "Reference",
+          "Skills",
+          "Tags",
+          "Vault Architecture"
+        ],
+        "pillar": "naming",
+        "rule_text": "Files written to a vault-root directory must reside in a documented root. Known roots are a hardcoded allowlist in pre-write-guard.sh. A small set of top-level files is exempt from the root-must-be-a-directory rule. Adding a new root requires R-10's checklist + R-37 lockstep — not mid-session improvisation.",
+        "source": "ENFORCEMENT-MAP.md R-04 + pre-write-guard.sh known-root allowlist",
+        "tier": "3",
+        "vault_root_file_exemptions": [
+          "CLAUDE.md",
+          "Vault Architecture.md",
+          "Tasks.md",
+          "System Backlog.md",
+          "System Backlog - Archive.md"
+        ]
+      },
+      {
+        "checklist_items": [
+          "Declare purpose — what archetype/content the directory holds",
+          "Declare consumer — which skill, hook, capability, or query parses this path",
+          "Update Vault Architecture.md (or the relevant pillar spoke)",
+          "Add vault-schema.json archetype + frontmatter contract",
+          "Extend pre-write-guard.sh known-root list (R-04 allowlist update)",
+          "Add librarian-capability entry (placement-validation / plan-index / walker)",
+          "Commit R-37 atomic lockstep — all four surfaces move in one commit"
+        ],
+        "enforcement_layer": [
+          "vault CLAUDE.md documentary",
+          "pre-write-guard.sh (R-04 surface)",
+          "librarian manifest schema-completeness"
+        ],
+        "failure_mode": "New top-level directories created mid-session without schema/hook/librarian/Vault-Architecture entries. Produces orphan roots invisible to walkers. Source: production-scale folder-drift incident (~20 orphan folders cleaned in a single vault cleanup pass).",
+        "id": "R-10",
+        "pillar": "naming",
+        "rule_text": "Adding a new vault-root directory requires walking the 7-item New Structure Checklist deliberately. The checklist binds CLAUDE.md, vault-schema, hooks, and librarian into R-37 atomic lockstep so a new root cannot land in isolation.",
+        "source": "ENFORCEMENT-MAP.md R-10 + vault CLAUDE.md New Structure Checklist + ../research/vault-construction/file-naming-conventions.md",
+        "tier": "3"
+      },
+      {
+        "enforcement_layer": [
+          ".gitignore file-level comments (documentary)",
+          "ENFORCEMENT-MAP.md canonical reference",
+          "promotion-pending: pre-commit hook if drift recurs"
+        ],
+        "failure_mode": "Silent gitignore bypass — bare-name patterns match only at repo root; deeper instances slip through. A production incident saw ~100 files leak through bare-name gitignore in an initial commit of the reference deployment.",
+        "foundation_repo_defaults": [
+          ".DS_Store",
+          "**/Tags/",
+          ".env",
+          ".env.local",
+          "node_modules/",
+          "**/.obsidian/workspace*.json"
+        ],
+        "id": "R-20",
+        "pattern_grammar": "**/ prefix required for at-any-depth matching",
+        "pillar": "naming",
+        "rule_text": "Gitignore patterns matching directory names at any depth must use the `**/` prefix. Bare-name patterns match only at repo root; `**/<name>/` matches anywhere in the tree. Documentary-only; promote to pre-commit hook if drift recurs.",
+        "source": "ENFORCEMENT-MAP.md R-20 + production gitignore incident + ../research/vault-construction/file-naming-conventions.md",
+        "tier": "3"
+      },
+      {
+        "enforcement_layer": [
+          "pre-write-guard.sh plan-creation block (write-time DENY)",
+          "/new-plan skill creation-gate shame-slug regex",
+          "librarian stale-detect",
+          "librarian plan-index status grouping"
+        ],
+        "enforcement_scope": [
+          "{plans_root}/*.md",
+          "{plans_root}/*/spec.md",
+          "{plans_root}/*/00-ideation-brief.md",
+          "{plans_root}/*/README.md",
+          "{plans_root}/*/manifest.json"
+        ],
+        "escape_hatch": {
+          "audit_log": "{logdir}/hook-audit.log",
+          "env_var": "PLAN_STATUS_OK=1"
+        },
+        "failure_mode": "Plans without numeric prefix or status break librarian plan-index regeneration. Shame slugs (auto-generated adjective-verb-noun) degrade plan-index, backlog routing, and search-by-name. A production audit found ~60% of plans in Unknown status before R-27 landed.",
+        "id": "R-27",
+        "pillar": "naming",
+        "rule_text": "New or edited plan-root files must carry (a) an `NN-` numeric prefix on their top-level path segment AND (b) a status marker (`**Status:**` header bullet, YAML `status:` frontmatter, or `manifest.json` top-level `status` field). Sub-task files, handoffs, and orchestrator artifacts inherit from parent per R-28 and are NOT required to carry status. Tier 2 DENY at write-time.",
+        "sanctioned_creation_paths": [
+          "/new-plan",
+          "/backlog-research"
+        ],
+        "slug_requirements": {
+          "case": "lowercase only",
+          "character_set": "[a-z0-9-]",
+          "descriptive_required": true,
+          "numeric_prefix_required": true,
+          "prefix_format": "NN- (creation order; never backfilled)",
+          "separator": "kebab-case",
+          "shame_slug_rejected": true
+        },
+        "source": "ENFORCEMENT-MAP.md R-27 + pre-write-guard.sh plan-creation block + vault root CLAUDE.md §Plan Creation Conventions",
+        "status_acceptance": [
+          "**Status:** header bullet",
+          "YAML status: frontmatter",
+          "manifest.json top-level status field"
+        ],
+        "tier": "2",
+        "whitelist": [
+          "ENFORCEMENT-MAP.md",
+          "_index.md"
+        ]
+      },
+      {
+        "applies_to_depth": "≥ 3 under {plans_root}/",
+        "enforcement_layer": [
+          "librarian plan-parent-resolve capability (read-time audit)",
+          "librarian plan-index --parent <slug> flag",
+          "librarian lib/frontmatter.sh shared helper"
+        ],
+        "escalation_posture": "Librarian-audit only matching the shame-slug enforcement precedent. Escalate to pre-write-guard only if write-time drift recurs despite sanctioned creation paths.",
+        "exemptions": [
+          "Plan-root files at depth 2 (spec.md, tasks.md, handoff.md, 00-ideation-brief.md, README.md, manifest.json) — they ARE the parent",
+          "handoff.md at any depth (append-only session record)",
+          "Files under tests/ (synthetic fixtures, not plan state)",
+          "Files under _orchestrator/ (orchestrator runtime, not plan state)"
+        ],
+        "failure_mode": "Sub-plan files at depth ≥ 3 without `parent_plan:` frontmatter are invisible to plan-tree walkers — librarian cannot resolve ancestry. Librarian-audit only; drift surfaced as findings, not write-time block. Pre-formalization, ~60 sub-plan files used the convention informally without resolver.",
+        "field_value_format": "top-level plan slug (no path, no extension)",
+        "id": "R-28",
+        "pillar": "naming",
+        "rule_text": "Sub-task files at depth ≥ 3 under `{plans_root}/` must carry `parent_plan: <top-level-slug>` frontmatter. Value is the top-level plan slug (no path, no extension). Plan-root files at depth 2, handoff.md at any depth, files under tests/, and files under _orchestrator/ are EXEMPT. Tier 1 advisory — librarian-audit only; conditional escalation if drift recurs.",
+        "source": "ENFORCEMENT-MAP.md R-28 + vault root CLAUDE.md §Plan Creation Conventions",
+        "tier": "1"
+      }
+    ],
+    "schema_version": "1.0.0"
+  },
+  "r47_exempt_paths_composed": [
+    ".claude/**",
+    ".claude/hooks/lib/**",
+    ".claude/hooks/state/**",
+    "Archive/**",
+    "Logs/backlog-progress/**",
+    "Logs/build-*",
+    "Logs/foundations-essays/**",
+    "Logs/ideation-brief-*.md",
+    "Tags/**",
+    "_orchestrator/**",
+    "_test*",
+    "tests/**"
+  ],
+  "schema_version": "1.0.0",
+  "tagging": {
+    "_description": "Claude-consumed JSON registry for the tagging pillar. Loaded by pre-write-guard.sh at runtime. Carries R-05, R-32-taxonomy, R-47, R-50, R-51 plus the canonical tag-prefix taxonomy. Tags are the user-side query surface (Obsidian graph view, filter pane, MOC patterns); frontmatter fields are the Claude-side substrate. SP13 T-4 absorbed the canonical tag-prefix taxonomy authority from dissolved schemas/vault-schema.json. See research/vault-construction/tagging-strategy.md §Tags vs fields for the dichotomy.",
+    "_design_notes": {
+      "absorbed_from_vault_schema": [
+        "canonical tag-prefix taxonomy (was vault-schema._tag_prefixes + _tag_prefixes_meta; now governance/tagging-rules.json#taxonomy)"
+      ],
+      "consumer": "pre-write-guard.sh — tag-validation branch (R-05, R-32-taxonomy, R-51); post-write-verify.sh — tag-presence advisory (R-47); librarian tag-coverage-audit (R-47, R-50)",
+      "evolution_protocol": "R-37 atomic lockstep — tagging-rules.json + Vault Architecture - Tagging.md + pre-write-guard.sh + governance/log-subtype-registry.json updated in one commit. NOTE: schemas/vault-schema.json was DISSOLVED in SP13 T-4 (2026-05-14); the tag-prefix taxonomy (formerly vault-schema._tag_prefixes + _tag_prefixes_meta) is now canonical in this pillar's `taxonomy` block. No more 3-way declaration; pillar shard removes the duplication.",
+      "lockstep_pair": "Vault Architecture - Tagging.md (narrative spoke) + governance/log-subtype-registry.json (system-utility canonicality discipline)",
+      "source_dependencies": [
+        "../research/vault-construction/tagging-strategy.md",
+        "../research/vault-construction/frontmatter-design.md",
+        "../research/vault-construction/enforcement-map-design.md",
+        "../docs/decisions/0004-system-utility-dimension-exemption.md",
+        "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
+      ]
+    },
+    "pillar": "tagging",
+    "rules": [
+      {
+        "enforcement_layer": [
+          "pre-write-guard.sh tag-validation branch (system-utility dimension DENY on near-match)",
+          "governance/log-subtype-registry.json (canonical-values authority)",
+          "librarian tag-coverage-audit (registered-value coverage)"
+        ],
+        "failure_mode": "Near-match drift in system-utility dimensions fragments operational subtypes within weeks. Two runs of the same routine emit two different tag values (e.g., #log/backlog-hygiene vs #log/backlog-cleanup), and the user-side graph filter splits routine activity across variant spellings. The discipline restores stability: every routine activity uses the STABLE, canonical tag value registered at first emission, and the hook DENIES near-match drift.",
+        "id": "R-05",
+        "pillar": "tagging",
+        "rule_text": "Tags within system-utility dimensions (#log/*, #status/*) must match a value registered in governance/log-subtype-registry.json. Near-match writes (Levenshtein distance ≤ 2 or substring containment of an existing canonical value) are DENIED with a 'did you mean #<dim>/<canonical>?' suggestion. Genuinely new subtypes register explicitly via the prompt-and-commit pattern at first emission. The discipline mirrors the canonical-tag-per-concept principle on the system-utility surface where LLM stochasticity would otherwise fragment the vocabulary.",
+        "source": "ENFORCEMENT-MAP.md R-05 + ../research/vault-construction/tagging-strategy.md §System-utility dimension exemption + ../docs/decisions/0004-system-utility-dimension-exemption.md",
+        "tier": "2"
+      },
+      {
+        "enforcement_layer": [
+          "pre-write-guard.sh tag-validation branch (write-time DENY)",
+          "governance/tagging-rules.json#taxonomy.dimension_prefixes (allowlist authority — SP13 T-4 absorbed from dissolved vault-schema._tag_prefixes)"
+        ],
+        "failure_mode": "Freeform tagging produces folksonomy drift within months at scale. Synonymous content scatters across variant spellings (meeting / meetings / meeting-notes), case variants (client-a / ClientA / client_a), and one-off ad-hoc dimensions (#priority/*, #urgency/*). The user-side graph degrades silently — every file carries tags, no query returns the right set. Write-time DENY converts the silent failure into a visible governance signal at the moment of capture.",
+        "id": "R-32-taxonomy",
+        "pillar": "tagging",
+        "rule_text": "Every tag MUST match the hierarchical grammar `#dimension/value` where dimension is one of the registered prefixes in governance/tagging-rules.json `taxonomy.dimension_prefixes` and value is a kebab-case slug matching [a-z0-9-]. The pre-write-guard hook DENIES any tag that fails the regex or starts with an unregistered prefix. The DENY message enumerates the non-conforming tags. Adopters either pick a tag from the registered vocabulary, omit the tag (the file remains legible to Claude via its frontmatter fields), or run R-37 atomic lockstep to add a new dimension or canonical value with operator review.",
+        "source": "ENFORCEMENT-MAP.md R-32 + ../research/vault-construction/tagging-strategy.md Rules 2 and 4 (hierarchical prefix grammar + no freeform tags)",
+        "tier": "2"
+      },
+      {
+        "enforcement_layer": [
+          "pre-write-guard.sh tag-presence advisory (Tier 1; never blocks)",
+          "post-write-verify.sh orphan-tag advisory",
+          "librarian tag-coverage-audit (audit-time orphan detection)"
+        ],
+        "exempt_path_semantics": "positive-list — unenumerated top-level paths default to the advisory firing (NOT auto-exempt). Adding a new exempt path requires R-37 atomic lockstep updating this rule + pre-write-guard.sh + the narrative spoke + foundation-master.json bundle composition.",
+        "failure_mode": "Non-exempt files written without tags become orphans in Obsidian graph view — invisible to user-side queries even though the file is legible to Claude-side surfaces via frontmatter fields. Pre-write tag-presence advisory surfaces the omission at the moment of write rather than at the weekly audit, closing a ~7-day detection lag.",
+        "id": "R-47",
+        "pillar": "tagging",
+        "r47_exempt_paths": [
+          "Archive/**",
+          "Logs/foundations-essays/**",
+          "Logs/backlog-progress/**",
+          "Tags/**",
+          "_test*",
+          ".claude/**",
+          "Logs/ideation-brief-*.md",
+          "_orchestrator/**",
+          ".claude/hooks/state/**",
+          ".claude/hooks/lib/**",
+          "tests/**",
+          "Logs/build-*"
+        ],
+        "r47_exempt_paths_provenance": "SP13 T-4 canonical union (closes 7-vs-13 drift): 7 entries formerly canonical here + 5 infrastructure entries formerly only in hooks/config/gate-config.json `r47.exempt_paths`. The composed runtime view (`foundation-master.json :: r47_exempt_paths_composed`) builds the union deterministically from pillar declarations; gate-config.json continues to be the canonical runtime source until SP13 T-6 retirement consummates the migration.",
+        "rule_text": "Every non-exempt vault write MUST carry a non-empty `tags:` array in its frontmatter. Pre-write-guard emits a Tier 1 advisory ([R-47 TAG PRESENCE]) when the field is missing or empty (tags: []). Distinguishes 'missing' (no tags: line) vs 'empty' (line present, no items). Exempt paths are enumerated in the registry's `r47_exempt_paths` array — they cover archive surfaces, ideation-brief symlinks, machine-emitted scratch zones, and system infrastructure paths whose tag-absence is structurally legitimate. (SP13 T-4: r47_exempt_paths absorbs the 5 additional infrastructure paths formerly in gate-config.json `r47.exempt_paths` to form the canonical union — 12 entries total. foundation-master.json composes the runtime r47_exempt_paths_composed view; gate-config.json retires under SP13 T-6.) The librarian tag-coverage-audit walks the vault at audit time and surfaces longer-running orphans + near-miss patterns (#scope/decisions vs #scope/decision — one is likely a typo) as advisory findings the operator triages.",
+        "source": "ENFORCEMENT-MAP.md R-47 + tags-as-validity-diagnostic principle + ../research/vault-construction/tagging-strategy.md Rule 5 (tagging-failure-as-signal)",
+        "tier": "1"
+      },
+      {
+        "advisory_threshold_pct": 80,
+        "cap_value": 25,
+        "enforcement_layer": [
+          "librarian tag-coverage-audit (audit-time consolidation prompt at 80% threshold)",
+          "onboarder consolidation prompt (install-time)",
+          "documentary in Vault Architecture - Tagging.md"
+        ],
+        "failure_mode": "Cap-widening defeats the working-memory rationale silently. An adopter activates a new engagement, user-facing tag count approaches 25, and the path of least resistance is 'raise the cap to 30.' Past 25, decision fatigue produces variant-creation rather than canonical-term selection, the vocabulary fragments, and user-side recall collapses. The cap is structural, not aspirational — silent widening is rejected; deliberate Layer 3 override is supported with audit trail.",
+        "id": "R-50",
+        "override_mechanism": "Layer 3 overlay-master.json :: tagging_cap_override (post-SP13 T-5 slot) with rationale + audit-trail entry",
+        "pillar": "tagging",
+        "rule_text": "Total count of distinct values across user-facing dimensions (engagement, project, scope, initiative, artefact-bd, about-me) MUST stay under 25. System-utility dimensions (log, status) are exempt — they are machine-emitted and governed by the log-subtype registry (R-05). The librarian tag-coverage-audit emits an advisory when user-facing usage approaches 80% of the cap (≥20 active values), surfaces a consolidation prompt with retire-candidate recommendations, and requires deliberate Layer 3 override (`overlay-master.json :: tagging_cap_override` with rationale + audit-trail entry) before silent widening can proceed.",
+        "scope": "user_facing_dimensions",
+        "source": "../research/vault-construction/tagging-strategy.md Rule 1 (25-tag cap on user-facing dimensions) + Forte/Dubois working-vocabulary research + Hedden faceted-classification literature + Adobe AEM and SharePoint enterprise CMS picklist patterns",
+        "tier": "1"
+      },
+      {
+        "archetype_enum_source": "governance/frontmatter-rules.json#archetype_enum (SP13 T-4 canonical home; absorbed from dissolved schemas/vault-schema._archetype_enum)",
+        "custom_archetype_overlay_path": "Layer 3 overlay-master.json archetype_extensions (post-SP13 T-5 slot)",
+        "enforcement_layer": [
+          "pre-write-guard.sh archetype-binding branch (Tier 2 DENY)",
+          "governance/frontmatter-rules.json#archetype_enum (registered archetypes authority — SP13 T-4 absorbed from dissolved vault-schema._archetype_enum)",
+          "Layer 3 overlay-master.json archetype_extensions (adopter-declared custom archetype declaration)"
+        ],
+        "failure_mode": "Files declaring an archetype field value outside the registered archetype enum drift the multi-archetype union model. Cross-archetype queries fail because the archetype field carries an unrecognized value; the renamed-dimension overlay (e.g., #repo/* in developer archetype) cannot resolve back to its structural slot; the per-archetype synonym dictionary breaks at consumption time.",
+        "id": "R-51",
+        "pillar": "tagging",
+        "registered_archetypes": [
+          "consultant",
+          "researcher",
+          "developer",
+          "manager"
+        ],
+        "rule_text": "Any frontmatter `archetype:` field value MUST match a value registered in governance/frontmatter-rules.json#archetype_enum (consultant | researcher | developer | manager) OR an adopter-declared custom archetype in Layer 3 overlay-master.json archetype_extensions. Pre-write-guard DENIES writes with an unrecognized archetype value. The DENY message enumerates the registered values and points to the Layer 3 declaration path. The rule binds the multi-archetype union architectural commitment to write-time — adding a new archetype requires R-37 atomic lockstep updating governance/frontmatter-rules.json#archetype_enum + this rule + the narrative spoke + the archetype-conditional field extensions.",
+        "source": "../research/vault-construction/vault-construction-principles.md commitment 4 (multi-archetype union) + ../research/vault-construction/tagging-strategy.md §Per-archetype dimension relabeling + spec §Archetype-binding rule contract",
+        "tier": "2"
+      }
+    ],
+    "schema_version": "2.0.0",
+    "taxonomy": {
+      "_description": "Eight-dimension faceted taxonomy (SP13 T-4: canonical authority; absorbed from dissolved vault-schema._tag_prefixes + _tag_prefixes_meta). Six user-facing dimensions subject to the 25-cap (R-50); two system-utility dimensions exempt per ADR-0004 and governed by the log-subtype registry (R-05). Adopters extend via Layer 3 overlay-master.json using per-archetype synonym dictionaries.",
+      "canonical_authority": "governance/tagging-rules.json#taxonomy (SP13 T-4 absorbed from former schemas/vault-schema.json)",
+      "cap_25_applies_to": "user_facing_dimensions",
+      "dimension_prefixes": [
+        "engagement",
+        "project",
+        "scope",
+        "initiative",
+        "artefact-bd",
+        "about-me",
+        "status",
+        "log"
+      ],
+      "system_utility_dimensions": [
+        "status",
+        "log"
+      ],
+      "system_utility_governance": "log-subtype-registry (canonical values per dimension; near-match DENY via R-05)",
+      "tag_pattern_regex": "^#[a-z][a-z0-9-]*/[a-z0-9][a-z0-9-]*$",
+      "user_facing_dimensions": [
+        "engagement",
+        "project",
+        "scope",
+        "initiative",
+        "artefact-bd",
+        "about-me"
+      ]
+    }
+  },
+  "types": {
+    "archetype-template": {
+      "_description": "Scaffold templates at `onboarding/templates/<archetype>/` consumed by install. Pre-populated frontmatter; R-32 100% conformant. Anti-drift principle: archetype templates ship pre-populated upfront; user-added files inherit defaults via templates.",
+      "optional": [
+        "max_lines",
+        "provides",
+        "lockstep_pair"
+      ],
+      "required": [
+        "type",
+        "archetype",
+        "template_for",
+        "tags",
+        "updated"
+      ],
+      "tier": "strict"
+    },
+    "archive": {
+      "optional": [
+        "engagement",
+        "project"
+      ],
+      "required": [
+        "type",
+        "source-path",
+        "archived-date",
+        "tags"
+      ],
+      "tier": "strict"
+    },
+    "briefing": {
+      "optional": [
+        "max_lines"
+      ],
+      "required": [
+        "type",
+        "date",
+        "generated",
+        "tags"
+      ],
+      "tier": "strict"
+    },
+    "context": {
+      "optional": [
+        "workstream",
+        "provides",
+        "max_lines"
+      ],
+      "required": [
+        "title",
+        "engagement",
+        "project",
+        "type",
+        "status",
+        "owner",
+        "updated",
+        "tags"
+      ],
+      "tier": "standard"
+    },
+    "daily-archive": {
+      "optional": [],
+      "required": [
+        "type",
+        "month",
+        "date-range",
+        "tags"
+      ],
+      "tier": "strict"
+    },
+    "daily-note": {
+      "optional": [],
+      "required": [
+        "type",
+        "date",
+        "day",
+        "processed",
+        "tags"
+      ],
+      "tier": "strict"
+    },
+    "historical-brief": {
+      "optional": [
+        "kept-as",
+        "merged-into",
+        "copied-to",
+        "tags"
+      ],
+      "required": [
+        "type",
+        "updated",
+        "marked-historical-by"
+      ],
+      "tier": "standard"
+    },
+    "ideation-brief": {
+      "optional": [
+        "status",
+        "tags",
+        "backlog_item"
+      ],
+      "required": [
+        "type",
+        "title",
+        "created",
+        "updated"
+      ],
+      "tier": "strict"
+    },
+    "inbox-archive": {
+      "optional": [],
+      "required": [
+        "type",
+        "date",
+        "day",
+        "sources",
+        "created",
+        "tags"
+      ],
+      "tier": "strict"
+    },
+    "index": {
+      "body_structure_contract": "governance/file-type-contracts/_index.md.json",
+      "body_structure_contract_rationale": "Body-structure rules (H1, folder-context paragraph, contents-enum table with column shape + sentinel markers + ordering convention) live in the per-file-type contract following the k8s ValidatingAdmissionPolicy paramKind pattern (matcher in pillar/schema; parameters in separate replaceable resource). See ../research/vault-construction/_index.md-design.md + ../target-state/_index.md-design/structural-requirements.md.",
+      "conditional_required": {
+        "parent_folder": {
+          "condition": "path_depth >= 2",
+          "condition_semantics": "depth is the number of path segments between the vault root and the file; depth 1 = `<cluster>/_index.md` (parent_folder omitted because the parent IS the vault root); depth >= 2 = `<cluster>/<instance>/_index.md` or deeper (parent_folder mandatory).",
+          "rationale": "Navigation-side lineage pointer auto-populated by post-write-verify auto-bootstrap; librarian index-maintain audits for path-vs-frontmatter drift. Distinct from the content-side folder-lineage convention (`engagement:`/`project:`) which uses path_routing. See ../research/vault-construction/_index.md-design.md §parent_folder."
+        }
+      },
+      "optional": [
+        "provides",
+        "description"
+      ],
+      "required": [
+        "type",
+        "tags",
+        "updated"
+      ],
+      "tier": "strict"
+    },
+    "log": {
+      "optional": [
+        "tags"
+      ],
+      "required": [
+        "type",
+        "log-type",
+        "date",
+        "timestamp"
+      ],
+      "tier": "strict"
+    },
+    "meeting-note": {
+      "optional": [
+        "engagement",
+        "project",
+        "previous_instance",
+        "granola_id",
+        "granola_ids",
+        "granola_url"
+      ],
+      "required": [
+        "type",
+        "date",
+        "meeting_title",
+        "attendees",
+        "tags",
+        "processed",
+        "updated"
+      ],
+      "tier": "strict"
+    },
+    "navigation": {
+      "optional": [
+        "project",
+        "max_lines",
+        "tags"
+      ],
+      "required": [
+        "type",
+        "engagement",
+        "updated"
+      ],
+      "tier": "standard"
+    },
+    "packet": {
+      "_description": "Research context packets at all four altitudes (system / engagement / topic / initiative). System-altitude packets canonical at `claude-stem/research/vault-construction/`; engagement/topic/initiative at user vault. Surfaces 180-day `last_reviewed` cadence (system) / 90-day (topic) / continuous (engagement) / closed-at-plan-close (initiative).",
+      "optional": [
+        "canonical_url",
+        "url_stability",
+        "provides",
+        "max_lines",
+        "engagement",
+        "project"
+      ],
+      "required": [
+        "type",
+        "altitude",
+        "scope",
+        "validity_window",
+        "source_dependencies",
+        "last_reviewed",
+        "tags",
+        "updated"
+      ],
+      "tier": "strict"
+    },
+    "people": {
+      "optional": [
+        "email",
+        "projects",
+        "max_lines"
+      ],
+      "required": [
+        "type",
+        "name",
+        "org",
+        "role",
+        "engagement",
+        "updated",
+        "tags"
+      ],
+      "tier": "standard"
+    },
+    "personal-initiative": {
+      "optional": [
+        "github_repo",
+        "audience",
+        "lines",
+        "max_lines",
+        "provides",
+        "started",
+        "completed"
+      ],
+      "required": [
+        "type",
+        "name",
+        "status",
+        "owner",
+        "updated",
+        "tags"
+      ],
+      "tier": "standard"
+    },
+    "planning": {
+      "optional": [
+        "project",
+        "provides",
+        "max_lines"
+      ],
+      "required": [
+        "type",
+        "engagement",
+        "updated",
+        "tags"
+      ],
+      "tier": "standard"
+    },
+    "prd": {
+      "optional": [
+        "workstream",
+        "provides",
+        "max_lines"
+      ],
+      "required": [
+        "title",
+        "engagement",
+        "project",
+        "type",
+        "status",
+        "owner",
+        "updated",
+        "tags"
+      ],
+      "tier": "standard"
+    },
+    "reference": {
+      "optional": [
+        "provides",
+        "max_lines"
+      ],
+      "required": [
+        "type",
+        "updated",
+        "tags"
+      ],
+      "tier": "standard"
+    },
+    "strategic": {
+      "optional": [
+        "project",
+        "provides",
+        "max_lines"
+      ],
+      "required": [
+        "type",
+        "engagement",
+        "status",
+        "updated",
+        "tags"
+      ],
+      "tier": "standard"
+    },
+    "weekly-summary": {
+      "optional": [],
+      "required": [
+        "type",
+        "week",
+        "date-range",
+        "tags"
+      ],
+      "tier": "strict"
+    }
+  }
+}
