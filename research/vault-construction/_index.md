@@ -14,32 +14,34 @@ This directory carries the system-altitude research packets that codify the foun
 
 The packets are surfaced at canonical URLs on the documentation site (`stem.peter.dev/research/vault-construction/<slug>/`). URLs are locked; restructures require a redirect plan per the URL-stability discipline. Adopters cite by URL; the URL survives the local-path's relocation.
 
-## The nine system-altitude packets
+## The ten system-altitude packets
 
 | Slug | Scope (one-line) |
 |---|---|
-| [`vault-construction-principles`](./vault-construction-principles.md) | The five load-bearing commitments that hold the system together: capture-is-cheap, frontmatter-as-contract, folder-mirrors-tag invariant, multi-archetype union, propose-and-confirm. Read this first. |
+| [`vault-construction-principles`](./vault-construction-principles.md) | The load-bearing commitments that hold the system together: capture-is-cheap, frontmatter-as-contract, folder-mirrors-tag invariant, multi-archetype union, propose-and-confirm, two-surface governance, mandatory-file-lock. Read this first. |
+| [`mandatory-file-lock`](./mandatory-file-lock.md) | What every adopter vault carries at root by foundation mandate (14-item system set: 5 files + 7 folders + 2 symlinks), what the foundation explicitly does NOT ship (retired set: `README.md` / `Templates/` / `Reference/` / folder-scoped CLAUDE.md / engagement-as-Skill / 4-altitude taxonomy / hardcoded Inbox), and the user-defined territory the foundation refuses to prescribe. Session 16 13-lock ratification + Session-02b §A.1 baseline. |
 | [`frontmatter-design`](./frontmatter-design.md) | Frontmatter as the API every file exposes. Three compliance tiers (Strict / Standard / Minimal); universal vs archetype-conditional vs packet-only field classes; folder-lineage convention; unified-with-per-archetype-entries extensibility model; R-37 atomic-lockstep protocol. |
 | [`tagging-strategy`](./tagging-strategy.md) | Tags as the user-side query surface. 8-dimension faceted taxonomy; the five discipline rules (25-cap, prefix grammar, no-new-dimension-without-lockstep, no-freeform, tagging-failure-as-signal); system-utility dimension exemption; per-archetype dimension renaming. |
 | [`file-naming-conventions`](./file-naming-conventions.md) | Naming as parseable contract. Three date-prefix patterns; shared slug grammar (folder-name + tag-value parity); vault-root allowlist (R-04); plan slug format (R-27); parent_plan inheritance (R-28); gitignore patterns at-depth (R-20). |
-| [`content-length-limits`](./content-length-limits.md) | Per-file-class line-count budgets. The hub-and-spoke split rationale; max_lines frontmatter ceiling; system-utility file class thresholds for Logs/ surfaces. |
-| [`claude-md-design`](./claude-md-design.md) | CLAUDE.md as the session-start context file. Three CLAUDE.md classes (vault-root / engagement-level / folder-scoped); the index-vs-instruction split; the loading-order override channel; per-class content standards. |
-| [`_index.md-design`](./_index.md-design.md) | Per-folder `_index.md` discovery contract. The navigation companion to CLAUDE.md for non-engagement folders (Skills/, Reference/, Dashboard/). Naming convention, frontmatter, content standards. |
+| [`content-length-limits`](./content-length-limits.md) | Per-file-class line-count and byte budgets. The hub-and-spoke split rationale; max_lines frontmatter ceiling; system-utility file class thresholds for Logs/ surfaces. |
+| [`claude-md-design`](./claude-md-design.md) | CLAUDE.md as the session-start context file. **One-class only** — vault-root CLAUDE.md (Session 16 lock #1; folder-scoped / engagement-level / per-instance variants retired). 6-section framework (Role / User Identity / Hard Rules / Communication Style / Active Work Pointers / Authoritative References). `@import` discipline; JSON-for-APPLY + markdown-for-UNDERSTAND. |
+| [`_index.md-design`](./_index.md-design.md) | Per-folder `_index.md` discovery contract. The navigation surface at user-facing folders + `Inbox/` (foundation-scaffold mandate scope per Session 16 lock #2). Naming convention, frontmatter, content standards. |
 | [`enforcement-map-design`](./enforcement-map-design.md) | The dual-surface governance pattern (Claude-consumed governance JSONs + user-consumed narrative spokes). R-37 atomic-lockstep at write-time; librarian governance-parity-audit at audit-time; system-utility dimension exemption enforcement contract. |
-| [`inbox-flow-architecture`](./inbox-flow-architecture.md) | Inbox/ as scraper-output aggregation surface (NOT drop-zone). Auto-routing-on-drop rejection + in-session `/ingest` propose-and-confirm replacement; seven canonical aggregation files; pull-based dashboard read-loop; daily rollover via inbox-archive. |
+| [`inbox-flow-architecture`](./inbox-flow-architecture.md) | `Inbox/` as the **connector-driven** landing surface for connector-pulled data before propagation (Session 16 lock #3; the prior "seven canonical aggregation files" enumeration is retired). Auto-routing-on-drop rejection + in-session `/ingest` propose-and-confirm; processing-rules helper (smart routing + dedup + survivorship) at SP07 Beat 5; pull-based dashboard read-loop; daily rollover via inbox-archive. |
 
 ## Read order
 
 Adopters reading the packet set for the first time:
 
-1. **`vault-construction-principles`** — the five commitments are the substrate every other packet builds on.
-2. **`frontmatter-design`** — the contract every file exposes.
-3. **`tagging-strategy`** — the user-side query surface and its disciplines.
-4. **`file-naming-conventions`** — names the system parses.
-5. **`content-length-limits`** — per-file-class budgets.
-6. **`claude-md-design`** + **`_index.md-design`** — navigation surface (session-start + per-folder discovery).
-7. **`enforcement-map-design`** — the dual-surface governance pattern that holds the rest together.
-8. **`inbox-flow-architecture`** — operational data flow architecture (read after the structural packets).
+1. **`vault-construction-principles`** — the commitments are the substrate every other packet builds on.
+2. **`mandatory-file-lock`** — what foundation guarantees + what is gone + what the adopter defines. Structural floor before depth.
+3. **`frontmatter-design`** — the contract every file exposes.
+4. **`tagging-strategy`** — the user-side query surface and its disciplines.
+5. **`file-naming-conventions`** — names the system parses.
+6. **`content-length-limits`** — per-file-class budgets.
+7. **`claude-md-design`** + **`_index.md-design`** — navigation surface (session-start + per-folder discovery).
+8. **`enforcement-map-design`** — the dual-surface governance pattern that holds the rest together.
+9. **`inbox-flow-architecture`** — operational data flow architecture (read after the structural packets).
 
 The set is internally cross-referenced; each packet's `source_dependencies:` lists its upstream peers.
 

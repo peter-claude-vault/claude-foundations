@@ -69,14 +69,14 @@ github_repo
 
 Per-type entries in the unified schema declare which subset applies. A `meeting-note` requires `attendees`, `processed`; optionally carries `engagement`, `project`, `granola_id`. A `prd` requires `engagement`, `project`, `status`, `owner`; optionally carries `workstream`, `provides`. The 13 entries are the foundation-repo seed — adopters extend the list via Layer 3 vault-overlay when their archetype contributes new conditional fields (researcher's `study_phase`, developer's `repo`, manager's `program`).
 
-**Packet-only fields.** Apply only to files with `type: packet` (system-altitude research context packets at `claude-stem/research/vault-construction/`; engagement/topic/initiative-altitude packets at the user vault use the same shape). Six fields:
+**Packet-only fields.** Apply only to files with `type: packet`. The foundation ships SYSTEM-altitude packets only — the 9 research context packets at `claude-stem/research/vault-construction/`. The 4-altitude taxonomy (system / engagement / topic / initiative) imagined in earlier drafts is RETIRED from foundation imposition (Session 16 lock #8, 2026-05-13). If an adopter chooses to author their own research packets in their user vault, they MAY use this shape and they MAY assign an altitude label of their choosing — but the foundation does not prescribe non-system altitudes, does not impose a taxonomy on adopter-authored packets, and does not audit non-system altitudes via the staleness capability. Six fields:
 
 ```
 altitude            validity_window      source_dependencies
 last_reviewed       canonical_url        url_stability
 ```
 
-The packet-only field set is what enables the 180-day staleness audit (`packet-staleness-audit` librarian capability), the URL-stable contract surfaced on GH Pages, and the source-pointer discipline (every claim back-links to evidence; see quality bar criterion 6 below). Every system-altitude packet authored in this set — including the one you are reading — carries the full six-field block in its frontmatter. Engagement / topic / initiative-altitude packets carry a subset (`altitude`, `scope`, `last_reviewed` at minimum; the rest as applicable).
+The packet-only field set is what enables the 180-day staleness audit (`packet-staleness-audit` librarian capability — scope: system-altitude only), the URL-stable contract surfaced on the foundation's GH Pages site, and the source-pointer discipline (every claim back-links to evidence; see quality bar criterion 6 below). Every system-altitude packet authored in this set — including the one you are reading — carries the full six-field block in its frontmatter. Adopter-authored packets (when adopters choose to write them) are governed by adopter-set cadence and need not conform to the system-altitude staleness window.
 
 The three-class partition is what lets the schema scale without churn. Universal fields move via R-37 lockstep (touching universal changes every type entry). Archetype-conditional fields move via Layer 3 overlay (touching no other type). Packet-only fields move within the `packet` type entry. The blast radius of a schema change is bounded by which field class the change touches.
 
@@ -162,7 +162,7 @@ Minimal is an explicit declaration that a file is outside the system. The file's
 
 The tier exists for legacy imports (a file dragged in from a pre-vault state), paste-buffer scratch (a `notes/scratch.md` that the user uses for thinking-in-public), and archives outside lifecycle (files preserved for legal/regulatory reasons that should not be touched). It is *not* a default — no canonical type declares `tier: minimal`. It is always a per-file opt-out.
 
-**Worked example — legacy import.** A user dragging in `~/old-vault-2024/research-notes.md` from a prior system marks it `tier: minimal` in the frontmatter. The librarian's coverage report surfaces it as "outside system, last touched 2024-08-12, located at `Reference/legacy/`." The operator either upgrades it to Standard (adds `type:`, `tags:`, `updated:`) or accepts that the file is permanently a museum piece.
+**Worked example — legacy import.** A user dragging in `~/old-vault-2024/research-notes.md` from a prior system marks it `tier: minimal` in the frontmatter. The librarian's coverage report surfaces it as "outside system, last touched 2024-08-12, located at `<user-defined-cluster>/legacy/`." The operator either upgrades it to Standard (adds `type:`, `tags:`, `updated:`) or accepts that the file is permanently a museum piece.
 
 ## Universal fields
 
@@ -216,7 +216,7 @@ The list is open-ended in the sense that adopters add to it via Layer 3 vault-ov
 
 Six fields exist exclusively for `type: packet` entries. The packet type carries the standard universal fields plus all six of these; they enable the staleness audit, the URL stability contract, the source-pointer discipline, and the validity-window framing.
 
-**`altitude:`** — one of `system | engagement | topic | initiative`. Declares the packet's scope band. System-altitude packets (the 9 in this set, including this one) live at `claude-stem/research/vault-construction/`. Engagement/topic/initiative altitudes live at the user vault. The altitude controls update cadence: system = 180-day `last_reviewed`; topic = 90-day; engagement = continuous (lifecycle-driven); initiative = closed-at-plan-close.
+**`altitude:`** — declares the packet's scope band. The foundation ships **system-altitude packets only** — the 9 in this set, all living at `claude-stem/research/vault-construction/`, all carrying `altitude: system`. The 4-altitude taxonomy (system / engagement / topic / initiative) from earlier drafts is RETIRED from foundation imposition (Session 16 lock #8). Adopters who choose to author their own packets in their user vault MAY assign whatever altitude label fits their needs (or none); the foundation neither prescribes nor audits non-system altitude values. The system-altitude cadence is 180-day `last_reviewed`; adopter-authored altitudes carry adopter-defined cadence. The schema's `altitude` field accepts any string value to leave adopter authoring open; the staleness audit scope is hard-bound to `altitude: system` only.
 
 **`scope:`** — free-text declaration of what the packet covers. Bounded paragraph length (1-3 sentences). Surfaces in the `_index.md` entry-point doc, in the `packet-staleness-audit` capability output, and at the top of the rendered GH Pages page. The scope sentence is what tells a future-reader (human or LLM) whether to invest the read budget.
 
@@ -226,11 +226,11 @@ Six fields exist exclusively for `type: packet` entries. The packet type carries
 
 **`last_reviewed:`** — ISO date of the last human review. NOT the same as `updated`. `updated:` touches on every edit; `last_reviewed:` only on deliberate review pass. The `packet-staleness-audit` capability walks this field, not `updated`.
 
-**`canonical_url:`** — the GH Pages URL for system-altitude packets. Empty for other altitudes. URL-stable; restructures require a redirect plan.
+**`canonical_url:`** — the GH Pages URL for system-altitude packets shipped from the foundation-repo. Empty / absent for adopter-authored packets (the foundation's GH Pages site indexes system-altitude packets only). URL-stable; restructures of the foundation-repo's research/vault-construction/ tree require a redirect plan.
 
 **`url_stability:`** — a status declaration string (`locked-from-YYYY-MM-DD` or `pending-lock` or `deprecated-since-YYYY-MM-DD`). Surfaces in the URL-stability discipline rule. Once a packet's URL is locked, restructures must add redirects rather than breaking links.
 
-Every system-altitude packet in this set — the one you are reading, plus [`vault-construction-principles.md`](./vault-construction-principles.md), [`content-length-limits.md`](./content-length-limits.md), [`file-naming-conventions.md`](./file-naming-conventions.md), [`_index.md-design.md`](./_index.md-design.md), [`enforcement-map-design.md`](./enforcement-map-design.md) — carries the full six-field block. The block is the canonical exemplar; engagement/topic packets carry a subset (`altitude`, `scope`, `last_reviewed` at minimum).
+Every system-altitude packet in this set — the one you are reading, plus [`vault-construction-principles.md`](./vault-construction-principles.md), [`content-length-limits.md`](./content-length-limits.md), [`file-naming-conventions.md`](./file-naming-conventions.md), [`_index.md-design.md`](./_index.md-design.md), [`enforcement-map-design.md`](./enforcement-map-design.md), [`claude-md-design.md`](./claude-md-design.md), [`inbox-flow-architecture.md`](./inbox-flow-architecture.md), [`mandatory-file-lock.md`](./mandatory-file-lock.md) — carries the full six-field block. The block is the canonical exemplar for system-altitude foundation packets. Adopter-authored packets at non-system altitudes (if adopters choose to write them) carry whatever subset fits their use case; the foundation does not prescribe.
 
 ## Plan-tree-only fields (excluded)
 

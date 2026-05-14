@@ -26,11 +26,18 @@ url_stability: locked-from-2026-05-12
 
 ## Theme
 
-A vault is not a notes app and it is not a wiki. It is the operational database that a single human and their AI collaborator both write to, read from, and reason over. The architecture in this set of packets — frontmatter schema, faceted tagging taxonomy, naming conventions, mandatory-file lock, governance enforcement — is shaped by one operational target: **the human captures freely, and the system organizes structurally on capture.** Filing, tagging, routing, and lifecycle management are the system's job. The human's job is to think, decide, and produce.
+A vault is not a notes app and it is not a wiki. It is the **operational knowledge backbone** that a single human and their AI collaborator both write to, read from, and reason over. It serves two roles simultaneously: it captures and structures the human's day-to-day work, and it stands as shared reference material that any agent, skill, or AI-assisted deliverable can build against — so that whatever the human asks AI to do, present or future, the AI has infinitely better context and produces infinitely better outputs. The vault is, in effect, the user's leverage point for getting maximum value out of AI across any goal: the well-organized substrate that makes every downstream AI workflow start from a stronger position than it otherwise would.
 
-The reference deployment instantiates this architecture across consulting engagements, personal initiatives, a business-development surface, and a multi-week production validation of the dual-surface governance pattern. The architecture is also replicable: the generative scaffold sub-plan ships an onboarder that infers an adopter's archetype, proposes a personalized structure, and lands a working vault on day one. The same principles apply at both poles, because the operational target — capture cheap, organize structurally, never lose history — does not change between practitioners.
+The architecture in this set of packets — frontmatter schema, faceted tagging taxonomy, naming conventions, mandatory-file lock, governance enforcement — is shaped by one operational target: **content lands cheaply, and the system organizes structurally on capture.** Two capture modes feed this:
 
-The architecture refuses three temptations that recurrently kill knowledge systems. First: treating the schema as documentation that ought to be honored rather than as machine-enforced contract. Second: forcing a single archetype on a multi-archetype reality — the consultant who is also a researcher who also writes essays on the side. Third: collapsing the dual navigation surfaces — folders and tags — into one, sacrificing the query power of the other. Refusing these three is the design. The rest of this packet (and the pillar packets it anchors) is the structural argument for how.
+- **Human capture** — verbal dumps, mid-meeting notes, screenshots, half-formed ideas. The human writes *what*, not *where*. Claude proposes destination, frontmatter, tags, and links; the user confirms (propose-and-confirm).
+- **System capture** — connectors pulling data on a schedule from external sources (calendar, mail, chat platforms, meeting transcripts). Connectors emit to a known data store; the system attaches frontmatter, tags, and routing conventions on the way in. The connector layer keeps the reference material fresh without the human having to remember to update it.
+
+Filing, tagging, routing, and lifecycle management are the system's job in both modes. The human's job is to think, decide, and produce. The system's job is to make sure that everything the human captures and everything the connectors emit becomes queryable, reasoning-ready substrate for whatever the human wants their AI to do next.
+
+The reference deployment instantiates this architecture across consulting engagements, personal initiatives, a business-development surface, and a multi-week production validation of the dual-surface governance pattern. The architecture is also replicable: the generative scaffold sub-plan ships an onboarder that infers an adopter's archetype, proposes a personalized structure, and lands a working vault on day one. The same principles apply at both poles, because the operational target — capture cheap (human + system), organize structurally, never lose history, surface high-quality context for any downstream AI workflow — does not change between practitioners.
+
+The architecture refuses three temptations that recurrently kill knowledge systems. First: treating the schema as documentation that ought to be honored rather than as machine-enforced contract. Second: forcing a single archetype on a multi-archetype reality — the consultant who is also a researcher who also writes essays on the side. Third: collapsing the four navigation surfaces — folders, frontmatter, tags, and wiki links — into fewer, sacrificing the query power and the consumer specialization that each surface uniquely provides. Refusing these three is the design. The rest of this packet (and the pillar packets it anchors) is the structural argument for how.
 
 ## Vision / approach — seven structural commitments
 
@@ -38,9 +45,14 @@ The principles are not aesthetic; they are commitments that downstream sub-syste
 
 ### 1. Capture is cheap; Claude organizes
 
-The single most load-bearing operating principle. The human captures freely — verbal dumps, mid-meeting notes, screenshots, half-formed ideas — and the system routes, files, tags, and lifecycle-manages on the way in. No "where does this go" decisions at capture time. The user writes *what*, not *where*. Claude proposes destination, frontmatter, tags, and links; the user reviews and confirms (propose-and-confirm; see [`ux-primitives.md`](./ux-primitives.md)). The principle is anti-friction by construction — a system that asks the user to file before they capture punishes the capture rate, which is the only failure mode that loses the audit trail.
+The single most load-bearing operating principle. **Capture happens cheaply in two modes — human and system — and the system organizes structurally on both.**
 
-The principle scales because every pillar reinforces it. Frontmatter is generated, not hand-typed. Tags are inferred from per-archetype synonym dictionaries. Mandatory files are scaffold-emitted on day one. Routing happens in-session via the ingest path, not via folder-watching cron jobs. The user authors content; the system authors structure.
+- **Human capture.** The human writes freely: verbal dumps, mid-meeting notes, screenshots, half-formed ideas. No "where does this go" decisions at capture time. The user writes *what*, not *where*. Claude proposes destination, frontmatter, tags, and links; the user reviews and confirms (propose-and-confirm; see [`ux-primitives.md`](./ux-primitives.md)).
+- **System capture.** Connectors pull data on a schedule from external sources — calendar events, mail digests, chat scrolls, meeting transcripts, etc. (see [`inbox-flow-architecture.md`](./inbox-flow-architecture.md) for the connector-brief surface and `$CLAUDE_HOME/connector-data/<slug>/` data-store contract). The system attaches frontmatter, tags, and routing conventions to every emitted artifact at the boundary. The connector layer is how the reference material stays fresh without the human having to remember to update it.
+
+The principle is anti-friction by construction in both modes. A system that asks the user to file before they capture punishes the capture rate, which is the only failure mode that loses the audit trail. A system that requires hand-curation of connector-emitted content punishes the connector cadence, which produces stale reference material that downstream AI workflows cannot rely on.
+
+The principle scales because every pillar reinforces it. Frontmatter is generated by the writer (human-capture skill or connector emission), not hand-typed by the human. Tags are inferred from per-archetype synonym dictionaries combined with the adopter's own vocabulary. Wiki links to canonical destinations (engagement Overview files, plan ideation briefs, related meeting notes, etc.) are proposed at write time and kept intact across renames by the librarian's rename-cascade capability. Mandatory files are scaffold-emitted on day one. Routing happens in-session via the ingest path or at connector-emission time, not via folder-watching cron jobs. The user authors content; the system authors structure.
 
 ### 2. Systems thinking, not ad-hoc tooling
 
@@ -62,13 +74,36 @@ The mechanism: the onboarder infers a primary archetype + 0..N secondaries + 0..
 
 The principle is structural: it preserves user autonomy (the user defines who they are) while enforcing the disciplines that make the system queryable. A reference deployment with co-equal top-level navigational areas — Engagements, Personal Initiatives, BD surface, About Me — is the canonical example of the union model holding under real workloads.
 
-### 5. Folder-mirrors-tag invariant — dual navigation, not redundancy
+### 5. Four-surface architecture — folders, frontmatter, tags, wiki links
 
-Folders are hierarchical. Tags are flat and overlap. The architecture commits to maintaining **both**, in parallel, with a structural invariant: every Structural dimension in the tagging taxonomy (`#engagement/*`, `#project/*`, `#initiative/*`, `#about-me/*`, `#artefact-bd/*`) maps to a corresponding folder. The duality is the design, not redundancy.
+Files in the vault are reachable via four surfaces simultaneously, each serving a different consumer (or consumer mix) and each carrying a distinct utility profile. The architecture commits to maintaining all four in parallel rather than collapsing any of them into another.
 
-The payoff is query power. Hierarchical navigation answers "where does this file live"; tag-based navigation answers "what is this file about, across hierarchies." A meeting note for a `#scope/decision` on `#project/<slug>` under `#engagement/<slug>` is reachable from `Engagements/<slug>/Projects/<slug>/Meetings/` AND from any tag-filtered query (`#scope/decision` alone, or `#engagement/<slug>` + `#scope/decision`, etc.). Obsidian's graph view renders the tag dimension; the file tree renders the folder dimension. Lose either and the query power collapses.
+| Surface | Primary consumer | Primary utility |
+|---|---|---|
+| **Folder hierarchy** | Both human + LLM | "Where does this file live in the structural hierarchy?" — filesystem navigation; human directory traversal; LLM path-derived lineage as a secondary signal |
+| **Frontmatter** | Claude (machine-readable YAML API) | "What is this file, what does the system do with it?" — drives routing, lifecycle, agent-readable context |
+| **Tags** | User (Obsidian graph view, search, query) | "What is this file about, across hierarchies?" — facet-based query handle for category traversal |
+| **Wiki links** | Both human + LLM | "What does this file connect to?" — explicit, directed cross-references the user clicks to traverse and Claude follows to scope context |
 
-The invariant is not free. It requires that frontmatter and tags propagate folder lineage (see [`enforcement-map-design.md`](./enforcement-map-design.md) §Folder-lineage convention and [ADR-0003](../../docs/decisions/0003-folder-lineage-as-fields.md)): any file living at `Engagements/<X>/Projects/<Y>/` must carry `engagement: <X>` + `project: <Y>` as frontmatter fields AND `#engagement/<X>` + `#project/<Y>` as tags. The folder is the structural artifact; frontmatter fields + tags are the file-level workaround that propagates lineage to LLM consumers (which read frontmatter, not directory ancestry). R-32 hook enforcement holds the invariant at write-time.
+**Folder hierarchy** is the structural artifact closest to a single visible truth about how the work is organized. Humans navigate vaults via the file tree; LLMs can derive partial lineage from paths (though the architecture does not rely on path inference — frontmatter carries lineage explicitly; see below). The folder hierarchy is what everyone sees first and how everyone orients.
+
+**Frontmatter** is primarily for Claude. The YAML block at the top of every file declares the file's type, status, lifecycle stage, lineage (which engagement / project / cluster it belongs to), tags, last-updated timestamp, and any archetype-conditional metadata. The hook layer reads frontmatter to enforce write-time invariants; the librarian reads it to audit drift; agents read it to construct context before consuming the body. The reason frontmatter is contract-not-decoration: an agent reading a file should never have to infer the file's type, scope, or status from the body, because body-inference is lossy and stochastic. Frontmatter is the explicit declaration that makes the body legible to any downstream AI workflow.
+
+**Tags** are primarily for the user. Obsidian's graph view renders the tag dimension; the user filters by tag to query across hierarchies ("show me every `#scope/decision`"; "show me everything tagged `#project/<slug>` regardless of where it lives in the folder tree"). Tags are the user-side navigation surface — the human uses them to traverse the vault **by category**, not by location. They are not load-bearing for Claude's routing or lifecycle decisions; those run off frontmatter. Tags exist because humans navigate by concept differently than agents reason about lineage, and the human's category-query surface needs first-class support.
+
+**Wiki links** are for both consumers. They are the explicit, directed cross-reference surface — a file declares "this content connects to `[[other-file]]`" and that link is clickable by the user in Obsidian AND followable by Claude when reasoning about the file's context. The vault-root `CLAUDE.md` is itself built on wiki links: active engagements, key files, and policy references all appear as `[[wikilinks]]` that Claude resolves to scope into the right context at session start. Skills emit wiki links to connect meeting notes to engagement Overview files, plan ideation briefs to their parent plans, action items to their source meetings, etc. The librarian protects wiki-link integrity through dedicated capabilities (`wikilink-repair`, `xref-check`, `rename-cascade`, `rename-detect`, `rename-history-sync`) — when a file moves, every wiki link pointing to it updates atomically; when a wiki link points to a missing target, the audit surfaces a repair finding.
+
+**Tags vs wiki links — the distinction matters.** Tags **categorize** (faceted classification — "what bucket does this belong to"); wiki links **connect** (explicit reference — "what does this specifically point to"). A meeting note may carry `#scope/decision` (tag, for "show me all decisions") AND `[[Engagements/<X>/<X> - Overview.md]]` (wiki link, for "follow back to the engagement context"). Both surfaces are populated; both serve queries the other cannot answer.
+
+**The invariant that holds the four surfaces together.** Every file's tag set mirrors its folder location, every file's frontmatter declares its lineage as explicit fields, and every wiki link's target survives across moves (via librarian rename-cascade). A meeting note living at `Engagements/<X>/Projects/<Y>/Meetings/2026-05-13.md` carries:
+- Folder lineage: `Engagements/<X>/Projects/<Y>/`
+- Frontmatter fields: `engagement: <X>`, `project: <Y>`
+- Tags: `#engagement/<X>`, `#project/<Y>`
+- Wiki links: `[[Engagements/<X>/<X> - Overview.md]]`, `[[Engagements/<X>/Projects/<Y>/<Y> - Updates.md]]`
+
+The folder is the structural artifact; the frontmatter fields propagate lineage to Claude; the tags propagate the same lineage to the user's graph view; the wiki links create explicit traversal paths that both human and Claude follow to expand context. R-32 hook enforcement holds the frontmatter + tag invariants at write-time; the librarian's rename-cascade + xref-check capabilities hold the wiki-link invariants over time (see [`enforcement-map-design.md`](./enforcement-map-design.md) §Folder-lineage convention and [ADR-0003](../../docs/decisions/0003-folder-lineage-as-fields.md)).
+
+Collapsing any of the four surfaces breaks a query. Folder-only navigation loses graph-view filtering across hierarchies AND loses explicit cross-references. Tag-only navigation loses the structural hierarchy AND directed traversal. Frontmatter-only files are illegible to humans. A vault without wiki links forces both human and Claude to re-derive every cross-reference from path or content inference — lossy and slow at human speed, lossy and stochastic at agent speed. The four surfaces hold because each one does what the others cannot.
 
 ### 6. Two-surface governance dual pattern
 
@@ -78,9 +113,46 @@ The principles-altitude statement: **rules must be both teachable and enforced, 
 
 ### 7. Mandatory-file lock — the universal minimum
 
-Every adopter's vault, day one, has a fixed set of mandatory files: a vault-root `CLAUDE.md`, a `Vault Architecture.md` mental-model doc, a `README.md`, a thin pointer `enforcement-map.md`, and an `Inbox/` directory of scraper aggregation files. Plus per-folder mandates: a folder-scoped `CLAUDE.md` and an `_index.md` index. Plus conditional files that ship when an adopter activates the relevant subsystem (`Logs/<subsystem>/`, `Templates/<archetype>/`, `Reference/<topic>/`). The full enumeration is locked at the mandatory-file-lock packet and structurally rendered via the `Vault Architecture - Mandatory-Files.md` narrative spoke.
+Every adopter's vault, day one, carries a 14-item system set at root, scaffolded by the onboarder's install pass: 5 files + 7 folders + 2 symlinks. The set is grounded in Session-02b §A.1 (Peter Message 1 + Message 2 universal-kit inventory) + §A.2 infrastructure dig + Session 4 two-surface governance + Session 16 13-lock ratification + Session 18 Option B reshape. Beyond the system set, the adopter activates user-defined clusters (foundation mandates the SHAPE; user defines the NAME) and personal tracks (user-named, user-shaped).
 
-The lock is the architectural floor. Below it, the system cannot guarantee its own invariants: `_index.md` enables folder-scoped navigation; folder-scoped `CLAUDE.md` enables in-context agent guidance; the `Inbox/` surface enables scraper aggregation. Adopters can add files freely above the floor; they cannot remove the floor and expect the system to function. The minimum is small (a handful of items at vault root, two per folder) precisely because the architecture is opinionated about what is structural and what is preference.
+**System files at vault root (5):**
+
+| File | Purpose |
+|---|---|
+| `CLAUDE.md` | Vault-root operational frame loaded at every session start. ONE-CLASS only (no deeper CLAUDE.md scopes) |
+| `Vault Architecture.md` | Authoritative system manual — copy of the foundation's mental-model doc |
+| `System Backlog.md` | Vault-root index of Claude-system projects; librarian-maintained. Companion archive at `Archive/System Backlog - Archive.md` |
+| `Tasks.md` | THE single task list (table format; Responses + Deliverables sections); sole writer of vault checkboxes; OR-merge survivorship with connector emissions (user edits win) |
+| `enforcement-map.md` | Thin pointer (≤2K) indexing the 5 narrative spokes + foundation `governance/` JSON registries. **At vault root**, NOT inside `Vault Architecture/` (per Session 4 two-surface governance decision) |
+
+**System folders at vault root (7):**
+
+| Folder | Purpose |
+|---|---|
+| `Vault Architecture/` | Container for the 5 narrative spokes: Frontmatter / Tagging / Naming / Mandatory-Files / Enforcement (thin meta-spoke) |
+| `Inbox/` | Connector-brief surface — per-connector briefs + active-connection `_index.md`; connector DATA lives outside vault at `$CLAUDE_HOME/connector-data/<slug>/` by default (see [`inbox-flow-architecture.md`](./inbox-flow-architecture.md)) |
+| `Archive/` | Cold storage for closed engagements + retired plan trees; hosts `Archive/System Backlog - Archive.md` |
+| `Logs/` | System-emitted logs only (session-close, digest-run, backlog-progress, etc.) |
+| `Daily/` | Date-keyed daily notes (optional / lifecycle-driven) |
+| `About Me/` | Adopter profile populated during onboarding — 3-5 files (career history, LLM interaction preferences, etc.); Claude's source-of-truth for who the adopter is |
+| `Meetings/` | Per-meeting notes from meeting-processor pipeline (`YYYY-MM-DD - <title>.md`); universal — people meet regardless of archetype |
+
+**System symlinks at vault root (2):**
+
+| Symlink | Target | Purpose |
+|---|---|---|
+| `Plans/` | `~/.claude-plans/` | Plan tree visibility from inside the vault |
+| `Skills/` | `~/.claude/skills/` | Skills index visibility from inside the vault |
+
+**Per-folder navigation mandate.** Every user-facing folder carries an `_index.md` for active-instance / per-file enumeration and navigation. The index files navigate via wiki links — both the user (in Obsidian) and Claude (when scoping into the folder) follow them to the right destination. In-scope: `Inbox/` (active-connection enumeration), `Vault Architecture/`, `About Me/`, `Meetings/`, and every user-defined cluster + cluster-instance folder. Out-of-scope: `Logs/`, `Tags/`, `Archive/`, `Daily/` (high-churn or no-navigation-value).
+
+**The retired set (explicit "not shipped"):** `README.md` at vault root, `Templates/` as adopter artifact, `Reference/` folder entirely, folder-scoped `CLAUDE.md` at any depth — all retired per Session 16 locks #1 / #4 / #5 / #6.
+
+**Beyond the system set.** User-defined clusters (e.g., `Engagements/`, `Studies/`, `Clients/`, `Major Projects/` — named per the adopter's archetype and vocabulary) and personal tracks (e.g., `Personal Initiatives/`, `BD/`, `MBA Prep/` — named freely). Foundation mandates **cluster SHAPE** — `_index.md` at cluster + instance levels; 3-file-per-bucket triad per instance (Overview / Updates / Context); optional `People/` subfolder when stakeholders multiply. Foundation does NOT mandate cluster names.
+
+The full enumeration is locked at [`mandatory-file-lock.md`](./mandatory-file-lock.md); the user-facing rendering ships at `Vault Architecture - Mandatory-Files.md` (with the thin meta-spoke `Vault Architecture - Enforcement.md`).
+
+The lock is the architectural floor. Below it, the system cannot guarantee its own invariants. Above it, adopters add files freely; they cannot remove the floor and expect the system to function. Governance discipline (frontmatter + tagging + pre-write hooks + librarian-manifest inclusion) auto-applies to every net-new user-created artifact regardless of where it lives (Session 16 lock #10).
 
 ## The four pillars
 
@@ -94,15 +166,39 @@ The principle: frontmatter is contract, not decoration. The system reads it befo
 
 ### Tagging — faceted taxonomy with discipline
 
-Eight-dimension faceted classification (Engagement, Project, Scope, Status, Initiative, BD-surface, About-Me, Log; the dimension list is archetype-driven for adopters via synonym-matching), with five rules: 25-tag cap on user-facing dimensions (system-utility dimensions exempt via the log-subtype registry); hierarchical `#dimension/value` format; no new dimension without R-37 lockstep; no freeform tags (pre-write hook DENIES non-conforming); tagging failure surfaces as a governance signal. Per-archetype synonym-matching re-labels structural dimensions in the adopter's vocabulary (consultant's `engagement` vs developer's `repo`). The full treatment lives at [`tagging-strategy.md`](./tagging-strategy.md), surfacing established research foundations with literature citations (Hedden, Forte, Dubois, Adobe AEM, SharePoint).
+The onboarding flow is pre-loaded with a **reference tagging structure** — a baseline set of faceted dimensions, prefix grammar, and discipline rules grounded in established taxonomy research (Hedden, Forte, Dubois, Adobe AEM, SharePoint). The wizard combines this reference structure with two inputs from the adopter — the adopter's file drop (which surfaces their existing vocabulary) and their answers during onboarding (which surface their archetype, their work, and the language they use to describe both) — to produce a **per-adopter baseline tag set**: dimensions named in the adopter's vocabulary, populated with starting values that match how the adopter actually talks about their work. The discipline rules apply uniformly across every adopter instantiation regardless of how the wizard names the dimensions for that adopter:
 
-The principle: tags are query handles, not descriptive labels. Free-form tags become folksonomy drift. The discipline is the design.
+- **Cap.** The total distinct tag values across user-facing dimensions stays bounded (25 working-vocabulary values is the foundation default, calibrated against working-memory literature). System-utility dimensions (`#log/*`, `#status/*`) are exempt because they are machine-emitted and never enter the user's working vocabulary. When the cap is approached during onboarding or later expansion, the wizard prompts for consolidation rather than silently widening the cap.
+- **Format.** Tags follow a hierarchical `<dimension>/<value>` prefix grammar — the dimension declares the facet; the value declares the instance within that facet. The grammar mirrors the folder structure (see commitment 5 and the naming pillar below — the same dimension name appears in the folder name, in the frontmatter field name, and in the tag prefix).
+- **Closed grammar.** No freeform tags. Every tag matches the prefix grammar; the pre-write hook rejects non-conforming writes. Adding a new dimension requires an explicit R-37 atomic-lockstep schema change, not a casual edit.
+- **Tagging failure as signal.** Content that cannot be cleanly tagged surfaces a governance question — either the vocabulary needs extension (rare; R-37 commit) or the content needs re-shaping (typical; routing prompt). The system never invents a freeform tag to escape the bind.
+
+The full treatment — including the cognitive-load research underlying the cap, the per-archetype synonym matching mechanics, and worked examples of the discipline rules in practice — lives at [`tagging-strategy.md`](./tagging-strategy.md).
+
+The principle: tags are the user-side **category-query** handle (see commitment 5 — four-surface architecture). They answer "what bucket does this belong to," not "what does this connect to" — that's the wiki-link surface's job. Free-form tags become folksonomy drift. The discipline is the design.
 
 ### Naming — folder and file conventions the system parses
 
-Folder names match tag values (folder-mirrors-tag invariant); file names follow date-prefix patterns (`YYYY-MM-DD-slug.md` for meeting notes; `YYYYMMDD-HHMMSS-slug.md` for log files); plan slugs follow the descriptive-slug + numeric-prefix-in-creation-order convention; vault-root paths obey a known-root allowlist. The full pattern catalog lives at [`file-naming-conventions.md`](./file-naming-conventions.md); enforced via `governance/naming-rules.json` and surfaced in `Vault Architecture - Naming.md`.
+Three things stay parseable across the vault:
+- **Folder names match dimension prefixes.** The cluster folder name corresponds to one tag-dimension prefix (e.g., `Engagements/` corresponds to the `#engagement/*` dimension; the adopter's chosen cluster name maps to one dimension). The per-instance subfolder name is the tag *value*.
+- **File names follow date-prefix patterns.** `YYYY-MM-DD-slug.md` for meeting notes; `YYYYMMDD-HHMMSS-slug.md` for log files; slug grammar matches frontmatter and tag values where applicable.
+- **Plan slugs** follow a descriptive-slug + numeric-prefix-in-creation-order convention; vault-root paths obey a known-root allowlist (R-04).
 
-The principle: naming is parseable. The system extracts structure from file paths and names — date, archetype, slug, lineage — and the extraction works only if the conventions hold. Naming drift is silent query drift downstream.
+**The connection between tagging and naming is structural.** The `<dimension>/<value>` tag format mirrors the `<dimension-folder>/<value-folder>/` directory structure. A file at `Engagements/acme-corp/Projects/gold-layer-qa/Meetings/2026-05-13-touchbase.md` carries three matching surfaces:
+
+| Surface | Lineage encoding |
+|---|---|
+| Folder path | `Engagements/acme-corp/Projects/gold-layer-qa/` |
+| Frontmatter fields | `engagement: acme-corp`, `project: gold-layer-qa` |
+| Tags | `#engagement/acme-corp`, `#project/gold-layer-qa` |
+
+The dimension name appears in the folder (`Engagements/`), in the frontmatter field name (`engagement:`), and in the tag prefix (`#engagement/`). The instance name appears in the folder (`acme-corp/`), in the frontmatter field value (`acme-corp`), and in the tag value (`acme-corp`). One declaration of lineage, materialized across three surfaces — the three-surface architecture from commitment 5 in operation. Naming is the discipline that keeps the surfaces aligned.
+
+**Naming is also what keeps wiki links intact.** Every wiki link in the vault targets a file by path. When a file moves or is renamed, every wiki link pointing to it has to update or the link breaks. The librarian's `rename-cascade` capability handles this automatically — on a rename, every wiki link to the old path is rewritten to the new path in one atomic pass. The `xref-check` and `wikilink-repair` capabilities audit broken cross-references on a cron cadence. The naming conventions are what give those capabilities deterministic targets to walk: parseable paths in, parseable paths out. Free-form or inconsistent naming would force fuzzy-match repair (lossy and stochastic); the convention discipline keeps the repair surface deterministic.
+
+The full pattern catalog lives at [`file-naming-conventions.md`](./file-naming-conventions.md); enforced via `governance/naming-rules.json` and surfaced in `Vault Architecture - Naming.md`.
+
+The principle: naming is parseable. The system extracts structure from file paths and names — date, archetype, slug, lineage — and the extraction works only if the conventions hold. Naming drift is silent query drift downstream AND silent wiki-link rot.
 
 ### Mandatory files — the structural floor
 
@@ -115,9 +211,9 @@ The principle: a minimum exists below which the system cannot function. The mini
 After reading this packet and the pillar packets — and being onboarded via the canonical onboarder flow — a novice user should be able to articulate nine things about their own vault, in plain language, without consulting the documentation. The articulation set is the dogfood test target and the working definition of "the onboarder succeeded":
 
 1. **What frontmatter is for** — it drives routing, lifecycle, and agent context; the fields are the API every file exposes to the system.
-2. **The folder-mirrors-tag principle** — folders and tags are dual navigation surfaces; losing either collapses query power.
+2. **The four-surface architecture** — folders (filesystem structure, both human + LLM), frontmatter (Claude's machine-readable API), tags (user-side category-query handle via graph view), and wiki links (explicit cross-references both human + LLM follow to traverse and scope context) each serve a different consumer or consumer mix; collapsing any one breaks a query dimension.
 3. **The cap-and-prefix discipline** — 25 distinct tag values across user-facing dimensions; `#dimension/value` hierarchical format; system-utility dimensions exempt.
-4. **Research context packets** — mid-density bundles at four altitudes (System / Engagement / Topic / Initiative) that orient agents before consuming vault budget.
+4. **Research context packets** — mid-density bundles at system altitude (the 9 foundation-shipped packets at `claude-stem/research/vault-construction/`, surfaced via the foundation's GH Pages site) that orient agents before consuming vault budget. Adopters who choose to author their own packets in their user vault may do so at adopter-defined altitudes; the foundation imposes no taxonomy beyond system (Session 16 lock #8).
 5. **Compliance tiers** — Strict (system files) / Standard (user-authored) / Minimal (opt-out); default Strict, opt-down preserved.
 6. **The mandatory file lock** — what's at vault root, what's per folder, what's conditional, and why each item is there.
 7. **Multi-archetype + personal tracks** — the system composes the union of activated archetypes plus user-declared tracks; the user doesn't pick one.
@@ -136,11 +232,11 @@ The temptation: write the schema as prose in CLAUDE.md and trust the operator (h
 
 The preempt: every rule has a structural enforcement layer — a hook, a librarian capability, a JSON Schema, a cron audit. Prose surfaces the rule for pedagogy; the layer enforces it at runtime. R-37 atomic lockstep ensures the prose and the enforcement layer stay aligned through governance changes. Pure documentation governance is rejected as a load-bearing strategy.
 
-### "Folders OR tags, pick one"
+### "Folders OR tags OR frontmatter OR wiki links — pick one"
 
-The temptation: pick one navigation surface and treat the other as redundant. The failure mode: lose graph-view query power if you pick folders only; lose hierarchical context if you pick tags only. Both surfaces answer different questions; collapsing them sacrifices a dimension of query.
+The temptation: pick a single navigation surface and treat the others as redundant. The failure mode varies by which surface is dropped — drop folders and humans lose orientation; drop frontmatter and Claude has no machine-readable contract; drop tags and the user loses cross-hierarchy category filtering; drop wiki links and both human and Claude lose the explicit cross-reference paths that scope context. Each surface answers a different question for a different consumer (or consumer mix); collapsing any one sacrifices a query dimension.
 
-The preempt: the folder-mirrors-tag invariant. Every Structural-dimension tag has a corresponding folder; every folder hierarchy propagates as frontmatter fields + matching tags. Both surfaces stay populated; both queries stay answerable. R-32 hook enforcement holds the lineage propagation at write-time.
+The preempt: the four-surface architecture. Every Structural-dimension tag has a corresponding folder; every folder hierarchy propagates as frontmatter fields + matching tags; wiki links create explicit cross-reference paths to canonical destinations; lineage and connection are materialized identically across all four surfaces. R-32 hook enforcement holds the frontmatter + tag invariants at write-time; the librarian's `rename-cascade` + `xref-check` + `wikilink-repair` capabilities hold the wiki-link integrity over time; the `governance-parity-audit` capability catches drift at audit-time.
 
 ### "Pick a primary archetype; everything else is secondary clutter"
 
