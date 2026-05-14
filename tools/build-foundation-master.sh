@@ -1,5 +1,5 @@
 #!/bin/bash
-# build-foundation-master.sh — SP13 T-2 (2026-05-14)
+# build-foundation-master.sh — SP13 T-2 (2026-05-14); extended SP13 T-3 (2026-05-14)
 #
 # Composes foundation governance pillars into governance/foundation-master.json
 # at foundation-repo RELEASE time per feedback_ship_bundle_dont_build_on_consumer.
@@ -14,7 +14,9 @@
 #   governance/doc-dependencies.json
 #   governance/file-type-contracts/*.json   (k8s paramKind contracts)
 #   governance/_index.json
-#   schemas/gate-config.json                (interim contributor to r47 union; retires SP13 T-6)
+#   schemas/gate-config.json                (interim contributor — SP13 T-3 absorbs r32.type_aliases
+#                                            + r32.exempt_paths + r47.tag_cap + r47.exempt_paths union
+#                                            into top-level bundle slots; retires SP13 T-6)
 #
 # Output (single artifact):
 #   governance/foundation-master.json
@@ -98,6 +100,25 @@ else
 fi
 R47_COMPOSED_JSON=$(printf '%s\n%s\n' "$TAGGING_R47" "$GATE_R47" | LC_ALL=C sort -u | grep -v '^$' | jq -R -s 'split("\n") | map(select(length > 0))')
 
+# --- 4b. SP13 T-3: Absorb gate-config r32/r47 residual slices ----------------
+# T-3 freeze-with-marker discipline: hooks read foundation-master.json exclusively
+# while gate-config.json physical retirement waits for T-6. The 3 slices below
+# carry over verbatim from gate-config.json into top-level bundle slots:
+#   r32_type_aliases   (alias→canonical map; 5 entries)
+#   r32_exempt_paths   (R-32 type-check exempt globs; 4 entries)
+#   r47_tag_cap        (per-file tag count cap; integer)
+# These slots are explicitly interim. T-6 pillar-shard decides final resting
+# (frontmatter-rules.json or tagging-rules.json) with full migration context.
+if [ -f "$GATE_CONFIG" ] && jq -e . "$GATE_CONFIG" >/dev/null 2>&1; then
+  R32_TYPE_ALIASES_JSON=$(jq -S '.r32.type_aliases // {}' "$GATE_CONFIG")
+  R32_EXEMPT_PATHS_JSON=$(jq -S '.r32.exempt_paths // []' "$GATE_CONFIG")
+  R47_TAG_CAP_JSON=$(jq -S '.r47.tag_cap // 25' "$GATE_CONFIG")
+else
+  R32_TYPE_ALIASES_JSON='{}'
+  R32_EXEMPT_PATHS_JSON='[]'
+  R47_TAG_CAP_JSON='25'
+fi
+
 # --- 5. Compose file-type-contracts (key = filename without extension) ------
 FTC_JSON='{}'
 if [ -d "$FILE_TYPE_CONTRACTS_DIR" ]; then
@@ -151,10 +172,13 @@ BUNDLE_BODY=$(jq -n -S \
   --argjson ix "$INDEX_JSON" \
   --argjson ftc "$FTC_JSON" \
   --argjson r47 "$R47_COMPOSED_JSON" \
+  --argjson r32ta "$R32_TYPE_ALIASES_JSON" \
+  --argjson r32ep "$R32_EXEMPT_PATHS_JSON" \
+  --argjson r47cap "$R47_TAG_CAP_JSON" \
   --argjson types "$TYPES_LIFT_JSON" \
   '{
-    "schema_version": "1.0.0",
-    "_description": "Composed foundation governance bundle (SP13 T-2). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
+    "schema_version": "1.1.0",
+    "_description": "Composed foundation governance bundle (SP13 T-2 + T-3). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
     "frontmatter": $fm,
     "tagging": $tg,
     "naming": $nm,
@@ -163,8 +187,11 @@ BUNDLE_BODY=$(jq -n -S \
     "file_type_contracts": $ftc,
     "_index": $ix,
     "r47_exempt_paths_composed": $r47,
+    "r32_type_aliases": $r32ta,
+    "r32_exempt_paths": $r32ep,
+    "r47_tag_cap": $r47cap,
     "types": $types,
-    "_sp13_provenance": "SP13 T-2 (2026-05-14) initial build. Composes 6 pillar files + N file-type-contracts. R-47 exempt-paths union from tagging-rules.json + (interim) gate-config.json — gate-config retires under SP13 T-6 at which point this build drops the gate-config dependency."
+    "_sp13_provenance": "SP13 T-2 (2026-05-14) initial build; SP13 T-3 (2026-05-14) extended bundle to absorb gate-config residual slices (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh can drop direct gate-config reads while gate-config physical retirement waits for T-6. Composes 6 pillar files + N file-type-contracts. Gate-config dissolved with marker in SP13 T-3 commit (mirrors T-4 vault-schema freeze-with-marker pattern per feedback_freeze_with_marker_retirement_pattern)."
   }')
 
 # --- 8. bundle_version = sha256 of canonical body (without _meta) -----------
@@ -231,4 +258,7 @@ echo "  bundle_version: $BUNDLE_VERSION"
 echo "  built_at:       $BUILD_AT"
 echo "  pillars:        6"
 echo "  r47_exempt_paths_composed: $(echo "$R47_COMPOSED_JSON" | jq 'length') entries"
+echo "  r32_type_aliases:          $(echo "$R32_TYPE_ALIASES_JSON" | jq 'length') entries"
+echo "  r32_exempt_paths:          $(echo "$R32_EXEMPT_PATHS_JSON" | jq 'length') entries"
+echo "  r47_tag_cap:               $(echo "$R47_TAG_CAP_JSON")"
 echo "  file_type_contracts:       $(echo "$FTC_JSON" | jq 'length') entries"

@@ -596,18 +596,63 @@ PYEOF
 fi
 
 # =============================================================================
-# DOC-DEPENDENCY REGISTRY CHECK (spine-remediation Session 10)
-# Reads ~/.claude/hooks/doc-dependencies.json and builds DOC_DEP_CTX string:
+# SP13 T-3 (2026-05-14) — foundation-master.json bundle-at-load
+# =============================================================================
+# Single governance read source per hook invocation. Replaces direct reads of:
+#   - schemas/vault-schema.json    (DISSOLVED SP13 T-4 — types absorbed into pillars)
+#   - schemas/gate-config.json     (DISSOLVED SP13 T-3 — r32/r47 slices absorbed)
+#   - hooks/config/doc-dependencies.json   (canonical now governance/doc-dependencies.json)
+#   - governance/{frontmatter,tagging,mandatory-files}-rules.json (pillar JSONs)
+# Bundle built by tools/build-foundation-master.sh at foundation-repo release
+# time + shipped to ~/.claude/governance/foundation-master.json by install.sh
+# (SP13 T-8). $FOUNDATION_MASTER_PATH override mirrors $GATE_CONFIG_PATH
+# test-isolation contract. Missing bundle → fail-OPEN (same posture as the
+# legacy SCHEMA_FILE/GATE_CONFIG missing-file behavior). AC: one file read
+# per hook invocation; subsequent slicing via jq <<<"$BUNDLE_JSON".
+FOUNDATION_MASTER="${FOUNDATION_MASTER_PATH:-$HOME/Code/claude-stem/governance/foundation-master.json}"
+BUNDLE_JSON=""
+if [[ -f "$FOUNDATION_MASTER" ]]; then
+  BUNDLE_JSON=$(cat "$FOUNDATION_MASTER")
+fi
+
+# === Derived shell-var slices (jq on in-memory bundle) =======================
+# Variable names preserved (GATE_R32_* / GATE_R47_*) for minimal diff vs the
+# pre-SP13-T-3 pattern; semantics identical, source flipped to bundle.
+GATE_R32_ACCEPTED_TYPES=""
+GATE_R32_TYPE_ALIASES=""
+GATE_R32_EXEMPT_PATHS=""
+GATE_R47_TAG_DIMENSIONS=""
+GATE_R47_EXEMPT_PATHS=""
+GATE_R47_PREFIX_LIST=""
+GATE_R47_PREFIX_REGEX=""
+if [[ -n "$BUNDLE_JSON" ]]; then
+  # R-32 accepted_types = union of canonical types (.types | keys) + aliases
+  # (.r32_type_aliases | keys). Mirrors the 26-value gate-config.r32.accepted_types
+  # (21 canonical + 5 aliases) without duplicating the canonical list.
+  GATE_R32_ACCEPTED_TYPES=$(jq -r '(.types // {} | keys[]), (.r32_type_aliases // {} | keys[])' <<<"$BUNDLE_JSON" 2>/dev/null | LC_ALL=C sort -u)
+  GATE_R32_TYPE_ALIASES=$(jq -r '.r32_type_aliases // {} | to_entries[]? | "\(.key)\t\(.value)"' <<<"$BUNDLE_JSON" 2>/dev/null)
+  GATE_R32_EXEMPT_PATHS=$(jq -r '.r32_exempt_paths[]?' <<<"$BUNDLE_JSON" 2>/dev/null)
+  GATE_R47_TAG_DIMENSIONS=$(jq -r '.tagging.taxonomy.dimension_prefixes[]?' <<<"$BUNDLE_JSON" 2>/dev/null)
+  GATE_R47_EXEMPT_PATHS=$(jq -r '.r47_exempt_paths_composed[]?' <<<"$BUNDLE_JSON" 2>/dev/null)
+  # Display + regex strings derived from tag_dimensions (single-source: same
+  # prefix grammar drives R-47 advisory AND R-32 Tier 2 tag-conformance DENY).
+  GATE_R47_PREFIX_LIST=$(echo "$GATE_R47_TAG_DIMENSIONS" | awk 'NF{printf "#%s/, ", $0}' | sed 's/, $//')
+  GATE_R47_PREFIX_REGEX=$(echo "$GATE_R47_TAG_DIMENSIONS" | awk 'NF{printf "%s|", $0}' | sed 's/|$//')
+fi
+
+# =============================================================================
+# DOC-DEPENDENCY REGISTRY CHECK (spine-remediation Session 10; SP13 T-3 reads
+# from foundation-master.json#doc_dependencies instead of legacy
+# ~/.claude/hooks/doc-dependencies.json)
 #   - primary / mirror touches → cascade-review reminder
 #   - Logs/ directory-write-constraint violation → deliverable-type soft-warn
 # Never denies — librarian session-close Step 2c is the blocking backstop.
 # DOC_DEP_CTX is merged into the Tier 1/3 emit below, OR emitted standalone
 # at the tail of the hook if no other block fires.
 # =============================================================================
-DOC_DEP_FILE="$HOME/.claude/hooks/doc-dependencies.json"
 DOC_DEP_CTX=""
 
-if [[ -f "$DOC_DEP_FILE" ]]; then
+if [[ -n "$BUNDLE_JSON" ]]; then
   # Build candidate match keys: vault-relative path + ~-abbreviated absolute path.
   DD_REL="${FILE_PATH#$VAULT_ROOT/}"
   [[ "$DD_REL" == "$FILE_PATH" ]] && DD_REL=""  # non-vault → empty
@@ -619,7 +664,7 @@ if [[ -f "$DOC_DEP_FILE" ]]; then
 
   # --- Primary / mirror / primary_dir match across BOTH key forms ---
   DEP_MATCH=$(jq -r --arg rel "$DD_REL" --arg abs "$DD_HOMEKEY" '
-    .entries[]
+    .doc_dependencies.entries[]?
     | . as $e
     | select(
         (($rel != "") and (
@@ -637,7 +682,7 @@ if [[ -f "$DOC_DEP_FILE" ]]; then
           "canonical source — no mirrors to review"
         end
       )
-  ' "$DOC_DEP_FILE" 2>/dev/null || true)
+  ' <<<"$BUNDLE_JSON" 2>/dev/null || true)
   if [[ -n "$DEP_MATCH" ]]; then
     DOC_DEP_CTX="[DOC-DEPENDENCY CASCADE] This write touches a registered documentation dependency:\n${DEP_MATCH}\n\nReview the mirrors in this same session, OR file a waiver via the canonical writer:\n  source ~/.claude/hooks/lib/cascade-waiver.sh && cascade_waiver_write <entry_id> \"<reason>\"\n(Do NOT write cascade-waivers.json directly — drifted shapes have accumulated across 24 sessions. Plan 65 T-1 audit 2026-04-20.)\nLibrarian session-close Step 2c will block otherwise."
   fi
@@ -648,7 +693,7 @@ if [[ -f "$DOC_DEP_FILE" ]]; then
     if [[ -n "$DD_CONTENT" ]]; then
       DD_NEW_TYPE=$(echo "$DD_CONTENT" | awk '/^---$/{c++;next} c==1 && /^type:[[:space:]]/{sub(/^type:[[:space:]]*/,""); gsub(/"/,""); print; exit}')
       if [[ -n "$DD_NEW_TYPE" ]]; then
-        DD_DENIED=$(jq -r '.entries[] | select(.id == "logs-scratch-only") | .denied_types[]' "$DOC_DEP_FILE" 2>/dev/null || true)
+        DD_DENIED=$(jq -r '.doc_dependencies.entries[]? | select(.id == "logs-scratch-only") | .denied_types[]?' <<<"$BUNDLE_JSON" 2>/dev/null || true)
         if echo "$DD_DENIED" | grep -qx "$DD_NEW_TYPE"; then
           DD_LOGS_WARN="[LOGS/ DELIVERABLE SOFT-REJECT] type: '${DD_NEW_TYPE}' is a deliverable type, not scratch. Logs/ is the Claude scratchpad — promote this file to a permanent vault home (Engagements/, Reference/, Vault Architecture/, etc.) before writing. Soft-warn only in MVP; Session 13 may harden to deny."
           [[ -n "$DOC_DEP_CTX" ]] && DOC_DEP_CTX="${DOC_DEP_CTX}\n\n"
@@ -665,35 +710,9 @@ fi
 # Tier 1: Auto-fix guidance (additionalContext)
 # Tier 2: Block with explanation (DENY)
 # Tier 3: Allow with mandatory follow-up warning
+# Bundle (foundation-master.json) is the SOLE governance read source per
+# SP13 T-3 (2026-05-14); R-37 reconciliation entry 5 closed.
 # =============================================================================
-# VAULT_ROOT comes from paths.sh (sourced at top)
-SCHEMA_FILE="$SCHEMAS_DIR/vault-schema.json"
-
-# === gate-config.json — R-32/R-47 source of truth (Plan 81 SP01 T-6) =========
-# Foundation-repo authoring at ~/Code/claude-stem/schemas/gate-config.json.
-# $GATE_CONFIG_PATH override mirrors T-7 / T-27 test-isolation contract.
-# Missing config → degrade gracefully: empty arrays skip R-32 type/tag DENY
-# (fail-OPEN, same posture as missing SCHEMA_FILE).
-GATE_CONFIG="${GATE_CONFIG_PATH:-$HOME/Code/claude-stem/schemas/gate-config.json}"
-GATE_R32_ACCEPTED_TYPES=""
-GATE_R32_TYPE_ALIASES=""
-GATE_R32_EXEMPT_PATHS=""
-GATE_R47_TAG_DIMENSIONS=""
-GATE_R47_EXEMPT_PATHS=""
-GATE_R47_PREFIX_LIST=""
-GATE_R47_PREFIX_REGEX=""
-if [[ -f "$GATE_CONFIG" ]]; then
-  GATE_R32_ACCEPTED_TYPES=$(jq -r '.r32.accepted_types[]?' "$GATE_CONFIG" 2>/dev/null)
-  GATE_R32_TYPE_ALIASES=$(jq -r '.r32.type_aliases | to_entries[]? | "\(.key)\t\(.value)"' "$GATE_CONFIG" 2>/dev/null)
-  GATE_R32_EXEMPT_PATHS=$(jq -r '.r32.exempt_paths[]?' "$GATE_CONFIG" 2>/dev/null)
-  GATE_R47_TAG_DIMENSIONS=$(jq -r '.r47.tag_dimensions[]?' "$GATE_CONFIG" 2>/dev/null)
-  GATE_R47_EXEMPT_PATHS=$(jq -r '.r47.exempt_paths[]?' "$GATE_CONFIG" 2>/dev/null)
-  # Display + regex strings derived from r47.tag_dimensions (single-source per
-  # gate-config _tag_dimensions_note: same prefix grammar drives R-47 advisory
-  # AND R-32 Tier 2 tag-conformance DENY).
-  GATE_R47_PREFIX_LIST=$(echo "$GATE_R47_TAG_DIMENSIONS" | awk 'NF{printf "#%s/, ", $0}' | sed 's/, $//')
-  GATE_R47_PREFIX_REGEX=$(echo "$GATE_R47_TAG_DIMENSIONS" | awk 'NF{printf "%s|", $0}' | sed 's/|$//')
-fi
 
 if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
 
@@ -717,7 +736,7 @@ if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
   done <<< "$GATE_R32_EXEMPT_PATHS"
   [[ "$IS_ENGAGEMENT_CLAUDE" == "true" ]] && R32_EXEMPT=0
 
-  if [[ $R32_EXEMPT -eq 0 ]] && [[ -f "$SCHEMA_FILE" ]]; then
+  if [[ $R32_EXEMPT -eq 0 ]] && [[ -n "$BUNDLE_JSON" ]]; then
 
     # --- Reconstruct file content for frontmatter analysis ---
     CONTENT=""
@@ -798,19 +817,40 @@ print(content, end='')
         fi
 
         # =====================================================================
+        # R-32 RETIRED TYPES — Tier 2 DENY with specific replacement guidance
+        # (SP13 T-3 Session 3 2026-05-14): Pre-T-3, hooks/config/gate-config.json
+        # silently listed `engagement` + `project` in r32.accepted_types — drift
+        # from governance/frontmatter-rules.json#retired_types canonical state.
+        # Bundle correctly excludes retired types from R-32 allowlist; this
+        # check emits a specific deny message with replacement guidance from
+        # frontmatter-rules.json#retired_types[<type>].replacement, BEFORE the
+        # generic UNKNOWN TYPE check below (avoids misleading "add to types"
+        # error for types that are explicitly retired).
+        FM_TYPE_RETIRED="false"
+        if [[ -n "$FM_TYPE" ]] && [[ -n "$BUNDLE_JSON" ]]; then
+          RETIRED_REPLACEMENT=$(jq -r --arg t "$FM_TYPE" '.frontmatter.retired_types[$t].replacement // empty' <<<"$BUNDLE_JSON" 2>/dev/null)
+          if [[ -n "$RETIRED_REPLACEMENT" ]]; then
+            TIER2_MSGS="${TIER2_MSGS}[R-32 RETIRED TYPE] type: '${FM_TYPE}' is retired per governance/frontmatter-rules.json#retired_types. Replacement guidance: ${RETIRED_REPLACEMENT}\n"
+            FM_TYPE_RETIRED="true"
+          fi
+        fi
+
         # R-32 — TYPE ALLOWLIST (Tier 2 DENY)
         # Promoted from Tier 1 warning to Tier 2 blocking by spine-remediation-
         # followup P4-T01 (2026-04-17). Allowlist sourced from
-        # gate-config.json::r32.accepted_types (Plan 81 SP01 T-6, 2026-05-08):
-        # 26 accepted values = 21 canonical schema keys + 5 aliases (skill-spec,
-        # overview, updates, file-index, tier-2). Adding a type touches the
-        # R-37 coupled-surface set (vault-schema.json + pre-write-guard.sh +
-        # post-write-verify.sh + CLAUDE.md). Empty config → DENY skipped
-        # (fail-OPEN, same posture as missing SCHEMA_FILE).
+        # foundation-master.json#types | keys (21 canonical) UNION
+        # foundation-master.json#r32_type_aliases | keys (5 aliases since SP13
+        # T-3, 2026-05-14): 26 accepted values total. Adding a type touches
+        # the R-37 coupled-surface set (governance/frontmatter-rules.json#types
+        # + pre-write-guard.sh + post-write-verify.sh + vault CLAUDE.md);
+        # foundation-master.json regenerates via tools/build-foundation-master.sh.
+        # Empty bundle → DENY skipped (fail-OPEN, same posture as missing bundle).
+        # FM_TYPE_RETIRED guard avoids double-DENY when retired-type message
+        # already fired above (better UX: user sees the retired-specific deny).
         # =====================================================================
-        if [[ -n "$FM_TYPE" ]] && [[ -n "$GATE_R32_ACCEPTED_TYPES" ]]; then
+        if [[ -n "$FM_TYPE" ]] && [[ -n "$GATE_R32_ACCEPTED_TYPES" ]] && [[ "$FM_TYPE_RETIRED" != "true" ]]; then
           if ! echo "$GATE_R32_ACCEPTED_TYPES" | grep -Fxq "$FM_TYPE"; then
-            TIER2_MSGS="${TIER2_MSGS}[R-32 UNKNOWN TYPE] type: '${FM_TYPE}' is not in the canonical allowlist (20 schema keys + 5 aliases). To add a new type: (1) update ~/.claude/schemas/vault-schema.json with required fields, (2) add case entry in pre-write-guard.sh, (3) add to post-write-verify.sh type_map, (4) document in vault CLAUDE.md — bundle as R-37 lockstep commit.\n"
+            TIER2_MSGS="${TIER2_MSGS}[R-32 UNKNOWN TYPE] type: '${FM_TYPE}' is not in the canonical allowlist (21 canonical type keys + 5 aliases). To add a new type: (1) update governance/frontmatter-rules.json#types with required fields, (2) add case entry in pre-write-guard.sh, (3) add to post-write-verify.sh type_map, (4) document in vault CLAUDE.md, (5) rebuild bundle via tools/build-foundation-master.sh — bundle as R-37 lockstep commit.\n"
           fi
         fi
 
@@ -828,7 +868,7 @@ print(content, end='')
         if ! fm_has "updated"; then
           UPDATED_IN_SCHEMA=""
           if [[ -n "$SCHEMA_KEY" ]]; then
-            UPDATED_IN_SCHEMA=$(jq -r --arg key "$SCHEMA_KEY" '.[$key].required // [] | .[] | select(. == "updated")' "$SCHEMA_FILE" 2>/dev/null)
+            UPDATED_IN_SCHEMA=$(jq -r --arg key "$SCHEMA_KEY" '.types[$key].required // [] | .[] | select(. == "updated")' <<<"$BUNDLE_JSON" 2>/dev/null)
           fi
           if [[ -n "$UPDATED_IN_SCHEMA" ]]; then
             TIER1_MSGS="${TIER1_MSGS}Vault write needs 'updated: ${TODAY}' in frontmatter. Add it before writing.\n"
@@ -991,7 +1031,7 @@ PYEOF
 
         # Check required fields from schema
         if [[ -n "$SCHEMA_KEY" ]]; then
-          REQUIRED_FIELDS=$(jq -r --arg key "$SCHEMA_KEY" '.[$key].required // [] | .[]' "$SCHEMA_FILE" 2>/dev/null)
+          REQUIRED_FIELDS=$(jq -r --arg key "$SCHEMA_KEY" '.types[$key].required // [] | .[]' <<<"$BUNDLE_JSON" 2>/dev/null)
           if [[ -n "$REQUIRED_FIELDS" ]]; then
             MISSING_FIELDS=""
             while IFS= read -r field; do
@@ -1012,7 +1052,7 @@ PYEOF
           # Schema shape: .[$key].conditional_required = { "<field>": { "condition": "path_depth >= N", ... } }
           # Currently only one condition kind supported: "path_depth >= N" — REL_PATH segment count.
           # Extensible: future condition kinds register here without schema-shape changes.
-          CONDITIONAL_FIELDS=$(jq -r --arg key "$SCHEMA_KEY" '.[$key].conditional_required // {} | to_entries[] | "\(.key)|\(.value.condition // "")"' "$SCHEMA_FILE" 2>/dev/null)
+          CONDITIONAL_FIELDS=$(jq -r --arg key "$SCHEMA_KEY" '.types[$key].conditional_required // {} | to_entries[] | "\(.key)|\(.value.condition // "")"' <<<"$BUNDLE_JSON" 2>/dev/null)
           if [[ -n "$CONDITIONAL_FIELDS" ]]; then
             COND_PATH_DEPTH=$(echo "$REL_PATH" | tr -cd '/' | wc -c | tr -d ' ')
             COND_MISSING=""

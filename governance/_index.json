@@ -142,7 +142,7 @@
     }
   ],
   "dissolved_schemas": {
-    "_description": "SP13 T-4 (2026-05-14): registry of schemas that have been semantically dissolved into pillars. Files remain physically present in foundation-repo until the last consumer migrates (T-3 hooks, T-6 gate-config retirement, T-8 install.sh ship list, T-9 tests, T-10 docs). 'Dissolved' = no new authoring; canonical authority has moved to the named successors. Each entry carries `frozen_at`, `dissolution_sp_task`, `successors`, `consumer_migration_status`, `final_deletion_gating_task`.",
+    "_description": "SP13 T-4 + T-3 (2026-05-14): registry of schemas that have been semantically dissolved into pillars or the foundation-master bundle. Files remain physically present in foundation-repo until the last consumer migrates (T-3 hooks closed both; T-6 gate-config physical deletion; T-8 install.sh ship list, T-9 tests, T-10 docs for vault-schema). 'Dissolved' = no new authoring; canonical authority has moved to the named successors. Each entry carries `frozen_at`, `dissolution_sp_task`, `successors`, `consumer_migration_status`, `final_deletion_gating_task`.",
     "schemas/vault-schema.json": {
       "frozen_at": "2026-05-14",
       "dissolution_sp_task": "SP13 T-4",
@@ -159,10 +159,10 @@
         "_tag_prefixes_meta": "governance/tagging-rules.json#taxonomy (system_utility_dimensions + user_facing_dimensions + cap_25_applies_to fields)"
       },
       "consumer_migration_status": {
-        "governance_authoring": "MIGRATED in SP13 T-4 (this commit)",
-        "hooks_pre_write_guard": "PENDING — migrates under SP13 T-3 (Session 3) to read foundation-master.json",
-        "hooks_post_write_verify": "PENDING — migrates under SP13 T-3 (Session 3) to read foundation-master.json",
-        "hooks_config_gate_config": "PENDING — gate-config retires under SP13 T-6 (Session 4); schema_path field references vault-schema.json until then",
+        "governance_authoring": "MIGRATED in SP13 T-4 (2026-05-14 commit c4c79ea)",
+        "hooks_pre_write_guard": "MIGRATED in SP13 T-3 (2026-05-14 this commit) — reads foundation-master.json bundle exclusively",
+        "hooks_post_write_verify": "MIGRATED in SP13 T-3 (2026-05-14 this commit) — reads foundation-master.json bundle exclusively",
+        "hooks_config_gate_config": "DISSOLVED in SP13 T-3 (2026-05-14 this commit) — gate-config frozen with marker; physical deletion at T-6",
         "install_sh": "PENDING — install.sh schema-copy list updates under SP13 T-8 (Session 5-6)",
         "onboarding_bootstrap_schemas_sh": "PENDING — bootstrap-schemas.sh updates under SP13 T-8",
         "tests": "PENDING — SP13 T-9 (Session 5-6) updates fixtures",
@@ -171,7 +171,32 @@
       "final_deletion_gating_task": "SP13 T-9 or T-10 (whichever closes last; the physical file deletion happens atomically with the last consumer migration per OQ-13-4 'migrate-then-drop in same commit')",
       "drop_then_fail_loudly_disallowed": true,
       "frozen_artifact_policy": "File at schemas/vault-schema.json remains intact (content preserved) and carries `_dissolved: true` top-level marker + `_canonical_successors` pointer block. No new authoring against this file — all updates go to the named successors. install.sh continues to ship the file until SP13 T-8 updates the ship list."
+    },
+    "schemas/gate-config.json": {
+      "frozen_at": "2026-05-14",
+      "dissolution_sp_task": "SP13 T-3",
+      "successors": {
+        "r32.accepted_types": "governance/foundation-master.json#types | keys (canonical 21) + foundation-master.json#r32_type_aliases | keys (5 aliases) — derived at runtime",
+        "r32.type_aliases": "governance/foundation-master.json#r32_type_aliases (interim — T-6 pillar-shard decides final resting; type-registry inversion +1 option locates these under frontmatter-rules.json#types.<canonical>.aliases[])",
+        "r32.exempt_paths": "governance/foundation-master.json#r32_exempt_paths (interim — T-6 pillar-shard decides final resting; frontmatter-rules.json is leading candidate)",
+        "r32.schema_path": "obsoleted by bundle-at-load (hooks no longer need schema-path indirection)",
+        "r47.tag_dimensions": "governance/foundation-master.json#tagging.taxonomy.dimension_prefixes (canonical since SP13 T-4)",
+        "r47.exempt_paths": "governance/foundation-master.json#r47_exempt_paths_composed (canonical since SP13 T-4)",
+        "r47.tag_cap": "governance/foundation-master.json#r47_tag_cap (interim — T-6 relocates to tagging-rules.json#taxonomy)",
+        "r37.coupled_surfaces": "governance/_index.json#pillars[].r37_coupled_surfaces (declared per-pillar since SP13 T-4)"
+      },
+      "consumer_migration_status": {
+        "hooks_pre_write_guard": "MIGRATED in SP13 T-3 (2026-05-14 this commit) — reads foundation-master.json bundle exclusively",
+        "hooks_post_write_verify": "MIGRATED in SP13 T-3 (2026-05-14 this commit) — reads foundation-master.json bundle exclusively",
+        "tools_build_foundation_master_sh": "READS THIS FILE — interim contributor for r32/r47 slot composition; dependency drops at T-6 when file is physically deleted",
+        "install_sh": "PENDING — install.sh schema-copy list updates under SP13 T-6 + T-8 (Session 5-6) when physical deletion happens",
+        "tests": "PENDING — SP13 T-9 (Session 5-6) updates fixtures; any fixture asserting gate-config presence flips to foundation-master.json equivalents"
+      },
+      "final_deletion_gating_task": "SP13 T-6 (Session 4) — gate-config physical retirement; deletion of schemas/gate-config.json + schemas/gate-config-schema.json + tools/build-foundation-master.sh GATE_CONFIG dependency. Atomic with same-commit consumer-migration verification per OQ-13-4.",
+      "drop_then_fail_loudly_disallowed": true,
+      "frozen_artifact_policy": "File at schemas/gate-config.json remains intact (content preserved) and carries `_dissolved: true` top-level marker + `_dissolved_marker` pointer block. No new authoring against this file — all updates go to the named successors. tools/build-foundation-master.sh continues to read it as interim contributor until T-6."
     }
   },
-  "_sp13_t4_provenance": "SP13 T-4 closing commit 2026-05-14: vault-schema dissolved into pillars; R-37 coupled_surfaces declarations added for frontmatter + tagging + mandatory-files + doc-dependencies pillars; gate-config interim references documented; foundation-master.json forward-references added (built under T-2 in same session). Closes OQ-13-1 + OQ-13-2 (revised) + OQ-13-3 governance side."
+  "_sp13_t4_provenance": "SP13 T-4 closing commit 2026-05-14: vault-schema dissolved into pillars; R-37 coupled_surfaces declarations added for frontmatter + tagging + mandatory-files + doc-dependencies pillars; gate-config interim references documented; foundation-master.json forward-references added (built under T-2 in same session). Closes OQ-13-1 + OQ-13-2 (revised) + OQ-13-3 governance side.",
+  "_sp13_t3_provenance": "SP13 T-3 closing commit 2026-05-14: gate-config.json dissolved with marker (mirror T-4 vault-schema pattern); foundation-master.json bundle extended with r32_type_aliases + r32_exempt_paths + r47_tag_cap top-level slots (schema_version 1.0.0 → 1.1.0; bundle_version regenerated); hooks/pre-write-guard.sh + hooks/post-write-verify.sh migrated to foundation-master.json bundle-only reads (one file read per invocation via $(cat ...) shell-var pattern + jq-on-stdin slicing). Closes R-37 reconciliation entry 5 (hook direct-reads of source pillar JSONs)."
 }

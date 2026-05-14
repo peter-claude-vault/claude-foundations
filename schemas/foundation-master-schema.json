@@ -2,9 +2,9 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://stem.peter.dev/schemas/foundation-master/v1.json",
   "title": "Foundation Master Bundle",
-  "description": "Composed foundation governance bundle (SP13 T-2). Built deterministically from foundation-repo authoring pillars (governance/{frontmatter,tagging,naming,mandatory-files}-rules.json + doc-dependencies.json + file-type-contracts/*.json + _index.json) by tools/build-foundation-master.sh and committed at governance/foundation-master.json. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer. This validator is intentionally light: structural shape only; inner pillar content is governed by each pillar's own contracts (frontmatter-rules.json carries its own rule registry shape, etc.). Stricter inner-shape validation can be added under SP13 T-9 or SP14 if needed.",
+  "description": "Composed foundation governance bundle (SP13 T-2 + T-3). Built deterministically from foundation-repo authoring pillars (governance/{frontmatter,tagging,naming,mandatory-files}-rules.json + doc-dependencies.json + file-type-contracts/*.json + _index.json) + (interim) schemas/gate-config.json by tools/build-foundation-master.sh and committed at governance/foundation-master.json. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer. SP13 T-3 extended the schema to declare 3 absorbed gate-config slots (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh drop direct gate-config reads while gate-config physical retirement waits for T-6. This validator is intentionally light: structural shape only; inner pillar content is governed by each pillar's own contracts. Stricter inner-shape validation can be added under SP13 T-9 or SP14 if needed.",
   "type": "object",
-  "required": ["schema_version", "_meta", "frontmatter", "tagging", "naming", "mandatory_files", "doc_dependencies", "file_type_contracts", "_index", "r47_exempt_paths_composed", "types"],
+  "required": ["schema_version", "_meta", "frontmatter", "tagging", "naming", "mandatory_files", "doc_dependencies", "file_type_contracts", "_index", "r47_exempt_paths_composed", "r32_type_aliases", "r32_exempt_paths", "r47_tag_cap", "types"],
   "additionalProperties": false,
   "properties": {
     "schema_version": {
@@ -121,6 +121,27 @@
       },
       "uniqueItems": true,
       "minItems": 1
+    },
+    "r32_type_aliases": {
+      "type": "object",
+      "description": "SP13 T-3: alias-type → canonical-type map (e.g. {\"skill-spec\": \"reference\"}). Lifted verbatim from gate-config.json#r32.type_aliases per freeze-with-marker discipline; hooks read this top-level slot. Interim location until SP13 T-6 pillar-shard decides final resting (frontmatter-rules.json#types.<canonical>.aliases is the leading candidate per the type-registry inversion +1 option).",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "r32_exempt_paths": {
+      "type": "array",
+      "description": "SP13 T-3: R-32 type-check exempt globs. Lifted verbatim from gate-config.json#r32.exempt_paths per freeze-with-marker discipline; distinct from r47_exempt_paths_composed (R-32 is the type-allowlist gate; R-47 is the tag-conformance gate). Interim location until SP13 T-6 pillar-shard.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "r47_tag_cap": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "SP13 T-3: per-file tag count cap. Lifted from gate-config.json#r47.tag_cap; default 25. Interim location until SP13 T-6 pillar-shard relocates to tagging-rules.json#taxonomy."
     },
     "types": {
       "type": "object",

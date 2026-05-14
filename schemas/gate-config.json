@@ -1,7 +1,33 @@
 {
   "schema_version": 1,
   "gate_manifest_schema": "https://stem.peter.dev/schemas/gate-config/v1.json",
-  "_provenance": "Authored Plan 80/81 SP01 T-1 on 2026-05-07. Verbatim lift from ~/.claude/hooks/pre-write-guard.sh hardcoded values. R-32 source: lines 803-863 + 1052-1069. R-47 source: lines 933-972 + 1073 (tag prefix grammar). R-37 source: line 25 + packet §3.3. NO semantic changes — pure externalization. Behavior-preserving validation deferred to T-16 fixture corpus + T-6 refactor.",
+  "_dissolved": true,
+  "_dissolved_marker": {
+    "status": "DISSOLVED — DO NOT AUTHOR HERE",
+    "frozen_at": "2026-05-14",
+    "dissolution_sp_task": "SP13 T-3",
+    "rationale": "This runtime-externalization config (authored Plan 80/81 SP01 T-1 to lift hook hardcodes) is superseded by the foundation-master.json bundle-at-load architecture per SP13 spec §Retirement list (Session 1 follow-on). Per OQ-13-4 'migrate-then-drop in same commit' + retirement-order discipline 'gate-config retires LAST gated on T-2 + T-3': T-3 absorbs the remaining runtime slices (r32_type_aliases + r32_exempt_paths + r47_tag_cap) into foundation-master.json top-level slots and migrates hooks to bundle-only reads, leaving this file frozen as backward-compatibility bridge. T-6 (Session 4) handles physical file deletion + pillar-shard destination decisions for the absorbed slices. Mirrors SP13 T-4 vault-schema freeze-with-marker pattern (feedback_freeze_with_marker_retirement_pattern).",
+    "canonical_successors": {
+      "r32.accepted_types (26 values = 21 canonical + 5 aliases)": "governance/foundation-master.json#types | keys (21 canonical) + foundation-master.json#r32_type_aliases | keys (5 aliases)",
+      "r32.type_aliases (5 alias→canonical entries)": "governance/foundation-master.json#r32_type_aliases (interim — T-6 pillar-shard decides final resting; type-registry inversion +1 option locates these under frontmatter-rules.json#types.<canonical>.aliases[])",
+      "r32.exempt_paths (4 R-32 exempt globs)": "governance/foundation-master.json#r32_exempt_paths (interim — T-6 pillar-shard decides final resting; frontmatter-rules.json is the leading candidate)",
+      "r32.schema_path field": "obsoleted by bundle-at-load (hooks no longer need a schema-path indirection; they read foundation-master.json directly)",
+      "r47.tag_dimensions (8 prefixes)": "governance/foundation-master.json#tagging.taxonomy.dimension_prefixes (canonical since SP13 T-4)",
+      "r47.exempt_paths (12 globs)": "governance/foundation-master.json#r47_exempt_paths_composed (composed union; canonical since SP13 T-4)",
+      "r47.tag_cap (integer 25)": "governance/foundation-master.json#r47_tag_cap (interim — T-6 pillar-shard relocates to tagging-rules.json#taxonomy)",
+      "r37.coupled_surfaces (3 lockstep declarations)": "governance/_index.json#pillars[].r37_coupled_surfaces (declared per-pillar since SP13 T-4)"
+    },
+    "consumer_migration_status": {
+      "hooks/pre-write-guard.sh": "MIGRATED in SP13 T-3 (this commit) — reads foundation-master.json bundle exclusively",
+      "hooks/post-write-verify.sh": "MIGRATED in SP13 T-3 (this commit) — reads foundation-master.json bundle exclusively (was also reading vault-schema.json + mandatory-files-rules.json directly; consolidated)",
+      "tools/build-foundation-master.sh": "READS THIS FILE (interim contributor for r32/r47 slot composition) — dependency drops at T-6 when this file is physically deleted and the absorbed slots either pillar-shard or stay bundle-only",
+      "install.sh schema-copy ship list": "PENDING SP13 T-6 + T-8 — remove gate-config.json from ship list when physical deletion happens",
+      "tests/*": "PENDING SP13 T-9 — update fixtures (currently any fixture asserting gate-config presence must be flipped to foundation-master.json equivalents)"
+    },
+    "policy": "(1) No new authoring against this file — all updates go to the named successors. (2) Content below is FROZEN as of 2026-05-14; reads from this file are NOT performed by hooks anymore (T-3 closed direct reads). (3) The file remains present as backward-compatibility bridge for tools/build-foundation-master.sh (interim contributor) until SP13 T-6 retires it physically. (4) The governance/_index.json `dissolved_schemas` registry tracks final-deletion gating.",
+    "registry_entry": "governance/_index.json#dissolved_schemas.\"schemas/gate-config.json\""
+  },
+  "_provenance": "Authored Plan 80/81 SP01 T-1 on 2026-05-07. Verbatim lift from ~/.claude/hooks/pre-write-guard.sh hardcoded values. R-32 source: lines 803-863 + 1052-1069. R-47 source: lines 933-972 + 1073 (tag prefix grammar). R-37 source: line 25 + packet §3.3. NO semantic changes — pure externalization. Behavior-preserving validation deferred to T-16 fixture corpus + T-6 refactor. DISSOLVED SP13 T-3 2026-05-14: hooks no longer read this file directly; absorbed slices live in foundation-master.json. See _dissolved_marker block above.",
   "r32": {
     "enabled": true,
     "schema_path": "$CLAUDE_HOME/schemas/vault-schema.json",

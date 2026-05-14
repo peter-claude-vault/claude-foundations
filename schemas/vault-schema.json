@@ -18,9 +18,10 @@
       "_tag_prefixes + _tag_prefixes_meta": "governance/tagging-rules.json#taxonomy"
     },
     "consumer_migration_status": {
-      "governance_authoring_pillars": "MIGRATED in SP13 T-4 (this commit)",
-      "hooks/pre-write-guard.sh + hooks/post-write-verify.sh": "PENDING SP13 T-3 (Session 3) — migrate to foundation-master.json reads",
-      "hooks/config/gate-config.json schema_path field": "PENDING SP13 T-6 (gate-config retirement)",
+      "governance_authoring_pillars": "MIGRATED in SP13 T-4 (2026-05-14 commit c4c79ea)",
+      "hooks/pre-write-guard.sh": "MIGRATED in SP13 T-3 (2026-05-14 this commit) — reads foundation-master.json bundle exclusively (SCHEMA_FILE direct-read removed; UPDATED_IN_SCHEMA + REQUIRED_FIELDS + CONDITIONAL_FIELDS now read from bundle.types[$key])",
+      "hooks/post-write-verify.sh": "MIGRATED in SP13 T-3 (2026-05-14 this commit) — reads foundation-master.json bundle exclusively (python schema extraction now bundle.types; was vault-schema.json top level)",
+      "hooks/config/gate-config.json schema_path field": "DISSOLVED in SP13 T-3 (2026-05-14 this commit) — gate-config dissolved with marker; physical retirement T-6",
       "install.sh schema-copy ship list": "PENDING SP13 T-8 — remove vault-schema from ship list",
       "onboarding/bootstrap-schemas.sh _tag_prefixes assertion": "PENDING SP13 T-8 — replace with tagging-rules.json assertion",
       "tests/*": "PENDING SP13 T-9 — update fixtures",

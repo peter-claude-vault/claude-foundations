@@ -6,7 +6,16 @@ set -euo pipefail
 source "$HOME/.claude/hooks/lib/paths.sh"
 source "$HOME/.claude/hooks/lib/registry.sh"
 
-SCHEMA_FILE="$SCHEMAS_DIR/vault-schema.json"
+# =============================================================================
+# SP13 T-3 (2026-05-14) — foundation-master.json bundle-at-load
+# =============================================================================
+# Single governance read source per hook invocation. Replaces direct reads of:
+#   - schemas/vault-schema.json    (DISSOLVED SP13 T-4 — types absorbed)
+#   - governance/mandatory-files-rules.json  (consumed via bundle.mandatory_files)
+# $FOUNDATION_MASTER_PATH override mirrors pre-write-guard.sh test-isolation
+# contract. Missing bundle → fail-OPEN (same posture as legacy SCHEMA_FILE
+# missing-file behavior).
+FOUNDATION_MASTER="${FOUNDATION_MASTER_PATH:-$HOME/Code/claude-stem/governance/foundation-master.json}"
 
 # Parse stdin
 INPUT=$(cat)
@@ -17,8 +26,8 @@ if [[ -z "$FILE_PATH" ]] || [[ "$FILE_PATH" != "$VAULT_ROOT/"* ]]; then
   exit 0
 fi
 
-# Skip if schema doesn't exist
-if [[ ! -f "$SCHEMA_FILE" ]]; then
+# Skip if bundle doesn't exist (fail-OPEN; T-8 install.sh ships the bundle)
+if [[ ! -f "$FOUNDATION_MASTER" ]]; then
   exit 0
 fi
 
@@ -94,7 +103,9 @@ if [[ -z "$FRONTMATTER" ]]; then
 fi
 
 # Validate YAML and check required fields in one python3 call.
-# Schema path passed via argv (not hardcoded) so $SCHEMAS_DIR overrides honor.
+# SP13 T-3 (2026-05-14): schema_file is now foundation-master.json; extract
+# the `.types` subtree (shape-compatible with the dissolved vault-schema.json
+# per-type-key registry).
 RESULT=$(python3 -c "
 import yaml, json, sys
 
@@ -112,9 +123,10 @@ except yaml.YAMLError as e:
     print(f'YAML_ERROR|YAML parse error: {msg}')
     sys.exit(0)
 
-# Load schema
+# Load schema — bundle.types subtree (SP13 T-3: was vault-schema.json top level)
 try:
-    schema = json.load(open(schema_file))
+    bundle = json.load(open(schema_file))
+    schema = bundle.get('types', {})
 except Exception:
     sys.exit(0)
 
@@ -173,7 +185,7 @@ if missing:
     print(f'MISSING|{fields}|{schema_key}')
 else:
     print('OK')
-" "$REL_PATH" "$SCHEMA_FILE" <<< "$FRONTMATTER" 2>&1)
+" "$REL_PATH" "$FOUNDATION_MASTER" <<< "$FRONTMATTER" 2>&1)
 
 # --- R-38 + R-39 content advisories (Tier 1, combined emission) ---
 # R-38: blockquote summary on >200-line non-allowlisted files
@@ -289,15 +301,18 @@ fi
 # Tier 1 surface per the contract but deferred to a subsequent commit (the bootstrap
 # is the load-bearing structural mandate; live-sync is convenience surfaced by the
 # Tier 2 daily sweep). Search this file for [SP03-Session-20-live-sync-deferred].
-GOVERNANCE_MANDATES_FILE="${GOVERNANCE_DIR:-$HOME/.claude/governance}/mandatory-files-rules.json"
-if [[ -f "$GOVERNANCE_MANDATES_FILE" ]]; then
+# SP13 T-3 (2026-05-14): exemption_paths sourced from foundation-master.json
+# bundle (.mandatory_files.mandates._index_md.exemption_paths) instead of the
+# direct read of governance/mandatory-files-rules.json. $FOUNDATION_MASTER
+# resolves from $FOUNDATION_MASTER_PATH override → foundation-repo default.
+if [[ -f "$FOUNDATION_MASTER" ]]; then
   FOLDER_DIR=$(dirname "$FILE_PATH")
   SIBLING_INDEX="$FOLDER_DIR/_index.md"
   if [[ ! -f "$SIBLING_INDEX" ]]; then
-    BOOTSTRAP_RESULT=$(python3 - "$FOLDER_DIR" "$SIBLING_INDEX" "$FILE_PATH" "$VAULT_ROOT" "$GOVERNANCE_MANDATES_FILE" <<'PY' 2>&1 || true
+    BOOTSTRAP_RESULT=$(python3 - "$FOLDER_DIR" "$SIBLING_INDEX" "$FILE_PATH" "$VAULT_ROOT" "$FOUNDATION_MASTER" <<'PY' 2>&1 || true
 import sys, os, json, fnmatch, datetime
 
-folder_dir, sibling_index, file_path, vault_root, mandates_file = sys.argv[1:6]
+folder_dir, sibling_index, file_path, vault_root, bundle_file = sys.argv[1:6]
 
 # Bail out cleanly if folder is not under vault root
 if not folder_dir.startswith(vault_root + os.sep) and folder_dir != vault_root:
@@ -311,13 +326,15 @@ if not rel_folder:
     print("SKIP: vault root")
     sys.exit(0)
 
-# Load exemption list from mandatory-files-rules.json
+# Load exemption list from foundation-master.json#mandatory_files.mandates._index_md.exemption_paths
+# (SP13 T-3: was governance/mandatory-files-rules.json#mandates._index_md.exemption_paths)
 try:
-    with open(mandates_file) as fh:
-        mandates = json.load(fh)
+    with open(bundle_file) as fh:
+        bundle = json.load(fh)
+    mandates = bundle.get("mandatory_files", {})
     exempt_globs = mandates.get("mandates", {}).get("_index_md", {}).get("exemption_paths", [])
 except Exception as e:
-    print(f"SKIP: mandates file unreadable: {e}")
+    print(f"SKIP: bundle file unreadable: {e}")
     sys.exit(0)
 
 # Match folder against exemption globs (fnmatch on the **/* glob shape)
