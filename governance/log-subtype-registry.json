@@ -3,8 +3,8 @@
   "_description": "Canonical enumeration of `#log/*` and `#status/*` system-utility tag subtype values. Source of truth for the pre-write-guard hook's near-match DENY discipline (R-05) and the librarian log-subtype-canonical audit. Foundation seeds the operational subtypes that ship with foundation skills + crons; adopters extend via Layer 3 overlay at `log_subtype_registry_overlay.json` (sibling location post-install).",
   "_design_notes": {
     "consumer": "pre-write-guard.sh tag-validation branch (R-05 near-match DENY); librarian log-subtype-canonical capability (audit-time drift detection); skill-side `log_subtype:` SKILL.md declaration contract",
-    "lockstep_pair": "governance/tagging-rules.json R-05 + governance/librarian-capabilities/log-subtype-canonical.md + schemas/vault-schema.json _tag_prefixes_meta system_utility_dimensions",
-    "evolution_protocol": "R-37 atomic lockstep — registry additions require updating tagging-rules.json R-05 + the capability spec + the schema's _tag_prefixes_meta + this registry in one commit. Adopter-side additions land at log_subtype_registry_overlay.json (Layer 3); no foundation-repo commit required for adopter operational subtypes.",
+    "lockstep_pair": "governance/tagging-rules.json R-05 + governance/librarian-capabilities/log-subtype-canonical.md + governance/tagging-rules.json#taxonomy.system_utility_dimensions (SP13 T-4 absorbed from dissolved schemas/vault-schema.json _tag_prefixes_meta system_utility_dimensions)",
+    "evolution_protocol": "R-37 atomic lockstep — registry additions require updating tagging-rules.json R-05 + the capability spec + tagging-rules.json#taxonomy.system_utility_dimensions + this registry in one commit. Adopter-side additions land at overlay-master.tagging.taxonomy.dimension_prefixes per canonical §H; no foundation-repo commit required for adopter operational subtypes.",
     "source_dependencies": [
       "../research/vault-construction/tagging-strategy.md",
       "../docs/decisions/0004-system-utility-dimension-exemption.md"

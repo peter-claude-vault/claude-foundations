@@ -276,15 +276,15 @@
   "_meta": {
     "_provenance": "SP13 T-2 build. Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
     "build_tool": "tools/build-foundation-master.sh",
-    "built_at": "2026-05-14T22:56:08Z",
-    "bundle_version": "7892a42a14cd7d33a133322d1ec6829674cc68f7b3a76302db80cc4aa1767751",
+    "built_at": "2026-05-14T22:59:08Z",
+    "bundle_version": "24218946bc7dc417a005357e00f3c0417692a88b4f1c0988c9bd84b8a334f548",
     "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
     "source_file_mtimes": {
       "governance/_index.json": "2026-05-14T22:48:35Z",
       "governance/doc-dependencies.json": "2026-05-12T21:59:36Z",
       "governance/frontmatter-rules.json": "2026-05-14T19:41:02Z",
       "governance/mandatory-files-rules.json": "2026-05-14T22:48:15Z",
-      "governance/naming-rules.json": "2026-05-14T22:48:04Z",
+      "governance/naming-rules.json": "2026-05-14T22:58:02Z",
       "governance/tagging-rules.json": "2026-05-14T19:42:11Z"
     },
     "source_files_count": 6
@@ -1457,14 +1457,15 @@
         ]
       },
       {
+        "_checklist_items_provenance": "SP13 Session 4 Phase 1d follow-on (2026-05-14): item 3 generalized from `Vault Architecture.md (or the relevant pillar spoke)` to `the relevant Vault Architecture/ narrative spoke (one of the 6 per canonical §D)` — vault-root Vault Architecture.md governed by file-type-contract per canonical §C, but the spoke-update reference belongs to the 6 spokes in Vault Architecture/ folder. Item 4 flipped from dissolved schemas/vault-schema.json to canonical successors per `_index.json#dissolved_schemas`. Item 7 generalized 'four surfaces' to 'all surfaces' (Phase 1a expanded the pillar set to 6 + bundle + spokes; explicit count would drift).",
         "checklist_items": [
           "Declare purpose — what archetype/content the directory holds",
           "Declare consumer — which skill, hook, capability, or query parses this path",
-          "Update Vault Architecture.md (or the relevant pillar spoke)",
-          "Add vault-schema.json archetype + frontmatter contract",
+          "Update the relevant Vault Architecture/ narrative spoke (one of the 6 per canonical §D)",
+          "Add governance/frontmatter-rules.json#types entry + governance/file-type-contracts/<file>.json body-structure contract (the latter only if the new root carries a foundation-shipped mandatory file)",
           "Extend pre-write-guard.sh known-root list (R-04 allowlist update)",
           "Add librarian-capability entry (placement-validation / plan-index / walker)",
-          "Commit R-37 atomic lockstep — all four surfaces move in one commit"
+          "Commit R-37 atomic lockstep — all surfaces move in one commit"
         ],
         "enforcement_layer": [
           "vault CLAUDE.md documentary",
