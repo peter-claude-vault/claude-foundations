@@ -99,7 +99,7 @@ The capability reads from (in order):
 
 1. **`governance/mandatory-files-rules.json`** — `mandates._index_md` (matcher + exemption list).
 2. **`governance/file-type-contracts/_index.md.json`** — body-structure contract (sentinel markers, columns, ordering, fallback rules).
-3. **`governance/frontmatter-rules.json`** — `#types.index` (frontmatter contract) + `#archetype_conditional_fields` (depth-conditional parent_folder semantics; SP13 T-4 absorbed from dissolved schemas/vault-schema.json).
+3. **`governance/frontmatter-rules.json`** — `#types.index` (frontmatter contract) + `#archetype_conditional_fields` (depth-conditional parent_folder semantics; dissolved from schemas/vault-schema.json in SP13 T-4).
 4. **`governance/enforcement-map.schema.json`** — schema validation gate for the mandatory-files pillar JSON.
 5. **Adopter Layer-3 overlays** — `$CLAUDE_HOME/governance/file-type-contracts/_index.md.adopter.json` (if present); shadows foundation per R-52 with `_override_reason`.
 6. **Vault walk** — every folder under the configured vault root, filtered by `mandates._index_md.exemption_paths`.

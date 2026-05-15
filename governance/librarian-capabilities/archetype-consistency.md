@@ -93,7 +93,7 @@ This contract is an R-37 lockstep peer with:
 
 - `governance/frontmatter-rules.json` R-41 (the rule entry this capability audits)
 - `governance/tagging-rules.json` R-51 (the write-time sibling enforcing archetype-enum at write)
-- `governance/frontmatter-rules.json` `archetype_conditional_fields` + `archetype_enum` (the canonical declarations; SP13 T-4 absorbed from dissolved schemas/vault-schema.json)
+- `governance/frontmatter-rules.json` `archetype_conditional_fields` + `archetype_enum` (canonical declarations; dissolved from schemas/vault-schema.json in SP13 T-4)
 - `onboarding/scaffold/vault-architecture/Vault Architecture - Frontmatter.md` §Archetype Extension Protocol (narrative spoke)
 - `onboarding/scaffold/vault-architecture/Vault Architecture - Tagging.md` §Per-archetype dimension renaming (narrative spoke)
 

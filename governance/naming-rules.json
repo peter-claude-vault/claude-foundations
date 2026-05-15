@@ -45,7 +45,7 @@
       "source": "ENFORCEMENT-MAP.md R-10 + vault CLAUDE.md New Structure Checklist + ../research/vault-construction/file-naming-conventions.md",
       "enforcement_layer": ["vault CLAUDE.md documentary", "pre-write-guard.sh (R-04 surface)", "librarian manifest schema-completeness"],
       "failure_mode": "New top-level directories created mid-session without schema/hook/librarian/Vault-Architecture entries. Produces orphan roots invisible to walkers. Source: production-scale folder-drift incident (~20 orphan folders cleaned in a single vault cleanup pass).",
-      "rule_text": "Adding a new vault-root directory requires walking the 7-item New Structure Checklist deliberately. The checklist binds CLAUDE.md, vault-schema, hooks, and librarian into R-37 atomic lockstep so a new root cannot land in isolation.",
+      "rule_text": "Adding a new vault-root directory requires walking the 7-item New Structure Checklist deliberately. The checklist binds CLAUDE.md, governance pillars (frontmatter-rules.json + file-type-contracts), hooks, and librarian into R-37 atomic lockstep so a new root cannot land in isolation.",
       "checklist_items": [
         "Declare purpose — what archetype/content the directory holds",
         "Declare consumer — which skill, hook, capability, or query parses this path",

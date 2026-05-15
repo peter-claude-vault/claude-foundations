@@ -276,15 +276,15 @@
   "_meta": {
     "_provenance": "SP13 T-2 build. Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
     "build_tool": "tools/build-foundation-master.sh",
-    "built_at": "2026-05-15T00:00:40Z",
-    "bundle_version": "90ad2bd59a8df75b82f124ef24adcb00ea535e28c18bbf76b2f7571f6d974228",
+    "built_at": "2026-05-15T21:57:02Z",
+    "bundle_version": "3159af87839c2f17c240d2f4e3cfcaa1c0817bd9edd3df5442766dfaa4e487c0",
     "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
     "source_file_mtimes": {
       "governance/_index.json": "2026-05-14T22:48:35Z",
       "governance/doc-dependencies.json": "2026-05-12T21:59:36Z",
       "governance/frontmatter-rules.json": "2026-05-14T23:52:32Z",
       "governance/mandatory-files-rules.json": "2026-05-14T22:48:15Z",
-      "governance/naming-rules.json": "2026-05-14T22:58:02Z",
+      "governance/naming-rules.json": "2026-05-15T21:55:14Z",
       "governance/tagging-rules.json": "2026-05-15T00:00:30Z"
     },
     "source_files_count": 6
@@ -537,7 +537,7 @@
       "_design_notes": {
         "consumer": "hooks/post-write-verify.sh — Tier 1 auto-bootstrap + live-sync on every Edit/Write tool call to a vault folder; skills/librarian/capabilities/index-maintain.sh — Tier 2 audit sweep + Tier 3 --deep semantic validation (SP05 implements per the SP03-authors-contract / SP05-implements pattern)",
         "evolution_protocol": "R-37 atomic lockstep — runtime artifact + frontmatter-rules.json#types.index + mandatory-files-rules.json mandates entry + Mandatory-Files spoke + target-state spec updated in one commit",
-        "lockstep_pair": "governance/frontmatter-rules.json#types.index (frontmatter contract; SP13 T-4 absorbed from dissolved schemas/vault-schema.json) + governance/mandatory-files-rules.json `mandates._index_md` (matcher + exemption list) + Vault Architecture - Mandatory-Files.md (narrative spoke) + target-state/_index.md-design/* (design source)",
+        "lockstep_pair": "governance/frontmatter-rules.json#types.index (frontmatter contract; dissolved from schemas/vault-schema.json in SP13 T-4) + governance/mandatory-files-rules.json `mandates._index_md` (matcher + exemption list) + Vault Architecture - Mandatory-Files.md (narrative spoke) + target-state/_index.md-design/* (design source)",
         "shape_optimization_for_hooks": "Single-document JSON loadable in one `jq` pass; flat keys for sentinel patterns, regexes, columns ordered by `position` (1-indexed); enums resolved to concrete arrays (no PLACEHOLDER strings). Adopter Layer-3 overlays at $CLAUDE_HOME/governance/file-type-contracts/_index.md.adopter.json shadow this file per R-52 with `_override_reason` discipline."
       },
       "body_structure": {
@@ -559,7 +559,7 @@
             },
             {
               "derivation": "extracted from the referenced file's frontmatter `type:` field",
-              "enum_source": "governance/frontmatter-rules.json#types (entry keys excluding underscore-prefixed metadata blocks; SP13 T-4 absorbed from dissolved schemas/vault-schema.json)",
+              "enum_source": "governance/frontmatter-rules.json#types (entry keys excluding underscore-prefixed metadata blocks; dissolved from schemas/vault-schema.json in SP13 T-4)",
               "name": "Type",
               "position": 3,
               "value_type": "enum"
@@ -1479,7 +1479,7 @@
         "failure_mode": "New top-level directories created mid-session without schema/hook/librarian/Vault-Architecture entries. Produces orphan roots invisible to walkers. Source: production-scale folder-drift incident (~20 orphan folders cleaned in a single vault cleanup pass).",
         "id": "R-10",
         "pillar": "naming",
-        "rule_text": "Adding a new vault-root directory requires walking the 7-item New Structure Checklist deliberately. The checklist binds CLAUDE.md, vault-schema, hooks, and librarian into R-37 atomic lockstep so a new root cannot land in isolation.",
+        "rule_text": "Adding a new vault-root directory requires walking the 7-item New Structure Checklist deliberately. The checklist binds CLAUDE.md, governance pillars (frontmatter-rules.json + file-type-contracts), hooks, and librarian into R-37 atomic lockstep so a new root cannot land in isolation.",
         "source": "ENFORCEMENT-MAP.md R-10 + vault CLAUDE.md New Structure Checklist + ../research/vault-construction/file-naming-conventions.md",
         "tier": "3"
       },

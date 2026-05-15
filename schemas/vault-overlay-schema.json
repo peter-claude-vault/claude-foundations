@@ -73,7 +73,7 @@
           "denied_types": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "deny-list-kind entries: vault-schema type values denied in the primary_dir scope."
+            "description": "deny-list-kind entries: registered frontmatter type values (governance/frontmatter-rules.json#types) denied in the primary_dir scope."
           },
           "rationale": {
             "type": "string",
@@ -86,7 +86,7 @@
           "path_inferred_exceptions": {
             "type": "array",
             "items": {"type": "string"},
-            "description": "vault-schema type values whose path-inference exempts them from the entry's union check (cross-file-type-union kind)."
+            "description": "registered frontmatter type values (governance/frontmatter-rules.json#types) whose path-inference exempts them from the entry's union check (cross-file-type-union kind)."
           },
           "rename_history": {
             "type": "array",

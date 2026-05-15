@@ -125,7 +125,7 @@ The skill-declaration is the source-of-truth for the registry's `owner_skill` / 
 - `governance/log-subtype-registry.json` (this registry)
 - `governance/tagging-rules.json` R-05 (the canonical rule consuming the registry)
 - `governance/librarian-capabilities/log-subtype-canonical.md` (this contract)
-- `governance/tagging-rules.json#taxonomy.system_utility_dimensions` (SP13 T-4 absorbed from dissolved schemas/vault-schema.json `_tag_prefixes_meta system_utility_dimensions`)
+- `governance/tagging-rules.json#taxonomy.system_utility_dimensions` (dissolved from schemas/vault-schema.json `_tag_prefixes_meta system_utility_dimensions` in SP13 T-4)
 - `onboarding/scaffold/vault-architecture/Vault Architecture - Tagging.md §System-utility dimension exemption` (narrative spoke)
 - `hooks/pre-write-guard.sh tag-validation branch` (runtime hook)
 
@@ -147,4 +147,4 @@ The contract is specified here; a downstream implementation sub-plan delivers:
 - Layer-3 collision tiebreaker: ADR-0006 (R-52) — write-time DENY in pre-write-guard.sh; this contract's Layer-1 hook is the relevant write-time enforcement surface for log-subtype collisions
 - Unified registration flow: T-38 governance-authoring hook (absorbs Session-02b "Hook A" pattern; SP03 plan-tree task entry)
 - Narrative spoke: `Vault Architecture - Tagging.md §System-utility dimension exemption`
-- Schema: `governance/tagging-rules.json#taxonomy.system_utility_dimensions` (SP13 T-4 absorbed from dissolved schemas/vault-schema.json)
+- Schema: `governance/tagging-rules.json#taxonomy.system_utility_dimensions` (canonical; dissolved from schemas/vault-schema.json in SP13 T-4)

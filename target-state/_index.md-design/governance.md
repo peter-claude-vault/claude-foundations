@@ -15,7 +15,7 @@ The `_index.md` mandate + structural-requirements contract are enforced by a sma
 
 ### Hooks
 
-- **`pre-write-guard.sh`** (existing) — Tier 2 DENY for unknown `type:` values via R-32; reads `schemas/vault-schema.json`; enforces frontmatter compliance at write time on every Edit/Write tool call.
+- **`pre-write-guard.sh`** (existing) — Tier 2 DENY for unknown `type:` values via R-32; reads `governance/foundation-master.json` (bundle-at-load per SP13 T-3); enforces frontmatter compliance at write time on every Edit/Write tool call.
 - **`post-write-verify.sh`** (existing, EXTENDED for `_index.md`) — original role: post-write schema validation + advisory cascade emission. New role: Tier 1 live-sync of `_index.md` on every Edit/Write tool call to a vault folder + auto-bootstrap at first-write to a non-exempt folder lacking one + one-line `_index.md` self-exempt loop guard at entry. See §Maintenance architecture below.
 
 ### Librarian capabilities

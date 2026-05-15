@@ -98,9 +98,9 @@
           "position": 3,
           "name": "Type",
           "value_type": "enum",
-          "enum_source": "schemas/vault-schema.json#types",
+          "enum_source": "governance/frontmatter-rules.json#types",
           "derivation": "extracted from the referenced file's frontmatter `type:` field",
-          "rationale": "Structural role identifier — distinguishes the engagement's overview from reference from people without needing separate sectioning; R-32-enforced via vault-schema.json"
+          "rationale": "Structural role identifier — distinguishes the engagement's overview from reference from people without needing separate sectioning; R-32-enforced via foundation-master.json (bundle-at-load)"
         },
         {
           "position": 4,

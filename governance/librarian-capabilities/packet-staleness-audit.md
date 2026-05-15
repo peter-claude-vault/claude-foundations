@@ -76,7 +76,7 @@ Adopters extend the threshold map via Layer 3 overlay-master at `overlay-master.
 
 The capability reads from (in order):
 
-1. **`governance/frontmatter-rules.json`** — `types.packet.required.last_reviewed` (validates the field is contract-required); `packet_only_fields` (full packet field set; SP13 T-4 absorbed from dissolved schemas/vault-schema.json).
+1. **`governance/frontmatter-rules.json`** — `types.packet.required.last_reviewed` (validates the field is contract-required); `packet_only_fields` (full packet field set; dissolved from schemas/vault-schema.json in SP13 T-4).
 2. **`overlay-master.packet_staleness_thresholds`** (Layer 3 overlay; optional) — per-altitude threshold extensions / overrides.
 3. **`research/vault-construction/*.md`** + adopter packet roots (configured at install time) — every file with `type: packet` is in scope.
 
@@ -88,7 +88,7 @@ The capability reads from (in order):
 
 ## R-37 lockstep coupled surfaces
 
-- `governance/frontmatter-rules.json` `types.packet.required.last_reviewed` + `packet_only_fields` (SP13 T-4 absorbed from dissolved schemas/vault-schema.json)
+- `governance/frontmatter-rules.json` `types.packet.required.last_reviewed` + `packet_only_fields` (dissolved from schemas/vault-schema.json in SP13 T-4)
 - `research/vault-construction/frontmatter-design.md` §Packet-only fields (the canonical narrative on the packet-only field class)
 - Adopter Layer 3 `overlay-master.packet_staleness_thresholds` (when present)
 
@@ -111,7 +111,7 @@ The packet-staleness audit ships alongside the `log-archive` capability (`skills
 
 ## References
 
-- Packet schema: `governance/frontmatter-rules.json` `types.packet` entry (SP13 T-4 absorbed from dissolved schemas/vault-schema.json)
+- Packet schema: `governance/frontmatter-rules.json` `types.packet` entry (dissolved from schemas/vault-schema.json in SP13 T-4)
 - Research narrative: `research/vault-construction/frontmatter-design.md` §Packet-only fields
 - Companion capability: `skills/librarian/capabilities/log-archive.sh`
 - Launchd template: `templates/launchd/com.logs-audit.plist.tmpl`

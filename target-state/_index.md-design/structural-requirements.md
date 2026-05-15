@@ -34,7 +34,7 @@ Optional: `description:` (one-line scope description); `provides:` (cross-folder
 
 | Field | Role |
 |---|---|
-| `type: index` | Maps to the canonical type enumeration in `schemas/vault-schema.json`; R-32 Tier 2 DENY rejects unknown types |
+| `type: index` | Maps to the canonical type enumeration in `governance/frontmatter-rules.json#types`; R-32 Tier 2 DENY rejects unknown types |
 | `parent_folder:` | Path string relative to vault root, naming the parent folder of this `_index.md`. **Mandatory at depth ≥ 2** (any `_index.md` not directly under vault root). **Omitted at depth 1** (e.g., `Engagements/_index.md`, `Reference/_index.md` — the "parent" is the vault root itself, which is not a folder in the meaningful sense). Gives Claude a programmatic parent-pointer for index-tree traversal without path-parsing. Auto-populated by the bootstrap hook; librarian `index-maintain` audits for path-vs-frontmatter drift. |
 | `tags:` | Mandatory because `_index.md` files participate in the folder-mirrors-tag invariant. Tag matches the folder's structural-dimension lineage — `Engagements/<X>/_index.md` carries `#engagement/<X>`; `Reference/_index.md` carries `#scope/reference` |
 | `updated:` | ISO date; bumped by every machine-maintenance pass on the file |
@@ -86,5 +86,5 @@ For light-content folders, a prose "Current Contents" section replaces the table
 - Machine contract: [`structural-requirements.json`](./structural-requirements.json) — the JSON schema/contract that hooks and librarian capabilities consume to validate `_index.md` files
 - Source packet: [`research/vault-construction/_index.md-design.md`](../../research/vault-construction/_index.md-design.md)
 - Companion specs in this folder: [`conventions-and-rationale.md`](./conventions-and-rationale.md) (rationale), [`governance.md`](./governance.md) (enforcement)
-- Frontmatter contract for the `index` type entry: `schemas/vault-schema.json#types.index` (canonical) + governance JSON registry `governance/frontmatter-rules.json` (runtime)
+- Frontmatter contract for the `index` type entry: `governance/frontmatter-rules.json#types.index` (canonical per SP13 T-4; dissolved from schemas/vault-schema.json)
 - Folder-lineage convention: [`frontmatter-design.md`](../../research/vault-construction/frontmatter-design.md) §Folder-lineage convention
