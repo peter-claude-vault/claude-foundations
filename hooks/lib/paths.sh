@@ -17,6 +17,7 @@ export HOOKS_DIR="$CLAUDE_HOME/hooks"
 export HOOKS_STATE="$HOOKS_DIR/state"
 export SCHEMAS_DIR="$CLAUDE_HOME/schemas"
 export GOVERNANCE_DIR="$CLAUDE_HOME/governance"                     # pillar registries + file-type contracts + librarian-capability contracts (SP03 Session 20)
+export FOUNDATION_MASTER="$GOVERNANCE_DIR/foundation-master.json"   # composed governance bundle (SP13 P1.5 2026-05-15) — bundle-at-load runtime read for hooks per canonical §B
 export CRON_WRAPPERS="$CLAUDE_HOME/orchestrator/cron-wrappers"     # system-wide cron wrapper home (spine-remediation Session 15, 2026-04-14)
 
 # Git infrastructure (spine-remediation Session 08, 2026-04-14)

@@ -7,7 +7,6 @@ set -euo pipefail
 source "$HOME/.claude/hooks/lib/paths.sh"
 source "$HOME/.claude/hooks/lib/registry.sh"
 
-SCHEMA_FILE="$SCHEMAS_DIR/vault-schema.json"
 INPUT=$(cat)
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
 
@@ -15,7 +14,9 @@ if [[ -z "$SESSION_ID" ]]; then
   exit 0
 fi
 
-if [[ ! -f "$SCHEMA_FILE" ]]; then
+# SP13 P1.5 (2026-05-15): bundle-at-load — read composed governance bundle
+# per canonical §B; vault-schema.json was dissolved per SP13 T-4 pillar shard.
+if [[ ! -f "$FOUNDATION_MASTER" ]]; then
   exit 0
 fi
 
@@ -73,11 +74,10 @@ while IFS= read -r rel_path; do
     continue
   fi
 
-  SCHEMA_KEY=$(jq -r --arg t "$FILE_TYPE" 'if has($t) then $t else "" end' "$SCHEMA_FILE" 2>/dev/null || true)
+  SCHEMA_KEY=$(jq -r --arg t "$FILE_TYPE" 'if .frontmatter.types | has($t) then $t else "" end' "$FOUNDATION_MASTER" 2>/dev/null || true)
   if [[ -z "$SCHEMA_KEY" ]]; then
     case "$FILE_TYPE" in
       skill-spec|tier-2) SCHEMA_KEY="reference" ;;
-      overview|updates)  SCHEMA_KEY="engagement" ;;
       file-index)        SCHEMA_KEY="index" ;;
       *) ;;
     esac
@@ -89,7 +89,7 @@ while IFS= read -r rel_path; do
     continue
   fi
 
-  REQUIRED=$(jq -r --arg k "$SCHEMA_KEY" '.[$k].required // [] | .[]' "$SCHEMA_FILE" 2>/dev/null || true)
+  REQUIRED=$(jq -r --arg k "$SCHEMA_KEY" '.frontmatter.types[$k].required // [] | .[]' "$FOUNDATION_MASTER" 2>/dev/null || true)
   MISSING=""
   for field in $REQUIRED; do
     [[ "$field" == "type" ]] && continue
