@@ -18,14 +18,17 @@
     ]
   },
   "taxonomy": {
-    "_description": "Eight-dimension faceted taxonomy (SP13 T-4: canonical authority; absorbed from dissolved vault-schema._tag_prefixes + _tag_prefixes_meta). Six user-facing dimensions subject to the 25-cap (R-50); two system-utility dimensions exempt per ADR-0004 and governed by the log-subtype registry (R-05). Adopters extend via Layer 3 overlay-master.json using per-archetype synonym dictionaries.",
+    "_description": "Faceted tag taxonomy (SP13 T-4 2026-05-14: canonical authority; absorbed from dissolved vault-schema._tag_prefixes + _tag_prefixes_meta. SP13 Phase 1c 2026-05-14: foundation user_facing_dimensions abstracted to [] empty per canonical §G+§H — concrete user-facing dimensions belong to adopter overlay-master.tagging.taxonomy.dimension_prefixes + .user_facing_dimensions, populated by onboarding archetype seeds at install time). Foundation ships taxonomy SHAPE + system-utility dimensions (status, log) governed by log-subtype-registry per ADR-0004. Runtime allowlist = foundation + overlay-master union (hook union-resolve implementation lands in SP13 T-7 hook audit + T-8 install scope).",
     "canonical_authority": "governance/tagging-rules.json#taxonomy (SP13 T-4 absorbed from former schemas/vault-schema.json)",
     "tag_pattern_regex": "^#[a-z][a-z0-9-]*/[a-z0-9][a-z0-9-]*$",
-    "dimension_prefixes": ["engagement", "project", "scope", "initiative", "artefact-bd", "about-me", "status", "log"],
-    "user_facing_dimensions": ["engagement", "project", "scope", "initiative", "artefact-bd", "about-me"],
+    "dimension_prefixes": ["status", "log"],
+    "user_facing_dimensions": [],
     "system_utility_dimensions": ["status", "log"],
     "cap_25_applies_to": "user_facing_dimensions",
-    "system_utility_governance": "log-subtype-registry (canonical values per dimension; near-match DENY via R-05)"
+    "system_utility_governance": "log-subtype-registry (canonical values per dimension; near-match DENY via R-05)",
+    "_adopter_extension_path": "overlay-master.tagging.taxonomy.dimension_prefixes[] + .user_facing_dimensions[]",
+    "_onboarding_seed_location_pending": "onboarding/scaffold/archetype-seeds/<archetype>.json (deferred to onboarding successor sub-plan; consultant seed candidate user-facing dimensions: engagement, project, scope, initiative per Session 5 Phase 1c lock 2026-05-14)",
+    "_runtime_allowlist_resolution_pending": "Hook union-resolve over foundation-master.tagging.taxonomy.dimension_prefixes + overlay-master.tagging.taxonomy.dimension_prefixes — implementation lands in SP13 T-7 hook audit + T-8 install scope"
   },
   "rules": [
     {
@@ -42,9 +45,9 @@
       "pillar": "tagging",
       "tier": "2",
       "source": "ENFORCEMENT-MAP.md R-32 + ../research/vault-construction/tagging-strategy.md Rules 2 and 4 (hierarchical prefix grammar + no freeform tags)",
-      "enforcement_layer": ["pre-write-guard.sh tag-validation branch (write-time DENY)", "governance/tagging-rules.json#taxonomy.dimension_prefixes (allowlist authority — SP13 T-4 absorbed from dissolved vault-schema._tag_prefixes)"],
+      "enforcement_layer": ["pre-write-guard.sh tag-validation branch (write-time DENY)", "Runtime allowlist authority = union of foundation-master.tagging.taxonomy.dimension_prefixes (foundation; SP13 T-4 absorbed from dissolved vault-schema._tag_prefixes; SP13 Phase 1c 2026-05-14 abstracted user-facing to []) + overlay-master.tagging.taxonomy.dimension_prefixes (adopter; populated by onboarding archetype seeds at install time). Hook union-resolve lands in SP13 T-7 + T-8 scope."],
       "failure_mode": "Freeform tagging produces folksonomy drift within months at scale. Synonymous content scatters across variant spellings (meeting / meetings / meeting-notes), case variants (client-a / ClientA / client_a), and one-off ad-hoc dimensions (#priority/*, #urgency/*). The user-side graph degrades silently — every file carries tags, no query returns the right set. Write-time DENY converts the silent failure into a visible governance signal at the moment of capture.",
-      "rule_text": "Every tag MUST match the hierarchical grammar `#dimension/value` where dimension is one of the registered prefixes in governance/tagging-rules.json `taxonomy.dimension_prefixes` and value is a kebab-case slug matching [a-z0-9-]. The pre-write-guard hook DENIES any tag that fails the regex or starts with an unregistered prefix. The DENY message enumerates the non-conforming tags. Adopters either pick a tag from the registered vocabulary, omit the tag (the file remains legible to Claude via its frontmatter fields), or run R-37 atomic lockstep to add a new dimension or canonical value with operator review."
+      "rule_text": "Every tag MUST match the hierarchical grammar `#dimension/value` where dimension is one of the registered prefixes in the runtime allowlist (union of foundation-master.tagging.taxonomy.dimension_prefixes + overlay-master.tagging.taxonomy.dimension_prefixes) and value is a kebab-case slug matching [a-z0-9-]. The pre-write-guard hook DENIES any tag that fails the regex or starts with an unregistered prefix. The DENY message enumerates the non-conforming tags. Adopters either pick a tag from the registered vocabulary, omit the tag (the file remains legible to Claude via its frontmatter fields), or extend overlay-master.tagging.taxonomy.dimension_prefixes via `/govern register --kind tag-extension` (post-SP13 T-5)."
     },
     {
       "id": "R-47",
@@ -53,23 +56,19 @@
       "source": "ENFORCEMENT-MAP.md R-47 + tags-as-validity-diagnostic principle + ../research/vault-construction/tagging-strategy.md Rule 5 (tagging-failure-as-signal)",
       "enforcement_layer": ["pre-write-guard.sh tag-presence advisory (Tier 1; never blocks)", "post-write-verify.sh orphan-tag advisory", "librarian tag-coverage-audit (audit-time orphan detection)"],
       "failure_mode": "Non-exempt files written without tags become orphans in Obsidian graph view — invisible to user-side queries even though the file is legible to Claude-side surfaces via frontmatter fields. Pre-write tag-presence advisory surfaces the omission at the moment of write rather than at the weekly audit, closing a ~7-day detection lag.",
-      "rule_text": "Every non-exempt vault write MUST carry a non-empty `tags:` array in its frontmatter. Pre-write-guard emits a Tier 1 advisory ([R-47 TAG PRESENCE]) when the field is missing or empty (tags: []). Distinguishes 'missing' (no tags: line) vs 'empty' (line present, no items). Exempt paths are enumerated in the registry's `r47_exempt_paths` array — they cover archive surfaces, ideation-brief symlinks, machine-emitted scratch zones, and system infrastructure paths whose tag-absence is structurally legitimate. (SP13 T-4: r47_exempt_paths absorbs the 5 additional infrastructure paths formerly in gate-config.json `r47.exempt_paths` to form the canonical union — 12 entries total. foundation-master.json composes the runtime r47_exempt_paths_composed view; gate-config.json retires under SP13 T-6.) The librarian tag-coverage-audit walks the vault at audit time and surfaces longer-running orphans + near-miss patterns (#scope/decisions vs #scope/decision — one is likely a typo) as advisory findings the operator triages.",
+      "rule_text": "Every non-exempt vault write MUST carry a non-empty `tags:` array in its frontmatter. Pre-write-guard emits a Tier 1 advisory ([R-47 TAG PRESENCE]) when the field is missing or empty (tags: []). Distinguishes 'missing' (no tags: line) vs 'empty' (line present, no items). Exempt paths are enumerated in the registry's `r47_exempt_paths` array — they cover archive surfaces, ideation-brief symlinks, machine-emitted scratch zones, and system infrastructure paths whose tag-absence is structurally legitimate. (SP13 T-4 2026-05-14: r47_exempt_paths absorbs the 5 additional infrastructure paths formerly in gate-config.json `r47.exempt_paths` to form the canonical union. SP13 Phase 1c 2026-05-14: dropped 4 non-adopter-vault entries — Tags/** (Obsidian Make.md artifact; .gitignored per SP03 D3), _test*, _orchestrator/** (plan-tree, not adopter vault), tests/** (foundation-repo only) — leaving 8 entries covering adopter-vault foundation surfaces + system infrastructure paths. foundation-master.json composes the runtime r47_exempt_paths_composed view; gate-config.json retires under SP13 T-6.) The librarian tag-coverage-audit walks the vault at audit time and surfaces longer-running orphans + near-miss patterns (#scope/decisions vs #scope/decision — one is likely a typo) as advisory findings the operator triages.",
       "r47_exempt_paths": [
         "Archive/**",
         "Logs/foundations-essays/**",
         "Logs/backlog-progress/**",
-        "Tags/**",
-        "_test*",
         ".claude/**",
         "Logs/ideation-brief-*.md",
-        "_orchestrator/**",
         ".claude/hooks/state/**",
         ".claude/hooks/lib/**",
-        "tests/**",
         "Logs/build-*"
       ],
       "exempt_path_semantics": "positive-list — unenumerated top-level paths default to the advisory firing (NOT auto-exempt). Adding a new exempt path requires R-37 atomic lockstep updating this rule + pre-write-guard.sh + the narrative spoke + foundation-master.json bundle composition.",
-      "r47_exempt_paths_provenance": "SP13 T-4 canonical union (closes 7-vs-13 drift): 7 entries formerly canonical here + 5 infrastructure entries formerly only in hooks/config/gate-config.json `r47.exempt_paths`. The composed runtime view (`foundation-master.json :: r47_exempt_paths_composed`) builds the union deterministically from pillar declarations; gate-config.json continues to be the canonical runtime source until SP13 T-6 retirement consummates the migration."
+      "r47_exempt_paths_provenance": "SP13 T-4 canonical union (closes 7-vs-13 drift): 7 entries formerly canonical here + 5 infrastructure entries formerly only in hooks/config/gate-config.json `r47.exempt_paths`. SP13 Phase 1c 2026-05-14: 4 non-adopter-vault entries removed (Tags/** Obsidian artifact retired per canonical §G; _test* loose foundation-repo-only pattern; _orchestrator/** plan-tree; tests/** foundation-repo only) leaving 8 adopter-vault-relevant entries. The composed runtime view (`foundation-master.json :: r47_exempt_paths_composed`) builds the union deterministically from pillar declarations; gate-config.json continues to be the canonical runtime source until SP13 T-6 retirement consummates the migration."
     },
     {
       "id": "R-50",
@@ -78,7 +77,7 @@
       "source": "../research/vault-construction/tagging-strategy.md Rule 1 (25-tag cap on user-facing dimensions) + Forte/Dubois working-vocabulary research + Hedden faceted-classification literature + Adobe AEM and SharePoint enterprise CMS picklist patterns",
       "enforcement_layer": ["librarian tag-coverage-audit (audit-time consolidation prompt at 80% threshold)", "onboarder consolidation prompt (install-time)", "documentary in Vault Architecture - Tagging.md"],
       "failure_mode": "Cap-widening defeats the working-memory rationale silently. An adopter activates a new engagement, user-facing tag count approaches 25, and the path of least resistance is 'raise the cap to 30.' Past 25, decision fatigue produces variant-creation rather than canonical-term selection, the vocabulary fragments, and user-side recall collapses. The cap is structural, not aspirational — silent widening is rejected; deliberate Layer 3 override is supported with audit trail.",
-      "rule_text": "Total count of distinct values across user-facing dimensions (engagement, project, scope, initiative, artefact-bd, about-me) MUST stay under 25. System-utility dimensions (log, status) are exempt — they are machine-emitted and governed by the log-subtype registry (R-05). The librarian tag-coverage-audit emits an advisory when user-facing usage approaches 80% of the cap (≥20 active values), surfaces a consolidation prompt with retire-candidate recommendations, and requires deliberate Layer 3 override (`overlay-master.json :: tagging_cap_override` with rationale + audit-trail entry) before silent widening can proceed.",
+      "rule_text": "Total count of distinct values across user-facing dimensions (declared at runtime by union of foundation-master.tagging.taxonomy.user_facing_dimensions + overlay-master.tagging.taxonomy.user_facing_dimensions) MUST stay under 25. System-utility dimensions (log, status) are exempt — they are machine-emitted and governed by the log-subtype registry (R-05). The librarian tag-coverage-audit emits an advisory when user-facing usage approaches 80% of the cap (≥20 active values), surfaces a consolidation prompt with retire-candidate recommendations, and requires deliberate Layer 3 override (`overlay-master.json :: tagging_cap_override` with rationale + audit-trail entry) before silent widening can proceed. (SP13 Phase 1c 2026-05-14: foundation user_facing_dimensions abstracted to [] per canonical §G+§H; adopter populates via onboarding archetype seeds at install time.)",
       "cap_value": 25,
       "advisory_threshold_pct": 80,
       "scope": "user_facing_dimensions",
