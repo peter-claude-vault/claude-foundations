@@ -123,8 +123,8 @@
     {
       "mode": "0644",
       "path": "hooks/lib/paths.sh",
-      "sha256": "ba10d3a88d50aebc4e64c6d803e2cc85693b325bd76e5232b1eeaaabfd5ea904",
-      "size": 1359
+      "sha256": "55057d524a5723e9254a3b1882426f28e5c7ae74b36fd2f0bd00a185d4f5e0aa",
+      "size": 1520
     },
     {
       "mode": "0644",
@@ -183,8 +183,8 @@
     {
       "mode": "0755",
       "path": "hooks/post-write-verify.sh",
-      "sha256": "29d81cb0b21b3eb2ce3b381108d1422a912242a0364ab461a3c5006a0bac3d7d",
-      "size": 9144
+      "sha256": "b6149607d6a5abff6a89af0c9e33204d00200a288ba0ff800fb4627280d3a487",
+      "size": 16964
     },
     {
       "mode": "0755",
@@ -195,8 +195,8 @@
     {
       "mode": "0755",
       "path": "hooks/pre-write-guard.sh",
-      "sha256": "17f0ed1d81fda856fbbeba62760b3151d98b7957e3447c7cf76c5ab22442b854",
-      "size": 58818
+      "sha256": "1a6abba2e346ca8ac26a81aec542df5d3ff1bc307c36c1e382cea4d502ce9af3",
+      "size": 63584
     },
     {
       "mode": "0755",
@@ -698,6 +698,30 @@
     },
     {
       "mode": "0644",
+      "path": "onboarding/scaffold/vault-architecture/Vault Architecture - Frontmatter.md",
+      "sha256": "d2626a0d3c2c2b09486dc4c3c190833a81c2b5f3b838ef22484bfc68130a8808",
+      "size": 18252
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md",
+      "sha256": "86f9b427d64b04a4a37659800126c85fdcba9b5594aa15c91f6d16fde2b6b641",
+      "size": 11958
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/scaffold/vault-architecture/Vault Architecture - Naming.md",
+      "sha256": "b840bcc968d8fb72f1bc6f28f387b8c47abb45c2c405ee47a0a66e53ef9446b0",
+      "size": 14401
+    },
+    {
+      "mode": "0644",
+      "path": "onboarding/scaffold/vault-architecture/Vault Architecture - Tagging.md",
+      "sha256": "f23f0bf55a31640abf3c4b41975963e5da150c3de65cd1ffa0f5abd3c5c3c312",
+      "size": 15793
+    },
+    {
+      "mode": "0644",
       "path": "onboarding/seed-content/.seedignore.example",
       "sha256": "91213d138c0a67fe02caf66ead0d255df61587f5ffb8412fadacfe616bef6526",
       "size": 639
@@ -993,8 +1017,8 @@
     {
       "mode": "0644",
       "path": "schemas/README.md",
-      "sha256": "844773e49bc8b66a118ccd5d8d36e146e67b84d64fecab591d91aedd654b7eba",
-      "size": 3904
+      "sha256": "32b0009f14c46a9d279a43f865f46a632206b26037e9a0e6c25098f55aab51eb",
+      "size": 5875
     },
     {
       "mode": "0644",
@@ -1013,18 +1037,6 @@
       "path": "schemas/drift-allowlist-schema.json",
       "sha256": "52a45229202ef1b699b5b13e2be215ded784ec8987b17dad3397150111e155ae",
       "size": 1694
-    },
-    {
-      "mode": "0644",
-      "path": "schemas/gate-config-schema.json",
-      "sha256": "5139495ac19718952a841dae795e90cc87703fdaf9f1d6b419c6919321415537",
-      "size": 6762
-    },
-    {
-      "mode": "0644",
-      "path": "schemas/gate-config.json",
-      "sha256": "496071030af1e8f829ed997e3348c5c64aa083ee474102681c04e7969908dcf9",
-      "size": 5764
     },
     {
       "mode": "0644",
@@ -1061,12 +1073,6 @@
       "path": "schemas/vault-overlay-schema.json",
       "sha256": "fbedd47ff750a549ee1f7c8ecff273cc44d72cc1de958e257c5f132725476b9f",
       "size": 8765
-    },
-    {
-      "mode": "0644",
-      "path": "schemas/vault-schema.json",
-      "sha256": "4fcae298b3bf137de39d61d06a5b52195c1283459f3b3198b10ba035ff53a4b1",
-      "size": 3898
     },
     {
       "mode": "0644",
@@ -1568,6 +1574,24 @@
     },
     {
       "mode": "0644",
+      "path": "skills/onboarder/pedagogy/frontmatter-walkthrough.md",
+      "sha256": "2103701ebb8aa337c48615ffab000e1c82065687f9b09974950c67133efba07e",
+      "size": 4263
+    },
+    {
+      "mode": "0644",
+      "path": "skills/onboarder/pedagogy/research-packet-intro.md",
+      "sha256": "06f815505ed7afe1ff09fe5b7eb2b914ec6bfe6f610af0857ef1ede99c91fa26",
+      "size": 4586
+    },
+    {
+      "mode": "0644",
+      "path": "skills/onboarder/pedagogy/tagging-walkthrough.md",
+      "sha256": "8c95d6e4c08b4fb530d867f3a7f01d79e727cfb925754e54ef9982261e1093bd",
+      "size": 4570
+    },
+    {
+      "mode": "0644",
       "path": "skills/onboarder/preamble/anti-patterns.md",
       "sha256": "39a4eeada5db46aa24fba42940d7e36e0dfde21b4095bbc4243140e9a347cc15",
       "size": 5225
@@ -1640,6 +1664,12 @@
     },
     {
       "mode": "0644",
+      "path": "templates/launchd/com.logs-audit.plist.tmpl",
+      "sha256": "cc6f56317dd7ace6450c6aa588ff9bc935385282ecc565ec1d992ac1d06e2b4f",
+      "size": 2075
+    },
+    {
+      "mode": "0644",
       "path": "templates/launchd/connector-runtime.plist.tmpl",
       "sha256": "700de06666274bd7030c55b7297d49271875744be92078fe0d7c09100557194d",
       "size": 1289
@@ -1707,11 +1737,11 @@
     {
       "mode": "0644",
       "path": "templates/vault-claude-md-template.md",
-      "sha256": "e2ce7d0f24084cdbe32196f0eee52a2bf09f7760fc70801b691ccd5944146c54",
-      "size": 5736
+      "sha256": "e08c2f6b097668ee187c43fbcc91de778fc320f9c013936c95abf770662f724e",
+      "size": 4407
     }
   ],
-  "generated_at": "2026-05-12T02:10:47Z",
-  "generator_sha256": "de83620b27bf4f2a5d33b8af605a72d44e8b0b9c792248b79b9737fafb5e7d38",
+  "generated_at": "2026-05-15T20:23:23Z",
+  "generator_sha256": "9d6e91e983504a87b50dd4f374c2fd6b9907ea15ec2d3a56592cc0a5e3003585",
   "version": "v2.1.3"
 }

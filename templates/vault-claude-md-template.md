@@ -33,7 +33,7 @@ Identity values are sourced from `$CLAUDE_HOME/user-manifest.json` at adoption t
 
 ## 4. Communication Style
 
-{{IDENTITY_NAME}} composes verbally first, then structures. Values firmness over hedging, specificity over generality. Direct feedback with concrete examples. For full preferences, see `About Me/LLM Interaction Preferences.md` (if maintained).
+{{IDENTITY_NAME}} composes verbally first, then structures. Values firmness over hedging, specificity over generality. Direct feedback with concrete examples.
 
 ## 5. Active Work Pointers
 
@@ -42,7 +42,6 @@ Paths are stable; contents evolve. Read the relevant index/folder on demand:
 - **Client engagements / major projects:** `{{VAULT_TOP_LEVEL_FOLDER}}/` — see cluster `_index.md` for current active set
 - **Personal tracks / initiatives:** named at onboarding — see vault root for folder names
 - **System backlog:** `System Backlog.md` (Claude-system project ideas; librarian-maintained)
-- **Tasks:** `Tasks.md` (P0/P1/P2 + Waiting On Others)
 - **Plans:** `Plans/` (symlink to `$PLANS_HOME`)
 
 ## 6. Authoritative References
@@ -50,10 +49,10 @@ Paths are stable; contents evolve. Read the relevant index/folder on demand:
 ### `@import` directives (force-loaded at session start)
 
 ```
-@$CLAUDE_HOME/schemas/vault-schema.json
+@$CLAUDE_HOME/governance/foundation-master.json
 ```
 
-The canonical type vocabulary consumed by the R-32 frontmatter validation gate. Small file; high reference frequency; amortizes across the session. Note: this directive only fires when Claude Code launches from inside the vault (see setup note above).
+The composed governance bundle — single artifact carrying all 6 pillar contents (frontmatter, tagging, naming, mandatory-files, doc-dependencies, file-type-contracts). Read at write-time per the bundle-at-load discipline. High reference frequency; amortizes across the session. Note: this directive only fires when Claude Code launches from inside the vault (see setup note above).
 
 ### Pointer table (load on trigger)
 
@@ -64,9 +63,7 @@ The canonical type vocabulary consumed by the R-32 frontmatter validation gate. 
 | Tagging a file | `$CLAUDE_HOME/governance/tagging-rules.json` | `Vault Architecture/Vault Architecture - Tagging.md` |
 | Naming a new file/structure | `$CLAUDE_HOME/governance/naming-rules.json` | `Vault Architecture/Vault Architecture - Naming.md` |
 | Creating new top-level structure | `$CLAUDE_HOME/governance/mandatory-files-rules.json` | `Vault Architecture/Vault Architecture - Mandatory-Files.md` |
-| Governance hooks / R-37 / promotion | — | `Vault Architecture/Vault Architecture - Enforcement.md` |
 | System-project ideas | `System Backlog.md` | — |
-| Task work | `Tasks.md` | — |
 | **Before building any capability** | `Skills/_index.md` | — |
 | Inbox / connector / dashboard work | `Inbox/_index.md` | — |
 | Plan or sub-plan references | `Plans/` | — |

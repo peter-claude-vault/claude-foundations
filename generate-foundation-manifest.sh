@@ -166,9 +166,10 @@ emit_pairs() {
     done
   done
 
-  # schemas — 12 named .json + README.md (mirrors install.sh Step 9 list +
-  # Plan 81 SP01 gate-config/gate-config-schema additions per v2.1.3).
-  for s in vault-schema plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema gate-config gate-config-schema; do
+  # schemas — 9 named .json + README.md (mirrors install.sh Step 9 list).
+  # SP13 P0 (2026-05-15) dropped vault-schema + gate-config + gate-config-schema
+  # (dissolved per SP13 T-4 pillar shard / SP13 T-6 retirement scope).
+  for s in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema; do
     f="$SOURCE_REPO/schemas/$s.json"
     [ -f "$f" ] || continue
     printf 'schemas/%s.json\tschemas/%s.json\n' "$s" "$s"

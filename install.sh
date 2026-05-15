@@ -648,11 +648,13 @@ if [ -d "$SOURCE_REPO/installer" ]; then
   cp -R $cp_clobber "$SOURCE_REPO/installer"/. "$CLAUDE_HOME/installer/" 2>/dev/null || true
 fi
 
-# Step 9: schemas/ — 10 named files (audit F-06; Plan 81 SP01 S16 extended the
-# list to ship the 4 hooks/config/*.json companion schemas: vault-overlay,
-# doc-dependencies, drift-allowlist, cron-log-architecture-exceptions. These
-# are consumed by Step 13.6 jsonschema validation below.)
-for schema in vault-schema plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema gate-config gate-config-schema; do
+# Step 9: schemas/ — 9 named files. SP13 P0 (2026-05-15) dropped vault-schema +
+# gate-config + gate-config-schema (dissolved per SP13 T-4 pillar shard / SP13
+# T-6 retirement). The hooks/config/*.json companion schemas (vault-overlay,
+# doc-dependencies, drift-allowlist, cron-log-architecture-exceptions) remain
+# until P4.7 / P1.5 wave migrates them. Consumed by Step 13.6 jsonschema
+# validation below.
+for schema in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema; do
   src="$SOURCE_REPO/schemas/$schema.json"
   if [ ! -f "$src" ]; then
     diag "schema missing in source: $schema.json"
