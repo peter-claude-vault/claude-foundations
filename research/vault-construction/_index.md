@@ -19,7 +19,7 @@ The packets are surfaced at canonical URLs on the documentation site (`stem.pete
 | Slug | Scope (one-line) |
 |---|---|
 | [`vault-construction-principles`](./vault-construction-principles.md) | The load-bearing commitments that hold the system together: capture-is-cheap, frontmatter-as-contract, folder-mirrors-tag invariant, multi-archetype union, propose-and-confirm, two-surface governance, mandatory-file-lock. Read this first. |
-| [`mandatory-file-lock`](./mandatory-file-lock.md) | What every adopter vault carries at root by foundation mandate (14-item system set: 5 files + 7 folders + 2 symlinks), what the foundation explicitly does NOT ship (retired set: `README.md` / `Templates/` / `Reference/` / folder-scoped CLAUDE.md / engagement-as-Skill / 4-altitude taxonomy / hardcoded Inbox), and the user-defined territory the foundation refuses to prescribe. Session 16 13-lock ratification + Session-02b §A.1 baseline. |
+| [`mandatory-file-lock`](./mandatory-file-lock.md) | **[§C/§E/§G superseded 2026-05-14 — see `foundation-governance-target-state.md`]** What every adopter vault carries at root by foundation mandate, what the foundation explicitly does NOT ship, and the user-defined territory. Session 16 13-lock ratification record (historical). |
 | [`frontmatter-design`](./frontmatter-design.md) | Frontmatter as the API every file exposes. Three compliance tiers (Strict / Standard / Minimal); universal vs archetype-conditional vs packet-only field classes; folder-lineage convention; unified-with-per-archetype-entries extensibility model; R-37 atomic-lockstep protocol. |
 | [`tagging-strategy`](./tagging-strategy.md) | Tags as the user-side query surface. 8-dimension faceted taxonomy; the five discipline rules (25-cap, prefix grammar, no-new-dimension-without-lockstep, no-freeform, tagging-failure-as-signal); system-utility dimension exemption; per-archetype dimension renaming. |
 | [`file-naming-conventions`](./file-naming-conventions.md) | Naming as parseable contract. Three date-prefix patterns; shared slug grammar (folder-name + tag-value parity); vault-root allowlist (R-04); plan slug format (R-27); parent_plan inheritance (R-28); gitignore patterns at-depth (R-20). |
@@ -54,9 +54,10 @@ The packets are the *narrative* half of the dual-surface design pattern. The *ma
 - **`governance/tagging-rules.json`** — tagging pillar rule registry (R-05, R-32-taxonomy, R-47, R-50, R-51).
 - **`governance/naming-rules.json`** — naming pillar rule registry (R-04, R-10, R-20, R-27, R-28).
 - **`governance/mandatory-files-rules.json`** — mandatory-files pillar rule registry (R-07, R-09, R-12, R-14).
+- **`governance/doc-dependencies.json`** — doc-dependencies pillar (hub-spoke cascades + upstream→downstream propagation; first-class pillar per SP13 Session 1 follow-on).
 - **`governance/log-subtype-registry.json`** — canonical `#log/*` and `#status/*` subtype enumeration.
 - **`governance/librarian-capabilities/`** — audit-time capability contracts (archetype-consistency, packet-staleness-audit, governance-parity-audit, log-subtype-canonical).
-- **`schemas/vault-schema.json`** — canonical frontmatter schema (21 active type entries; 3 tiers; folder-lineage `_path_rules`).
+- **`governance/foundation-master.json`** — composed bundle artifact; hooks read this at write-time (bundle-at-load discipline; SP13 T-3 migration). Built by `tools/build-foundation-master.sh` at release time.
 - **`docs/decisions/`** — Architecture Decision Records preserving the design provenance:
   - [ADR-0001](../../docs/decisions/0001-tiered-compliance.md) — tiered compliance
   - [ADR-0002](../../docs/decisions/0002-unified-with-per-archetype-entries.md) — unified-with-per-archetype-entries
@@ -65,7 +66,7 @@ The packets are the *narrative* half of the dual-surface design pattern. The *ma
   - [ADR-0005](../../docs/decisions/0005-two-surface-governance-dual-pattern.md) — dual-surface governance pattern
   - [ADR-0006](../../docs/decisions/0006-layer3-overlay-collision-tiebreaker.md) — Layer-3 overlay collision tiebreaker
 
-R-37 atomic-lockstep holds the four artifact families aligned at write-time (schemas + governance JSONs + narrative packets + ADRs); the librarian `governance-parity-audit` capability catches drift at audit-time.
+R-37 atomic-lockstep holds the artifact families aligned at write-time (governance JSONs + foundation-master.json bundle + narrative packets + ADRs); the librarian `governance-parity-audit` capability catches drift at audit-time.
 
 ## Adopter customization
 

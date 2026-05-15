@@ -13,9 +13,16 @@ source_dependencies:
 last_reviewed: 2026-05-13
 canonical_url: https://stem.peter.dev/research/vault-construction/mandatory-file-lock/
 url_stability: locked-from-2026-05-13
+superseded_by:
+  - canonical: ~/.claude-plans/81-claude-stem-dogfood-optimization/foundation-governance-target-state.md
+    sections: ["§C — vault-root mandatory files", "§E — exemption list", "§G — retired set"]
+    at: "2026-05-14"
+    notes: "SP13 Session 3 (2026-05-14) updated the §C/§E/§G boundary. Session 16 13-lock ratification record remains valid historical reference; for current authoritative inventory read the canonical target-state doc."
 ---
 
 # Mandatory file lock — what foundation guarantees, what user defines, what is gone
+
+> **[§C/§E/§G SUPERSEDED — 2026-05-14]** The mandatory-file enumeration, exemption list, and retired-item set in this packet were correct at Session 16 (2026-05-13). SP13 Session 3 (2026-05-14) updated the canonical boundary in `foundation-governance-target-state.md`. For the **current authoritative inventory** see §C (vault-root mandatory files), §E (exemption list), and §G (retired set) in that document. This packet's Session 16 rationale record remains valid historical reference; consult it for design history.
 
 ## Theme
 
