@@ -79,7 +79,7 @@ WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(\|[^\]]+)?\]\]")
 
 # Excluded dirs at walk level.
 EXCLUDE_DIRS = {".git", ".obsidian", ".trash", "Archive"}
-ORPHAN_EXCLUDE_BASENAMES = {"CLAUDE.md", "_index.md", "File-Index.md", "Vault Architecture.md", "Tasks.md"}
+ORPHAN_EXCLUDE_BASENAMES = {"CLAUDE.md", "_index.md", "File-Index.md", "Vault Architecture.md"}
 # Meetings/, Daily/, Inbox/ are expected-orphan by design — generated content that
 # does not receive inbound wikilinks (2026-04-22 finisher pass).
 ORPHAN_EXCLUDE_DIRS_DEFAULT = {"Archive", "Logs", "Meetings", "Daily", "Inbox"} if not include_logs else {"Archive", "Meetings", "Daily", "Inbox"}

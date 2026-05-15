@@ -4,7 +4,6 @@
 # Manifest edits:     BLOCKED (must use /librarian to regenerate)
 # Plan file writes:   Reminder to update System Backlog.md
 # Skill file edits:   4-step change protocol checklist
-# Tasks.md edits:     Table format validation reminder
 #
 # ENFORCEMENT-MAP rules implemented here (see ~/.claude-plans/ENFORCEMENT-MAP.md):
 #   R-01  dead plans path DENY                        — line 26+
@@ -447,12 +446,6 @@ fi
 # runtime — the skill-change checklist is not relevant to them.
 if [[ "$FILE_PATH" == "$HOME/.claude/skills/"*"/SKILL.md" ]]; then
   format_output_allow "PreToolUse" "[SKILL CHANGE PROTOCOL] After this edit, complete the mandatory post-change checklist: (1) Save/update memory for the change (2) Update all affected documentation — specs, CLAUDE.md, MEMORY.md (3) Grep for downstream effects — other skills, hooks, settings that reference this (4) Verify ID emission if applicable. This is a blocking step — do not move to the next task until all four are done."
-  exit 0
-fi
-
-# --- REMINDER: Tasks.md format validation ---
-if [[ "$FILE_PATH" == *"/Tasks.md" ]]; then
-  format_output_allow "PreToolUse" "[FORMAT CHECK] After writing to Tasks.md, verify table formatting: one header row + separator per section, consistent cell padding, no blank lines between data rows, no split tables."
   exit 0
 fi
 

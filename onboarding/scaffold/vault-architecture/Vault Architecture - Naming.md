@@ -67,7 +67,7 @@ The set of valid top-level directories is a fixed enumeration. New top-level pat
 | `Tags` | Obsidian tag pane metadata |
 | `Vault Architecture` | Hub-spoke split (Structure, Engagements, People, Frontmatter, Tagging, Naming, Mandatory-Files, etc.) |
 
-A small set of top-level files is exempt from the root-must-be-a-directory rule: `CLAUDE.md`, `Vault Architecture.md`, `Tasks.md`, `System Backlog.md`, `System Backlog - Archive.md`. These are documented allowlist entries; pre-write-guard honors them by name.
+A small set of top-level files is exempt from the root-must-be-a-directory rule: `CLAUDE.md`, `Vault Architecture.md`, `System Backlog.md`, `System Backlog - Archive.md`. These are documented allowlist entries; pre-write-guard honors them by name.
 
 Pre-write-guard emits a Tier 3 advisory when a file is written to an unenumerated vault-root path. The advisory never blocks — adopter-customized archetypes legitimately add roots — but the addition should land via the New Structure Checklist so the schema, the hook, the librarian capability, and this spoke move in lockstep.
 

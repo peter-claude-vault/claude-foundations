@@ -677,7 +677,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/log-archive.sh [--dry-run | --ex
 
 ### Rules
 
-1. **Vault root** may only contain: `CLAUDE.md`, `{VAULT_ARCHITECTURE_DOC}`, `Tasks.md`
+1. **Vault root** may only contain: `CLAUDE.md`, `{VAULT_ARCHITECTURE_DOC}`, `System Backlog.md`, `System Backlog - Archive.md`
 2. **Project folders** should only contain files matching `{Project} - *.md` plus `_index.md` and `File-Index.md` (navigation/reference scaffolding — see Index File Convention below)
 3. **People files** must be in `{projects_dir}/*/People/` folders
 4. **Meeting notes** must be in `Meetings/`

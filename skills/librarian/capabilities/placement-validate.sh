@@ -74,7 +74,7 @@ def emit(payload):
 
 # Vault root allowlist (canonical 5 per CLAUDE.md) + index-file convention
 VAULT_ROOT_ALLOWLIST = {
-    "CLAUDE.md", "Vault Architecture.md", "Tasks.md",
+    "CLAUDE.md", "Vault Architecture.md",
     "System Backlog.md", "System Backlog - Archive.md",
     "_index.md", "File-Index.md",
 }

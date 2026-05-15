@@ -198,7 +198,7 @@ file_path = sys.argv[1]
 rel_path = sys.argv[2]
 
 ALLOWLIST_PREFIXES = ('Inbox/', 'Archive/', 'Daily/', 'Logs/', '.claude/skills/')
-ALLOWLIST_EXACT = {'CLAUDE.md', 'Tasks.md', 'System Backlog.md', 'System Backlog - Archive.md', 'Vault Architecture.md'}
+ALLOWLIST_EXACT = {'CLAUDE.md', 'System Backlog.md', 'System Backlog - Archive.md', 'Vault Architecture.md'}
 CANONICAL_SCOPE = {'reference', 'context', 'overview', 'engagement', 'briefing',
                    'strategic', 'planning', 'index', 'navigation', 'people',
                    'prd', 'personal-initiative'}
@@ -359,7 +359,6 @@ if segments:
     tag_prefix_map = {
         "Engagements": ("engagement", segments[1] if len(segments) > 1 else None),
         "Personal Initiatives": ("initiative", segments[1] if len(segments) > 1 else None),
-        "About Me": ("about-me", segments[1] if len(segments) > 1 else "general"),
     }
     if first_segment in tag_prefix_map:
         prefix, value = tag_prefix_map[first_segment]
