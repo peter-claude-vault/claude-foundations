@@ -20,7 +20,7 @@ The mandatory-file lock is the structural enforcement layer that determines whic
 
 ## Session 20 scope note
 
-This spoke landed in Session 20 with the `_index.md` mandate (R-44) only. The full universal mandatory-file enumeration (CLAUDE.md vault-root only per Session 16 lock #1; `Tasks.md`; `System Backlog.md`; `Vault Architecture.md`; `Vault Architecture/` spoke folder; `Inbox/` + `Inbox/_index.md`; `About Me/`; `Meetings/`; per-folder/per-cluster mandatories; R-07 / R-09 / R-12 / R-14 from the pillar's original assigned rule range) lands incrementally per the vault-root rollout roadmap. T-32 closes when the full body is in.
+This spoke landed in Session 20 with the `_index.md` mandate (R-44) only. The full universal mandatory-file enumeration (CLAUDE.md vault-root only per canonical §C; `System Backlog.md` vault-root mandate; `Vault Architecture.md` vault-root mandate + `Vault Architecture/` spoke folder; `Inbox/` mandate + `Inbox/_index.md`; `Meetings/` folder; per-folder + per-cluster mandatories; R-07 / R-09 / R-12 / R-14 from the pillar's original assigned rule range) lands incrementally per the vault-root rollout roadmap. T-32 closes when the full body is in.
 
 ## The `_index.md` mandate (R-44)
 
@@ -38,15 +38,11 @@ A meaningful minority of folders are NOT mandated `_index.md`. The exemption lis
 
 | Exempt path glob | Category | Why exempt |
 |---|---|---|
-| `Templates/**` | Template seed | Scaffolding seeds, not consumable navigation |
 | `Archive/**` | Cold storage | Append-only history; navigation by name has low signal because contents are date-prefixed |
 | `Daily/**` | Date-prefixed sequence | Navigation is date-query / tag-filter, not folder-listing |
-| `Meetings/**` | Date-prefixed sequence | Same as Daily |
 | `Inbox/**` | Scraper aggregation | `Inbox/_index.md` is maintained by the dedicated `inbox-index-refresh` capability, not `index-maintain`; per-connector aggregation files are documented inline |
 | `Logs/**` | Scratch-space emission | Claude scratch space; emission-driven, not navigation-targeted |
-| `Tags/**` | Non-vault infrastructure | Obsidian Make.md plugin artifact directory; adopter-disposable; gitignored |
-| `_orchestrator/**` | Non-vault infrastructure | Plan-tree orchestrator state; not human-navigable |
-| `tests/**`, `tests/fixtures/**` | Non-vault infrastructure | Fixture data |
+| `Meetings/**` | Date-prefixed sequence | Navigation is date-query / tag-filter, not folder-listing |
 
 Generalized: **a folder is exempt when its contents are date-prefixed sequences, scraper aggregation surfaces, scratch-space emissions, or non-vault infrastructure.** Folders carrying named content files for human and LLM consumption — engagements, projects, people directories, reference, skills, personal initiatives — are mandatory-`_index.md`.
 
@@ -78,17 +74,15 @@ Adopter Layer-3 overlays follow the R-52 collision tiebreaker (adopter shadows f
 
 ## Pending T-32 body (not in this spoke yet)
 
-- Vault-root `CLAUDE.md` mandate (one-class per Session 16 lock #1; folder-scoped/per-cluster/per-instance/engagement-level all retired)
-- `Tasks.md` vault-root mandate
+- Vault-root `CLAUDE.md` mandate (one-class per canonical §C; folder-scoped/per-cluster/per-instance/engagement-level all retired)
 - `System Backlog.md` vault-root mandate
 - `Vault Architecture.md` vault-root mandate + `Vault Architecture/` spoke folder
 - `Inbox/` mandate + `Inbox/_index.md` always + `Inbox/<connector>.md` conditional (Session 18 Option B)
-- `About Me/` folder mandate
 - `Meetings/` folder mandate
 - Per-folder + per-cluster + per-instance canonical files (Overview / Updates / Context / People)
 - R-07 (mirror-review), R-09 (Logs deny-list), R-12 (Personal Initiatives), R-14 (plan-index) rule body
 
-T-32 carries all of the above plus the Enforcement.md meta-spoke. The vault-root rollout roadmap packet sequences the work.
+T-32 carries all of the above. The vault-root rollout roadmap packet sequences the work.
 
 ## References
 
