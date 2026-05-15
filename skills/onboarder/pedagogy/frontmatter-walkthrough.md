@@ -25,9 +25,9 @@ The canonical packet covers the five structural commitments, the unified-with-pe
 
 The wizard renders the adopter's archetype-customized frontmatter table inline at this step. The render reads:
 
-- `schemas/vault-schema.json` for the type allowlist + per-type required/optional field maps
-- `_archetype_conditional_fields` for the per-archetype field set
-- Adopter Layer-3 overlay at `archetype_extensions.json` (if present) for adopter-customized field declarations
+- `governance/foundation-master.json#frontmatter.types` for the type allowlist + per-type required/optional field maps (dissolved from schemas/vault-schema.json in SP13 T-4)
+- `governance/frontmatter-rules.json#archetype_conditional_fields` for the per-archetype field set
+- Adopter Layer-3 overlay-master (if present) for adopter-customized field declarations
 
 Render format:
 

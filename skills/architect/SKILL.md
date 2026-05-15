@@ -405,7 +405,7 @@ The architect writes one artifact per invocation — its own report — and neve
   - Standard: `{architect.output_dir}/architect-{YYYY-MM-DD}.md`
   - Skill mode: `{architect.output_dir}/architect-{YYYY-MM-DD}-{skill-name}.md`
   - Same-day re-invocations overwrite the existing file.
-- **Schema type:** `architect-report` (validated against `vault-schema.json`'s `type` enum entry; frontmatter must carry `type: architect-report` plus `subtype: full|skill-analysis` plus the report-specific fields documented above).
+- **Schema type:** `architect-report` (validated against `governance/frontmatter-rules.json#types` type enum entry; frontmatter must carry `type: architect-report` plus `subtype: full|skill-analysis` plus the report-specific fields documented above).
 - **Pre-write validation:**
   1. Frontmatter completeness — `type`, `subtype`, `date`, `timestamp`, `recommendations-total`, confidence-tier counts must be populated; missing fields block the write.
   2. Vault-schema validation — frontmatter parses against the `architect-report` entry; type-mismatch blocks the write.

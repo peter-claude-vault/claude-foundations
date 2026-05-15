@@ -38,7 +38,7 @@ read steps are skipped cleanly.
 - `{backlog.progress_dir}/<slug>.md` — satellite progress log entry.
 - On failure: a JSONL diagnostic at `{paths.hooks_state}/backlog-research-errors.jsonl`; no partial plan directory.
 
-**Schema:** `ideation-brief` against `vault-schema.json`; `plan-spec`, `plan-tasks`, `plan-handoff`, `plan-manifest` against `plans-schema.json`.
+**Schema:** `ideation-brief` against `governance/frontmatter-rules.json#types`; `plan-spec`, `plan-tasks`, `plan-handoff`, `plan-manifest` against `plans-schema.json`.
 
 **Pre-write validation:**
 1. The target backlog item is in `triaged` or `researching` status — refuse `idea`-status items (must triage first).

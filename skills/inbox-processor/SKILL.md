@@ -65,7 +65,7 @@ The cron interval is read from `user-manifest.json#/inbox/poll_interval_minutes`
 Per file in `<vault>/Inbox/`:
 
 1. **Format tier (extension first).** `format-detector.sh` resolves the format. Transcript shapes (`otter-vtt`, `zoom-transcript`, `*.docx` with a transcript filename, `*.granola.json`, `granola-*.json`) route as `meeting`.
-2. **Heuristic tier.** For non-transcript Markdown / plaintext, check the filename slug and first 50 lines for project-shape signals — frontmatter `type:` value matching a known canonical type from `vault-schema.json`, an `#engagement/*` or `#project/*` tag, an H1 plus multi-section structure. Reference shapes have a `#reference` tag, README-style naming, or notes / cheatsheet shape.
+2. **Heuristic tier.** For non-transcript Markdown / plaintext, check the filename slug and first 50 lines for project-shape signals — frontmatter `type:` value matching a known canonical type from `governance/frontmatter-rules.json#types`, an `#engagement/*` or `#project/*` tag, an H1 plus multi-section structure. Reference shapes have a `#reference` tag, README-style naming, or notes / cheatsheet shape.
 3. **LLM fallback (opt-in).** If format and heuristic are inconclusive AND `ANTHROPIC_API_KEY` is set in the environment AND `--gate-each-item` is OFF (gate-mode prefers user disposition over an LLM call), run a single-pass classifier returning `project | reference | meeting | unclassified`. The LLM call is the only place this skill consumes API budget; the cron interval is the throttle. Inconclusive output or a missing API key falls through to step 4.
 4. **Unclassified disposition.** Doesn't fit any classifier. The file stays in `Inbox/`. Two frontmatter fields are appended atomically: `processor_attempted_at: <UTC ISO-8601>` and `processor_classification: unclassified`. No rename, no relocation, no body mutation. The user manually triages later. The next tick sees `processor_attempted_at` and skips re-classification (idempotent).
 
@@ -137,7 +137,7 @@ The processor needs to run while the user works, not only when they start a new 
 
 - **No autonomous project scaffolding.** Project-shape items get a classification hint but stay in `Inbox/`. `/seed-projects` and `/adopt --retrofit-existing` handle project-tree creation.
 - **No multi-batch corpus reasoning.** The standing processor classifies one file at a time. The heavier iterative-clustering pass is reserved for `/onboard --seed-content`.
-- **No re-cluster on incremental drop.** Every file is classified independently against the canonical types in `vault-schema.json`; no cross-file relationship inference.
+- **No re-cluster on incremental drop.** Every file is classified independently against the canonical types in `governance/frontmatter-rules.json#types`; no cross-file relationship inference.
 - **No vault-side cleanup.** If a previous tick wrote a file to `Meetings/` and the user then deletes the original `Inbox/` file before the next tick, the routed file stays. Routes are not reversed.
 - **No re-routing on user edit.** Once a file leaves `Inbox/`, the processor forgets it.
 - **No connectors.** Multi-source pulls (Notion, Evernote, Slack) are out of scope. This skill processes the local filesystem `Inbox/` only.

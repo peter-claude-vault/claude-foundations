@@ -25,7 +25,7 @@ The canonical packet covers the 8-dimension taxonomy, the five discipline rules 
 
 The wizard renders the adopter's archetype-customized tag dimension table inline at this step. The render reads:
 
-- `schemas/vault-schema.json _tag_prefixes` + `_tag_prefixes_meta` for the foundation taxonomy
+- `governance/tagging-rules.json#taxonomy.dimension_prefixes` for the foundation taxonomy (dissolved from schemas/vault-schema.json in SP13 T-4)
 - The adopter's selected archetype's structural dimensions — **these are seed defaults; adopters customize via Layer 3 overlay per the archetypes-as-references principle**. Foundation seeds: consultant uses `#engagement/*` + `#project/*`; developer uses `#repo/*` + `#epic/*`; researcher uses `#topic/*` + `#study/*`; manager uses `#program/*` + `#initiative/*`. Adopter overlays may rename, extend, or retire these dimensions freely.
 - Adopter Layer-3 overlay if present for custom-dimension extensions
 
@@ -51,7 +51,7 @@ Your 8 tag dimensions (6 user-facing + 2 system-utility):
 The librarian surfaces a consolidation prompt at ≥20 (80% of cap).
 ```
 
-A single drill-down via `Show registered tags` exposes the full `governance/log-subtype-registry.json` canonical values for the system-utility dimensions, plus the 8-dimension definitions from `schemas/vault-schema.json _tag_prefixes`.
+A single drill-down via `Show registered tags` exposes the full `governance/log-subtype-registry.json` canonical values for the system-utility dimensions, plus the dimension definitions from `governance/tagging-rules.json#taxonomy.dimension_prefixes`.
 
 ## Pedagogical rationale
 

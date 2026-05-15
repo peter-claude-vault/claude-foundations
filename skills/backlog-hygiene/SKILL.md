@@ -31,7 +31,7 @@ defaults to `["Infrastructure", "Skills", "Content"]`.
 - `{paths.hooks_state}/backlog-hygiene-report.md` — the hygiene report itself.
 - With `--fix`: skeleton satellite files at `{backlog.progress_dir}/<slug>.md` for rows whose sentinel reference points to a missing file.
 
-**Schema:** the System Backlog is a standalone Markdown index, not a `vault-schema.json` type; the report is written outside the vault. Generated satellite files validate as `type: log` against `vault-schema.json` after creation; if validation fails the partial file is deleted and the rule is downgraded to a report-only finding.
+**Schema:** the System Backlog is a standalone Markdown index, not a `governance/frontmatter-rules.json#types` type; the report is written outside the vault. Generated satellite files validate as `type: log` against `governance/foundation-master.json#frontmatter.types` after creation; if validation fails the partial file is deleted and the rule is downgraded to a report-only finding.
 
 **Pre-write validation:**
 1. Backlog table structure preserved (column count, separator row, pipe alignment).
@@ -112,7 +112,7 @@ Never auto-fix. Migration to the sentinel pattern requires choosing what to hois
 
 **Missing satellite file:** For each row whose Notes cell matches the sentinel regex `See \[\[Logs/backlog-progress/([^\]]+)\.md\]\]`, verify the referenced file exists.
 - File missing: Error finding.
-- With `--fix`: create the satellite at the referenced path using the skeleton template (below). After the write, re-read the file and validate its frontmatter as `type: log` against `vault-schema.json`. If validation fails, delete the partial file and downgrade to report-only.
+- With `--fix`: create the satellite at the referenced path using the skeleton template (below). After the write, re-read the file and validate its frontmatter as `type: log` against `governance/foundation-master.json#frontmatter.types`. If validation fails, delete the partial file and downgrade to report-only.
 - Without `--fix`: report only.
 
 **Orphan satellite:** Enumerate every `.md` file under `{backlog.progress_dir}`. For each, search `{backlog.index_path}` for a sentinel reference to that exact filename.

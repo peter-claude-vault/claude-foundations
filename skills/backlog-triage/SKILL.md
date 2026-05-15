@@ -27,7 +27,7 @@ from `user-manifest.json` via `lib/paths.sh`.
 - `{backlog.index_path}` — either (a) a new row appended under the matching cluster H2 (inline-idea mode), or (b) an in-place update to the target row's Status / Triage Result / Related Items / Notes / Last Updated columns (item mode).
 - On `--item` mode targeting a row already using the sentinel pattern, the triage note is appended to the satellite file at `Logs/backlog-progress/<slug>.md`, not the row itself.
 
-**Schema:** N/A — the System Backlog is a standalone Markdown index, not a `vault-schema.json` type.
+**Schema:** N/A — the System Backlog is a standalone Markdown index, not a `governance/frontmatter-rules.json#types` type.
 
 **Pre-write validation:**
 1. Read the full backlog before writing — confirm the target cluster H2 exists and the row count parses cleanly.
