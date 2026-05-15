@@ -11,7 +11,7 @@ max_lines: 250
 tags: ["#scope/reference"]
 ---
 
-> **Summary:** Authoritative reference for the YAML frontmatter contract every vault file exposes to the system. Covers the three compliance tiers (Strict / Standard / Minimal), the universal-vs-archetype-conditional-vs-packet-only field classes, the folder-lineage convention, the archetype extension protocol, and the pre-write validation flow. Hand-authored narrative spoke; R-37 lockstep peer of `governance/frontmatter-rules.json` and `schemas/vault-schema.json`.
+> **Summary:** Authoritative reference for the YAML frontmatter contract every vault file exposes to the system. Covers the three compliance tiers (Strict / Standard / Minimal), the universal-vs-archetype-conditional-vs-packet-only field classes, the folder-lineage convention, the archetype extension protocol, and the pre-write validation flow. Hand-authored narrative spoke; R-37 lockstep peer of `governance/frontmatter-rules.json` (runtime bundle: `governance/foundation-master.json`).
 > **Canonical for:** frontmatter-rules, pre-write-validation, folder-lineage-convention, archetype-extension-protocol
 > **Last substantive update:** 2026-05-12
 
@@ -33,7 +33,7 @@ Tier assignment is per-type, not per-file. The schema's `meeting-note` entry dec
 
 ## Required fields by file type
 
-The canonical declaration lives at `schemas/vault-schema.json`. The table below is the at-a-glance summary; the schema is the source of truth and changes via R-37 atomic lockstep.
+The canonical declaration lives at `governance/frontmatter-rules.json#types`. The table below is the at-a-glance summary; the pillar JSON is the source of truth and changes via R-37 atomic lockstep.
 
 | File type | Tier | Required fields | Notes |
 |---|---|---|---|
@@ -63,7 +63,7 @@ The schema partitions every frontmatter field into one of three classes. The cla
 
 **Universal fields** apply to every Strict-tier type: `type`, `tags`, `updated`, and conditionally `status` (only on types that declare a status enum — `prd`, `personal-initiative`, `strategic`). Standard tier drops `status`; Minimal carries none.
 
-**Archetype-conditional fields** are a 13-entry list at `schemas/vault-schema.json _archetype_conditional_fields`: `engagement`, `project`, `workstream`, `owner`, `provides`, `created`, `name`, `attendees`, `processed`, `granola_id`, `target_date`, `audience`, `github_repo`. Per-type entries declare which subset applies. Adopters extend this list via Layer 3 vault-overlay when their archetype contributes new conditional fields (researcher's `study_phase`, developer's `repo`, manager's `program`).
+**Archetype-conditional fields** are a 13-entry list at `governance/frontmatter-rules.json#archetype_conditional_fields`: `engagement`, `project`, `workstream`, `owner`, `provides`, `created`, `name`, `attendees`, `processed`, `granola_id`, `target_date`, `audience`, `github_repo`. Per-type entries declare which subset applies. Adopters extend this list via Layer 3 overlay-master when their archetype contributes new conditional fields (researcher's `study_phase`, developer's `repo`, manager's `program`).
 
 **Packet-only fields** apply exclusively to `type: packet` entries: `altitude`, `validity_window`, `source_dependencies`, `last_reviewed`, `canonical_url`, `url_stability`. These six fields enable the 180-day staleness audit, the URL-stable contract for the documentation site, and the source-pointer discipline (every claim in a packet back-links to evidence).
 
@@ -82,15 +82,15 @@ The folder is the structural artifact; the frontmatter fields and tags are the f
 
 **The generic encoding.** The schema's `_path_rules` array carries the rule, parameterized so adopter archetypes extend without schema-shape changes. The foundation-repo ships the consultant default; researcher / developer / manager archetypes add one entry each (`Topics/<X>/Studies/<Y>/`, `Repos/<X>/Epics/<Y>/`, `Programs/<X>/Initiatives/<Y>/`). The hook consumes the new pattern; the schema-shape is unchanged.
 
-**Retired types.** `engagement` and `project` were originally TYPE values in an earlier schema version. Empirical measurement showed zero files at `type: engagement` and two at `type: project`, while hundreds carried the field slots under the folder tree. The TYPE slots were aspirational, effectively never instantiated — engagement-level overview docs were actually `type: navigation` (the CLAUDE.md) or `type: context` (the project-overview doc). The retirement codified both as FIELD slots, documented in `schemas/vault-schema.json _retired_types` with `decision_ref` pointing to ADR-0003.
+**Retired types.** `engagement` and `project` were originally TYPE values in an earlier schema version. Empirical measurement showed zero files at `type: engagement` and two at `type: project`, while hundreds carried the field slots under the folder tree. The TYPE slots were aspirational, effectively never instantiated — engagement-level overview docs were actually `type: navigation` (the CLAUDE.md) or `type: context` (the project-overview doc). The retirement codified both as FIELD slots, documented in `governance/frontmatter-rules.json#retired_types` with `decision_ref` pointing to ADR-0003.
 
 ## Archetype Extension Protocol
 
-The foundation-repo ships four archetypes — consultant, researcher, developer, manager — declared at `schemas/vault-schema.json _archetype_enum` and bound to the per-archetype field set at `_archetype_conditional_fields`. Adopters extend the enum via Layer 3 vault-overlay when their work pattern does not match any default archetype.
+The foundation-repo ships four archetypes — consultant, researcher, developer, manager — declared at `governance/frontmatter-rules.json#archetype_enum` and bound to the per-archetype field set at `#archetype_conditional_fields`. Adopters extend the enum via Layer 3 overlay-master when their work pattern does not match any default archetype.
 
-**Adding a custom archetype.** The adopter writes a Layer 3 overlay at `archetype_extensions.json` (sibling to `vault-schema.json` post-install) declaring the new archetype's enum value, the per-archetype conditional field set, and the path-lineage rule. Pre-write-guard's archetype-binding branch (R-51, governance/tagging-rules.json) reads the union of the foundation enum + the overlay enum at validation time; the librarian archetype-consistency audit (R-41, this pillar) reads the union of `_archetype_conditional_fields` + the overlay's per-archetype declarations.
+**Adding a custom archetype.** The adopter registers via `/govern register --kind archetype` which writes to `overlay-master.frontmatter.archetype_extensions` declaring the new archetype's enum value, the per-archetype conditional field set, and the path-lineage rule. Pre-write-guard's archetype-binding branch (R-51, governance/tagging-rules.json) reads the union of the foundation enum + the overlay enum at validation time; the librarian archetype-consistency audit (R-41, this pillar) reads the union of `#archetype_conditional_fields` + the overlay's per-archetype declarations.
 
-**R-37 lockstep for archetype changes.** Adding an archetype to the foundation requires touching: (1) `schemas/vault-schema.json _archetype_enum` + `_archetype_conditional_fields` + `_path_rules`, (2) `governance/tagging-rules.json` R-51 `registered_archetypes`, (3) `governance/frontmatter-rules.json` R-41 (this pillar — references the schema enum), (4) `Vault Architecture - Tagging.md` §Per-archetype dimension renaming, (5) this spoke's required-fields table, (6) `pre-write-guard.sh` archetype validation branch. All six surfaces move in one commit.
+**R-37 lockstep for archetype changes.** Adding an archetype to the foundation requires touching: (1) `governance/frontmatter-rules.json#archetype_enum` + `#archetype_conditional_fields` + `#path_routing`, (2) `governance/tagging-rules.json` R-51 `registered_archetypes`, (3) this pillar's Required fields table, (4) `Vault Architecture - Tagging.md` §Per-archetype dimension renaming, (5) this spoke's required-fields table, (6) `pre-write-guard.sh` archetype validation branch. All six surfaces move in one commit.
 
 **Worked example — adding a "curator" archetype.** The adopter's archetype is a museum curator: top-level `Collections/<X>/` instead of `Engagements/`, sub-level `Exhibits/<Y>/` instead of `Projects/`. The overlay declares `archetype: curator`, conditional fields `[collection, exhibit, accession_id, deaccessioned_date, owner, updated, tags]`, path rule `Collections/{collection_slug}/Exhibits/{exhibit_slug}/**` with `requires_fields: [collection, exhibit]` + `requires_tags: [#collection/{slug}, #exhibit/{slug}]`. Pre-write-guard validates against the union enum; the librarian audit verifies field-set completeness on every curator-archetype file.
 
@@ -133,7 +133,7 @@ The dual-surface governance pattern accepts bounded drift between the canonical 
 - Long-form research narrative — five structural commitments, anti-pattern catalogue, closed questions: [`frontmatter-design.md`](https://stem.peter.dev/research/vault-construction/frontmatter-design/)
 - Tag-side counterpart of the field/tag dichotomy: [[Vault Architecture - Tagging]]
 - Machine-readable rule registry: `governance/frontmatter-rules.json`
-- Canonical schema: `schemas/vault-schema.json`
+- Canonical pillar: `governance/frontmatter-rules.json` (runtime bundle: `governance/foundation-master.json`)
 - Tiered-compliance design rationale: [ADR-0001](https://stem.peter.dev/decisions/0001-tiered-compliance/)
 - Folder-lineage convention rationale: [ADR-0003](https://stem.peter.dev/decisions/0003-folder-lineage-as-fields/)
 - Dual-surface governance pattern: [ADR-0005](https://stem.peter.dev/decisions/0005-two-surface-governance-dual-pattern/)

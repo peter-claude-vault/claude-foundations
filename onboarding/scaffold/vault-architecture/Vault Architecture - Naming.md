@@ -80,7 +80,7 @@ Adding a new top-level directory requires the 7-item checklist before the first 
 | 1 | Declare purpose — what archetype/content the directory holds |
 | 2 | Declare consumer — which skill, hook, capability, or query parses this path |
 | 3 | Update `Vault Architecture.md` (or the relevant pillar spoke) |
-| 4 | Add `vault-schema.json` archetype + frontmatter contract |
+| 4 | Add `governance/frontmatter-rules.json#types` entry + `governance/file-type-contracts/<file>.json` body-structure contract |
 | 5 | Extend `pre-write-guard.sh` known-root list (R-04 allowlist update) |
 | 6 | Add librarian-capability entry (placement-validation / plan-index / walker) |
 | 7 | Commit R-37 atomic lockstep — all four surfaces move in one commit |

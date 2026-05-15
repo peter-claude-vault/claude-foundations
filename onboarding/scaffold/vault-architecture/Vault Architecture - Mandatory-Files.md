@@ -28,7 +28,7 @@ Every non-exempt user-facing folder in the vault MUST carry a sibling `_index.md
 
 **Why the file is mandatory.** Folders without `_index.md` appear as leaves in graph view; LLMs reading the folder have no orientation document and must read each child file individually at full token cost; human readers fall back to filename-by-filename scanning. Pre-mandate baseline in the reference deployment showed folder-level navigation breaking past ~10 children and collapsing past ~50.
 
-**Contract.** Frontmatter contract at [`schemas/vault-schema.json` `#types.index`](../../../schemas/vault-schema.json) — `type: index` + `tags:` (mandatory) + `parent_folder:` (required at `path_depth >= 2`, omitted at depth 1) + `updated:` (ISO-8601 date). Body-structure contract at [`governance/file-type-contracts/_index.md.json`](../../../governance/file-type-contracts/_index.md.json) — H1 matching folder name + folder-context paragraph (2-4 sentences) + contents-enum table (`File | Lines | Type | Description`) wrapped in sentinel markers (`<!-- contents-enum:start -->` / `<!-- contents-enum:end -->`).
+**Contract.** Frontmatter contract at [`governance/frontmatter-rules.json` `#types.index`](../../../governance/frontmatter-rules.json) — `type: index` + `tags:` (mandatory) + `parent_folder:` (required at `path_depth >= 2`, omitted at depth 1) + `updated:` (ISO-8601 date). Body-structure contract at [`governance/file-type-contracts/_index.md.json`](../../../governance/file-type-contracts/_index.md.json) — H1 matching folder name + folder-context paragraph (2-4 sentences) + contents-enum table (`File | Lines | Type | Description`) wrapped in sentinel markers (`<!-- contents-enum:start -->` / `<!-- contents-enum:end -->`).
 
 **Two-resource pattern.** The `_index.md` mandate follows the k8s `ValidatingAdmissionPolicy` shape: the matcher (the rule that declares THIS file type has a mandate + the file pattern + the exemption list) lives at [`governance/mandatory-files-rules.json` `mandates._index_md`](../../../governance/mandatory-files-rules.json); the parameters (body-structure contract — H1, table columns, sentinel markers, etc.) live at the separately-replaceable `governance/file-type-contracts/_index.md.json`. Hooks load the matcher to decide whether to fire, then load the parameter contract to validate body structure. Adopters override the parameters via Layer-3 overlay at `$CLAUDE_HOME/governance/file-type-contracts/_index.md.adopter.json` with `_override_reason` (R-52).
 
@@ -70,7 +70,7 @@ This spoke binds five coupled surfaces under R-37 atomic lockstep. Changes touch
 
 1. `governance/mandatory-files-rules.json` — the rule registry + `mandates` block
 2. `governance/file-type-contracts/<file>.json` — the per-file-type body-structure contract (this commit ships `_index.md.json`)
-3. `schemas/vault-schema.json` — the frontmatter contract per `#types.<type>` entry (this commit amends `#types.index` for `parent_folder` depth-conditional + `body_structure_contract` pointer)
+3. `governance/frontmatter-rules.json` — the frontmatter contract per `#types.<type>` entry (dissolved from schemas/vault-schema.json in SP13 T-4; provides `#types.index` with `parent_folder` depth-conditional + `body_structure_contract` pointer)
 4. `hooks/post-write-verify.sh` — Tier 1 auto-bootstrap + live-sync + loop guard
 5. This spoke — narrative rationale + exemption-list publication
 
@@ -94,7 +94,7 @@ T-32 carries all of the above plus the Enforcement.md meta-spoke. The vault-root
 
 - Rule registry: [`governance/mandatory-files-rules.json`](../../../governance/mandatory-files-rules.json)
 - `_index.md` body-structure contract: [`governance/file-type-contracts/_index.md.json`](../../../governance/file-type-contracts/_index.md.json)
-- Frontmatter contract: [`schemas/vault-schema.json` `#types.index`](../../../schemas/vault-schema.json)
+- Frontmatter contract: [`governance/frontmatter-rules.json` `#types.index`](../../../governance/frontmatter-rules.json)
 - Capability contract: [`governance/librarian-capabilities/index-maintain.md`](../../../governance/librarian-capabilities/index-maintain.md)
 - Design source (target-state): [`target-state/_index.md-design/`](../../../target-state/_index.md-design/)
 - Research narrative: [`research/vault-construction/_index.md-design.md`](../../../research/vault-construction/_index.md-design.md), [`research/vault-construction/mandatory-file-lock.md`](../../../research/vault-construction/mandatory-file-lock.md)
