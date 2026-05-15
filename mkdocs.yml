@@ -89,7 +89,6 @@ nav:
       - Content-length limits: research/vault-construction/content-length-limits.md
       - CLAUDE.md design: research/vault-construction/claude-md-design.md
       - "`_index.md` design": research/vault-construction/_index.md-design.md
-      - Enforcement-map design: research/vault-construction/enforcement-map-design.md
       - Inbox-flow architecture: research/vault-construction/inbox-flow-architecture.md
   - Decisions:
       - docs/decisions/README.md
