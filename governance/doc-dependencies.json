@@ -5,7 +5,7 @@
     "_description": "Path placeholders are substituted at install time. Foundation-repo ships paths in this parameterized form; install.sh resolves each placeholder against the adopter's environment.",
     "{hooks_root}": "Adopter's hooks directory (typical: $CLAUDE_HOME/hooks)",
     "{schemas_root}": "Adopter's schemas directory (typical: $CLAUDE_HOME/schemas)",
-    "{vault_root}": "Adopter's vault root (per onboarding wizard archetype + user-manifest)",
+    "{vault_root}": "Adopter's vault root (per onboarding wizard archetype)",
     "{skills_root}": "Adopter's skills directory (typical: $CLAUDE_HOME/skills)",
     "{plans_root}": "Adopter's plans directory (typical: $HOME/.claude-plans)",
     "{memory_root}": "Adopter's memory directory (typical: $CLAUDE_HOME/projects/<project-slug>/memory)"
@@ -55,44 +55,41 @@
       "primary": "Vault Architecture.md",
       "mirrors": [
         {
-          "file": "Vault Architecture/Vault Architecture - Structure.md",
-          "section": "Directory Structure / Reference Material: Three Tiers",
-          "kind": "extracted-section"
-        },
-        {
-          "file": "Vault Architecture/Vault Architecture - Engagements.md",
-          "section": "Engagements",
-          "kind": "extracted-section"
-        },
-        {
-          "file": "Vault Architecture/Vault Architecture - People.md",
-          "section": "People Files / Cross-Reference Integrity",
-          "kind": "extracted-section"
-        },
-        {
           "file": "Vault Architecture/Vault Architecture - Frontmatter.md",
-          "section": "Frontmatter Standards / Pre-Write Validation / Plan Directory Conventions",
+          "section": "Frontmatter Standards / Governance Pillar Coverage",
           "kind": "extracted-section"
         },
         {
-          "file": "Vault Architecture/Vault Architecture - Tasks.md",
-          "section": "Task System",
+          "file": "Vault Architecture/Vault Architecture - Tagging.md",
+          "section": "Tagging / Governance Pillar Coverage",
           "kind": "extracted-section"
         },
         {
-          "file": "Vault Architecture/Vault Architecture - Inbox.md",
-          "section": "Inbox: Operational Data Surface",
+          "file": "Vault Architecture/Vault Architecture - Naming.md",
+          "section": "Naming Conventions / Governance Pillar Coverage",
           "kind": "extracted-section"
         },
         {
-          "file": "Vault Architecture/Vault Architecture - Templates.md",
-          "section": "Appendix: Frontmatter Templates",
+          "file": "Vault Architecture/Vault Architecture - Mandatory-Files.md",
+          "section": "Mandatory-Files / Governance Pillar Coverage",
           "kind": "extracted-section"
+        },
+        {
+          "file": "Vault Architecture/Vault Architecture - Doc-Dependencies.md",
+          "section": "Doc-Dependencies / Governance Pillar Coverage",
+          "kind": "extracted-section",
+          "_deferred": "Spoke not yet authored (pending S1.1); entry acceptable per SP13 Phase 3 scope."
+        },
+        {
+          "file": "Vault Architecture/Vault Architecture - File-Type-Contracts.md",
+          "section": "File-Type Contracts / Governance Pillar Coverage",
+          "kind": "extracted-section",
+          "_deferred": "Spoke not yet authored (pending S1.1); entry acceptable per SP13 Phase 3 scope."
         }
       ],
       "rule": "hub-stub-must-have-matching-spoke",
       "severity": "warn",
-      "notes": "Vault Architecture.md is a hub with extracted spokes under Vault Architecture/. When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200 on most spokes, 250 on Frontmatter and Templates.",
+      "notes": "Vault Architecture.md is the hub with 6 narrative spokes under Vault Architecture/ (one per governance pillar; canonical §D). When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200-250 on spokes.",
       "rename_history": []
     },
     {
@@ -113,6 +110,10 @@
     },
     {
       "id": "vault-schema-type-consistency",
+      "_dissolved": true,
+      "_dissolved_at": "2026-05-15",
+      "_dissolution_reason": "vault-schema.json dissolved in SP13 T-4 (2026-05-14); canonical successor for type registry is governance/frontmatter-rules.json#types; type consistency is now enforced via foundation-master.json bundle reads in pre-write-guard.sh + post-write-verify.sh (SP13 T-3 migration). Physical removal pending T-6 final consumer migration. Frozen body preserved below.",
+      "_canonical_successor": "governance/frontmatter-rules.json#types + governance/foundation-master.json (bundle-at-load per §B)",
       "kind": "cross-file-type-union",
       "primary": "{schemas_root}/vault-schema.json",
       "mirrors": [
@@ -132,7 +133,7 @@
       "path_inferred_exceptions": [
         "daily-note"
       ],
-      "notes": "vault-schema.json carries the canonical first-class type allowlist. The R-32 Tier 2 DENY allowlist in pre-write-guard.sh covers all schema keys plus any aliases declared at install time. post-write-verify.sh type_map matches the same allowlist. daily-note remains path-inferred from Daily/ prefix. Any new type requires an R-37 lockstep commit (schema + pre-write-guard SCHEMA_KEY + pre-write-guard R-32 allowlist + post-write-verify type_map + CLAUDE.md + librarian SKILL.md, all in one commit).",
+      "notes": "FROZEN: vault-schema.json dissolved (SP13 T-4). Hooks now read foundation-master.json bundle; this cascade entry is retired. R-37 lockstep for type additions now references governance/frontmatter-rules.json#types (add to pillar JSON + rebuild bundle + update hooks + spoke). Physical deletion at SP13 T-6.",
       "rename_history": []
     },
     {
