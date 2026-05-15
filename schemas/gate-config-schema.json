@@ -3,6 +3,19 @@
   "$id": "https://stem.peter.dev/schemas/gate-config/v1.json",
   "title": "Gate Config Schema",
   "description": "Vault-wide gate rules (R-32 type allowlist, R-47 tag-presence advisory, R-37 coupled-surface atomic-lockstep). Authored by Plan 80/81 SP01 (manifest-generalization). Per-plan scope lives in plan manifests (live_mutation_scope); this surface is global.",
+  "_dissolved": true,
+  "_dissolved_marker": {
+    "status": "DISSOLVED — DO NOT AUTHOR HERE",
+    "frozen_at": "2026-05-14",
+    "dissolution_sp_task": "SP13 T-3",
+    "rationale": "This JSON Schema validates schemas/gate-config.json, which was dissolved in SP13 T-3. The schema dissolves alongside its instance: hooks no longer validate gate-config at runtime per the bundle-at-load architecture (hooks read foundation-master.json directly; gate-config runtime validation has no consumer). Physical file deletion co-occurs with schemas/gate-config.json deletion, gated on SP13 T-6. Mirrors schemas/gate-config.json _dissolved_marker pattern per feedback_freeze_with_marker_retirement_pattern.",
+    "canonical_successors": {
+      "runtime_validation_target": "governance/foundation-master.json (hooks validate using bundle; this schema's instance — gate-config.json — is frozen and no tool performs runtime validation against it)",
+      "instance_dissolution_record": "schemas/gate-config.json#_dissolved_marker (instance is frozen; this schema was its validator; both retire together at T-6)"
+    },
+    "policy": "(1) No new authoring against this file. (2) Content below is FROZEN as of 2026-05-14; no hook or tool performs runtime validation against this schema. (3) The file remains present until SP13 T-6 retires schemas/gate-config.json physically — both dissolve together in the same atomic commit per OQ-13-4 migrate-then-drop discipline. (4) governance/_index.json#dissolved_schemas.\"schemas/gate-config.json\" tracks final-deletion gating for the schema-instance pair.",
+    "registry_entry": "governance/_index.json#dissolved_schemas.\"schemas/gate-config.json\""
+  },
   "type": "object",
   "required": ["schema_version", "r32", "r47", "r37"],
   "additionalProperties": false,
