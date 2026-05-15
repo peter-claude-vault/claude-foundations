@@ -4,7 +4,7 @@
 # its 28% false-positive rate.
 #
 # Checks per people file (type: people):
-#   1. Required fields present (sourced from `vault-schema.json.people.required`)
+#   1. Required fields present (sourced from `governance/foundation-master.json#frontmatter.types.people.required`)
 #   2. Body contains a `## Context` H2 section
 #
 # Engagement-status exemption (gated on manifest.vault.has_structured_projects):
@@ -45,14 +45,14 @@ emit() {
   emit_event "$1"
 }
 
-# Source required-field list from vault-schema (zero inline fallback).
-VAULT_SCHEMA="${SCHEMAS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/schemas}/vault-schema.json"
+# Source required-field list from foundation-master bundle (zero inline fallback).
+FOUNDATION_MASTER="${FOUNDATION_MASTER:-${GOVERNANCE_DIR:-${CLAUDE_HOME:-$HOME/.claude}/governance}/foundation-master.json}"
 PEOPLE_REQUIRED=""
-if [[ -r "$VAULT_SCHEMA" ]] && command -v jq >/dev/null 2>&1; then
-  PEOPLE_REQUIRED=$(jq -r '.people.required // [] | join(",")' "$VAULT_SCHEMA" 2>/dev/null)
+if [[ -r "$FOUNDATION_MASTER" ]] && command -v jq >/dev/null 2>&1; then
+  PEOPLE_REQUIRED=$(jq -r '.frontmatter.types.people.required // [] | join(",")' "$FOUNDATION_MASTER" 2>/dev/null)
 fi
 if [[ -z "$PEOPLE_REQUIRED" ]]; then
-  emit "{ \"people_audit_skipped\": \"vault-schema.people.required missing or empty\" }"
+  emit "{ \"people_audit_skipped\": \"foundation-master.frontmatter.types.people.required missing or empty\" }"
   exit 0
 fi
 

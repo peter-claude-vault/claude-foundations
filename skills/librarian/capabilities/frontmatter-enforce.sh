@@ -83,16 +83,16 @@ done
 EXISTING_DRIFT="$(manifest_get '.drift_findings' '{}')"
 # Env-var overrides for testing (waiver-audit precedent).
 DRIFT_ALLOWLIST_FILE="${FM_DRIFT_ALLOWLIST_FILE_OVERRIDE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/drift-allowlist.json}"
-VAULT_SCHEMA="${FM_VAULT_SCHEMA:-${SCHEMAS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/schemas}/vault-schema.json}"
+FOUNDATION_MASTER="${FM_FOUNDATION_MASTER:-${FOUNDATION_MASTER:-${GOVERNANCE_DIR:-${CLAUDE_HOME:-$HOME/.claude}/governance}/foundation-master.json}}"
 PRE_WRITE_GUARD="${FM_PRE_WRITE_GUARD_OVERRIDE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/pre-write-guard.sh}"
 POST_WRITE_VERIFY="${FM_POST_WRITE_VERIFY_OVERRIDE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/post-write-verify.sh}"
-DOC_DEPENDENCIES="${FM_DOC_DEPENDENCIES_OVERRIDE:-${CLAUDE_HOME:-$HOME/.claude}/hooks/doc-dependencies.json}"
+DOC_DEPENDENCIES="${FM_DOC_DEPENDENCIES_OVERRIDE:-${CLAUDE_HOME:-$HOME/.claude}/governance/doc-dependencies.json}"
 
 VAULT_SCOPE="${SCOPE:-$VAULT_ROOT}"
 
 export FM_EXISTING_DRIFT="$EXISTING_DRIFT"
 export FM_DRIFT_ALLOWLIST_FILE="$DRIFT_ALLOWLIST_FILE"
-export FM_VAULT_SCHEMA="$VAULT_SCHEMA"
+export FM_FOUNDATION_MASTER="$FOUNDATION_MASTER"
 export FM_PRE_WRITE_GUARD="$PRE_WRITE_GUARD"
 export FM_POST_WRITE_VERIFY="$POST_WRITE_VERIFY"
 export FM_DOC_DEPENDENCIES="$DOC_DEPENDENCIES"
@@ -301,17 +301,18 @@ REQUIRED = {
     "weekly-summary":    ["type", "week", "date-range", "tags"],
 }
 
-# Tag prefix allowlist sourced from vault-schema.json `_tag_prefixes` (zero
-# inline fallback). Empty/missing schema → empty allowlist → tag taxonomy
-# validation skips silently. Foundation default: `_tag_prefixes: []`.
+# Tag prefix allowlist sourced from foundation-master#tagging.taxonomy.dimension_prefixes.
+# Foundation ships system-utility dimensions (status, log); user-facing dimensions
+# pending overlay-master union-resolve (SP13 T-7+T-8). Empty → tag taxonomy
+# validation skips silently (graceful degradation until union-resolve lands).
 def _load_tag_prefixes():
-    schema_path = os.environ.get("FM_VAULT_SCHEMA", "")
+    bundle_path = os.environ.get("FM_FOUNDATION_MASTER", "")
     try:
-        with open(schema_path) as fh:
-            doc = json.load(fh)
+        with open(bundle_path) as fh:
+            bundle = json.load(fh)
     except Exception:
         return ()
-    raw = doc.get("_tag_prefixes")
+    raw = bundle.get("tagging", {}).get("taxonomy", {}).get("dimension_prefixes", None)
     if not isinstance(raw, list):
         return ()
     return tuple((p if p.endswith("/") else p + "/") for p in raw if isinstance(p, str))

@@ -2,14 +2,15 @@
 # tag-coverage-audit — Vault-wide tag coverage + taxonomy compliance audit.
 #
 # Walks non-exempt vault .md files, measures presence of `tags:` frontmatter
-# field, classifies tags against the canonical allowlist (vault-schema.json
-# `_tag_prefixes`).
+# field, classifies tags against the canonical allowlist from
+# `governance/foundation-master.json#tagging.taxonomy.dimension_prefixes`.
 #
-# Foundation philosophy: schema is source-of-truth for the taxonomy, manifest
-# is source-of-truth for path-pattern exemptions. When `_tag_prefixes` is
-# empty (foundation default), prefix-validation is skipped and only the
-# `missing_tags_field` / `empty_tags_field` findings fire. Users populate
-# `vault-schema.json._tag_prefixes` as their taxonomy stabilizes.
+# Foundation philosophy: bundle is source-of-truth for the taxonomy, manifest
+# is source-of-truth for path-pattern exemptions. When dimension_prefixes is
+# empty, prefix-validation is skipped and only the
+# `missing_tags_field` / `empty_tags_field` findings fire. Foundation ships
+# system-utility dimensions (status, log); user-facing dimensions land via
+# overlay-master union-resolve (SP13 T-7+T-8 scope).
 #
 # Structural exemptions (always exempt; not user-configurable):
 #   - Archive/**                       (frozen history)
@@ -57,13 +58,14 @@ done
 
 export FINDINGS_OUTPUT="$OUTPUT"
 
-# Tag prefix allowlist sourced from vault-schema._tag_prefixes.
-# Foundation default is empty — when empty, prefix validation is skipped
-# and only missing/empty-tags findings fire.
-VAULT_SCHEMA="${SCHEMAS_DIR:-${CLAUDE_HOME:-$HOME/.claude}/schemas}/vault-schema.json"
+# Tag prefix allowlist sourced from foundation-master#tagging.taxonomy.dimension_prefixes.
+# Foundation ships system-utility dimensions (status, log); user-facing dimensions
+# (engagement, project, scope, etc.) pending overlay-master union-resolve (SP13 T-7+T-8).
+# When allowlist is empty, prefix validation is skipped and only missing/empty-tags findings fire.
+FOUNDATION_MASTER="${FOUNDATION_MASTER:-${GOVERNANCE_DIR:-${CLAUDE_HOME:-$HOME/.claude}/governance}/foundation-master.json}"
 ALLOWLIST_PREFIXES=""
-if [[ -r "$VAULT_SCHEMA" ]] && command -v jq >/dev/null 2>&1; then
-  ALLOWLIST_PREFIXES=$(jq -r '._tag_prefixes // [] | .[]' "$VAULT_SCHEMA" 2>/dev/null | tr '\n' ' ')
+if [[ -r "$FOUNDATION_MASTER" ]] && command -v jq >/dev/null 2>&1; then
+  ALLOWLIST_PREFIXES=$(jq -r '.tagging.taxonomy.dimension_prefixes // [] | .[]' "$FOUNDATION_MASTER" 2>/dev/null | tr '\n' ' ')
 fi
 
 # Manifest-extension exempt patterns (path globs).

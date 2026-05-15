@@ -4,7 +4,7 @@
 #
 # Usage: drift-sweep.sh [--dry-run] [--batch-size N] [--output FILE]
 #
-# Scans vault .md files for frontmatter drift against vault-schema.json.
+# Scans vault .md files for frontmatter drift against governance/foundation-master.json (bundle).
 # Emits structured findings compatible with librarian manifest format.
 # Batch-with-progress: emits every N files to reset stream-json idle watchdog.
 set -euo pipefail
@@ -13,7 +13,7 @@ source "$HOME/.claude/hooks/lib/paths.sh"
 # Plan 61: source canonical findings emitter; replaces inline emit_progress.
 source "$HOME/.claude/skills/librarian/lib/findings.sh"
 
-SCHEMA_FILE="$SCHEMAS_DIR/vault-schema.json"
+FOUNDATION_MASTER="${FOUNDATION_MASTER:-$GOVERNANCE_DIR/foundation-master.json}"
 DRY_RUN=true
 BATCH_SIZE=50
 OUTPUT=""
@@ -31,8 +31,8 @@ done
 # Route findings emission via findings.sh (writes to FINDINGS_OUTPUT or stdout).
 export FINDINGS_OUTPUT="$OUTPUT"
 
-if [[ ! -f "$SCHEMA_FILE" ]]; then
-  echo "ERROR: vault-schema.json not found at $SCHEMA_FILE" >&2
+if [[ ! -f "$FOUNDATION_MASTER" ]]; then
+  echo "ERROR: foundation-master.json not found at $FOUNDATION_MASTER" >&2
   exit 1
 fi
 
@@ -65,19 +65,17 @@ while IFS= read -r -d '' file; do
   FM=$(awk '/^---$/{c++;next} c==1{print} c>=2{exit}' "$file" 2>/dev/null)
   [[ -z "$FM" ]] && continue
 
-  # Check type against schema
+  # Check type against foundation-master bundle
   FILE_TYPE=$(echo "$FM" | grep -E '^type:' 2>/dev/null | head -1 | sed 's/^type:[[:space:]]*//' || true)
   if [[ -n "$FILE_TYPE" ]]; then
     SCHEMA_KEY=$(python3 -c "
 import json, sys
-schema = json.load(open('$SCHEMA_FILE'))
+bundle = json.load(open('$FOUNDATION_MASTER'))
 t = sys.argv[1]
-type_map = {
-    'skill-spec': 'reference', 'overview': 'engagement', 'updates': 'engagement',
-    'file-index': 'index', 'tier-2': 'reference',
-}
+type_map = bundle.get('r32_type_aliases', {})
 key = type_map.get(t, t)
-if key in schema and not key.startswith('_'):
+types = bundle.get('frontmatter', {}).get('types', {})
+if key in types and not key.startswith('_'):
     print(key)
 else:
     print('')
@@ -90,12 +88,13 @@ else:
       # Check required fields
       MISSING=$(python3 -c "
 import json, yaml, sys
-schema = json.load(open('$SCHEMA_FILE'))
+bundle = json.load(open('$FOUNDATION_MASTER'))
 fm = yaml.safe_load(sys.stdin)
 if not isinstance(fm, dict):
     sys.exit(0)
 key = sys.argv[1]
-req = schema.get(key, {}).get('required', [])
+types = bundle.get('frontmatter', {}).get('types', {})
+req = types.get(key, {}).get('required', [])
 missing = [f for f in req if f not in fm or fm[f] is None]
 if missing:
     print(','.join(missing))

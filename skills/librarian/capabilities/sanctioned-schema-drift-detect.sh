@@ -1,11 +1,11 @@
 #!/bin/bash
-# sanctioned-schema-drift-detect — verify the 3 sanctioned schemas in the
+# sanctioned-schema-drift-detect — verify the 2 sanctioned schemas in the
 # live tree match foundation-repo distribution-source.
 #
 # Plan 71 SP09 T-12.7: defense-in-depth against unsanctioned drift between
 # live ~/.claude/schemas/ and foundation-repo schemas/. Sanctioned schemas
-# are the 3 retained post-T-10 atomic revert: vault-schema.json,
-# plans-schema.json, plan-manifest-schema.json.
+# are plans-schema.json + plan-manifest-schema.json (vault-schema.json
+# dissolved SP13 T-4; physical deletion gated on SP13 T-6).
 #
 # Usage: sanctioned-schema-drift-detect.sh [--json]
 #
@@ -22,7 +22,7 @@ set -euo pipefail
 FOUNDATION_REPO="${FOUNDATION_REPO:-$HOME/Code/claude-stem}"
 LIVE_SCHEMAS="${LIVE_SCHEMAS:-$HOME/.claude/schemas}"
 
-SANCTIONED=(vault-schema plans-schema plan-manifest-schema)
+SANCTIONED=(plans-schema plan-manifest-schema)
 
 JSON_MODE=false
 for arg in "$@"; do

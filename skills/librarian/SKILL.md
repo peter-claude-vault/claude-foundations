@@ -35,7 +35,7 @@ Vault integrity, cross-domain sync, and backup. Single authority on "is the vaul
 | `/librarian cron-log-architecture` | launchd plist vs wrapper dated-log mismatch linter (R-22) | all `com.*.plist` |
 | `/librarian handoff-disposition-check` | Grep touched handoffs for unresolved-language without disposition (R-25) | touched `*handoff.md` |
 | `/librarian mem-promote --apply` | Same, with auto-write for high-confidence promotions | observations since last promote |
-| `/librarian drift-sweep` | Scan vault for frontmatter drift against `vault-schema.json` | full vault (excl. `.claude/projects/*`, `_test*`) |
+| `/librarian drift-sweep` | Scan vault for frontmatter drift against `governance/foundation-master.json` (bundle) | full vault (excl. `.claude/projects/*`, `_test*`) |
 | `/librarian people-audit` | Audit `*/People/*.md` conformance (frontmatter + `## Context` H2) | all engagements (auto-exempts `status: complete\|archived\|historical\|closed`) |
 | `/librarian waiver-audit` | Audit `cascade-waivers.json` abuse + `hook-audit.log` override fires (R-46) | all waivers + all logged fires |
 | `/librarian wikilink-repair` | Detect broken `[[wikilinks]]` + propose doc-dependency-registry-seeded repairs (dry-run default; `--apply` to rewrite) | full vault (excl. `Archive/`, `Logs/foundations-essays/`, `Logs/backlog-progress/`) |
@@ -83,13 +83,13 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/frontmatter-enforce.sh [--scope 
 - `frontmatter-empty-optional` — optional field set to empty string (`""`, `''`, `null`)
 - `frontmatter-tag-violation` — tag not in R-32 (vault tag-prefix allowlist) allowlist, or `tags:` is a string instead of a list
 
-**File type detection (alias collapse applied):** path-pattern rules yield one of 20 schema keys or 5 aliases. Aliases resolve as `skill-spec → reference`, `overview → engagement`, `updates → engagement`, `file-index → index`, `tier-2 → reference`. Required-field matrix mirrors `$CLAUDE_HOME/schemas/vault-schema.json`; tag prefix allowlist mirrors `_tag_prefixes` (default seed: `engagement/`, `project/`, `scope/`, `status/`, `initiative/`; archetype installs may add domain-specific prefixes).
+**File type detection (alias collapse applied):** path-pattern rules yield one of 20 schema keys or 5 aliases. Aliases resolve as `skill-spec → reference`, `overview → engagement`, `updates → engagement`, `file-index → index`, `tier-2 → reference`. Required-field matrix mirrors `governance/foundation-master.json#frontmatter.types`; tag prefix allowlist mirrors `#tagging.taxonomy.dimension_prefixes` (foundation: `status/`, `log/`; user-facing dimensions via overlay-master union-resolve SP13 T-7+T-8).
 
 **Scope exemptions:** `.git/`, `.obsidian/`, `.claude/`, `.claude/projects/`, `_test*`, `Logs/ideation-brief-*.md`, `{projects_dir}/*/CLAUDE.md` (navigation, no frontmatter required).
 
 **Drift audits (always run on `--full` / `--recent`; skipped on `--scope` and `--logs-only`):**
 
-**File type detection** uses path patterns first (e.g. `Meetings/*.md → meeting-note`, `{projects_dir}/*/People/*.md → people`, `{projects_dir}/*/Projects/*/* - PRD.md → prd`), with frontmatter `type:` overriding when explicitly set. Full path→type map is embedded in the runtime; see runtime source for the 20-row table. Required-field matrix mirrors `$CLAUDE_HOME/schemas/vault-schema.json`.
+**File type detection** uses path patterns first (e.g. `Meetings/*.md → meeting-note`, `{projects_dir}/*/People/*.md → people`, `{projects_dir}/*/Projects/*/* - PRD.md → prd`), with frontmatter `type:` overriding when explicitly set. Full path→type map is embedded in the runtime; see runtime source for the 20-row table. Required-field matrix mirrors `governance/foundation-master.json#frontmatter.types`.
 
 **Drift audit finding shapes (read-only; never auto-fixed):**
 
@@ -99,7 +99,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/frontmatter-enforce.sh [--scope 
 
 3. **Hub-spoke recommendation engine** — attached to size findings with severity ≥ warning AND file in canonical scope. Finds largest non-structural H2/H3 section (excluding `frontmatter`, `version history`, `summary`, `behavioral rules`). If < 30 lines: manual-review message. Otherwise proposes a spoke file at `{parent}/{basename}/{basename} - {slug}.md` with either "Convert to hub-spoke" (no existing spokes) or "Add new spoke" wording.
 
-4. `schema-type-hook-coverage-gap` — for each `vault-schema.json` schema key, verifies both `pre-write-guard.sh` SCHEMA_KEY case statement AND `post-write-verify.sh` type_map carry the type. Exceptions at `doc-dependencies.json` `vault-schema-type-consistency.path_inferred_exceptions[]`. Fields: `schema_key`, `missing_in` (one or both hook filenames), `remediation`.
+4. `schema-type-hook-coverage-gap` — for each `governance/frontmatter-rules.json#types` entry, verifies both `pre-write-guard.sh` SCHEMA_KEY case statement AND `post-write-verify.sh` type_map carry the type. Exceptions at `doc-dependencies.json` `va-hub-spoke.path_inferred_exceptions[]`. Fields: `schema_key`, `missing_in` (one or both hook filenames), `remediation`.
 
 **Persistent IDs (reconciled every run):**
 - `DC-NNN` — provides canonicality drift (matched by `capability`)
@@ -182,7 +182,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh [--full|--recent|-
 
 ## Capability: drift-sweep
 
-**Purpose:** Weekly full-vault frontmatter drift scan against `vault-schema.json`. Supplemental to write-time hooks (pre-write-guard R-32 + post-write-verify) — drift-sweep catches files that escaped write-time checks (cascade waivers, pre-allowlist writes, files touched outside the hook path).
+**Purpose:** Weekly full-vault frontmatter drift scan against `governance/foundation-master.json` (bundle). Supplemental to write-time hooks (pre-write-guard R-32 + post-write-verify) — drift-sweep catches files that escaped write-time checks (cascade waivers, pre-allowlist writes, files touched outside the hook path).
 
 **Scope:** all `.md` files under vault root, excluding `.claude/projects/*` (auto-memory) and `_test*` (scratch).
 
@@ -198,7 +198,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/xref-check.sh [--full|--recent|-
 
 **Finding classes:**
 - `unregistered_type` — `type:` value not in the 24-value R-32 allowlist
-- `missing_required` — required fields (per vault-schema.json) missing
+- `missing_required` — required fields (per governance/foundation-master.json#frontmatter.types) missing
 
 Findings are weekly-review material, not write-time advisories. Human resolution path: add type to schema + hooks + CLAUDE.md (R-37, schema-type lockstep) OR correct the file.
 
@@ -220,7 +220,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 **Exemptions:** Engagements whose Overview/_index/CLAUDE.md carries `status: complete|archived|historical|closed` are skipped. Auto-discovered — no hardcoded engagement list. (Skipped silently entirely when `manifest.vault.has_structured_projects: false`.)
 
 **Checks:**
-1. Required `people` fields: `name`, `org`, `role`, `engagement`, `updated`, `tags` (per `vault-schema.json`).
+1. Required `people` fields: `name`, `org`, `role`, `engagement`, `updated`, `tags` (per `governance/foundation-master.json#frontmatter.types.people`).
 2. `^## Context` H2 present in first 2KB of body.
 
 **Flags:**
@@ -237,7 +237,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; lifecycle/exemption `librarian-event` lines via `emit_event`.
 - **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); event lines carry `librarian-event` shape.
-- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; required-field list sourced from `vault-schema.json.people.required` (capability gracefully exits with `people_audit_skipped` if schema list is empty/missing).
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; required-field list sourced from `governance/foundation-master.json#frontmatter.types.people.required` (capability gracefully exits with `people_audit_skipped` if schema list is empty/missing).
 - **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-people-audit.md`.
 
 ---
@@ -287,7 +287,7 @@ Findings are weekly-review material, not write-time advisories. Human resolution
 
 **Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh` (sources `$CLAUDE_HOME/hooks/lib/paths.sh` + `lib/plan-path.sh` + `lib/findings.sh` + `lib/frontmatter.sh`).
 
-**Purpose:** Vault-wide tag coverage + taxonomy compliance audit. Measures presence of `tags:` frontmatter field, classifies tags against the canonical allowlist (`vault-schema.json` `_tag_prefixes`), and flags residual `#type/*` references remaining after the R-37 (schema-type lockstep) `type:` elimination.
+**Purpose:** Vault-wide tag coverage + taxonomy compliance audit. Measures presence of `tags:` frontmatter field, classifies tags against the canonical allowlist from `governance/foundation-master.json#tagging.taxonomy.dimension_prefixes`, and flags residual `#type/*` references remaining after the R-37 (schema-type lockstep) `type:` elimination.
 
 **Invocation:**
 
@@ -313,7 +313,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <
 - Plan-root files + any depth ≥2 under `$PLANS_DIR`
 - `Logs/foundations-essays/**` and `Logs/backlog-progress/**` are NOT exempt (`#log/{log-type}` mirrors frontmatter `log-type:`)
 
-**Canonical tag-prefix allowlist (default seed):** `engagement/`, `project/`, `scope/`, `status/`, `initiative/`, `about-me/`, `log/`. Sourced at runtime from `vault-schema.json._tag_prefixes`; archetype installs may extend with domain-specific prefixes via onboarding. The runtime list and the `frontmatter-enforce.sh` `TAG_PREFIXES` constant must stay mirrored — see `lib/frontmatter.sh` for the shared loader.
+**Canonical tag-prefix allowlist:** foundation system-utility dimensions: `status/`, `log/`. Sourced at runtime from `governance/foundation-master.json#tagging.taxonomy.dimension_prefixes`; user-facing dimensions (engagement, project, scope, etc.) land via overlay-master union-resolve (SP13 T-7+T-8). The runtime list and the `frontmatter-enforce.sh` `TAG_PREFIXES` constant must stay mirrored — see `lib/frontmatter.sh` for the shared loader.
 
 **Finding classes:**
 - `missing_tags_field` — no `tags:` field at all
@@ -331,7 +331,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/tag-coverage-audit.sh [--scope <
 
 - **Files written:** stdout (or `$FINDINGS_OUTPUT` if set) — NDJSON `librarian-finding` entries via `lib/findings.sh::emit_finding`; lifecycle/progress `librarian-event` lines via `emit_event`.
 - **Schema type:** `librarian-finding` (validated against `librarian-manifest-schema.json#/$defs/finding`); event lines carry `librarian-event` shape.
-- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; allowlist sourced from `vault-schema.json._tag_prefixes` (empty → prefix validation skipped, only missing/empty findings fire); exempt patterns sourced from `manifest.vault.tag_audit_exemptions[]`.
+- **Pre-write validation:** every emitted finding passes `findings.sh` schema check before output; allowlist sourced from `governance/foundation-master.json#tagging.taxonomy.dimension_prefixes` (empty → prefix validation skipped, only missing/empty findings fire); exempt patterns sourced from `manifest.vault.tag_audit_exemptions[]`.
 - **Failure mode:** block-and-log per spec.md §Output Contract — schema-invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-tag-coverage-audit.md`.
 
 ---
@@ -1301,7 +1301,7 @@ Individual capabilities MAY write their own sub-logs + findings per their SKILL.
 - Individual capability contracts: see `## Capability: <name>` sections in this SKILL.md.
 - R-42 scope contract: see `ENFORCEMENT-MAP.md`.
 - R-41 plan-index staleness tripwire: `plan-index` capability section.
-- Aggregated report schema: `$CLAUDE_HOME/schemas/vault-schema.json` (type: log, log-type: session-close).
+- Aggregated report schema: `governance/foundation-master.json#frontmatter.types.log` (type: log, log-type: session-close).
 
 ---
 
@@ -2044,7 +2044,7 @@ Create an audit trail from curated memory back to the raw observation that gener
 
 **Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/classify.sh` (contract reserved; not yet implemented). Stub exits 2 with a not-yet-implemented message to stderr; the capability name and contract are reserved for forward-compatibility.
 
-**Purpose:** Intake classification primitive. Given a raw unstructured blob (email body / meeting transcript / ad-hoc capture), classify it into a canonical `type:` from `vault-schema.json._types`. Upstream of `write-frontmatter` and `cluster-by-topic` in the Phase 2 Act 2 ingestion pipeline.
+**Purpose:** Intake classification primitive. Given a raw unstructured blob (email body / meeting transcript / ad-hoc capture), classify it into a canonical `type:` from `governance/frontmatter-rules.json#types`. Upstream of `write-frontmatter` and `cluster-by-topic` in the Phase 2 Act 2 ingestion pipeline.
 
 **Tier:** mechanical (prefilter for high-confidence inputs) + judgment (edge cases requiring Claude synthesis). Registry dispatcher-gate is `mechanical` (silent fast path); `cron_block: none`; `requires_confirmation: false`. Edge-case synthesis fires at invocation time per the rubric below — not gated through `requires_confirmation` because classification emits NDJSON only, never mutates the vault.
 
@@ -2058,7 +2058,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/classify.sh < input.ndjson
 
 **Outputs:** NDJSON stream of `{source, type, confidence, rationale}` records on stdout. Each output record carries:
 - `source` — pass-through identifier from input
-- `type` — canonical type drawn from `vault-schema.json._types` (or literal `unknown` when sub-threshold)
+- `type` — canonical type drawn from `governance/frontmatter-rules.json#types` (or literal `unknown` when sub-threshold)
 - `confidence` — float in `[0.0, 1.0]`
 - `rationale` — one-line synthesis hint (used by `cluster-by-topic` as a downstream signal)
 
@@ -2070,12 +2070,12 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/classify.sh < input.ndjson
 
 **Invocation modes:** `ad-hoc`, `phase-2-act-2`.
 
-**Dependencies:** `vault-schema.json`, `lib/findings.sh`.
+**Dependencies:** `governance/foundation-master.json`, `lib/findings.sh`.
 
 **Output Contract:**
 
 - **Files written:** none. Capability emits NDJSON records to stdout only. Caller consumes the stream and routes records to `write-frontmatter` (when `type` is known) or back to user-confirmation flow (when `type: unknown`).
-- **Schema type:** NDJSON output records validated against `vault-schema.json._types` for `type` field; record shape itself not formally schematized (intermediate-pipeline contract).
+- **Schema type:** NDJSON output records validated against `governance/frontmatter-rules.json#types` for `type` field; record shape itself not formally schematized (intermediate-pipeline contract).
 - **Pre-write validation:** none required (no vault writes). Output record `type` field gated against `vault.type_allowlist[]` from the user manifest before emission; out-of-allowlist types emit as `unknown` with rationale.
 - **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — invalid output never reaches stdout; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-classify.md`. Stub-mode invocation exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
 - **Tier:** mechanical (with v2.1 judgment-tier escalation per rubric). **requires_confirmation:** false at the dispatcher gate. **cron_block:** none.
@@ -2128,7 +2128,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh < classified
 
 **Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh` (contract reserved; not yet implemented). Stub exits 2 with a not-yet-implemented message to stderr; the capability name and contract are reserved for forward-compatibility.
 
-**Purpose:** Canonical-file drafting primitive. Given a cluster of related intake records (output of `cluster-by-topic`) plus a target canonical-file type (e.g., `people`, `project`, `engagement`), synthesize a draft canonical file with a populated `## Context` H2 and structured sections per `vault-schema.json` for the given `type:`. Drafts land in a staging area; canonical placement is gated on user confirmation.
+**Purpose:** Canonical-file drafting primitive. Given a cluster of related intake records (output of `cluster-by-topic`) plus a target canonical-file type (e.g., `people`, `project`, `engagement`), synthesize a draft canonical file with a populated `## Context` H2 and structured sections per `governance/frontmatter-rules.json#types` for the given `type:`. Drafts land in a staging area; canonical placement is gated on user confirmation.
 
 **Tier:** judgment. Requires Claude synthesis at every invocation — no deterministic path. Registry dispatcher-gate is `judgment`; `cron_block: skip-non-interactive`; `requires_confirmation: true`. Capability never fires unattended; cron runs short-circuit with `draft-canonical-file: skipped (non-interactive)` when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
 
@@ -2138,7 +2138,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/cluster-by-topic.sh < classified
 bash $CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh < cluster.ndjson
 ```
 
-**Inputs:** NDJSON stream of `{cluster_id, records[], target_type, target_path_hint}` records on stdin. `target_type` must be a member of `vault-schema.json._types`; `target_path_hint` is an optional manifest-relative path the synthesis pass uses as a placement anchor (final placement still requires user confirmation).
+**Inputs:** NDJSON stream of `{cluster_id, records[], target_type, target_path_hint}` records on stdin. `target_type` must be a member of `governance/frontmatter-rules.json#types`; `target_path_hint` is an optional manifest-relative path the synthesis pass uses as a placement anchor (final placement still requires user confirmation).
 
 **Outputs:** NDJSON stream of `{path, draft_written, confidence, sections_populated[]}` records on stdout. Side effect: writes draft files to `{vault.root}/_drafts/*.md` (staging area) before stdout emission. Each output record carries:
 - `path` — absolute path of the draft file under `_drafts/`
@@ -2154,12 +2154,12 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh < cluste
 
 **Invocation modes:** `ad-hoc`, `phase-2-act-3`.
 
-**Dependencies:** `vault-schema.json`, `lib/frontmatter.sh`, `capabilities/classify.sh` (transitively, via cluster records), `capabilities/cluster-by-topic.sh` (direct upstream).
+**Dependencies:** `governance/foundation-master.json`, `lib/frontmatter.sh`, `capabilities/classify.sh` (transitively, via cluster records), `capabilities/cluster-by-topic.sh` (direct upstream).
 
 **Output Contract:**
 
 - **Files written:** `{vault.root}/_drafts/*.md` (staging area only — canonical placement under `{vault.root}/People/`, `{vault.root}/{projects_dir}/`, etc., is gated on user confirmation and is NOT performed by this capability). NDJSON output records emitted to stdout post-write.
-- **Schema type:** draft files are frontmatter-prefixed Markdown validated against `vault-schema.json` for the requested `target_type`. NDJSON output record shape not formally schematized (intermediate-pipeline contract).
+- **Schema type:** draft files are frontmatter-prefixed Markdown validated against `governance/foundation-master.json#frontmatter.types` for the requested `target_type`. NDJSON output record shape not formally schematized (intermediate-pipeline contract).
 - **Pre-write validation:** for every draft file: (1) frontmatter lint via `lib/frontmatter.sh::validate_frontmatter`; (2) R-40 plan-artifact-schema check (skipped for non-plan target types); (3) `## Context` H2 must be present and non-empty when `target_type` is in `vault.context_section_types[]` (canonical types like `people`, `project`, `engagement`). Failures abort the write before any bytes hit `_drafts/` — block-and-log, never partial.
 - **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — schema-invalid drafts never written to staging; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-draft-canonical-file.md`. Stub-mode invocation exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
 - **Tier:** judgment. **requires_confirmation:** true. **cron_block:** skip-non-interactive — capability exits 0 with `draft-canonical-file: skipped (non-interactive)` log line when stdin is not a TTY and `FOUNDATION_TEST_MODE` is unset.
@@ -2170,7 +2170,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh < cluste
 
 **Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh` (contract reserved; not yet implemented). Stub exits 2 with a not-yet-implemented message to stderr; the capability name and contract are reserved for forward-compatibility.
 
-**Purpose:** Frontmatter emission primitive. Given a classified record (output of `classify`) plus a target path, emit valid YAML frontmatter conforming to `vault-schema.json` for the given `type:`. The single sanctioned write-path for new vault files in the Phase 2 Act 2 pipeline; `frontmatter-enforce` is the read/repair counterpart.
+**Purpose:** Frontmatter emission primitive. Given a classified record (output of `classify`) plus a target path, emit valid YAML frontmatter conforming to `governance/foundation-master.json#frontmatter.types` for the given `type:`. The single sanctioned write-path for new vault files in the Phase 2 Act 2 pipeline; `frontmatter-enforce` is the read/repair counterpart.
 
 **Tier:** mechanical. Pure transform — no Claude synthesis required. Registry dispatcher-gate is `mechanical`; `cron_block: none`; `requires_confirmation: false`. Mutations are gated structurally by the pre-write validation chain rather than by user confirmation.
 
@@ -2180,7 +2180,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/draft-canonical-file.sh < cluste
 bash $CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh < classified.ndjson
 ```
 
-**Inputs:** NDJSON stream of `{type, path, fields{}, content}` records on stdin. `type` must be a member of `vault-schema.json._types`; `path` is the absolute target file path (under `{vault.root}`); `fields{}` is the field map for frontmatter emission; `content` is the body (post-frontmatter) bytes. Manifest read for `vault.tag_prefixes[]` (R-32 tier-2 tag-allowlist enforcement).
+**Inputs:** NDJSON stream of `{type, path, fields{}, content}` records on stdin. `type` must be a member of `governance/frontmatter-rules.json#types`; `path` is the absolute target file path (under `{vault.root}`); `fields{}` is the field map for frontmatter emission; `content` is the body (post-frontmatter) bytes. Manifest read for `vault.tag_prefixes[]` (R-32 tier-2 tag-allowlist enforcement).
 
 **Outputs:** writes frontmatter-prefixed files to target paths under `{vault.root}/`; emits NDJSON of `{path, fields_written, validation_result}` to stdout for caller consumption. Each output record carries:
 - `path` — pass-through target path
@@ -2189,20 +2189,20 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh < classifie
 
 **Pre-write validation chain (load-bearing — every write gates through all three):**
 
-1. **Frontmatter lint** via `lib/frontmatter.sh::validate_frontmatter` — required-field matrix mirrors `vault-schema.json` per the file's `type:`; empty-string optionals rejected; tag-list-vs-string shape enforced.
-2. **R-40 plan-artifact-schema check** — when `type` is a plan-artifact type (per `plans-schema.json`), the additional R-40 plan-artifact frontmatter requirements are checked atop the vault-schema base.
-3. **R-32 tier-2 tag-allowlist** — every emitted `tags:` entry validated against `vault-schema.json._tag_prefixes` ∪ `manifest.vault.tag_prefixes[]`. Out-of-allowlist tags abort the write.
+1. **Frontmatter lint** via `lib/frontmatter.sh::validate_frontmatter` — required-field matrix mirrors `governance/foundation-master.json#frontmatter.types` per the file's `type:`; empty-string optionals rejected; tag-list-vs-string shape enforced.
+2. **R-40 plan-artifact-schema check** — when `type` is a plan-artifact type (per `plans-schema.json`), the additional R-40 plan-artifact frontmatter requirements are checked atop the foundation-master base.
+3. **R-32 tier-2 tag-allowlist** — every emitted `tags:` entry validated against `governance/foundation-master.json#tagging.taxonomy.dimension_prefixes` ∪ `manifest.vault.tag_prefixes[]`. Out-of-allowlist tags abort the write.
 
 **Pre-write-guard interlock:** writes also flow through the `pre-write-guard.sh` PreToolUse hook chain at the harness level (Tier 1 advisory + Tier 2 manifest-block + Tier 3 cascade-waiver). `write-frontmatter` is the in-capability validation; `pre-write-guard` is the harness-level structural backstop. Both must pass.
 
 **Invocation modes:** `ad-hoc`, `phase-2-act-2`, `phase-2-act-3`.
 
-**Dependencies:** `vault-schema.json`, `lib/frontmatter.sh`, `pre-write-guard` (PreToolUse hook chain).
+**Dependencies:** `governance/foundation-master.json`, `lib/frontmatter.sh`, `pre-write-guard` (PreToolUse hook chain).
 
 **Output Contract:**
 
 - **Files written:** `{vault.root}/**/*.md` (frontmatter-prefixed Markdown files at the target path supplied per input record). Atomic temp+rename via `lib/frontmatter.sh::write_atomic`; never partial-write. NDJSON output records emitted to stdout post-write.
-- **Schema type:** every written file is a frontmatter-prefixed Markdown file validated against `vault-schema.json` for the input `type:`. NDJSON output record shape not formally schematized (intermediate-pipeline contract).
+- **Schema type:** every written file is a frontmatter-prefixed Markdown file validated against `governance/foundation-master.json#frontmatter.types` for the input `type:`. NDJSON output record shape not formally schematized (intermediate-pipeline contract).
 - **Pre-write validation:** three-step chain — (1) frontmatter lint, (2) R-40 plan-artifact-schema check (when applicable), (3) R-32 tier-2 tag-allowlist check. All three must pass before the temp file is opened. Failures abort the write before any bytes touch the target path; the write is replaced with a `validation_result: fail-*` NDJSON record on stdout.
 - **Failure mode:** block-and-log per CLAUDE.md skill-creation rules — schema-invalid writes never reach the target path; diagnostic written to `$CLAUDE_HOME/logs/librarian-errors/<date>-write-frontmatter.md`. Stub-mode invocation exits 2 with stderr message; consumers must handle non-zero exit until v2.1 lands.
 - **Tier:** mechanical. **requires_confirmation:** false at the dispatcher gate. **cron_block:** none.
@@ -2213,7 +2213,7 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/write-frontmatter.sh < classifie
 
 **Runtime:** `$CLAUDE_HOME/skills/librarian/capabilities/sanctioned-schema-drift-detect.sh` — defense-in-depth tripwire against unsanctioned drift between live `$CLAUDE_HOME/schemas/` and the foundation-repo distribution source.
 
-**Purpose:** Verify that the 3 sanctioned schemas in the live install (`vault-schema.json`, `plans-schema.json`, `plan-manifest-schema.json`) are byte-identical to the foundation-repo distribution source. The schemas are the load-bearing structural contracts for vault writes (R-32 / R-40 / plan-manifest validation); silent drift between live and source would invalidate every downstream pre-write-validation chain.
+**Purpose:** Verify that the 2 sanctioned schemas in the live install (`plans-schema.json`, `plan-manifest-schema.json`) are byte-identical to the foundation-repo distribution source. (`vault-schema.json` dissolved SP13 T-4; physical deletion gated on SP13 T-6.) The schemas are the load-bearing structural contracts for vault writes (R-40 / plan-manifest validation); silent drift between live and source would invalidate every downstream pre-write-validation chain.
 
 **Invocation:**
 
@@ -2230,11 +2230,10 @@ bash $CLAUDE_HOME/skills/librarian/capabilities/sanctioned-schema-drift-detect.s
 
 **Sanctioned schemas:**
 
-1. `vault-schema.json` — vault file frontmatter contract (R-32 source of truth).
-2. `plans-schema.json` — plan-artifact frontmatter contract (R-40 source of truth).
-3. `plan-manifest-schema.json` — plan-manifest.json contract.
+1. `plans-schema.json` — plan-artifact frontmatter contract (R-40 source of truth).
+2. `plan-manifest-schema.json` — plan-manifest.json contract.
 
-These three are the only schemas retained in the install. Any other schema appearing under `$CLAUDE_HOME/schemas/` is unsanctioned drift; this capability flags it via the `MISSING-SOURCE` shape.
+These two are the only schemas retained in the install (`vault-schema.json` dissolved SP13 T-4; governance authority moved to `governance/foundation-master.json` bundle; physical deletion gated on SP13 T-6). Any other schema appearing under `$CLAUDE_HOME/schemas/` is unsanctioned drift; this capability flags it via the `MISSING-SOURCE` shape.
 
 **Drift shapes:**
 

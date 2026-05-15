@@ -181,7 +181,7 @@
       "dependencies": [
         "hooks/lib/paths.sh",
         "lib/findings.sh",
-        "vault-schema.json"
+        "governance/foundation-master.json"
       ],
       "emits_findings": true,
       "writes_manifest_subtree": null,
@@ -486,7 +486,7 @@
         "lib/findings.sh",
         "lib/manifest.sh",
         "lib/user-manifest-read.sh",
-        "vault-schema.json"
+        "governance/foundation-master.json"
       ],
       "emits_findings": true,
       "writes_manifest_subtree": "drift_findings.{provides_canonicality,size_monitoring,schema_type_coverage}",
@@ -556,7 +556,7 @@
         "writes": [
           "{vault.root}/**/*.md (wikilink updates after dry-run review)"
         ],
-        "schema": "vault-schema.json",
+        "schema": "governance/foundation-master.json",
         "failure_mode": "block-and-log"
       },
       "implementation_status": "shipped",
@@ -673,7 +673,7 @@
         "writes": [
           "{vault.root}/**/*.md (wikilink fixups after dry-run review)"
         ],
-        "schema": "vault-schema.json",
+        "schema": "governance/foundation-master.json",
         "failure_mode": "block-and-log"
       },
       "implementation_status": "shipped",
@@ -833,7 +833,7 @@
       "cron_block": "none",
       "dependencies": [
         "lib/findings.sh",
-        "vault-schema.json"
+        "governance/foundation-master.json"
       ],
       "emits_findings": false,
       "writes_manifest_subtree": null,
@@ -882,7 +882,7 @@
       ],
       "cron_block": "skip-non-interactive",
       "dependencies": [
-        "vault-schema.json",
+        "governance/foundation-master.json",
         "lib/frontmatter.sh",
         "capabilities/classify.sh",
         "capabilities/cluster-by-topic.sh"
@@ -895,7 +895,7 @@
         "writes": [
           "{vault.root}/_drafts/*.md (staging; canonical placement gated on user confirmation)"
         ],
-        "schema": "vault-schema.json",
+        "schema": "governance/foundation-master.json",
         "failure_mode": "block-and-log"
       },
       "implementation_status": "spec-only",
@@ -910,7 +910,7 @@
       ],
       "cron_block": "none",
       "dependencies": [
-        "vault-schema.json",
+        "governance/foundation-master.json",
         "lib/frontmatter.sh",
         "pre-write-guard"
       ],
@@ -922,7 +922,7 @@
         "writes": [
           "{vault.root}/**/*.md (frontmatter-prefixed)"
         ],
-        "schema": "vault-schema.json",
+        "schema": "governance/foundation-master.json",
         "failure_mode": "block-and-log"
       },
       "implementation_status": "spec-only",
@@ -962,7 +962,7 @@
         "writes": [
           "{VAULT_LOGS}/session-close-YYYYMMDD-HHMMSS.md"
         ],
-        "schema": "vault-schema.json (type:log, log-type:session-close)",
+        "schema": "governance/foundation-master.json#frontmatter.types.log",
         "failure_mode": "advisory-log-and-continue"
       },
       "implementation_status": "shipped",
