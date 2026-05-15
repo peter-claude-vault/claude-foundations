@@ -182,10 +182,10 @@ The eager-load + on-demand reference set. Two sub-blocks:
 **A. `@import` directives (force-loaded at session start)**
 
 ```
-@$CLAUDE_HOME/schemas/vault-schema.json
+@$CLAUDE_HOME/governance/foundation-master.json
 ```
 
-ONE file. The type vocabulary — canonical type enumeration consumed by R-32 Tier 2 DENY. Small (~5-10K); session-1-turn-1 critical; read on every write decision; amortizes across the session. SP04 install.sh substitutes `$CLAUDE_HOME` to the adopter's install root (typically `~/.claude/`). Claude Code's `@import` primitive supports absolute paths and `~/` expansion per docs at code.claude.com/docs/en/memory.
+ONE file. The composed governance bundle — R-32 type allowlist + R-47 tag taxonomy + 6 pillar registries composed at foundation-repo release time; hooks read exclusively from this bundle per bundle-at-load architecture (SP13 T-3). Small enough to amortize across the session. SP04 install.sh substitutes `$CLAUDE_HOME` to the adopter's install root (typically `~/.claude/`). Claude Code's `@import` primitive supports absolute paths and `~/` expansion per docs at code.claude.com/docs/en/memory. (Formerly `@schemas/vault-schema.json`; dissolved SP13 T-4; content migrated to governance pillars; bundle at `governance/foundation-master.json`.)
 
 The eager-load discipline: ONLY include surfaces that are session-start critical AND small enough to amortize across the session. The 4 governance JSON registries (frontmatter-rules, tagging-rules, naming-rules, mandatory-files-rules) FAIL this test — they're per-write / per-tag / per-rare-structure-decision, not session-start critical. They're pointer-only.
 

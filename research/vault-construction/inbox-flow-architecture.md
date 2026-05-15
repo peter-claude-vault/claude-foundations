@@ -3,7 +3,7 @@ altitude: system
 scope: `Inbox/` as the connector-brief surface in vault — human-readable companion docs (one per active connector) describing each connector's identity, mechanism, data flow, cadence, processing rules, destinations, and pointer to where the actual data lives. Connector DATA (JSON / SQLite / binary stores) lives outside vault at `$CLAUDE_HOME/connector-data/<connector-slug>/` by default (adopter-overridable via Layer-3 overlay). The foundation mandates `Inbox/` itself, `Inbox/_index.md` (active-connection enumeration), and `Inbox/<connector>.md` per active connector. Processing rules ship bi-surface: markdown declaration in the connector brief (UNDERSTAND) + JSON overlay at `$CLAUDE_HOME/governance/processing-rules.adopter.json` (APPLY). R-37 lockstep keeps the two surfaces aligned. Destination-overlap is surfaced inside each brief and aggregated at `Inbox/_index.md`. Daily rollover discipline applies to the data store (per-connector retention authored at SP07 Beat 5), not to the briefs.
 validity_window: 2026-05-13..2026-11-13
 source_dependencies:
-  - schema: claude-stem/schemas/vault-schema.json (connector-brief type entry; inbox-archive type entry)
+  - schema: governance/frontmatter-rules.json#types (connector-brief + inbox-archive type entries; dissolved from schemas/vault-schema.json in SP13 T-4)
   - companion: ./mandatory-file-lock.md
   - companion: ./vault-construction-principles.md
   - companion: ./frontmatter-design.md
