@@ -118,7 +118,7 @@ fi
 # === end cron wrapper bash3 check ========================================
 
 # === claude-mem SessionEnd protection (Session 19 R-24) ==================
-# Peter's explicit instruction: claude-mem is required infrastructure.
+# claude-mem is required infrastructure for this installation.
 # Block any settings.json Write/Edit that removes the memory-consolidation-
 # check.sh / claude-mem SessionEnd hook. Escape hatch: CLAUDE_MEM_DISABLE_OK=1
 if [[ "$FILE_PATH" == "$HOME/.claude/settings.json" ]]; then
@@ -145,7 +145,7 @@ PYEOF
   if [[ -n "$CM_CONTENT" ]]; then
     if ! echo "$CM_CONTENT" | grep -qE 'memory-consolidation-check\.sh|claude-mem'; then
       if [[ "${CLAUDE_MEM_DISABLE_OK:-0}" != "1" ]]; then
-        CM_REASON="claude-mem protection (R-24, spine-remediation Session 19): this settings.json write removes the claude-mem / memory-consolidation-check SessionEnd hook. claude-mem is required infrastructure per Peter's explicit instruction (\"do everything else but don't turn Claude Mem off\"). To override intentionally, set CLAUDE_MEM_DISABLE_OK=1 in the environment for this write."
+        CM_REASON="claude-mem protection (R-24): this settings.json write removes the claude-mem / memory-consolidation-check SessionEnd hook. claude-mem is required infrastructure for this installation. To override intentionally, set CLAUDE_MEM_DISABLE_OK=1 in the environment for this write."
         format_output_deny "PreToolUse" "$CM_REASON"
         exit 0
       else
@@ -331,12 +331,6 @@ if [[ "$FILE_PATH" == *"librarian-manifest.json"* ]]; then
   exit 0
 fi
 
-# --- REMINDER: Engagement CLAUDE.md completeness standards ---
-# Stored as variable — don't exit here. Let Tier 2 enforce navigation schema fields.
-ENGAGEMENT_CLAUDE_REMINDER=""
-if [[ "$FILE_PATH" == *"/Engagements/"*"/CLAUDE.md" ]]; then
-  ENGAGEMENT_CLAUDE_REMINDER="[ENGAGEMENT CLAUDE.MD STANDARDS] This file must meet completeness standards:\n1. Frontmatter: type: navigation, engagement, updated\n2. Navigation table: every .md file in this engagement tree must be listed OR in Files to Skip\n3. Key People: every People/*.md file must be listed with name, role, wikilink\n4. Line counts: ~N must be within 20% of actual\n5. Status must match Overview frontmatter\nAfter writing, scan the engagement directory to verify. Missing files or people is a blocking error."
-fi
 
 # === Plan-artifact frontmatter advisory (R-40) + System Backlog reminder ===
 # R-40 (56-spine-remediation-finalization Sub-plan 04, landed 2026-04-17)
@@ -450,7 +444,7 @@ if [[ "$FILE_PATH" == "$HOME/.claude/skills/"*"/SKILL.md" ]]; then
 fi
 
 # --- WARNING: Memory file overlap detection + schema validation ---
-MEMORY_DIR="$HOME/.claude/projects/-Users-petertiktinsky/memory"
+MEMORY_DIR="$HOME/.claude/projects/${HOME//\//-}/memory"
 if [[ "$FILE_PATH" == *"/.claude/projects/"*"/memory/"*".md" ]] && \
    [[ "$(basename "$FILE_PATH")" != "MEMORY.md" ]]; then
 
@@ -712,13 +706,7 @@ if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
   REL_PATH="${FILE_PATH#$VAULT_ROOT/}"
 
   # Skip operational files (manifests, coordination, CLAUDE.md, etc.)
-  # Engagement CLAUDE.md files are NOT skipped — they need Tier 2 enforcement for navigation schema.
-  IS_ENGAGEMENT_CLAUDE=false
-  [[ "$REL_PATH" == Engagements/*/CLAUDE.md ]] && IS_ENGAGEMENT_CLAUDE=true
-
   # R-32 exempt_paths sourced from gate-config.json::r32.exempt_paths (T-6).
-  # Engagement-CLAUDE carve-out (T4 navigation enforcement) overrides exemption
-  # so Engagements/*/CLAUDE.md always falls through to schema validation.
   R32_EXEMPT=0
   while IFS= read -r _exempt_pattern; do
     [[ -z "$_exempt_pattern" ]] && continue
@@ -727,7 +715,6 @@ if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
       break
     fi
   done <<< "$GATE_R32_EXEMPT_PATHS"
-  [[ "$IS_ENGAGEMENT_CLAUDE" == "true" ]] && R32_EXEMPT=0
 
   if [[ $R32_EXEMPT -eq 0 ]] && [[ -n "$BUNDLE_JSON" ]]; then
 
@@ -1147,12 +1134,6 @@ PYEOF
           [[ -n "$COMBINED_CTX" ]] && COMBINED_CTX="${COMBINED_CTX}\n"
           COMBINED_CTX="${COMBINED_CTX}[VAULT SCHEMA - FOLLOW-UP REQUIRED]\n${TIER3_MSGS}"
         fi
-        # Append engagement CLAUDE.md reminder if applicable
-        if [[ -n "${ENGAGEMENT_CLAUDE_REMINDER:-}" ]]; then
-          [[ -n "$COMBINED_CTX" ]] && COMBINED_CTX="${COMBINED_CTX}\n\n"
-          COMBINED_CTX="${COMBINED_CTX}${ENGAGEMENT_CLAUDE_REMINDER}"
-        fi
-
         # Append doc-dependency cascade reminder if applicable (Session 10)
         if [[ -n "$DOC_DEP_CTX" ]]; then
           [[ -n "$COMBINED_CTX" ]] && COMBINED_CTX="${COMBINED_CTX}\n\n"

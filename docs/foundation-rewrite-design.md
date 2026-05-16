@@ -1,6 +1,6 @@
 # Dropped Rules — pre-write-guard.sh foundation rewrite
 
-The live (Peter-internal) `pre-write-guard.sh` referenced 30+ R-rules across its
+The live (operator-internal) `pre-write-guard.sh` referenced 30+ R-rules across its
 header comment, embedded enforcement blocks, and cross-reference annotations.
 The foundation rewrite (SP02 T-4) preserves 13 generic R-rules and drops the
 rest. This file documents every dropped rule with a one-line rationale.
@@ -17,9 +17,9 @@ R-01, R-02, R-04, R-15, R-23, R-24, R-27, R-28, R-32, R-33, R-40, R-42, R-45, R-
 (R-04 is implemented across multiple sections: size guards, vault-root allowlist,
 folder placement.)
 
-## Dropped — Peter-workflow-specific
+## Dropped — operator-workflow-specific
 
-These rules enforced conventions specific to Peter's vault structure, engagement
+These rules enforced conventions specific to the operator's vault structure, engagement
 taxonomy, or operational workflow. The foundation distribution does not bundle
 them because they have no generic interpretation.
 
@@ -47,7 +47,7 @@ them because they have no generic interpretation.
 - **R-35** — Stage-gated promotion framework. Documentary rule, no hook enforcement.
 - **R-36** — Stop-hook touched-file drift scan. Lives in `stop-drift-scan.sh`, not pre-write-guard.
 - **R-37** — Schema-addition lockstep commit rule. Enforced by git atomicity + commit hooks, not pre-write-guard.
-- **R-47** — Tag-presence advisory. Required Peter's specific tag taxonomy (`#engagement/`, `#project/`, `#scope/`, etc.); generic install has no tag taxonomy to enforce against.
+- **R-47** — Tag-presence advisory. Required operator-specific tag taxonomy (`#engagement/`, `#project/`, `#scope/`, etc.); generic install has no tag taxonomy to enforce against.
 - **R-48** — Broken wikilink advisory. Vault-walking advisory tied to Obsidian-style `[[target]]` semantics; foundation defers wikilink validation to per-vault skills.
 - **R-49** — _(auto-commit-related; opt-in installer flag, not a hook rule)_
 - **R-50** — Shell-lib retrofit. Enforcement-map process rule, not runtime.
@@ -83,5 +83,5 @@ Three helpers were factored from the live hook to reduce line count:
 - `emit_deny()` / `emit_allow_ctx()` — replace 12+ inline `jq -n` deny/allow blocks.
 
 Net: ~140 lines saved through deduplication, on top of ~480 lines saved by
-dropping Peter-workflow rules and externalizing 6 hardcoded blocks to manifest.
+dropping operator-workflow rules and externalizing 6 hardcoded blocks to manifest.
 Final size: 635 lines vs. live 1257 lines (49% reduction).

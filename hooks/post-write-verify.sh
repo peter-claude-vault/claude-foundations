@@ -56,43 +56,6 @@ if [[ "$REL_PATH" == Logs/librarian-manifest* ]] || [[ "$REL_PATH" == Logs/.coor
   exit 0
 fi
 
-# --- Engagement CLAUDE.md completeness check ---
-if [[ "$REL_PATH" == Engagements/*/CLAUDE.md ]]; then
-  ENG_DIR=$(dirname "$FILE_PATH")
-  ENG_NAME=$(basename "$ENG_DIR")
-  WARNINGS=""
-
-  # Check: all .md files in engagement tree are referenced in CLAUDE.md
-  CLAUDE_CONTENT=$(cat "$FILE_PATH")
-  while IFS= read -r md_file; do
-    [[ -z "$md_file" ]] && continue
-    base=$(basename "$md_file" .md)
-    # Skip CLAUDE.md itself, _index.md, .DS_Store, File-Index
-    [[ "$base" == "CLAUDE" || "$base" == "_index" || "$base" == "File-Index" || "$base" == ".DS_Store" ]] && continue
-    if ! echo "$CLAUDE_CONTENT" | grep -q "$base" 2>/dev/null; then
-      WARNINGS="${WARNINGS}File not in navigation table or skip list: ${md_file#$ENG_DIR/}. "
-    fi
-  done < <(find "$ENG_DIR" -name "*.md" -not -name "CLAUDE.md" -not -name "_index.md" -not -name "File-Index.md" 2>/dev/null)
-
-  # Check: all People/*.md files referenced in Key People
-  if [[ -d "$ENG_DIR/People" ]]; then
-    while IFS= read -r pfile; do
-      [[ -z "$pfile" ]] && continue
-      pbase=$(basename "$pfile" .md)
-      if ! echo "$CLAUDE_CONTENT" | grep -q "$pbase" 2>/dev/null; then
-        WARNINGS="${WARNINGS}Person file not in Key People: People/${pbase}.md. "
-      fi
-    done < <(find "$ENG_DIR/People" -name "*.md" 2>/dev/null)
-  fi
-
-  if [[ -n "$WARNINGS" ]]; then
-    SAFE_WARN=$(echo "$WARNINGS" | tr '"' "'")
-    mkdir -p "$HOOKS_STATE" 2>/dev/null || true
-    echo "$(date -Iseconds) | post-write-verify | INCOMPLETE | ${FILE_PATH} | ${SAFE_WARN}" >> "$HOOKS_STATE/hook-audit.log" 2>/dev/null || true
-    format_output "PostToolUse" "Engagement CLAUDE.md completeness check: ${SAFE_WARN} Fix before moving on." || true
-    exit 0
-  fi
-fi
 
 # Extract frontmatter (between first two --- lines)
 FRONTMATTER=$(awk '/^---$/{c++;next} c==1{print} c>=2{exit}' "$FILE_PATH")
