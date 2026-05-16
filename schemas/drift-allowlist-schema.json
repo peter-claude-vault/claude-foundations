@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stem.peter.dev/schemas/drift-allowlist/v1.json",
+  "$id": "https://claude-stem.example/schemas/drift-allowlist/v1.json",
   "title": "Librarian provides:overlap drift allowlist",
   "description": "Validates ${CLAUDE_HOME}/hooks/config/drift-allowlist.json — the source-of-truth for librarian provides:overlap exemptions. Edited directly by adopters; mirrored into librarian-manifest.json at /librarian run time. Hand-editing the manifest is forbidden (per feedback_manifest_no_hand_edit). Authored by Plan 81 SP01 Session 16 (2026-05-10).",
   "type": "object",

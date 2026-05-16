@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stem.peter.dev/schemas/cron-log-architecture-exceptions/v1.json",
+  "$id": "https://claude-stem.example/schemas/cron-log-architecture-exceptions/v1.json",
   "title": "Cron log-architecture R-22 exceptions",
   "description": "Validates ${CLAUDE_HOME}/hooks/config/cron-log-architecture-exceptions.json — the allowlist of cron plist labels exempt from the R-22 wrapper-owned-logging default. Consumed by librarian capabilities/cron-log-architecture.sh. Authored by Plan 81 SP01 Session 16 (2026-05-10).",
   "type": "object",

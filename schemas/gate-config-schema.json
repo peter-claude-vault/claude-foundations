@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://stem.peter.dev/schemas/gate-config/v1.json",
+  "$id": "https://claude-stem.example/schemas/gate-config/v1.json",
   "title": "Gate Config Schema",
   "description": "Vault-wide gate rules (R-32 type allowlist, R-47 tag-presence advisory, R-37 coupled-surface atomic-lockstep). Authored by Plan 80/81 SP01 (manifest-generalization). Per-plan scope lives in plan manifests (live_mutation_scope); this surface is global.",
   "_dissolved": true,

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stem.peter.dev/schemas/doc-dependencies/v1.json",
+  "$id": "https://claude-stem.example/schemas/doc-dependencies/v1.json",
   "title": "Documentation Dependency Registry (foundation skeleton)",
-  "description": "Validates ${CLAUDE_HOME}/hooks/config/doc-dependencies.json — the foundation-shipped skeleton declaring cross-file cascade rules and entity-parity registries consumed by pre-write-guard.sh and the librarian capabilities (rename-history-sync, wikilink-repair, entity-parity, session-close Step 2c). Per-vault additive overlay rows live in the paired vault-overlay.json file (schema: ${CLAUDE_HOME}/schemas/vault-overlay-schema.json — https://stem.peter.dev/schemas/vault-overlay/v1.json). Adopter-facing walkthrough (skeleton vs overlay, merge precedence, hand-editing, known constraints): docs/doc-dependencies-conventions.md. Authored by Plan 81 SP01 Session 16 (2026-05-10) per T-28a deferral disposition; structural shape is mirrored from vault-overlay-schema.json (which itself was authored first, 2026-05-08, as the parallel authoritative reference).",
+  "description": "Validates ${CLAUDE_HOME}/hooks/config/doc-dependencies.json — the foundation-shipped skeleton declaring cross-file cascade rules and entity-parity registries consumed by pre-write-guard.sh and the librarian capabilities (rename-history-sync, wikilink-repair, entity-parity, session-close Step 2c). Per-vault additive overlay rows live in the paired vault-overlay.json file (schema: ${CLAUDE_HOME}/schemas/vault-overlay-schema.json — https://claude-stem.example/schemas/vault-overlay/v1.json). Adopter-facing walkthrough (skeleton vs overlay, merge precedence, hand-editing, known constraints): docs/doc-dependencies-conventions.md. Authored by Plan 81 SP01 Session 16 (2026-05-10) per T-28a deferral disposition; structural shape is mirrored from vault-overlay-schema.json (which itself was authored first, 2026-05-08, as the parallel authoritative reference).",
   "type": "object",
   "required": ["version"],
   "additionalProperties": true,

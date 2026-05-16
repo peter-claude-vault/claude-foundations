@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stem.peter.dev/schemas/plan-manifest/v1.json",
+  "$id": "https://claude-stem.example/schemas/plan-manifest/v1.json",
   "title": "Plan Manifest (orchestrator + plan-tree superset)",
   "description": "Validates manifests under ~/.claude-plans/ for both shapes: (a) orchestrator task-list manifests (consumed by the autonomous orchestrator), (b) plan-tree status/scope manifests (live_mutation_scope, top_level_status, harness_validated[], git_tag_published — added by Plan 80/81 SP01 T-2 + T-27 on 2026-05-07). Manifests may carry either shape or both. additionalProperties: true permits forward-compatible field additions per dbt schema-evolution pattern.",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "gate_manifest_schema": "https://stem.peter.dev/schemas/gate-config/v1.json",
+  "gate_manifest_schema": "https://claude-stem.example/schemas/gate-config/v1.json",
   "_dissolved": true,
   "_dissolved_marker": {
     "status": "DISSOLVED — DO NOT AUTHOR HERE",
