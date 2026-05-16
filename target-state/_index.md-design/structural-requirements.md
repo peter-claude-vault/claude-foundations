@@ -21,9 +21,9 @@ Every `_index.md` in the vault follows the same shape. Empirically derived from 
 ```yaml
 ---
 type: index
-parent_folder: Engagements/CDMO DDX          # MANDATORY at depth ≥ 2; OMIT at depth 1
+parent_folder: <Cluster>/<Instance>          # MANDATORY at depth ≥ 2; OMIT at depth 1
 tags:
-  - "#engagement/cdmo-ddx"                    # structural-dimension lineage; mirrors folder per folder-lineage convention
+  - "#<cluster-dim>/<instance-slug>"          # structural-dimension lineage; mirrors folder per folder-lineage convention
 updated: 2026-05-14
 ---
 ```
@@ -35,11 +35,11 @@ Optional: `description:` (one-line scope description); `provides:` (cross-folder
 | Field | Role |
 |---|---|
 | `type: index` | Maps to the canonical type enumeration in `governance/frontmatter-rules.json#types`; R-32 Tier 2 DENY rejects unknown types |
-| `parent_folder:` | Path string relative to vault root, naming the parent folder of this `_index.md`. **Mandatory at depth ≥ 2** (any `_index.md` not directly under vault root). **Omitted at depth 1** (e.g., `Engagements/_index.md`, `Reference/_index.md` — the "parent" is the vault root itself, which is not a folder in the meaningful sense). Gives Claude a programmatic parent-pointer for index-tree traversal without path-parsing. Auto-populated by the bootstrap hook; librarian `index-maintain` audits for path-vs-frontmatter drift. |
-| `tags:` | Mandatory because `_index.md` files participate in the folder-mirrors-tag invariant. Tag matches the folder's structural-dimension lineage — `Engagements/<X>/_index.md` carries `#engagement/<X>`; `Reference/_index.md` carries `#scope/reference` |
+| `parent_folder:` | Path string relative to vault root, naming the parent folder of this `_index.md`. **Mandatory at depth ≥ 2** (any `_index.md` not directly under vault root). **Omitted at depth 1** (e.g., `<Cluster>/_index.md`, `<PersonalTracks>/_index.md` — the "parent" is the vault root itself, which is not a folder in the meaningful sense). Gives Claude a programmatic parent-pointer for index-tree traversal without path-parsing. Auto-populated by the bootstrap hook; librarian `index-maintain` audits for path-vs-frontmatter drift. |
+| `tags:` | Mandatory because `_index.md` files participate in the folder-mirrors-tag invariant. Tag matches the folder's structural-dimension lineage — `<Cluster>/<instance>/_index.md` carries `#<cluster-dim>/<instance>`; a top-level folder `_index.md` carries its structural-dimension tag (e.g., `#scope/reference`) |
 | `updated:` | ISO date; bumped by every machine-maintenance pass on the file |
 
-**Structural-dimension lineage fields** (`engagement:`, `project:`, etc.) are inherited from the folder-lineage convention in [`frontmatter-design.md`](../../research/vault-construction/frontmatter-design.md). An `_index.md` at `Engagements/CDMO DDX/People/_index.md` carries `engagement: cdmo-ddx` in frontmatter because every file at that path does. Folder-lineage is the content-side lineage convention answering "what engagement does this file belong to"; `parent_folder:` is the navigation-side parent pointer answering "where in the folder tree does this index sit." Different consumers, different jobs, both auto-populated.
+**Structural-dimension lineage fields** (`engagement:`, `project:`, etc.) are inherited from the folder-lineage convention in [`frontmatter-design.md`](../../research/vault-construction/frontmatter-design.md). An `_index.md` at `<Cluster>/<Instance>/People/_index.md` carries the cluster-dimension field (e.g., `engagement: <instance>`) in frontmatter because every file at that path does. Folder-lineage is the content-side lineage convention answering "what cluster instance does this file belong to"; `parent_folder:` is the navigation-side parent pointer answering "where in the folder tree does this index sit." Different consumers, different jobs, both auto-populated.
 
 ### H1 heading (mandatory)
 
@@ -75,7 +75,7 @@ The **`provides:` frontmatter field does NOT surface in this table.** It remains
 | [[Acme - Reference.md]] | ~141 | reference | Tech stack, vocabulary, meeting calendar |
 ```
 
-Note the example carries no `CLAUDE.md` row. Per Session 16 lock #1, only the vault-root `CLAUDE.md` exists in the target architecture; engagement-level, folder-scoped, per-cluster, and per-instance `CLAUDE.md` classes are all retired. Engagement-level navigation is delivered by the `_index.md` itself (this file, plus the canonical Overview/Context/Updates trio); see [`claude-md-design.md`](../../research/vault-construction/claude-md-design.md) for the one-class CLAUDE.md mandate.
+Note the example carries no `CLAUDE.md` row. Per the one-class CLAUDE.md mandate (canonical §G), only the vault-root `CLAUDE.md` exists in the target architecture; engagement-level, folder-scoped, per-cluster, and per-instance `CLAUDE.md` classes are all retired. Engagement-level navigation is delivered by the `_index.md` itself (this file, plus the canonical Overview/Context/Updates trio); see [`claude-md-design.md`](../../research/vault-construction/claude-md-design.md) for the one-class CLAUDE.md mandate.
 
 **Key-file convention surfaced via type, not sectioning.** At engagement folders, the trio `overview` / `context` / `updates` carries primary context — Claude loads these first for any engagement task. At project folders, the trio is `prd` / `context` / `updates`. At about-me folders, `reference` is the dominant type and the `_index.md` itself plus the folder-context paragraph carry the orientation. Adopters learn the convention from the file-type column itself; the canonical type enumeration is small enough (26 values) and stable enough (R-32-enforced) that role-by-type is self-evident without a separate "key files" header.
 
