@@ -10,7 +10,7 @@ Every artifact Claude Stem ships falls into one of three tiers: **Universal** (i
 
 | Tier | What it means | Examples | Re-author cadence |
 |---|---|---|---|
-| **Universal** | Ships generic; identical for every user. No interview input changes the contents. | Hook scripts (`pre-write-guard.sh`), the rule taxonomy, vault-schema.json `types[]` definitions, the `lib/three-step-gate.sh` library, every generic skill body. | Upstream-only; users get changes via `/adopt --refresh`. |
+| **Universal** | Ships generic; identical for every user. No interview input changes the contents. | Hook scripts (`pre-write-guard.sh`), `governance/frontmatter-rules.json` type registry, `governance/tagging-rules.json` taxonomy, `governance/foundation-master.json` bundle, the `lib/three-step-gate.sh` library, every generic skill body. | Upstream-only; users get changes via `/adopt --refresh`. |
 | **Combined** | Ships generic skeleton; onboarding fills personal slots. The skeleton is universal; the slot values are yours. | `~/.claude/CLAUDE.md` (universal sections from template + composed-prose personal sections from interview), vault `CLAUDE.md` (universal routing-tree shape + your declared organizational method drives which branch renders), `doc-dependencies.json` (always-on cascades + structure-conditional cascades). | Re-runnable via `/onboard --section <X>`; existing user edits preserved. |
 | **Personal** | Composed entirely from your interview answers. Generic-only baseline does not exist for these. | Memory seeds under `~/.claude/projects/<user>/memory/` (5 seeds), `vault.tag_prefixes[]`, `architect.prior_seed[]`, `architect.research_topics[]`, `vault.projects_root_dirname` and consumers, archetype-keyed `_tag_prefixes` selection. | Re-runnable; user edits to seed files mark `last_user_edit` and are skipped on re-author. |
 
@@ -46,7 +46,7 @@ The seven personalization surfaces auto-authored at onboarding time, in the orde
 | 1 | claude-home `CLAUDE.md` composed prose | A-1..A-4, A-CB-1..A-CB-6 | `~/.claude/CLAUDE.md` | Combined |
 | 2 | Memory seeds (5 files + index) | A-1, A-CB-3, A-CB-5, B-3, behavioral.autonomy | `~/.claude/projects/<user>/memory/*.md` | Personal |
 | 3 | Vault `CLAUDE.md` (routing tree + taxonomy + checklist) | C-1..C-4 | `<vault>/CLAUDE.md` | Combined |
-| 4 | `_tag_prefixes[]` (archetype-keyed) | A-CB-7 | `vault-schema.json._tag_prefixes` + `user-manifest.json::vault.tag_prefixes` | Personal |
+| 4 | `_tag_prefixes[]` (archetype-keyed) | A-CB-7 | `governance/tagging-rules.json#taxonomy` + `user-manifest.json::vault.tag_prefixes` | Personal |
 | 5 | `doc-dependencies.json` cascade | C-1, C-2, C-3 | `~/.claude/hooks/config/doc-dependencies.json` | Combined |
 | 6 | `frontmatter-enforce` per-capability config | C-2, C-4 | `user-manifest.json::vault.{projects_root_dirname, engagement_aliases, required_fields_overrides}` | Personal |
 | 7 | Architect prior-seed + research topics | A-2 (industry), D-1, D-2 | `user-manifest.json::architect.{prior_seed, research_topics}` | Personal |
