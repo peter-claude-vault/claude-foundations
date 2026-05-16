@@ -45,7 +45,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 STAGE25="$REPO_ROOT/skills/infer-vault-structure/stage-2-5-consultation.sh"
 IMPORT_PLAN_SH="$REPO_ROOT/skills/infer-vault-structure/import-plan.sh"
 REVIEW_GATE_SH="$REPO_ROOT/skills/infer-vault-structure/review-gate.sh"
-TEMPLATES="$REPO_ROOT/schemas/consultation-rationale-templates.json"
+TEMPLATES="$REPO_ROOT/governance/onboarding-reference/consultation-rationale-templates.json"
 TEMPLATES_SCHEMA="$REPO_ROOT/schemas/consultation-rationale-templates-schema.json"
 CG_LIB="$REPO_ROOT/lib/consultation-gate.sh"
 

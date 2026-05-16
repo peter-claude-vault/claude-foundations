@@ -23,7 +23,7 @@
 #       three-step-gate.sh)
 #   Schema-types:
 #     - Input: import-plan.md must carry ^schema_version: import-plan/1$.
-#     - Templates: schemas/consultation-rationale-templates.json
+#     - Templates: governance/onboarding-reference/consultation-rationale-templates.json
 #       (consultation-rationale-templates/1).
 #     - Output: import-plan.md content + 2 additive frontmatter fields.
 #       schema_version anchor preserved → T-7 review-gate accepts.
@@ -51,7 +51,7 @@
 # Defaults:
 #   --import-plan   <repo>/onboarding/seed-content/state/import-plan.md
 #   --out           <repo>/onboarding/seed-content/state/consulted-import-plan.md
-#   --templates     <repo>/schemas/consultation-rationale-templates.json
+#   --templates     <repo>/governance/onboarding-reference/consultation-rationale-templates.json
 #   --cg-lib        <repo>/lib/consultation-gate.sh
 #
 # Test hooks: caller may export AUTO_AUTHOR_LOG / TG_STAGE_DIR /
@@ -72,7 +72,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 DEFAULT_INPUT_PLAN="$REPO_ROOT/onboarding/seed-content/state/import-plan.md"
 DEFAULT_OUT="$REPO_ROOT/onboarding/seed-content/state/consulted-import-plan.md"
-DEFAULT_TEMPLATES="$REPO_ROOT/schemas/consultation-rationale-templates.json"
+DEFAULT_TEMPLATES="$REPO_ROOT/governance/onboarding-reference/consultation-rationale-templates.json"
 DEFAULT_CG_LIB="$REPO_ROOT/lib/consultation-gate.sh"
 
 INPUT_PLAN="$DEFAULT_INPUT_PLAN"
