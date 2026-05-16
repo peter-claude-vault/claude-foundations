@@ -73,14 +73,14 @@ The three-class partition is what bounds the blast radius of a schema change. Un
 
 Type information lives at file level only. Folders do not carry frontmatter, so hierarchical context — *which engagement does this file belong to, which project within that engagement* — cannot be inferred by an LLM from directory ancestry alone. The folder-lineage convention closes the gap by mandating that lineage propagate to file-level frontmatter fields and matching tags.
 
-**The rule.** Any file living at `Engagements/<X>/Projects/<Y>/**` MUST carry both:
+**The rule.** Any file living under a top-level structural cluster and its sub-divisions MUST carry both:
 
-- `engagement: <X>` and `project: <Y>` as frontmatter fields (matching the directory ancestor segments)
-- `#engagement/<X>` and `#project/<Y>` as tags (matching the field values per the folder-mirrors-tag invariant)
+- The lineage fields (e.g., `engagement: <cluster-slug>` and `project: <workstream-slug>`) as frontmatter fields matching the directory ancestor segments
+- The matching tags (e.g., `#engagement/<cluster-slug>` and `#project/<workstream-slug>`) per the folder-mirrors-tag invariant
 
-The folder is the structural artifact; the frontmatter fields and tags are the file-level workaround that propagates lineage to every consumer. The R-32 hook contract validates lineage consistency at write-time: a file landing under `Engagements/acme-corp/Projects/data-platform/Meetings/` whose frontmatter lacks `engagement: acme-corp` + `project: data-platform` + matching tags is DENIED.
+The folder is the structural artifact; the frontmatter fields and tags are the file-level workaround that propagates lineage to every consumer. The R-32 hook contract validates lineage consistency at write-time: a file landing under a cluster/workstream folder without matching lineage fields and tags is DENIED.
 
-**The generic encoding.** The schema's `_path_rules` array carries the rule, parameterized so adopter archetypes extend without schema-shape changes. The foundation-repo ships the consultant default; researcher / developer / manager archetypes add one entry each (`Topics/<X>/Studies/<Y>/`, `Repos/<X>/Epics/<Y>/`, `Programs/<X>/Initiatives/<Y>/`). The hook consumes the new pattern; the schema-shape is unchanged.
+**The generic encoding.** The schema's `_path_rules` array carries the rule, parameterized so adopter archetypes extend without schema-shape changes. Each archetype declares its own path rule: consultant (`Engagements/<X>/Projects/<Y>/`), researcher (`Topics/<X>/Studies/<Y>/`), developer (`Repos/<X>/Epics/<Y>/`), manager (`Programs/<X>/Initiatives/<Y>/`). The hook consumes the pattern from the bundle; the schema-shape is unchanged.
 
 **Retired types.** `engagement` and `project` were originally TYPE values in an earlier schema version. Empirical measurement showed zero files at `type: engagement` and two at `type: project`, while hundreds carried the field slots under the folder tree. The TYPE slots were aspirational, effectively never instantiated — engagement-level overview docs were actually `type: navigation` (the CLAUDE.md) or `type: context` (the project-overview doc). The retirement codified both as FIELD slots, documented in `governance/frontmatter-rules.json#retired_types` with `decision_ref` pointing to ADR-0003.
 
