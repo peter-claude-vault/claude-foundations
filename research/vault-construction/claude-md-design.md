@@ -80,10 +80,10 @@ It does **NOT** carry:
 
 - Engagement-specific terminology, people, projects, status (lives at the cluster's instance-level Overview/Updates/Context + `_index.md`)
 - Project-level technical detail (same)
-- Schema definitions (live in `schemas/vault-schema.json` + the Frontmatter spoke)
+- Schema definitions (live in `governance/frontmatter-rules.json` + the Frontmatter spoke; `schemas/vault-schema.json` dissolved SP13 T-4)
 - Full tag taxonomy discipline (lives at the Tagging spoke; CLAUDE.md carries enumeration only)
 - File-class content standards in full (live at the Frontmatter spoke; CLAUDE.md may carry an operational quick-reference subsection)
-- Pre-write rule details (live at the Enforcement meta-spoke + governance JSON registries)
+- Pre-write rule details (live at governance JSON registries; `Vault Architecture - Enforcement.md` retired SP13 T-4)
 - Plan-specific narrative or session-close summaries (live in plan-tree)
 
 The discipline is **stateable as one rule**: every paragraph in vault-root CLAUDE.md is either operational session-start orientation or a pointer to depth elsewhere. Anything that doesn't fit one of those two roles is a candidate for relocation to a Vault Architecture spoke, a canonical instance file, or a Reference plan-tree dossier.
@@ -123,13 +123,13 @@ Under the one-class model, vault-root CLAUDE.md carries **both functions**, but 
 | Behavioral conventions (file-automatically, ask-before-creating, etc.) | Vault-root CLAUDE.md (in-line, one-line each) |
 | Tag taxonomy enumeration | Vault-root CLAUDE.md (compact list; current values only) |
 | Tag taxonomy discipline (25-cap rationale, prefix-grammar, anti-patterns) | `Vault Architecture - Tagging.md` spoke |
-| Frontmatter schema enumeration | Vault-root CLAUDE.md (one-line pointer to `schemas/vault-schema.json`) |
+| Frontmatter schema enumeration | Vault-root CLAUDE.md (one-line pointer to `governance/frontmatter-rules.json`; `schemas/vault-schema.json` dissolved SP13 T-4) |
 | Frontmatter rules (per-type required + optional fields, R-32 contract) | `Vault Architecture - Frontmatter.md` spoke |
 | Naming conventions (compact summary) | Vault-root CLAUDE.md (one-line pointer) |
 | Naming conventions (full discipline) | `Vault Architecture - Naming.md` spoke |
 | Mandatory-file enumeration (compact reference) | Vault-root CLAUDE.md (compact list) |
 | Mandatory-file lock (full rationale + retired set) | `Vault Architecture - Mandatory-Files.md` spoke |
-| R-37 lockstep, promotion framework, structural enforcement | `Vault Architecture - Enforcement.md` thin meta-spoke |
+| R-37 lockstep, promotion framework, structural enforcement | `governance/_index.json` (coupling declarations); `Vault Architecture - Enforcement.md` retired SP13 T-4 |
 
 The structural commitment: **instruction content lives at the spoke that owns the discipline**. Tag rules live at the Tagging spoke. Frontmatter rules at the Frontmatter spoke. Naming conventions at the Naming spoke. Vault-root CLAUDE.md references those spokes by wikilink + a one-line operational summary ("tags from the taxonomy; no invented tags"; "frontmatter per the schema; R-32 denies non-conforming writes"); the full discipline lives at the spoke. This keeps CLAUDE.md scannable AND keeps each instruction content surface owned by exactly one canonical location, not duplicated across CLAUDE.md plus the spoke.
 
@@ -197,7 +197,7 @@ The eager-load discipline: ONLY include surfaces that are session-start critical
 | Tagging a file | `$CLAUDE_HOME/governance/tagging-rules.json` | `Vault Architecture/Vault Architecture - Tagging.md` |
 | Naming a new file or structure | `$CLAUDE_HOME/governance/naming-rules.json` | `Vault Architecture/Vault Architecture - Naming.md` |
 | Creating new top-level structure | `$CLAUDE_HOME/governance/mandatory-files-rules.json` | `Vault Architecture/Vault Architecture - Mandatory-Files.md` |
-| Governance hook / R-37 / promotion question | — | `Vault Architecture/Vault Architecture - Enforcement.md` |
+| Governance hook / R-37 / promotion question | `governance/_index.json` | `Vault Architecture - Enforcement.md` retired SP13 T-4; governance JSONs are now authoritative |
 | System-project ideas; librarian/architect work | `System Backlog.md` | — |
 | **Mandatory** before building any capability | `Skills/_index.md` | — |
 | Inbox / connector / dashboard work | `Inbox/_index.md` | — |
@@ -223,7 +223,7 @@ The framework collapses by ~5x from the pre-correction reference-deployment stat
 - Vault Architecture spokes carrying governance discipline content (post-Session-4 two-surface architecture)
 - Governance JSON registries carrying machine-readable rules (per-pillar JSONs)
 - `_index.md` at cluster + instance levels carrying navigation (per `_index.md-design.md`)
-- The `@import` primitive force-loading vault-schema.json without inlining its content
+- The `@import` primitive force-loading `governance/foundation-master.json` without inlining its content (formerly `@schemas/vault-schema.json`; dissolved SP13 T-4)
 - Hard rules limited to first-action behavior (per Ghosh ~100-150 usable instruction-slot budget)
 
 ### Authoring
@@ -272,7 +272,7 @@ The one-class mandate and the index-vs-instruction split together preempt six re
 
 1. **Citation required** — operator direction Session 16 lock #1 (2026-05-13) cited verbatim at §1; Anthropic ">5K tokens" guidance cited at §2; reference-deployment empirical state (~38K pre-correction) cited at §2; install.sh L565 + step 11.5 cited at §Vault-root CLAUDE.md content standard for scaffold-time authoring; `content-length-limits.md` canonical-source citation for length threshold.
 2. **Scope declaration** — frontmatter declares `altitude`, `scope`, `validity_window`, `source_dependencies`, `last_reviewed`, `canonical_url`, `url_stability`. ✓
-3. **Articulation test** — novice user can articulate after reading: (a) there is exactly one CLAUDE.md, at vault root; (b) length stays at 60-90 line target, 15K / 150-line hard cap; (c) CLAUDE.md is index, not depth — it points at the Vault Architecture spokes, governance JSON registries, and canonical instance files for detail; (d) what used to live at engagement-level CLAUDE.md now lives at instance `_index.md` + Overview/Updates/Context; (e) the 6-section framework structure (Role / User Identity / Hard Rules / Communication Style / Active Work Pointers / Authoritative References); (f) the JSON-for-APPLY, markdown-for-UNDERSTAND discipline at §6 Authoritative References; (g) `@import vault-schema.json` is the ONLY eager-load directive, with all other surfaces being pointer-only. ✓
+3. **Articulation test** — novice user can articulate after reading: (a) there is exactly one CLAUDE.md, at vault root; (b) length stays at 60-90 line target, 15K / 150-line hard cap; (c) CLAUDE.md is index, not depth — it points at the Vault Architecture spokes, governance JSON registries, and canonical instance files for detail; (d) what used to live at engagement-level CLAUDE.md now lives at instance `_index.md` + Overview/Updates/Context; (e) the 6-section framework structure (Role / User Identity / Hard Rules / Communication Style / Active Work Pointers / Authoritative References); (f) the JSON-for-APPLY, markdown-for-UNDERSTAND discipline at §6 Authoritative References; (g) `@import governance/foundation-master.json` is the ONLY eager-load directive, with all other surfaces being pointer-only (`schemas/vault-schema.json` dissolved SP13 T-4). ✓
 4. **Anti-pattern coverage** — 6 anti-patterns enumerated with drift signature + preempt mechanism. ✓
 5. **Decision-traceability** — three-class retirement attributed (Session 16 lock #1); replacement read surfaces enumerated against the retired classes; open questions explicit at §Open questions; closed questions named with disposition at §Closed questions.
 6. **Source pointers** — every claim back-linked: companion packets cited inline; downstream consumers + memory references enumerated at §Source pointers.
@@ -315,7 +315,7 @@ The one-class mandate and the index-vs-instruction split together preempt six re
 - `~/Code/claude-stem/templates/vault-claude-md-template.md` — onboarding reference template SP04 consumes at scaffold step 11.5
 - `~/Code/claude-stem/install.sh` step 11.5 — vault-root CLAUDE.md seed with identity substitution
 - `~/Code/claude-stem/onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md` (T-32) — narrative spoke surfaces the one-class mandate as discipline
-- `~/Code/claude-stem/onboarding/scaffold/vault-architecture/Vault Architecture - Enforcement.md` (T-32) — thin meta-spoke for R-32 / R-37 lockstep
+- `~/Code/claude-stem/onboarding/scaffold/vault-architecture/Vault Architecture - Enforcement.md` (T-32) — thin meta-spoke for R-32 / R-37 lockstep (retired SP13 T-4; enforcement context now in governance JSON registries + `governance/_index.json` coupling declarations)
 - SP04 wizard — surfaces the one-class mandate as part of onboarder pedagogy moment (per SP06 pedagogy spec)
 - SP08 dogfood-harness — verifies no `CLAUDE.md` files exist below vault root (placement-validate assertion)
 
