@@ -276,7 +276,7 @@
   "_meta": {
     "_provenance": "SP13 T-2 build. Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
     "build_tool": "tools/build-foundation-master.sh",
-    "built_at": "2026-05-16T01:34:29Z",
+    "built_at": "2026-05-16T01:47:46Z",
     "bundle_version": "276f9ceb56bbe9fb6e15625cf14f25b48e9239d1e693b4c25dbdc3b91bdc9c23",
     "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
     "source_file_mtimes": {
