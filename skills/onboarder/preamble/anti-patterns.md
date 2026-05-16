@@ -61,7 +61,7 @@ These are MENTAL-MODEL-layer anti-patterns. Standards-domain anti-patterns (fron
 
 **User confusion.** Worried about being forced into a wrong shape. Reads "consultant / researcher / developer / manager" as exhaustive categories and panics about edge cases.
 
-**Preempt with.** Archetype is a starting point. The scaffold gets generated from your actual files and answers — archetype just seeds the prompt with the right reference patterns. Multiple archetypes (consultant + researcher; developer + manager) are supported. Personal tracks (Personal Initiatives, BD, MBA prep, side research) layer on top. The archetype does not constrain you; it primes Claude with relevant practitioner research.
+**Preempt with.** Archetype is a starting point. The scaffold gets generated from your actual files and answers — archetype just seeds the prompt with the right reference patterns. Multiple archetypes (consultant + researcher; developer + manager) are supported. Personal tracks (self-defined by the adopter — side research, personal projects, skill development) layer on top. The archetype does not constrain you; it primes Claude with relevant practitioner research.
 
 **Where it surfaces.** Block 5, when the next 6 steps are previewed. The risk is the user pre-emptively refuses the file drop because they think their work will not classify cleanly.
 
