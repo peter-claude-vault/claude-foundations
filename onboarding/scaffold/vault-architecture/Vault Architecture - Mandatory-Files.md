@@ -74,12 +74,11 @@ Adopter Layer-3 overlays follow the R-52 collision tiebreaker (adopter shadows f
 
 ## Pending T-32 body (not in this spoke yet)
 
-- Vault-root `CLAUDE.md` mandate (one-class per canonical §C; folder-scoped/per-cluster/per-instance/engagement-level all retired)
+- Vault-root `CLAUDE.md` mandate (one-class per canonical §C)
 - `System Backlog.md` vault-root mandate
 - `Vault Architecture.md` vault-root mandate + `Vault Architecture/` spoke folder
 - `Inbox/` mandate + `Inbox/_index.md` always + `Inbox/<connector>.md` conditional (Session 18 Option B)
 - `Meetings/` folder mandate
-- Per-folder + per-cluster + per-instance canonical files (Overview / Updates / Context / People)
 - R-07 (mirror-review), R-09 (Logs deny-list), R-12 (Personal Initiatives), R-14 (plan-index) rule body
 
 T-32 carries all of the above. The vault-root rollout roadmap packet sequences the work.
