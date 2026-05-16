@@ -32,9 +32,9 @@ Every term used in claude-stem documentation, defined in one sentence. Where a t
 
 - **Archetype** — a pre-defined category of knowledge worker (consultant, researcher, developer, educator, manager, generalist, writer). Used to seed defaults during onboarding (canonical file types, tag prefixes, architect research topics). Detected from your Section B/C transcripts via a deterministic keyword scorer; you can override.
 
-- **Engagement** — consultant terminology for "client project". A first-class concept when your archetype is consultant. The default `vault.top_level_folder` is `Engagements`. Other archetypes use different top-level folder names.
+- **Engagement** — consultant terminology for "client project". A first-class concept for consultant-archetype users. The default `vault.top_level_folder` for consultants is `Engagements`; other archetypes use their own top-level folder names (`Repos`, `Topics`, `Teams`, etc.). Folder names are user vocabulary — the foundation governs the folder-lineage-as-fields pattern, not the specific names.
 
-- **Engagements-based** — a value of `vault.organizational_method`. Indicates the vault's top-level partition is by client / project rather than (e.g.) by topic or by date.
+- **Engagements-based** — one possible value of `vault.organizational_method`. Indicates the vault's top-level partition is by engagement (client / project). Other organizational methods include project-based, topic-based, and flat. The relevant `vault.top_level_folder` name varies by archetype and is declared in the adopter overlay, not foundation governance.
 
 - **Personalization tier** — Universal / Combined / Personal. Universal artifacts ship generic for every user. Combined artifacts ship a generic skeleton with per-user slot values. Personal artifacts are composed entirely from your interview answers. See [`personalization-model.md`](personalization-model.md).
 
