@@ -1,6 +1,6 @@
 # adopt.md — `/adopt` reference
 
-`/adopt` reads the manifest produced by `/onboard` and scaffolds a working Obsidian-compatible vault on disk. It writes directories, seeds a personalized `CLAUDE.md`, creates an empty `System Backlog.md` index, drops a `canonical-file-types.json` skeleton, and symlinks a `Plans/` directory into your plan root.
+`/adopt` reads the manifest produced by `/onboard` and scaffolds a working Obsidian-compatible vault on disk. It writes directories, seeds the three vault-root mandatory files (`CLAUDE.md`, `System Backlog.md`, `Vault Architecture.md`), seeds the six governance spokes under `Vault Architecture/`, and symlinks a `Plans/` directory into your plan root.
 
 **Audience:** anyone who has run `/onboard` and wants a working vault skeleton.
 **Companion:** [installer.md](installer.md) for `install.sh` reference.
@@ -9,7 +9,7 @@
 
 ## What `/adopt` does
 
-`/adopt` reads `$CLAUDE_HOME/user-manifest.json` and scaffolds a minimum-viable vault at `vault.root`. It writes five top-level directories, seeds the vault `CLAUDE.md` with your identity, creates `System Backlog.md`, drops `canonical-file-types.json`, and symlinks `Plans/` to `$PLANS_HOME`.
+`/adopt` reads `$CLAUDE_HOME/user-manifest.json` and scaffolds a minimum-viable vault at `vault.root`. It writes the foundation-scaffolded directory set, seeds the three vault-root mandatory files (`CLAUDE.md`, `System Backlog.md`, `Vault Architecture.md`) and the six governance spokes under `Vault Architecture/`, and symlinks `Plans/` to `$PLANS_HOME`.
 
 A round-trip on a fresh vault takes seconds (the documented ceiling is two minutes for slow filesystems). The skill is **idempotent** — re-running on an already-scaffolded vault is a no-op modulo post-write validation.
 
@@ -87,7 +87,7 @@ After `/onboard` completes, `$CLAUDE_HOME/user-manifest.json` contains (excerpt)
    - `~/notes/jane-vault/Inbox/`
    - `~/notes/jane-vault/Logs/`
    - `~/notes/jane-vault/Logs/backlog-progress/`
-   - `~/notes/jane-vault/.coordination/`
+   - `~/notes/jane-vault/Vault Architecture/`
    - `~/notes/jane-vault/Plans` symlinked via `ln -sfn` to `$PLANS_HOME`
 6. **`CLAUDE.md` seed.** If `~/notes/jane-vault/CLAUDE.md` does not exist, render the vault template with substitution:
    - `{{IDENTITY_NAME}}` → `Jane Doe`
@@ -101,12 +101,16 @@ After `/onboard` completes, `$CLAUDE_HOME/user-manifest.json` contains (excerpt)
    Atomic tmp+rename. Post-write validation greps for `{{[A-Z_]+}}`; any remaining placeholder triggers exit 50 (the script halts and logs rather than shipping a broken file).
 
 7. **`System Backlog.md` seed.** Empty index file with `type: index` frontmatter and `## Active` / `## Archived` H2 sections.
-8. **`canonical-file-types.json` skeleton.** Stub at `~/notes/jane-vault/.coordination/canonical-file-types.json`:
-   ```json
-   {"schema_version": "skeleton-1.0.0", "phase": "MVP", "file_types": []}
-   ```
-9. **Manifest update.** `vault.canonical_file_types` was `null` → initialized to `[]` via jq + atomic tmp+rename. If non-null (already populated by `/onboard`), preserved.
-10. **Summary emit.** Print scaffolding summary + next-steps pointer to stdout.
+8. **`Vault Architecture.md` seed.** Governance overview hub at vault root — describes the six-pillar governance architecture in human-readable form and links to the spokes in `Vault Architecture/`.
+9. **`Vault Architecture/` spokes seed.** Six narrative markdown files (one per governance pillar) seeded from foundation scaffold:
+   - `Vault Architecture - Frontmatter.md`
+   - `Vault Architecture - Tagging.md`
+   - `Vault Architecture - Naming.md`
+   - `Vault Architecture - Mandatory-Files.md`
+   - `Vault Architecture - Doc-Dependencies.md`
+   - `Vault Architecture - File-Type-Contracts.md`
+10. **Manifest update.** Vault root confirmed written; manifest `vault.is_fresh` flipped to `false` via jq + atomic tmp+rename.
+11. **Summary emit.** Print scaffolding summary + next-steps pointer to stdout.
 
 ### Result
 
@@ -116,20 +120,26 @@ After `/onboard` completes, `$CLAUDE_HOME/user-manifest.json` contains (excerpt)
 Inbox/
 Logs/
   backlog-progress/
-.coordination/
-  canonical-file-types.json
+Vault Architecture/
+  Vault Architecture - Frontmatter.md
+  Vault Architecture - Tagging.md
+  Vault Architecture - Naming.md
+  Vault Architecture - Mandatory-Files.md
+  Vault Architecture - Doc-Dependencies.md
+  Vault Architecture - File-Type-Contracts.md
 Plans -> /home/jane/.claude-plans/
-CLAUDE.md           ← personalized with Jane's identity
-System Backlog.md   ← empty index, ready for backlog rows
+CLAUDE.md                 ← personalized with Jane's identity
+System Backlog.md         ← empty index, ready for backlog rows
+Vault Architecture.md     ← governance hub; load when architecture questions arise
 ```
 
-Open the vault in Obsidian (or any editor). The `CLAUDE.md` carries identity-substituted instructions; `System Backlog.md` is the entry point for system-project tracking.
+Open the vault in Obsidian (or any editor). The `CLAUDE.md` carries identity-substituted instructions; `System Backlog.md` is the entry point for system-project tracking; `Vault Architecture.md` + `Vault Architecture/` spokes are the governance reference.
 
 ---
 
 ## Manifest fields → vault output mapping
 
-The eight substitution tokens above are the entire interface between `/onboard`'s output and `/adopt`'s scaffold. Empty manifest fields fall back to the literal string `_not provided_` (rendered into the template) — never to operator-specific defaults — so the rendered file never ships hard-coded identity for a different person.
+The substitution tokens above are the entire interface between `/onboard`'s output and `/adopt`'s `CLAUDE.md` seed. Empty manifest fields fall back to the literal string `_not provided_` (rendered into the template) — never to operator-specific defaults — so the rendered file never ships hard-coded identity for a different person.
 
 | Manifest field                  | Substitution token                | Default fallback   |
 |---------------------------------|-----------------------------------|--------------------|
@@ -138,9 +148,8 @@ The eight substitution tokens above are the entire interface between `/onboard`'
 | `identity.organization`         | `{{IDENTITY_ORGANIZATION}}`       | `_not provided_`   |
 | `identity.industry`             | `{{IDENTITY_INDUSTRY}}`           | `_not provided_`   |
 | `vault.organizational_method`   | `{{VAULT_ORGANIZATIONAL_METHOD}}` | `_not provided_`   |
-| `vault.top_level_folder`        | `{{VAULT_TOP_LEVEL_FOLDER}}`      | `Engagements`      |
+| `vault.top_level_folder`        | `{{VAULT_TOP_LEVEL_FOLDER}}`      | `_not provided_`   |
 | `vault.default_audience`        | `{{VAULT_DEFAULT_AUDIENCE}}`      | `_not provided_`   |
-| `vault.architecture_doc`        | `{{VAULT_ARCHITECTURE_DOC}}`      | `_not provided_`   |
 
 ---
 
@@ -175,7 +184,7 @@ Re-running `/adopt` on an already-scaffolded vault is a no-op modulo the post-wr
 
 **Can I run `/adopt` without `/onboard`?** Not directly — the manifest is the input contract. You can stage a hand-written `user-manifest.json` at `$CLAUDE_HOME/user-manifest.json` if you want to bypass the verbal flow, but you take ownership of schema validity.
 
-**Does `/adopt` modify `$CLAUDE_HOME`?** Only one field: `vault.canonical_file_types` flips from `null` to `[]` via atomic jq tmp+rename. Everything else writes under `vault.root`.
+**Does `/adopt` modify `$CLAUDE_HOME`?** No. All writes land under `vault.root`. The manifest at `$CLAUDE_HOME/user-manifest.json` has `vault.is_fresh` flipped from `true` to `false` after a successful scaffold, but otherwise `/adopt` does not touch `$CLAUDE_HOME` contents.
 
 **What if `vault.root` is already populated?** `/adopt` is idempotent. It will recreate missing directories, leave existing `CLAUDE.md` untouched, and re-validate the canonical-file-types skeleton. There is no clobber.
 
