@@ -1107,12 +1107,25 @@ PYEOF
         # Check if creating a file in a new vault-root directory
         ROOT_DIR=$(echo "$REL_PATH" | cut -d'/' -f1)
         IS_KNOWN=false
-        for d in "Archive" "Daily" "Inbox" "Logs" "Meetings" "Plans" "Skills" "Vault Architecture"; do
-          if [[ "$ROOT_DIR" == "$d" ]]; then
+        # Read known_roots from bundle (naming.R-04); fall back to hardcoded foundation-8.
+        _KNOWN_ROOTS=$(jq -r '.naming.rules[]? | select(.id == "R-04") | .known_roots[]?' <<<"$BUNDLE_JSON" 2>/dev/null || true)
+        if [[ -z "$_KNOWN_ROOTS" ]]; then
+          _KNOWN_ROOTS="Archive
+Daily
+Inbox
+Logs
+Meetings
+Plans
+Skills
+Vault Architecture"
+        fi
+        while IFS= read -r _d; do
+          [[ -z "$_d" ]] && continue
+          if [[ "$ROOT_DIR" == "$_d" ]]; then
             IS_KNOWN=true
             break
           fi
-        done
+        done <<< "$_KNOWN_ROOTS"
 
         if [[ "$IS_KNOWN" == "false" ]] && [[ "$ROOT_DIR" != "CLAUDE.md" ]] && \
            [[ "$ROOT_DIR" != "Vault Architecture.md" ]] && \
