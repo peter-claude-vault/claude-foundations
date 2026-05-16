@@ -215,17 +215,18 @@ main() {
   # R-44 append: research-queue orphan advisory.
   if (( research_orphan_count > 0 )); then
     local queue_line
-    printf -v queue_line '\n⚠ RESEARCH QUEUE ORPHANS: %d pending entries older than %sh. Oldest: "%s" (%sh). Review ~/.claude/hooks/state/research-queue.json.' \
+    printf -v queue_line '\n⚠ RESEARCH QUEUE ORPHANS: %d pending entries older than %sh. Oldest: "%s" (%sh). Review %s.' \
       "$research_orphan_count" "$((RESEARCH_QUEUE_ORPHAN_SECONDS / 3600))" \
-      "$research_orphan_oldest_project" "$((research_orphan_oldest_age / 3600))"
+      "$research_orphan_oldest_project" "$((research_orphan_oldest_age / 3600))" \
+      "$RESEARCH_QUEUE_PATH"
     banner_text="${banner_text}${queue_line}"
   fi
 
   # R-49 append: auto-commit silent-failure advisory.
   if (( autocommit_failure_count > 0 )); then
     local autocommit_line
-    printf -v autocommit_line '\n⚠ AUTO-COMMIT FAILURES (last 24h): %d occurrence(s) of "Hook cancelled" / "SessionEnd hook failed" in ~/.claude/hooks/state/auto-commit.log. Latest: %s. SessionEnd auto-commit-surfaces.sh may be silently dropping commits — investigate.' \
-      "$autocommit_failure_count" "$autocommit_latest_ts"
+    printf -v autocommit_line '\n⚠ AUTO-COMMIT FAILURES (last 24h): %d occurrence(s) of "Hook cancelled" / "SessionEnd hook failed" in %s. Latest: %s. SessionEnd auto-commit-surfaces.sh may be silently dropping commits — investigate.' \
+      "$autocommit_failure_count" "$AUTO_COMMIT_LOG_PATH" "$autocommit_latest_ts"
     banner_text="${banner_text}${autocommit_line}"
   fi
 
