@@ -82,7 +82,7 @@ The folder is the structural artifact; the frontmatter fields and tags are the f
 
 **The generic encoding.** The schema's `_path_rules` array carries the rule, parameterized so adopter archetypes extend without schema-shape changes. Each archetype declares its own path rule: consultant (`Engagements/<X>/Projects/<Y>/`), researcher (`Topics/<X>/Studies/<Y>/`), developer (`Repos/<X>/Epics/<Y>/`), manager (`Programs/<X>/Initiatives/<Y>/`). The hook consumes the pattern from the bundle; the schema-shape is unchanged.
 
-**Retired types.** `engagement` and `project` were originally TYPE values in an earlier schema version. Empirical measurement showed zero files at `type: engagement` and two at `type: project`, while hundreds carried the field slots under the folder tree. The TYPE slots were aspirational, effectively never instantiated — engagement-level overview docs were actually `type: navigation` (the CLAUDE.md) or `type: context` (the project-overview doc). The retirement codified both as FIELD slots, documented in `governance/frontmatter-rules.json#retired_types` with `decision_ref` pointing to ADR-0003.
+**Retired types.** `engagement` and `project` were originally TYPE values in an earlier schema version. Empirical measurement showed zero files at `type: engagement` and two at `type: project`, while hundreds carried the field slots under the folder tree. The TYPE slots were aspirational, effectively never instantiated — cluster-level overview docs were actually `type: navigation` (the CLAUDE.md) or `type: context` (the workstream-overview doc). The retirement codified both as FIELD slots, documented in `governance/frontmatter-rules.json#retired_types` with `decision_ref` pointing to ADR-0003.
 
 ## Archetype Extension Protocol
 
