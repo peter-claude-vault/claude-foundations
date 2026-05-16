@@ -115,7 +115,6 @@ Non-exempt files written without tags become orphans in Obsidian graph view — 
 
 - `Archive/**` — archived content lifecycle is closed; tag-absence is structurally legitimate.
 - `Logs/foundations-essays/**`, `Logs/backlog-progress/**` — machine-emitted scratch zones with distinct lifecycle.
-- `Tags/**` — Obsidian tag pane metadata, not vault content.
 - `_test*` — fixture files for hook regression testing.
 - `.claude/**` — Claude Code internal state, not vault content.
 - `Logs/ideation-brief-*.md` — symlinks pointing outside-vault to the plan tree; the canonical file lives elsewhere and is governed by a different schema.
