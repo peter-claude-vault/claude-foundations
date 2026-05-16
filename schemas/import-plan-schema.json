@@ -75,28 +75,10 @@
     },
     "vault_tree": {
       "type": "object",
-      "additionalProperties": true,
-      "description": "Proposed vault folder hierarchy. Top-level folders are folder names (Engagements, References, Meetings, Inbox); each maps to a list of subfolder names (project labels) or to an empty object for leaf folders (Inbox carries no pre-listed children). User can add/remove top-level folders or subfolders by editing this block; schema is permissive (additionalProperties: true) so reasonable user customization does not break validation.",
-      "properties": {
-        "Engagements": {
-          "type": "array",
-          "items": {"type": "string"},
-          "description": "Project subfolders under Engagements/ — one per project candidate."
-        },
-        "References": {
-          "type": "array",
-          "items": {"type": "string"},
-          "description": "Subfolders under References/ — one per reference candidate."
-        },
-        "Meetings": {
-          "type": "array",
-          "items": {"type": "string"},
-          "description": "Subfolders under Meetings/ — one per meeting candidate."
-        },
-        "Inbox": {
-          "type": "object",
-          "description": "Inbox/ is the disposition target for unclassified items; rendered as a leaf folder."
-        }
+      "description": "Proposed vault folder hierarchy. Top-level keys are cluster names (archetype-defined by the adopter); each maps to a list of sub-cluster or subfolder names. User can add/remove top-level folders or subfolders by editing this block; schema is archetype-agnostic so any reasonable cluster structure validates.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {"type": "string"}
       }
     },
     "project_metadata_blocks": {
