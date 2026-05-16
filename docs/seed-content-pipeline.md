@@ -77,7 +77,7 @@ Output: `onboarding/seed-content/state/cluster-output.json` (`schema_version: cl
 
 ## Stage 3 — Propose taxonomy
 
-`skills/infer-vault-structure/propose-taxonomy.sh` takes the cluster output plus the IR and produces a taxonomy proposal: per-cluster labels (e.g., `Engagements/alpha`, `References/policy`, `Meetings/q2-syncs`), confidence scores, and a callout for unclassified residuals.
+`skills/infer-vault-structure/propose-taxonomy.sh` takes the cluster output plus the IR and produces a taxonomy proposal: per-cluster labels (e.g., `Projects/alpha`, `Resources/policy`, `Meetings/q2-syncs`), confidence scores, and a callout for unclassified residuals.
 
 ```
 ./propose-taxonomy.sh \
