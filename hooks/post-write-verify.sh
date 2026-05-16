@@ -108,10 +108,6 @@ type_map = {
     'daily-archive': 'daily-archive',
     'skill-spec': 'reference',
     'people': 'people',
-    'project': 'project',
-    'engagement': 'engagement',
-    'overview': 'engagement',
-    'updates': 'engagement',
     'navigation': 'navigation',
     'prd': 'prd',
     'context': 'context',
@@ -133,10 +129,6 @@ if not schema_key:
         schema_key = 'daily-note'
     elif rel_path.startswith('People/'):
         schema_key = 'people'
-    elif '/Projects/' in rel_path and rel_path.startswith('Engagements/'):
-        schema_key = 'project'
-    elif rel_path.startswith('Engagements/'):
-        schema_key = 'engagement'
 
 if not schema_key or schema_key not in schema:
     sys.exit(0)
@@ -162,7 +154,7 @@ rel_path = sys.argv[2]
 
 ALLOWLIST_PREFIXES = ('Inbox/', 'Archive/', 'Daily/', 'Logs/', '.claude/skills/')
 ALLOWLIST_EXACT = {'CLAUDE.md', 'System Backlog.md', 'System Backlog - Archive.md', 'Vault Architecture.md'}
-CANONICAL_SCOPE = {'reference', 'context', 'overview', 'engagement', 'briefing',
+CANONICAL_SCOPE = {'reference', 'context', 'briefing',
                    'strategic', 'planning', 'index', 'navigation', 'people',
                    'prd', 'personal-initiative'}
 
