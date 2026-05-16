@@ -46,7 +46,7 @@ The librarian `tag-coverage-audit` capability emits an advisory when usage appro
 
 ### 2. Hierarchical `#dimension/value` prefix grammar (R-32-taxonomy)
 
-Every tag is two levels: hash, dimension, slash, value. The dimension is one of the registered prefixes. The value is a kebab-case slug matching `[a-z0-9-]` — lowercase, hyphenated, ASCII-only, no spaces or periods or underscores. The grammar is self-documenting (anyone reading a file's YAML knows what each tag classifies), eliminates the casefolding bug class that scatters near-duplicates, and parallels the slug grammar at `Vault Architecture - Structure` so the folder-mirrors-tag invariant holds without translation tables.
+Every tag is two levels: hash, dimension, slash, value. The dimension is one of the registered prefixes. The value is a kebab-case slug matching `[a-z0-9-]` — lowercase, hyphenated, ASCII-only, no spaces or periods or underscores. The grammar is self-documenting (anyone reading a file's YAML knows what each tag classifies), eliminates the casefolding bug class that scatters near-duplicates, and parallels the slug grammar at [[Vault Architecture - Naming]] so the folder-mirrors-tag invariant holds without translation tables.
 
 Pre-write-guard DENIES at write-time any tag failing the regex `^#[a-z][a-z0-9-]*/[a-z0-9][a-z0-9-]*$` or starting with an unregistered prefix.
 
