@@ -16,14 +16,15 @@
 #     4. Root CLAUDE.md        — references (paths, skill names) resolve
 #                                                              (auto-fix|manual)
 #   vault (5–6) — gated on manifest.vault.has_structured_projects:
-#     5. Vault CLAUDE.md       — engagement list matches Engagements/*/ dirs
-#        and Overview `status:` frontmatter                     (auto-fix)
+#     5. Vault CLAUDE.md       — cluster list matches <cluster_folder>/*/ dirs
+#        (read from manifest.vault.cluster_folder; skipped if unset) and
+#        Overview `status:` frontmatter                         (auto-fix)
 #     6. Vault Architecture    — directory tree documented in VA.md matches
 #        actual filesystem; new dirs undoc'd OR doc'd dirs missing (manual)
 #   cross (7) — gated on manifest.vault.has_structured_projects:
-#     7. Engagement status     — root CLAUDE.md vs vault CLAUDE.md vs
-#        Engagements/*/CLAUDE.md vs Engagements/*/* - Overview.md
-#        agree. Overview is source of truth.                    (auto-fix)
+#     7. Cluster status        — root CLAUDE.md vs cluster-dir/*/ Overview status
+#        (parameterized per manifest.vault.cluster_folder); engagement-level
+#        CLAUDE.md retired (one-class mandate); Overview is source of truth. (auto-fix)
 #
 # When `has_structured_projects` is false (foundation default), checks 5-7
 # emit a "skipped (ungated)" event each and return without scanning.
@@ -94,6 +95,13 @@ if [[ -r "$USER_MANIFEST" ]] && command -v jq >/dev/null 2>&1; then
   HAS_STRUCTURED_PROJECTS=$(jq -r '.vault.has_structured_projects // false' "$USER_MANIFEST" 2>/dev/null)
 fi
 
+# Read cluster folder from manifest for cluster-discovery parameterization.
+# Checks 5 and 7 use this to replace the legacy hardcoded "Engagements" pattern.
+CLUSTER_DIR=""
+if [[ -r "$USER_MANIFEST" ]] && command -v jq >/dev/null 2>&1; then
+  CLUSTER_DIR=$(jq -r '.vault.cluster_folder // ""' "$USER_MANIFEST" 2>/dev/null || echo "")
+fi
+
 EXISTING="$(manifest_get '.drift_findings.sync_check' '[]')"
 
 DRIFT_OUT="$(mktemp -t sync-check-drift.XXXXXX)"
@@ -110,6 +118,7 @@ export SC_VAULT_ARCH_MD_X="$VAULT_ARCH_MD"
 export SC_SKILLS_INDEX_X="$SKILLS_INDEX"
 export SC_VAULT_ROOT_X="$VAULT_ROOT"
 export SC_HAS_STRUCTURED_PROJECTS="$HAS_STRUCTURED_PROJECTS"
+export SC_CLUSTER_DIR="$CLUSTER_DIR"
 export SC_EXISTING="$EXISTING"
 export SC_DRIFT_OUT="$DRIFT_OUT"
 
@@ -128,6 +137,7 @@ vault_arch= os.environ["SC_VAULT_ARCH_MD_X"]
 skills_ix = os.environ["SC_SKILLS_INDEX_X"]
 vault     = os.environ["SC_VAULT_ROOT_X"]
 has_structured = os.environ["SC_HAS_STRUCTURED_PROJECTS"] == "true"
+cluster_dir = os.environ.get("SC_CLUSTER_DIR", "").rstrip("/")
 existing  = json.loads(os.environ["SC_EXISTING"] or "[]")
 drift_out = os.environ["SC_DRIFT_OUT"]
 findings_out = os.environ.get("FINDINGS_OUTPUT", "")
@@ -321,18 +331,20 @@ def check_vault_claude_md():
     t = read_file(vault_cmd)
     if not t:
         return
-    eng_dir = os.path.join(vault, "Engagements")
+    cdir = cluster_dir if cluster_dir else "Engagements"
+    eng_dir = os.path.join(vault, cdir)
     actual_engs = set()
     if os.path.isdir(eng_dir):
         for n in os.listdir(eng_dir):
             if os.path.isdir(os.path.join(eng_dir, n)):
                 actual_engs.add(n)
-    # CLAUDE.md lists engagements under "## Engagements" section
-    eng_section = re.search(r"^## Engagements\n(.*?)(?=\n## |\Z)", t, re.DOTALL | re.MULTILINE)
+    # CLAUDE.md lists cluster instances under a section matching the cluster folder name
+    section_header = re.escape(cdir)
+    eng_section = re.search(rf"^## {section_header}\n(.*?)(?=\n## |\Z)", t, re.DOTALL | re.MULTILINE)
     if not eng_section:
         return
     documented = set()
-    for m in re.finditer(r"\[\[Engagements/([^/|\]]+)/CLAUDE\.md", eng_section.group(1)):
+    for m in re.finditer(rf"\[\[{re.escape(cdir)}/([^/|\]]+)/CLAUDE\.md", eng_section.group(1)):
         documented.add(m.group(1))
     for missing in sorted(actual_engs - documented):
         add("vault-claude-md", missing,
@@ -373,7 +385,8 @@ def check_vault_architecture():
 # ---------- Check 7: Engagement status consistency ----------
 def check_engagement_status():
     global auto_fixed
-    eng_dir = os.path.join(vault, "Engagements")
+    cdir = cluster_dir if cluster_dir else "Engagements"
+    eng_dir = os.path.join(vault, cdir)
     if not os.path.isdir(eng_dir):
         return
     for name in sorted(os.listdir(eng_dir)):
@@ -408,7 +421,7 @@ def check_engagement_status():
         # We flag only if the marker disagrees in letter-case-insensitive form
         vt = read_file(vault_cmd)
         vc_match = re.search(
-            rf"\[\[Engagements/{re.escape(name)}/CLAUDE\.md.*?\]\]\s*\(([A-Z]+)\)", vt)
+            rf"\[\[{re.escape(cdir)}/{re.escape(name)}/CLAUDE\.md.*?\]\]\s*\(([A-Z]+)\)", vt)
         if vc_match:
             vc_status = vc_match.group(1).strip().lower()
             norm_ov = ov_status
