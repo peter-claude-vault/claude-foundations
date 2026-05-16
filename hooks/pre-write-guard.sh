@@ -682,7 +682,7 @@ if [[ -n "$BUNDLE_JSON" ]]; then
       if [[ -n "$DD_NEW_TYPE" ]]; then
         DD_DENIED=$(jq -r '.doc_dependencies.entries[]? | select(.id == "logs-scratch-only") | .denied_types[]?' <<<"$BUNDLE_JSON" 2>/dev/null || true)
         if echo "$DD_DENIED" | grep -qx "$DD_NEW_TYPE"; then
-          DD_LOGS_WARN="[LOGS/ DELIVERABLE SOFT-REJECT] type: '${DD_NEW_TYPE}' is a deliverable type, not scratch. Logs/ is the Claude scratchpad — promote this file to a permanent vault home (Engagements/, Reference/, Vault Architecture/, etc.) before writing. Soft-warn only in MVP; Session 13 may harden to deny."
+          DD_LOGS_WARN="[LOGS/ DELIVERABLE SOFT-REJECT] type: '${DD_NEW_TYPE}' is a deliverable type, not scratch. Logs/ is the Claude scratchpad — promote this file to a permanent vault home (cluster roots and reference folders per governance/naming-rules.json#R-04) before writing. Soft-warn only in MVP; Session 13 may harden to deny."
           [[ -n "$DOC_DEP_CTX" ]] && DOC_DEP_CTX="${DOC_DEP_CTX}\n\n"
           DOC_DEP_CTX="${DOC_DEP_CTX}${DD_LOGS_WARN}"
         fi
