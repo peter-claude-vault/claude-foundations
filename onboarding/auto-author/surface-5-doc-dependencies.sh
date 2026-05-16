@@ -156,7 +156,7 @@ build_people_entry() {
     mirrors: [
       {file: ($top + "/_index.md"), section: "People"}
     ],
-    rationale: "People files under each engagement are surfaced in the engagement-level _index.md routing layer."
+    rationale: "People files under each cluster are surfaced in the cluster-level _index.md routing layer."
   }'
 }
 
