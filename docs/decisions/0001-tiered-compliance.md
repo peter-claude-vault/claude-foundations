@@ -54,3 +54,16 @@ Tier assignment is per-type in the schema (not per-file). Adopters customize tie
 
 - [ADR-0002](./0002-unified-with-per-archetype-entries.md) — extends this tier model to per-archetype type entries
 - [ADR-0005](./0005-two-surface-governance-dual-pattern.md) — tier definitions are mirrored across the JSON + narrative surfaces via R-37 lockstep
+
+---
+
+## SP13 Post-Onboarding Governance Architecture — Amendment (2026-05-16)
+
+**Governance source of truth migrated from `vault-schema.json` to `foundation-master.json` bundle.** This ADR describes a tier system whose tier assignments live in the schema. Per the SP13 canonical governance architecture:
+
+- `vault-schema.json` is **dissolved**. Type registry and tier assignments now live in `governance/frontmatter-rules.json#types[]`.
+- Hooks read tier and type information exclusively from `governance/foundation-master.json` (the composed bundle shipped at install time), not from `vault-schema.json` directly.
+- The three-tier model (Strict / Standard / Minimal) is unchanged. Per-type tier assignments are now declared in `frontmatter-rules.json` and composed into the bundle via `tools/build-foundation-master.sh` at foundation-repo release time.
+- Adopters customize tier assignments via `overlay-master.json` (the Layer-3 overlay parallel), not by editing the foundation-repo schema.
+
+See `foundation-governance-target-state.md` §A (6-pillar governance set) and §B (foundation-master bundle) for the canonical reference.

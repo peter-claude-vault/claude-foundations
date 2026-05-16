@@ -52,3 +52,20 @@ A second concern surfaced: LLMs that consume vault files read frontmatter, not d
 
 - [ADR-0002](./0002-unified-with-per-archetype-entries.md) — schema's per-type entries declare which fields reference engagement/project
 - [ADR-0001](./0001-tiered-compliance.md) — the lineage hook fires at the Strict tier's DENY layer
+
+---
+
+## SP13 Post-Onboarding Governance Architecture — Amendment (2026-05-16)
+
+**User-vocab abstractification.** The `Engagements/<X>/Projects/<Y>/` path patterns cited throughout this ADR are **consultant-archetype vocabulary** (user-vocab), not foundation-governed structure. The foundation governs the *pattern* — folder-lineage encoded as frontmatter fields and tags — not the specific folder names. Different archetypes use different naming:
+
+- Consultant: `Engagements/<X>/Projects/<Y>/`
+- Researcher: `Topics/<X>/Studies/<Y>/`
+- Developer: `Repos/<X>/Epics/<Y>/`
+- Manager: `Teams/<X>/Initiatives/<Y>/`
+
+The foundation ships the generic `_path_rules.rules[]` encoding; the consultant default entry is the **reference seed**, not a mandate. Adopters configure their own folder vocabulary via `overlay-master.json` extensions or onboarding interview (Section C).
+
+`Engagements` as a specific folder name lives in `overlay-master.json` (user-overlay), not in `governance/frontmatter-rules.json` (foundation). The lineage-as-fields PRINCIPLE ratified here is unchanged.
+
+See `foundation-governance-target-state.md` §H (overlay-master structure) for the canonical reference on user-vocab placement.

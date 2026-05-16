@@ -79,3 +79,17 @@ The Personalization-seams audit identified this as a HIGH-IMPACT gap because ado
 - Companion ADR: [ADR-0005](./0005-two-surface-governance-dual-pattern.md) — the dual-surface pattern this tiebreaker extends
 - Capability contract consumer: librarian `governance-parity-audit` (governance/librarian-capabilities/governance-parity-audit.md) — `foundation-upgrade-touches-shadowed-entry` finding category
 - Personalization model: `docs/personalization-model.md` (the extensibility surface this tiebreaker resolves)
+
+---
+
+## SP13 Post-Onboarding Governance Architecture — Amendment (2026-05-16)
+
+**Overlay shape revised to 6-pillar parallel.** The extensibility mechanisms enumerated in this ADR's Context section reference `enforcement-map.schema.json` (additionalProperties) and `_archetype_enum` as overlay extension points. Per the SP13 canonical governance architecture:
+
+- `enforcement-map.schema.json` is **retired entirely** (SP13 Session 9). Its extension surface is superseded.
+- The adopter overlay is now `overlay-master.json`, which is a **perfect 6-pillar parallel** of `foundation-master.json`. The 6 extension surfaces are: `frontmatter` (path routing, custom types), `tagging` (custom dimensions, tag-cap override), `naming` (custom naming conventions), `mandatory_files` (custom mandates and exempt paths), `doc_dependencies` (custom cascade entries), `file_type_contracts` (custom body contracts).
+- Adopter Layer-3 extensions via `/govern register --kind <type>` write to the appropriate overlay-master slot.
+
+The shadowing principle and `_override_reason` requirement ratified here are unchanged. The R-52 collision tiebreaker still fires at write-time via `pre-write-guard.sh`.
+
+See `foundation-governance-target-state.md` §H (overlay-master structure) for the canonical 6-pillar overlay shape.

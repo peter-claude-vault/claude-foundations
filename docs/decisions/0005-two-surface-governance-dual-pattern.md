@@ -75,3 +75,20 @@ Bounded drift is tolerated (the reference deployment runs at 2-3 types of drift 
 
 - [ADR-0002](./0002-unified-with-per-archetype-entries.md) — schema model that ships on Surface 1
 - [ADR-0001](./0001-tiered-compliance.md) — tier definitions are mirrored across Surface 1 + Surface 2 via R-37 lockstep
+
+---
+
+## SP13 Post-Onboarding Governance Architecture — Amendment (2026-05-16)
+
+**Surface 2 spoke count revised to 6.** The `Vault Architecture - Enforcement.md` meta-spoke referenced in this ADR is **retired** per the canonical post-onboarding governance architecture (SP13 Session 9). The meta-spoke carried governance-narrative content that belongs in the JSON pillars and hook logic, not in a user-facing spoke. Surface 2 now mirrors exactly the 6 governance pillars:
+
+1. `Vault Architecture - Frontmatter.md`
+2. `Vault Architecture - Tagging.md`
+3. `Vault Architecture - Naming.md`
+4. `Vault Architecture - Mandatory-Files.md`
+5. `Vault Architecture - Doc-Dependencies.md`
+6. `Vault Architecture - File-Type-Contracts.md`
+
+**Surface 1 `enforcement-map.schema.json` retired.** The schema referenced in the "Files" list above is retired entirely (SP13 Session 9 reversal of the B-7 kept-orthogonal decision). The 6-pillar governance set described in §A of `foundation-governance-target-state.md` is the canonical Surface 1.
+
+See `foundation-governance-target-state.md` §D (Vault Architecture/ folder content) and §G (retired items) for the canonical reference.

@@ -55,3 +55,18 @@ None of the three is acceptable. The 25-cap was designed for **user-facing** dim
 
 - [ADR-0001](./0001-tiered-compliance.md) — frontmatter `status:` field is required by the tier model; this ADR governs the `#status/*` tag dimension separately
 - [ADR-0005](./0005-two-surface-governance-dual-pattern.md) — the log-subtype registry is governed across the JSON + narrative surfaces via R-37 lockstep
+
+---
+
+## SP13 Post-Onboarding Governance Architecture — Amendment (2026-05-16)
+
+**`#about-me/*` and `#artefact-bd/*` retired from canonical user-facing dimension set.** The decision text at line 25 lists these two dimensions as user-facing and subject to the 25-cap. Per the SP13 canonical governance architecture both are **retired** from the foundation-shipped dimension set:
+
+- `#about-me/*` — not a foundation-mandated dimension; users who want to tag personal-context files can define a custom dimension via `/govern register --kind tag-extension`.
+- `#artefact-bd/*` — consultant-archetype-specific vocabulary; belongs in user overlay, not foundation governance.
+
+The canonical user-facing dimension set in `governance/tagging-rules.json` is reduced to the 6 archetype-neutral dimensions. The 25-cap applies to those.
+
+The system-utility exemption principle ratified here (`#log/*`, `#status/*` exempt from the cap) is unchanged.
+
+See `foundation-governance-target-state.md` §A (6-pillar governance set) for the canonical tagging-rules reference.

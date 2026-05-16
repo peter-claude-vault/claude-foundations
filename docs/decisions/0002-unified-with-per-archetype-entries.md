@@ -56,3 +56,18 @@ Use the **unified-with-per-archetype-entries** model:
 - [ADR-0001](./0001-tiered-compliance.md) — tier model the per-type entries reference
 - [ADR-0003](./0003-folder-lineage-as-fields.md) — explains why `engagement` and `project` are FIELD slots, not TYPE entries
 - [ADR-0005](./0005-two-surface-governance-dual-pattern.md) — narrative spoke is hand-authored, not generated from this schema
+
+---
+
+## SP13 Post-Onboarding Governance Architecture — Amendment (2026-05-16)
+
+**`vault-schema.json` dissolved; unified model migrated to `frontmatter-rules.json`.** The "unified-with-per-archetype-entries" shape ratified here is preserved, but the artifact has changed:
+
+- `schemas/vault-schema.json` is **dissolved**. The unified type-registry content (cross-cutting blocks + per-type entries) now lives in `governance/frontmatter-rules.json`.
+- `_tag_prefixes` block moves to `governance/tagging-rules.json#taxonomy.dimension_prefixes`.
+- `_path_rules` block is retained in `governance/frontmatter-rules.json#path_routing`.
+- The hook's case-statement switch remains one-read, one-artifact — but the artifact is now `governance/foundation-master.json` (the composed bundle) read at session start, not `vault-schema.json` read per-write.
+
+The one-schema/unified-shape architectural choice is unchanged. The **physical artifact** is now the composed bundle; the **logical shape** remains per-type entries in the frontmatter pillar.
+
+See `foundation-governance-target-state.md` §A (pillar 1 — frontmatter-rules.json) and §B (foundation-master bundle) for the canonical reference.
