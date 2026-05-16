@@ -225,18 +225,17 @@ Anyone scaffolding a public GitHub artifact uses `README.md`; anyone scaffolding
 
 ## Exemptions
 
-A meaningful minority of folders (depth ≤ 3) do NOT carry `_index.md` by design. The exemption pattern:
+A meaningful minority of folders (depth ≤ 3) do NOT carry `_index.md` by design. The exemption list is exactly the 5 foundation-shipped folders per canonical §E:
 
-- **Templates folders** — scaffolding seeds, not consumable files.
-- **Archive folders** (`Archive/<YYYY>/`, `Archive/Daily/`, etc.) — cold storage; navigation by name is low-signal because contents are append-only history.
-- **`Daily/` and `Meetings/`** — date-prefixed file collections. Navigation by date or tag query, not by folder listing.
-- **`Inbox/`** — scraper aggregation surface; the aggregation files are documented inline in vault-root `CLAUDE.md`; a folder-level index would duplicate.
-- **`Logs/`** — Claude's scratch space; emission-driven, not navigation-targeted.
-- **`Tags/`** — Obsidian Make.md plugin artifact directory; adopter-disposable, gitignored.
-- **`_orchestrator/`** directories in plan trees — orchestrator state, not human-navigable.
-- **Test fixture directories** (`tests/fixtures/`, `tests/`) — fixture data.
+- **`Archive/**`** — cold storage; navigation by name is low-signal because contents are append-only history.
+- **`Daily/**`** — date-prefixed file collections. Navigation by date or tag query, not by folder listing.
+- **`Inbox/**`** — scraper aggregation surface; connector briefs documented inline; a folder-level index would duplicate.
+- **`Logs/**`** — Claude's scratch space; emission-driven, not navigation-targeted.
+- **`Meetings/**`** — date-prefixed meeting notes. Navigation by date or tag query, not by folder listing.
 
-Generalized: **a folder is exempt when its contents are date-prefixed sequences, scraper aggregation surfaces, scratch-space emissions, or non-vault infrastructure.** Folders carrying named content files for human and LLM consumption — engagements, projects, people directories, reference, skills, personal initiatives — are mandatory-`_index.md`.
+**Explicitly NOT exempt:** `Templates/`, `Tags/`, `_orchestrator/`, `tests/` — these are either not foundation-shipped to adopter vaults (foundation-repo-only infrastructure) or user-created folders that would get normal `_index.md` auto-bootstrap if a user creates them. Per canonical §E: "if a user creates a folder with one of the deliberately-non-exempt names, normal `_index.md` auto-bootstrap fires."
+
+Generalized: **a folder is exempt when it is foundation-shipped AND its contents are date-prefixed sequences, scraper aggregation surfaces, or scratch-space emissions.** Folders carrying named content files for human and LLM consumption — user-defined clusters, projects, instance directories — are mandatory-`_index.md`.
 
 ## Anti-patterns
 

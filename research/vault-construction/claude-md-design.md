@@ -74,7 +74,7 @@ Vault-root CLAUDE.md is the **index**, not the **depth**. It carries:
 - Pointers (wikilinks + one-line gloss) to: `Vault Architecture.md`, the 5 governance spokes, the schemas, the Skills index, the Plans index
 - Tagging taxonomy enumeration (compact: dimension list + current canonical values only)
 - Behavioral conventions
-- Communication style (one paragraph + pointer to `About Me/LLM Interaction Preferences.md`)
+- Communication style (one paragraph + optional pointer to an adopter-profile preferences file if the adopter maintains one)
 
 It does **NOT** carry:
 
@@ -163,7 +163,7 @@ Per Bijit Ghosh's instruction-slot research: aim for <10 hard rules. Each rule m
 
 ### 4. Communication Style (~3-5 lines)
 
-One paragraph: tone, structure expectations, feedback style. Followed by a pointer to a more detailed preferences file if the adopter maintains one (e.g., `About Me/LLM Interaction Preferences.md` in the reference deployment). Maintenance: rare.
+One paragraph: tone, structure expectations, feedback style. Followed by an optional pointer to a more detailed preferences file if the adopter maintains one (adopter-profile folder per overlay-master; foundation does not ship `About Me/` per canonical §G). Maintenance: rare.
 
 ### 5. Active Work Pointers (~5-10 lines)
 
@@ -171,7 +171,6 @@ NOT enumerated. Pointers only, with the path stable even as contents churn. Exam
 - Active client engagements: `<cluster-folder>/` — see cluster `_index.md` for current list
 - Personal tracks: `<tracks-folder>/`
 - System backlog: `System Backlog.md`
-- Tasks: `Tasks.md`
 
 Maintenance: path-stable; only changes when the adopter renames a cluster (rare; R-37 lockstep applies).
 
@@ -200,7 +199,6 @@ The eager-load discipline: ONLY include surfaces that are session-start critical
 | Creating new top-level structure | `$CLAUDE_HOME/governance/mandatory-files-rules.json` | `Vault Architecture/Vault Architecture - Mandatory-Files.md` |
 | Governance hook / R-37 / promotion question | — | `Vault Architecture/Vault Architecture - Enforcement.md` |
 | System-project ideas; librarian/architect work | `System Backlog.md` | — |
-| Task-related work | `Tasks.md` | — |
 | **Mandatory** before building any capability | `Skills/_index.md` | — |
 | Inbox / connector / dashboard work | `Inbox/_index.md` | — |
 | Plan or sub-plan references | `Plans/` (symlink to plan tree) | — |

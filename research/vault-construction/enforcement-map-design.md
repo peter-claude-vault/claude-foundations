@@ -38,7 +38,7 @@ The enforcement layer is not "documentation that hooks happen to honor." It is a
 The architecture is shaped by three structural commitments:
 
 1. **Two surfaces, one content.** JSON registries for Claude (hook-loaded, deterministic, terse); narrative spokes for users (pedagogy, examples, citations, anti-patterns). Bounded drift tolerated; visibility guaranteed.
-2. **Four pillars, one schema.** Frontmatter, Tagging, Naming, Mandatory-Files. Each pillar gets its own JSON registry and its own narrative spoke. A thin `_index.json` registers them. A thin `Vault Architecture - Enforcement.md` covers cross-cutting meta-rules.
+2. **Six pillars, one bundle.** Frontmatter, Tagging, Naming, Mandatory-Files, Doc-Dependencies, File-Type-Contracts. Each pillar gets its own JSON registry and its own narrative spoke. A thin `_index.json` registers them. The composed bundle `governance/foundation-master.json` is the runtime artifact hooks consume per the bundle-at-load discipline (canonical §B).
 3. **Write-time + audit-time alignment.** R-37 atomic lockstep at write-time (every governance commit touches JSON + narrative + enforcement-map row + CLAUDE.md ref together). Librarian `governance-parity-audit` capability at audit-time (weekly cron + on-demand). Two layers; bounded drift treated as a signal, not a failure.
 
 The pattern reuses the most-converged 2026 industry primitive (multi-file with scope-frontmatter; see §Industry convergence below) without inventing a new vocabulary. Cursor calls them `.cursor/rules/*.mdc`. GitHub Copilot calls them path-scoped instructions. Anthropic Skills use progressive disclosure. The shape is the same: small files, declared scope, lazy loading. This packet lands the shape inside vault governance.
@@ -99,19 +99,21 @@ Structured JSON registries loaded by hooks at runtime. Files are small (≤10K e
 
 | File | Size target | Pillar / role |
 |---|---|---|
-| `_index.json` | ≤2K | Pillar registry + cross-cutting meta-rules (R-37, R-35, R-34) |
+| `_index.json` | ≤2K | Pillar registry + cross-cutting meta-rules (R-37, R-35, R-34, R-52) |
 | `frontmatter-rules.json` | ~3-5K | R-32, R-33, R-37, R-39, R-40 |
-| `tagging-rules.json` | ~3-5K | R-05, R-32-taxonomy, R-47, R-50 |
+| `tagging-rules.json` | ~3-5K | R-05, R-32-taxonomy, R-47, R-50, R-51 |
 | `naming-rules.json` | ~3-5K | R-04, R-10, R-20, R-27, R-28 |
 | `mandatory-files-rules.json` | ~3-5K | R-07, R-09, R-12, R-14 |
-| `doc-dependencies.json` | ≤10K | R-07 cascade (preserved standalone — different shape from pillar files) |
-| `enforcement-map.schema.json` | ≤3K | JSON Schema validating the 4 pillar files |
+| `doc-dependencies.json` | ≤10K | R-07 cascade (5th governance pillar — first-class authoring surface per canonical §A) |
+| `file-type-contracts/*.json` | ≤5K each | Per-file-type body-structure contracts (6th governance pillar per canonical §A) |
+| `foundation-master.json` | composed bundle | Composed at release time by `tools/build-foundation-master.sh`; shipped to adopters; hooks read exclusively from this bundle (canonical §B bundle-at-load) |
+| `enforcement-map.schema.json` | ≤3K | JSON Schema validating the pillar JSON entry shape |
 
-Hooks load only the pillar they need: `pre-write-guard.sh` frontmatter branch reads `frontmatter-rules.json`; tag-validation branch reads `tagging-rules.json`. Per-pillar load locality matches the access pattern — a single hook gate evaluates one pillar's worth of rules, so unified-file would force longer jq selectors against more bytes than needed.
+Hooks read exclusively from `foundation-master.json` (the composed bundle, canonical §B) — not individual pillar files directly. The bundle-at-load discipline ships the composed bundle to every adopter at install time; hooks read it at write-time without rebuilding it on the consumer side.
 
 ### Surface 2 — User-consumed (vault `Vault Architecture/`)
 
-Narrative markdown spokes following the 7-spoke pattern carried in the scaffold. Each spoke is hand-authored, carries the project's voice + pedagogy, and ships pre-populated in the adopter scaffold (install.sh writes spokes from foundation-repo into the adopter's vault).
+Narrative markdown spokes — one per governance pillar, 6 total per canonical §D. Each spoke is hand-authored, carries the project's voice + pedagogy, and ships pre-populated in the adopter scaffold (install.sh writes spokes from foundation-repo into the adopter's vault).
 
 | File | Size target |
 |---|---|
@@ -119,9 +121,10 @@ Narrative markdown spokes following the 7-spoke pattern carried in the scaffold.
 | `Vault Architecture - Tagging.md` | 4-8K |
 | `Vault Architecture - Naming.md` | 4-8K |
 | `Vault Architecture - Mandatory-Files.md` | 4-8K |
-| `Vault Architecture - Enforcement.md` | 3-5K (thin meta-spoke) |
+| `Vault Architecture - Doc-Dependencies.md` | 4-8K |
+| `Vault Architecture - File-Type-Contracts.md` | 4-8K |
 
-The vault-root `enforcement-map.md` becomes a thin pointer file (≤2K) — indexes the 5 spokes + foundation-repo governance JSONs. Bulk content lives in the spokes; the vault-root file is navigation only.
+Per canonical §G: the vault-root `enforcement-map.md` thin pointer file and the `Vault Architecture - Enforcement.md` meta-spoke are retired. Governance is orchestrated by the 6 JSON pillars + `foundation-master.json` bundle consumed by hooks; the 6 narrative spokes carry pedagogy.
 
 ### Alignment mechanism — R-37 atomic lockstep + governance-parity-audit
 
