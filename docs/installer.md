@@ -118,18 +118,18 @@ schemas/user-manifest-schema.json sha256:efgh... bytes:5102
 
 ## Config validation (Step 13.6)
 
-After all assets land, the installer cross-validates the four foundation-shipped configs at `$CLAUDE_HOME/hooks/config/` against their companion schemas at `$CLAUDE_HOME/schemas/`:
+After all assets land, the installer cross-validates the foundation-shipped governance configs against their companion schemas at `$CLAUDE_HOME/schemas/`:
 
 | Config | Schema |
 |---|---|
-| `doc-dependencies.json` | `doc-dependencies-schema.json` |
-| `vault-overlay.json` | `vault-overlay-schema.json` |
-| `drift-allowlist.json` | `drift-allowlist-schema.json` |
-| `cron-log-architecture-exceptions.json` | `cron-log-architecture-exceptions-schema.json` |
+| `governance/foundation-master.json` | `schemas/foundation-master-schema.json` |
+| `governance/doc-dependencies.json` | `schemas/doc-dependencies-schema.json` |
+| `drift-allowlist.json` | `schemas/drift-allowlist-schema.json` |
+| `cron-log-architecture-exceptions.json` | `schemas/cron-log-architecture-exceptions-schema.json` |
 
 The check requires the `python3 jsonschema` module (PyPI). When the module is reachable, malformed configs fail install with exit 30 and a `config schema validation failed: <path> against <schema>` diagnostic on stderr. When the module is unavailable, the step graceful-skips with a `WARN` line; configs are still JSON-syntax-validated by Step 13. Adopters who want fail-loud-at-install behavior can `pip3 install --user jsonschema` and re-run.
 
-See [`doc-dependencies-conventions.md`](doc-dependencies-conventions.md) for the skeleton/overlay model these schemas validate.
+See [`doc-dependencies-conventions.md`](doc-dependencies-conventions.md) for the cascade registry model and [`adding-a-vault-file-type.md`](adding-a-vault-file-type.md) for the 6-pillar governance architecture these schemas validate.
 
 ---
 
