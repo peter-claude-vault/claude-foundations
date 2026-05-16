@@ -7,16 +7,18 @@
 #   1. Vault root allowlist: CLAUDE.md, Vault Architecture.md, Tasks.md,
 #      System Backlog.md, System Backlog - Archive.md
 #   2. Project folders: only `{Project} - *.md` + `_index.md` + `File-Index.md`
-#   3. People files: must be in Engagements/*/People/
+#   3. People files: must be in <cluster_folder>/*/People/ (read from manifest.vault.cluster_folder;
+#      skipped when cluster_folder is unset)
 #   4. Meeting notes: must be in Meetings/
-#   5. Engagement root: 4 standard files + CLAUDE.md + _index.md + File-Index.md
+#   5. Cluster root: standard files + CLAUDE.md + _index.md + File-Index.md (cluster-parameterized;
+#      skipped when cluster_folder is unset)
 #   6. Reference/ (Tier 1): no engagement-specific files
 #   7. Logs/ allowed patterns: dated logs + build-* + ideation-brief-* symlinks
 #      (frontmatter-enforce must skip ideation-brief-*.md)
 #
 # Index File Convention (always allowed):
 #   - _index.md at any directory root
-#   - File-Index.md at engagement + project roots
+#   - File-Index.md at cluster + project roots
 #   - Logs/ideation-brief-*.md (symlinks to plan-tree ideation briefs)
 #
 # CLI:
@@ -57,12 +59,26 @@ SCOPE_ROOT="${SCOPE:-$VAULT_ROOT}"
 LOGS_WHITELIST_SUBDIRS=$(umr_get_array '.vault.logs_whitelist_subdirs' | tr '\n' '|')
 export LOGS_WHITELIST_SUBDIRS
 
+# Read cluster folder from user-manifest (vault.cluster_folder); fall through
+# when unset — cluster-specific placement rules skip cleanly when CLUSTER_DIR is empty.
+CLUSTER_DIR=""
+_USER_MANIFEST="${USER_MANIFEST_PATH:-${CLAUDE_HOME:-$HOME/.claude}/user-manifest.json}"
+if [[ -r "$_USER_MANIFEST" ]] && command -v jq >/dev/null 2>&1; then
+  CLUSTER_DIR=$(jq -r '.vault.cluster_folder // ""' "$_USER_MANIFEST" 2>/dev/null || echo "")
+fi
+unset _USER_MANIFEST
+export CLUSTER_DIR
+
 python3 - "$SCOPE_ROOT" "$DRY_RUN" <<'PY'
 import json, os, re, sys
 
 scope_root, dry_run_s = sys.argv[1:3]
 dry_run = (dry_run_s == "true")
 findings_out = os.environ.get("FINDINGS_OUTPUT", "")
+
+# Cluster folder — read from overlay-master via CLUSTER_DIR env (set by bash section).
+# When empty, cluster-specific placement rules (Rules 2, 3, 5) fall through without firing.
+CLUSTER_DIR = os.environ.get("CLUSTER_DIR", "").rstrip("/")
 
 def emit(payload):
     line = json.dumps(payload, ensure_ascii=False)
@@ -79,8 +95,8 @@ VAULT_ROOT_ALLOWLIST = {
     "_index.md", "File-Index.md",
 }
 
-# Engagement-root allowlist — pattern-based
-ENGAGEMENT_STANDARD = re.compile(r"^(CLAUDE\.md|_index\.md|File-Index\.md|.+ - (Overview|Updates|Reference|PRD|Context)\.md)$")
+# Cluster-root allowlist — pattern-based (applied only when CLUSTER_DIR is set)
+CLUSTER_STANDARD = re.compile(r"^(CLAUDE\.md|_index\.md|File-Index\.md|.+ - (Overview|Updates|Reference|PRD|Context)\.md)$")
 
 # Project-folder allowlist — pattern-based
 PROJECT_ALLOWLIST = re.compile(r"^(_index\.md|File-Index\.md|.+ - .+\.md)$")
@@ -138,17 +154,17 @@ for dirpath, dirnames, filenames in os.walk(scope_root):
                 findings_count += 1
             continue
 
-        # --- Rule 3: People files must be in Engagements/*/People/
+        # --- Rule 3: People files must be in <CLUSTER_DIR>/*/People/ (when cluster is set)
         fm_snip = ""
         try:
             fm_snip = open(os.path.join(dirpath, fn)).read(1024)
         except Exception:
             pass
         is_people = bool(re.search(r"^type:\s*people\s*$", fm_snip, re.MULTILINE))
-        if is_people and "/People/" not in "/" + rel.replace("\\", "/"):
+        if CLUSTER_DIR and is_people and "/People/" not in "/" + rel.replace("\\", "/"):
             emit({"finding": "placement-violation", "file": rel,
-                  "issue": "People file outside Engagements/*/People/",
-                  "suggested_location": "Engagements/<name>/People/",
+                  "issue": f"People file outside {CLUSTER_DIR}/*/People/",
+                  "suggested_location": f"{CLUSTER_DIR}/<name>/People/",
                   "classification": "auto-fix"})
             findings_count += 1
             continue
@@ -163,8 +179,10 @@ for dirpath, dirnames, filenames in os.walk(scope_root):
             findings_count += 1
             continue
 
-        # --- Rule 2: Project folder allowlist — file directly inside Projects/<proj>/
-        m_proj = re.match(r"^Engagements/([^/]+)/Projects/([^/]+)/([^/]+)$", rel)
+        # --- Rule 2: Project folder allowlist (cluster-parameterized; skip if no cluster)
+        m_proj = re.match(
+            rf"^{re.escape(CLUSTER_DIR)}/([^/]+)/Projects/([^/]+)/([^/]+)$", rel
+        ) if CLUSTER_DIR else None
         if m_proj:
             proj_slug = m_proj.group(2)
             basename = m_proj.group(3)
@@ -176,10 +194,12 @@ for dirpath, dirnames, filenames in os.walk(scope_root):
                 findings_count += 1
                 continue
 
-        # --- Rule 5: Engagement root allowlist
-        m_eng = re.match(r"^Engagements/([^/]+)/([^/]+)$", rel)
+        # --- Rule 5: Cluster root allowlist (cluster-parameterized; skip if no cluster)
+        m_eng = re.match(
+            rf"^{re.escape(CLUSTER_DIR)}/([^/]+)/([^/]+)$", rel
+        ) if CLUSTER_DIR else None
         if m_eng:
-            if not ENGAGEMENT_STANDARD.match(m_eng.group(2)):
+            if not CLUSTER_STANDARD.match(m_eng.group(2)):
                 emit({"finding": "placement-violation", "file": rel,
                       "issue": "Non-standard file in engagement root",
                       "suggested_location": "Move to Projects/, Strategic/, Planning/, or rename to {Eng} - * pattern",
