@@ -90,17 +90,15 @@ The `_` prefix sorts to the top of directory listings and signals "system-utilit
 
 ## Vault-root naming allowlist (R-04)
 
-A fixed enumeration of valid vault-root folder names is enforced at the pre-write-guard hook. The reference-deployment instantiation:
+A fixed enumeration of 8 foundation-shipped vault-root folder names is enforced at the pre-write-guard hook per canonical §F. User-named clusters (Engagements/, Personal Initiatives/, etc.) register in `overlay-master.frontmatter.path_routing` per canonical §H and are not in this foundation-locked set.
 
 ```
-About Me        Archive            Artefact-BD        Daily          Dashboard
-Engagements     Inbox              Logs               Meetings       Personal Initiatives
-Plans           Reference          Skills             Tags           Vault Architecture
+Archive    Daily    Inbox    Logs    Meetings    Plans    Skills    Vault Architecture
 ```
 
-Single-file vault-root exemptions: `CLAUDE.md`, `Vault Architecture.md`, `Tasks.md`, `System Backlog.md`, `System Backlog - Archive.md`.
+Single-file vault-root exemptions: `CLAUDE.md`, `Vault Architecture.md`, `System Backlog.md`, `System Backlog - Archive.md` (per canonical §C; Tasks.md retired per canonical §G).
 
-Adopter-specific names vary; the foundation-repo onboarder scaffolds the allowlist based on the archetype union the adopter selects.
+The foundation allowlist is sourced from `governance/naming-rules.json#R-04.known_roots` (8 entries) and composed into `governance/foundation-master.json` for hook consumption.
 
 **Enforcement.** `pre-write-guard.sh` compares the path's first segment against the literal list and emits a Tier 3 advisory (`[NEW DIRECTORY]`) when unknown. Tier 3 is non-blocking — the write proceeds but the operator is told to move the file or update `Vault Architecture.md`.
 

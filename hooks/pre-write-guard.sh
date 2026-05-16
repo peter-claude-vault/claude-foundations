@@ -1126,7 +1126,7 @@ PYEOF
         # Check if creating a file in a new vault-root directory
         ROOT_DIR=$(echo "$REL_PATH" | cut -d'/' -f1)
         IS_KNOWN=false
-        for d in "About Me" "Archive" "Artefact-BD" "Daily" "Dashboard" "Engagements" "Inbox" "Logs" "Meetings" "Personal Initiatives" "Plans" "Reference" "Skills" "Tags" "Vault Architecture"; do
+        for d in "Archive" "Daily" "Inbox" "Logs" "Meetings" "Plans" "Skills" "Vault Architecture"; do
           if [[ "$ROOT_DIR" == "$d" ]]; then
             IS_KNOWN=true
             break
@@ -1135,7 +1135,6 @@ PYEOF
 
         if [[ "$IS_KNOWN" == "false" ]] && [[ "$ROOT_DIR" != "CLAUDE.md" ]] && \
            [[ "$ROOT_DIR" != "Vault Architecture.md" ]] && \
-           [[ "$ROOT_DIR" != "Tasks.md" ]] && \
            [[ "$ROOT_DIR" != "System Backlog.md" ]] && \
            [[ "$ROOT_DIR" != "System Backlog - Archive.md" ]]; then
           TIER3_MSGS="${TIER3_MSGS}[NEW DIRECTORY] File is being written to '${ROOT_DIR}/' which is not a documented vault-root directory. After this write, update Vault Architecture.md to document this new directory or move the file to an existing directory.\n"

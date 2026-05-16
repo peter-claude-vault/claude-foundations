@@ -47,25 +47,18 @@ The grammar is regex-validatable: `^[a-z0-9][a-z0-9-]*[a-z0-9]$`. Pre-write-guar
 
 ## Vault-root allowlist (R-04)
 
-The set of valid top-level directories is a fixed enumeration. New top-level paths require the New Structure Checklist (R-10) plus R-37 atomic lockstep; mid-session improvisation produces orphan roots invisible to walkers.
+The set of valid top-level directories is a fixed enumeration of 8 foundation-shipped roots per canonical §F. New top-level paths require the New Structure Checklist (R-10) plus R-37 atomic lockstep; mid-session improvisation produces orphan roots invisible to walkers. User-named clusters (Engagements/, Personal Initiatives/, etc.) are adopter-specific and register in `overlay-master.frontmatter.path_routing` per canonical §H — they are not foundation-shipped.
 
 | Allowlisted root | Purpose |
 |---|---|
-| `About Me` | Identity layer — career history, interaction preferences, application materials |
-| `Archive` | Closed-lifecycle storage — old daily notes, completed tasks, archived logs |
-| `Artefact-BD` | Business development surface — NOT a client engagement |
-| `Daily` | Daily notes (`{YYYY-MM-DD}.md` + `{YYYY-MM-DD} - Briefing.md`) |
-| `Dashboard` | Dashboard architecture and operations docs |
-| `Engagements` | Top-level client relationships; folder-lineage anchor for consultant archetype |
-| `Inbox` | Operational data surface — skills write here, dashboard reads from it |
-| `Logs` | Skill scratch space — processing logs, sync records, session summaries |
-| `Meetings` | Structured meeting notes (one file per meeting) |
-| `Personal Initiatives` | Adopter's own products; distinct from client work |
-| `Plans` | Symlink to the plan-tree root (configured by adopter; typically a sibling directory of the vault) |
-| `Reference` | Cross-engagement reference (Tier 1) |
-| `Skills` | Skill design specs |
-| `Tags` | Obsidian tag pane metadata |
-| `Vault Architecture` | Hub-spoke split (Structure, Engagements, People, Frontmatter, Tagging, Naming, Mandatory-Files, etc.) |
+| `Archive` | Closed-lifecycle cold storage — old daily notes, completed content, archived logs |
+| `Daily` | Daily notes (`{YYYY-MM-DD}.md`); date-prefixed sequence |
+| `Inbox` | Connector-brief surface — per-connector briefs + active-connection `_index.md` |
+| `Logs` | Claude's scratch space — processing logs, session summaries, cron emission |
+| `Meetings` | Structured meeting notes (one file per meeting, date-prefixed) |
+| `Plans` | Symlink to `~/.claude-plans/` — plan tree visibility from inside the vault |
+| `Skills` | Symlink to `~/.claude/skills/` — skills index visibility from inside the vault |
+| `Vault Architecture` | 6 governance narrative spokes (Frontmatter / Tagging / Naming / Mandatory-Files / Doc-Dependencies / File-Type-Contracts) |
 
 A small set of top-level files is exempt from the root-must-be-a-directory rule: `CLAUDE.md`, `Vault Architecture.md`, `System Backlog.md`, `System Backlog - Archive.md`. These are documented allowlist entries; pre-write-guard honors them by name.
 
