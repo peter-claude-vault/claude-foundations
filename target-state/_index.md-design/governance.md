@@ -108,13 +108,12 @@ A meaningful minority of folders (depth ≤ 3) do NOT carry `_index.md` by desig
 - **Templates folders** — scaffolding seeds, not consumable files.
 - **Archive folders** (`Archive/<YYYY>/`, `Archive/Daily/`, etc.) — cold storage; navigation by name is low-signal because contents are append-only history.
 - **`Daily/` and `Meetings/`** — date-prefixed file collections. Navigation by date or tag query, not by folder listing.
-- **`Inbox/`** — scraper aggregation surface; the aggregation files are documented inline in vault-root `CLAUDE.md`; a folder-level index would duplicate.
+- **`Inbox/`** — connector-managed aggregation surface; maintained by dedicated `inbox-index-refresh` capability rather than the standard `index-maintain` sweep.
 - **`Logs/`** — Claude's scratch space; emission-driven, not navigation-targeted.
-- **`Tags/`** — Obsidian Make.md plugin artifact directory; adopter-disposable, gitignored.
-- **`_orchestrator/`** directories in plan trees — orchestrator state, not human-navigable.
-- **Test fixture directories** (`tests/fixtures/`, `tests/`) — fixture data.
 
-Generalized: **a folder is exempt when its contents are date-prefixed sequences, scraper aggregation surfaces, scratch-space emissions, or non-vault infrastructure.** Folders carrying named content files for human and LLM consumption — engagements, projects, people directories, reference, skills, personal initiatives — are mandatory-`_index.md`.
+**§E counter-clause:** Every folder NOT listed above — including cluster folders, project folders, people directories, skills, personal tracks, and any user-created named-content directory — is mandatory-`_index.md`. The post-write hook auto-bootstraps `_index.md` at first write to any non-exempt folder. Non-vault infrastructure directories (`Tags/`, `_orchestrator/`, `tests/`, `tests/fixtures/`) are foundation-repo-only and do not appear in adopter vaults; if a user creates a folder by those names, normal `_index.md` auto-bootstrap fires.
+
+Generalized: **a folder is exempt when its contents are date-prefixed sequences, connector-aggregated data, or scratch-space emissions.** Folders carrying named content files for human and LLM consumption — clusters, projects, people directories, reference, skills, personal tracks — are mandatory-`_index.md`.
 
 The canonical exemption list lives at `governance/mandatory-files-rules.json#_index_md_exemption_paths` (per the runtime deployment target declared in [`structural-requirements.json`](./structural-requirements.json) `exemption_list_pointer`); hooks + librarian capability consume from there at runtime.
 
