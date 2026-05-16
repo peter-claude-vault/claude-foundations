@@ -181,15 +181,15 @@ Three things stay parseable across the vault:
 - **File names follow date-prefix patterns.** `YYYY-MM-DD-slug.md` for meeting notes; `YYYYMMDD-HHMMSS-slug.md` for log files; slug grammar matches frontmatter and tag values where applicable.
 - **Plan slugs** follow a descriptive-slug + numeric-prefix-in-creation-order convention; vault-root paths obey a known-root allowlist (R-04).
 
-**The connection between tagging and naming is structural.** The `<dimension>/<value>` tag format mirrors the `<dimension-folder>/<value-folder>/` directory structure. A file at `Engagements/acme-corp/Projects/gold-layer-qa/Meetings/2026-05-13-touchbase.md` carries three matching surfaces:
+**The connection between tagging and naming is structural.** The `<dimension>/<value>` tag format mirrors the `<dimension-folder>/<value-folder>/` directory structure. A file at `<Cluster>/<instance>/Projects/<project>/Meetings/2026-05-13-touchbase.md` carries three matching surfaces:
 
 | Surface | Lineage encoding |
 |---|---|
-| Folder path | `Engagements/acme-corp/Projects/gold-layer-qa/` |
-| Frontmatter fields | `engagement: acme-corp`, `project: gold-layer-qa` |
-| Tags | `#engagement/acme-corp`, `#project/gold-layer-qa` |
+| Folder path | `<Cluster>/<instance>/Projects/<project>/` |
+| Frontmatter fields | `<cluster-dim>: <instance>`, `project: <project>` |
+| Tags | `#<cluster-dim>/<instance>`, `#project/<project>` |
 
-The dimension name appears in the folder (`Engagements/`), in the frontmatter field name (`engagement:`), and in the tag prefix (`#engagement/`). The instance name appears in the folder (`acme-corp/`), in the frontmatter field value (`acme-corp`), and in the tag value (`acme-corp`). One declaration of lineage, materialized across three surfaces — the three-surface architecture from commitment 5 in operation. Naming is the discipline that keeps the surfaces aligned.
+The dimension name appears in the folder (`<Cluster>/`), in the frontmatter field name (`<cluster-dim>:`), and in the tag prefix (`#<cluster-dim>/`). The instance name appears in the folder (`<instance>/`), in the frontmatter field value (`<instance>`), and in the tag value (`<instance>`). One declaration of lineage, materialized across three surfaces — the three-surface architecture from commitment 5 in operation. Naming is the discipline that keeps the surfaces aligned.
 
 **Naming is also what keeps wiki links intact.** Every wiki link in the vault targets a file by path. When a file moves or is renamed, every wiki link pointing to it has to update or the link breaks. The librarian's `rename-cascade` capability handles this automatically — on a rename, every wiki link to the old path is rewritten to the new path in one atomic pass. The `xref-check` and `wikilink-repair` capabilities audit broken cross-references on a cron cadence. The naming conventions are what give those capabilities deterministic targets to walk: parseable paths in, parseable paths out. Free-form or inconsistent naming would force fuzzy-match repair (lossy and stochastic); the convention discipline keeps the repair surface deterministic.
 
@@ -263,7 +263,7 @@ The preempt: frontmatter is contract. The schema is enforced at write-time (R-32
 ## Source pointers
 
 - Pillar packets (the four-pillar detail this packet anchors): [`frontmatter-design.md`](./frontmatter-design.md), [`tagging-strategy.md`](./tagging-strategy.md), [`file-naming-conventions.md`](./file-naming-conventions.md), and the mandatory-file-lock packet
-- Companion narrative packets: [`enforcement-map-design.md`](./enforcement-map-design.md), [`ux-primitives.md`](./ux-primitives.md), [`content-length-limits.md`](./content-length-limits.md), [`_index.md-design.md`](./_index.md-design.md)
+- Companion narrative packets: [`ux-primitives.md`](./ux-primitives.md), [`content-length-limits.md`](./content-length-limits.md), [`_index.md-design.md`](./_index.md-design.md)
 - Schema: `schemas/vault-schema.json`
 - Governance JSON registries: `governance/_index.json`, `governance/frontmatter-rules.json`, `governance/tagging-rules.json`, `governance/naming-rules.json`, `governance/mandatory-files-rules.json`
 - Architecture decision records: [ADR-0001](../../docs/decisions/0001-tiered-compliance.md), [ADR-0002](../../docs/decisions/0002-unified-with-per-archetype-entries.md), [ADR-0003](../../docs/decisions/0003-folder-lineage-as-fields.md), [ADR-0004](../../docs/decisions/0004-system-utility-dimension-exemption.md), [ADR-0005](../../docs/decisions/0005-two-surface-governance-dual-pattern.md)
