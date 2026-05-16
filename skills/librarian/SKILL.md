@@ -2489,7 +2489,7 @@ Librarian maintains a persistent state file at `{VAULT_LOGS}/librarian-manifest.
         "type": "provides-canonicality-drift",
         "severity": "blocking|warning",
         "capability": "task-rules",
-        "owners": ["Vault Architecture - Inbox.md", "Vault Architecture - Tasks.md"],
+        "owners": ["Vault Architecture - Inbox.md", "System Backlog.md"],
         "first_seen": "ISO",
         "remediation": "Designate one canonical owner..."
       }
