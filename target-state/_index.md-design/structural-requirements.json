@@ -129,9 +129,8 @@
     "canonical_source": "PLACEHOLDER — governance/mandatory-files-rules.json#_index_md_exemption_paths",
     "exempt_path_categories": [
       "date-prefixed sequence folders (Daily/, Meetings/, Archive/<YYYY>/)",
-      "scraper aggregation surfaces (Inbox/ — uses inbox-index-refresh capability, not index-maintain)",
       "scratch-space emissions (Logs/)",
-      "non-vault infrastructure (Tags/ make-md artifacts; _orchestrator/ plan-tree state; tests/fixtures/)",
+      "plugin artifact directories (Tags/ — Obsidian Make.md; adopter-disposable, gitignored)",
       "template seed directories (Templates/)"
     ],
     "rationale": "Single source of truth for which folders are exempt from _index.md mandate. The post-write hook + librarian index-maintain consume from there at runtime — when a write hits an exempt folder, the hook does not auto-create _index.md and the librarian does not flag missing-index as drift."
