@@ -68,9 +68,9 @@ Every `_index.md` in the vault follows the same shape. Empirically derived from 
 ```yaml
 ---
 type: index
-parent_folder: Engagements/CDMO DDX          # MANDATORY at depth ≥ 2; OMIT at depth 1
+parent_folder: <Cluster>/<Instance>          # MANDATORY at depth ≥ 2; OMIT at depth 1
 tags:
-  - "#engagement/cdmo-ddx"                    # structural-dimension lineage; mirrors folder per folder-lineage convention
+  - "#<cluster-dim>/<instance-slug>"          # structural-dimension lineage; mirrors folder per folder-lineage convention
 updated: 2026-05-14
 ---
 ```
@@ -82,7 +82,7 @@ Optional: `description:` (one-line scope description); `provides:` (cross-folder
 | Field | Role |
 |---|---|
 | `type: index` | Maps to the canonical type enumeration in `schemas/vault-schema.json`; R-32 Tier 2 DENY rejects unknown types |
-| `parent_folder:` | Path string relative to vault root, naming the parent folder of this `_index.md`. **Mandatory at depth ≥ 2** (any `_index.md` not directly under vault root). **Omitted at depth 1** (e.g., `Engagements/_index.md`, `Reference/_index.md` — the "parent" is the vault root itself, which is not a folder in the meaningful sense). Gives Claude a programmatic parent-pointer for index-tree traversal without path-parsing. Auto-populated by the bootstrap hook; librarian `index-maintain` audits for path-vs-frontmatter drift. |
+| `parent_folder:` | Path string relative to vault root, naming the parent folder of this `_index.md`. **Mandatory at depth ≥ 2** (any `_index.md` not directly under vault root). **Omitted at depth 1** (e.g., `<Cluster>/_index.md`, `<PersonalTracks>/_index.md` — the "parent" is the vault root itself, which is not a folder in the meaningful sense). Gives Claude a programmatic parent-pointer for index-tree traversal without path-parsing. Auto-populated by the bootstrap hook; librarian `index-maintain` audits for path-vs-frontmatter drift. |
 | `tags:` | Mandatory because `_index.md` files participate in the folder-mirrors-tag invariant. Tag matches the folder's structural-dimension lineage — `Engagements/<X>/_index.md` carries `#engagement/<X>`; `Reference/_index.md` carries `#scope/reference` |
 | `updated:` | ISO date; bumped by every machine-maintenance pass on the file |
 
@@ -229,13 +229,13 @@ A meaningful minority of folders (depth ≤ 3) do NOT carry `_index.md` by desig
 
 - **`Archive/**`** — cold storage; navigation by name is low-signal because contents are append-only history.
 - **`Daily/**`** — date-prefixed file collections. Navigation by date or tag query, not by folder listing.
-- **`Inbox/**`** — scraper aggregation surface; connector briefs documented inline; a folder-level index would duplicate.
 - **`Logs/**`** — Claude's scratch space; emission-driven, not navigation-targeted.
+- **`Tags/**`** — Obsidian Make.md plugin artifact directory; adopter-disposable, gitignored, never carries named content files.
 - **`Meetings/**`** — date-prefixed meeting notes. Navigation by date or tag query, not by folder listing.
 
-**Explicitly NOT exempt:** `Templates/`, `Tags/`, `_orchestrator/`, `tests/` — these are either not foundation-shipped to adopter vaults (foundation-repo-only infrastructure) or user-created folders that would get normal `_index.md` auto-bootstrap if a user creates them. Per canonical §E: "if a user creates a folder with one of the deliberately-non-exempt names, normal `_index.md` auto-bootstrap fires."
+Per canonical §E: every other folder — including `Inbox/`, user-defined clusters, projects, and any named-content directory — receives the `_index.md` auto-bootstrap on first write. `Inbox/` uses the dedicated `inbox-index-refresh` capability (a different maintenance path) rather than the standard `index-maintain` sweep; it still carries an `_index.md`.
 
-Generalized: **a folder is exempt when it is foundation-shipped AND its contents are date-prefixed sequences, scraper aggregation surfaces, or scratch-space emissions.** Folders carrying named content files for human and LLM consumption — user-defined clusters, projects, instance directories — are mandatory-`_index.md`.
+Generalized: **a folder is exempt when it is foundation-shipped AND its contents are date-prefixed sequences, gitignored plugin artifacts, or scratch-space emissions.** Folders carrying named content files for human and LLM consumption — user-defined clusters, projects, instance directories, Inbox — are mandatory-`_index.md`.
 
 ## Anti-patterns
 
