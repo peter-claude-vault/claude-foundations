@@ -494,22 +494,26 @@ right shape now is materially cheaper than retrofitting later — schema
 migration cost is documented at 50–70% of project effort once a
 structure is in production (DataFlowMapper).
 
-ALTERNATIVES CONSIDERED
------------------------
+ARCHETYPE-EQUIVALENT LAYOUTS
+----------------------------
 
-1. Engagements layout (top-level Engagements/<client>/...)
-   Best for: consultant / services / advisory archetypes where work is
-   organized around external clients with finite engagement durations.
+These are not alternatives — each is the canonical layout for a different
+adopter archetype. The system ships all three; the onboarder selects one
+at install time based on the declared archetype.
+
+1. Engagements layout (top-level Engagements/<cluster>/...)
+   Archetype: consultant / services / advisory
+   Organized around external clients with finite engagement durations.
    Closing an engagement is a first-class status transition.
 
 2. PARA-equivalent layout (Projects/Areas/Resources/Archives, OR
    Topics-based for content-driven workflows)
-   Best for: researchers, writers, project-based knowledge work where
-   discoverable categories matter more than client boundaries. Forte's
+   Archetype: researcher / writer / project-based knowledge worker
+   Discoverable categories matter more than client boundaries. Forte's
    PARA caps top-level at 4 (Cowan-grounded).
 
 3. Custom (user-named top_level_folder, generic RDT branch)
-   Best for: workflows that don't fit either pre-baked archetype.
+   Archetype: any workflow not matching a pre-baked archetype pattern
    The RDT documents what you declared rather than retrofitting a
    pattern that doesn't match.
 
