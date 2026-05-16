@@ -11,7 +11,7 @@ max_lines: 250
 tags: ["#scope/reference"]
 ---
 
-> **Summary:** Authoritative reference for the 8-dimension faceted tagging taxonomy, the 25-tag cap on user-facing dimensions (with the system-utility exemption), the hierarchical `#dimension/value` grammar, the folder-mirrors-tag invariant, and the orphan-detection contract. Hand-authored narrative spoke; R-37 lockstep peer of `governance/tagging-rules.json`.
+> **Summary:** Authoritative reference for the 6-dimension faceted tagging taxonomy, the 25-tag cap on user-facing dimensions (with the system-utility exemption), the hierarchical `#dimension/value` grammar, the folder-mirrors-tag invariant, and the orphan-detection contract. Hand-authored narrative spoke; R-37 lockstep peer of `governance/tagging-rules.json`.
 > **Canonical for:** tagging-rules, 25-tag-cap, log-subtype-registry, folder-mirrors-tag-invariant
 > **Last substantive update:** 2026-05-12
 
@@ -19,22 +19,20 @@ tags: ["#scope/reference"]
 
 Tags are the user-side query surface — the projection of structural file information into Obsidian's graph view, filter pane, and Map-of-Content (MOC) patterns. They are *not* the Claude-side substrate; Claude routes against frontmatter fields (`type:`, `engagement:`, `project:`, `provides:`, `status:`, `owner:`). The two surfaces mirror each other under the folder-mirrors-tag invariant, but they serve different consumers under different disciplines. The full Claude-side framing lives in [[Vault Architecture - Frontmatter]] §Tags vs fields; the long-form research narrative — research basis, anti-pattern catalogue, multi-archetype overlay, closed questions — is at the canonical [`tagging-strategy.md`](https://stem.peter.dev/research/vault-construction/tagging-strategy/) packet on the documentation site.
 
-## The 8-dimension faceted taxonomy
+## The 6-dimension faceted taxonomy
 
-The vault carries eight tag dimensions. Six are *user-facing* and subject to the 25-tag cap. Two are *system-utility* — machine-emitted by skills and crons; exempt from the cap; governed by the log-subtype registry instead. Adopter-customized names are emitted by the onboarder; the structural slots below are the canonical foundation.
+The vault carries six tag dimensions. Four are *user-facing* and subject to the 25-tag cap. Two are *system-utility* — machine-emitted by skills and crons; exempt from the cap; governed by the log-subtype registry instead. The four user-facing dimensions are the structural foundation slots; adopter-specific vocabulary (e.g., `#artefact-bd/*`, `#about-me/*`) is declared as user-vocab in the adopter's `overlay-master.json` and is not part of the foundation taxonomy.
 
 | Dimension | Pattern | Example values | User-facing? |
 |---|---|---|---|
-| **Engagement** | `#engagement/{slug}` | `#engagement/acme-corp`, `#engagement/globex` | Yes — 25-cap |
-| **Project** | `#project/{slug}` | `#project/data-platform`, `#project/customer-360` | Yes — 25-cap |
+| **Engagement** | `#engagement/{slug}` | `#engagement/<cluster-slug>` | Yes — 25-cap |
+| **Project** | `#project/{slug}` | `#project/<workstream-slug>` | Yes — 25-cap |
 | **Scope** | `#scope/{slug}` | `#scope/decision`, `#scope/action-item`, `#scope/reference`, `#scope/briefing` | Yes — 25-cap |
 | **Initiative** | `#initiative/{slug}` | `#initiative/foundations` | Yes — 25-cap |
-| **BD-surface** | `#artefact-bd/{slug}` | `#artefact-bd/partnership-alpha` | Yes — 25-cap |
-| **About-Me** | `#about-me/{slug}` | `#about-me/general`, `#about-me/career` | Yes — 25-cap |
 | **Status** | `#status/{slug}` | `#status/active`, `#status/pending`, `#status/processed` | No — system-utility (exempt) |
 | **Log** | `#log/{log-type}` | `#log/digest-run`, `#log/session-close`, `#log/cron-error`, `#log/meeting` | No — system-utility (exempt) |
 
-The registered prefix list lives at `schemas/vault-schema.json` `_tag_prefixes`; the user-facing vs system-utility classification lives at `_tag_prefixes_meta`. Per-archetype renaming (developer's `#repo/*` in the Engagement slot, researcher's `#topic/*`, etc.) is declared via Layer 3 vault-overlay; the schema shape is unchanged.
+The registered prefix list and user-facing vs system-utility classification live at `governance/tagging-rules.json` `#taxonomy`. Per-archetype renaming (developer's `#repo/*` in the Engagement slot, researcher's `#topic/*`, etc.) is declared via Layer 3 vault-overlay; the schema shape is unchanged.
 
 ## The five discipline rules
 
