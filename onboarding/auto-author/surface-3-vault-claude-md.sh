@@ -189,6 +189,15 @@ collect_file_types() {
 # --- RDT (Routing Decision Tree) generators ---
 # Three archetype branches keyed off org_method substring; default = generic.
 
+# USER-VOCAB SEED — consultant archetype onboarding reference (canonical §H)
+# This RDT is specific to the Engagements/<client>/Projects/<project>/ folder pattern
+# used by consultant-archetype adopters. It is NOT a foundation-canonical structure —
+# it is a user-vocab seed populated at install time from the consultant archetype seed.
+# Researcher, developer, and manager archetypes receive different RDT shapes via their
+# own archetype seed branches (_rdt_para or custom). The folder names, tag prefixes,
+# and routing rules declared here belong to the adopter's overlay-master, not the
+# foundation governance pillars. See canonical §H (user-vocab vs foundation distinction)
+# and governance/tagging-rules.json#taxonomy._adopter_extension_path.
 _rdt_engagements() {
   cat <<EOF
 ## Routing Decision Tree
