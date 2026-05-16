@@ -156,18 +156,18 @@
           },
           "proposed_path": {
             "type": "string",
-            "description": "Vault-relative path for the candidate (e.g., 'Engagements/X', 'References/policies', 'Meetings/2026-Q2'). Empty string for unclassified."
+            "description": "Vault-relative path for the candidate (e.g., '<cluster>/<sub-cluster>', '<cluster>/subfolder'). Empty string for unclassified."
           },
           "metadata": {
             "type": "object",
             "description": "Per-candidate metadata. Free-form by type; T-6 import-plan generator renders into YAML blocks. T-8 PRD/Context/Updates generator consumes for project candidates.",
+            "additionalProperties": true,
             "properties": {
               "summary": {"type": "string"},
               "tags": {
                 "type": "array",
                 "items": {"type": "string"}
               },
-              "engagement": {"type": "string"},
               "rationale": {"type": "string"}
             }
           },
