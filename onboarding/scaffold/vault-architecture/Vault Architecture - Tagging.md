@@ -78,7 +78,7 @@ The pre-write-guard tag-validation branch consults the registry on every system-
 
 ## Folder-mirrors-tag invariant
 
-Every Structural dimension (`#engagement/*`, `#project/*`, `#initiative/*`, `#artefact-bd/*`, `#about-me/*`) maps to a corresponding folder root, and every file under that folder carries the matching tag. A meeting note at `Engagements/acme-corp/Projects/data-platform/Meetings/2026-05-12-touchbase.md` carries:
+Every Structural dimension (`#engagement/*`, `#project/*`, `#initiative/*`) maps to a corresponding folder root, and every file under that folder carries the matching tag. A meeting note at `Engagements/acme-corp/Projects/data-platform/Meetings/2026-05-12-touchbase.md` carries:
 
 ```yaml
 tags:
