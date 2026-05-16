@@ -877,12 +877,6 @@ print(content, end='')
               [[ "$REL_PATH" != Archive/Inbox/* ]] && [[ "$REL_PATH" != Inbox/* ]] && EXPECTED="Archive/Inbox/ or Inbox/" ;;
             meeting-note)
               [[ "$REL_PATH" != *Meetings/* ]] && EXPECTED="Meetings/ (or engagement Meetings/ subdir)" ;;
-            project)
-              [[ "$REL_PATH" != Engagements/*/Projects/* ]] && EXPECTED="Engagements/<engagement>/Projects/<project>/" ;;
-            engagement|overview|updates)
-              [[ "$REL_PATH" != Engagements/* ]] && EXPECTED="Engagements/<engagement>/" ;;
-            prd)
-              [[ "$REL_PATH" != Engagements/* ]] && EXPECTED="Engagements/<engagement>/Projects/<project>/" ;;
           esac
           if [[ -n "$EXPECTED" ]]; then
             TIER1_MSGS="${TIER1_MSGS}[R-33 FOLDER PLACEMENT] File type '${FM_TYPE}' is typically placed under '${EXPECTED}'. Current path: '${REL_PATH}'. If this is intentional (engagement-specific exception, cross-reference, etc.), ignore this advisory. Otherwise, move before writing.\n"
