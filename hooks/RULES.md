@@ -35,7 +35,7 @@ Escape: set `PLAN_STATUS_OK=1` for one-off scaffolding cases where the rule figh
 
 ### R-32 — Vault `type:` allowlist
 
-Denies a vault-file write whose frontmatter declares a `type:` value that isn't in `vault-schema.json`. The schema is the single source of truth for which types are legal. Adding a new type without first extending the schema is the failure mode this rule catches; see [`docs/adding-a-vault-file-type.md`](../docs/adding-a-vault-file-type.md) for the lockstep procedure.
+Denies a vault-file write whose frontmatter declares a `type:` value that isn't in `governance/foundation-master.json` (the composed bundle shipped with every installation). The bundle is the single source of truth for which types are legal at write-time; the authoring source is `governance/frontmatter-rules.json#types`. Adding a new type without first updating the foundation rules is the failure mode this rule catches; see [`docs/adding-a-vault-file-type.md`](../docs/adding-a-vault-file-type.md) for the 5-surface lockstep procedure.
 
 ## Advisories
 
@@ -49,7 +49,7 @@ Surfaces an advisory when a vault file lands in a top-level directory not in `ma
 
 ### R-04 (folder-placement branch) — `type:` placement match
 
-Surfaces an advisory when a `type:` value's typical placement pattern (declared in `vault-schema.json`) doesn't match the actual write path. Example: `type: meeting-note` with a typical placement under `Meetings/` written to `Inbox/raw/`. Allowed, but flagged.
+Surfaces an advisory when a `type:` value's typical placement pattern (declared in `governance/foundation-master.json#frontmatter.path_routing`) doesn't match the actual write path. Example: `type: meeting-note` with a typical placement under `Meetings/` written to `Inbox/raw/`. Allowed, but flagged.
 
 ### R-15 — Plan-to-backlog reminder
 

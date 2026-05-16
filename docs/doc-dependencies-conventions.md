@@ -1,98 +1,83 @@
 # doc-dependencies — Cascade Registry Conventions
 
-`doc-dependencies.json` is a registry that tells `pre-write-guard.sh` which files mirror which canonical sources, so a write to either side surfaces a "review the mirror" prompt before commit. The hook is advisory — it does not block the write — but it catches the case where you edit one half of a duplicated piece of content and forget to update the other.
+> **Summary:** The `doc-dependencies` governance pillar tells `pre-write-guard.sh` which files mirror which canonical sources, so a write to either side surfaces a "review the mirror" prompt. Adopters extend the registry via the `overlay-master.json#doc_dependencies` slot. **Canonical for:** canonical §A pillar #5 (`governance/doc-dependencies.json`), canonical §H overlay-master shape (`overlay-master.json#doc_dependencies`). **Last substantive update:** 2026-05-15 (SP13 Session 8 E-2 — rewrite to canonical 6-pillar + overlay-master shape).
 
-**Audience:** users adding or auditing entries in `~/.claude/hooks/config/doc-dependencies.json` (foundation skeleton) or `~/.claude/hooks/config/vault-overlay.json` (per-vault overlay).
+`governance/doc-dependencies.json` is a first-class governance pillar (canonical §A pillar #5). It tells `pre-write-guard.sh` which files mirror which canonical sources, so a write to either side surfaces a "review the mirror" prompt before the session continues. The hook is advisory — it does not block the write — but it catches the case where you edit one half of a duplicated piece of content and forget to update the other.
 
-> **Status (2026-05-10).** This doc is the canonical contract for the skeleton/overlay registry. Schema and skeleton ratified Plan 81 SP01 T-28a (Session 12); skeleton-side schema authored Session 16 (`schemas/doc-dependencies-schema.json`) and wired into `install.sh` Step 13.6 jsonschema validation alongside the overlay schema and the two sister-config schemas. Consumer-side overlay-read (`pre-write-guard.sh` + 5 librarian capabilities) and onboarder retarget land in T-28b during the T-20 Phase A 7-day soak (≥2026-05-17). Until T-28b ships, only the skeleton is consumed at runtime; overlay entries are accepted by the schema but unused. Adopters can author overlay entries today; runtime activation lands when T-28b commits.
+**Audience:** users adding or auditing cascade registry entries, or extending the registry via overlay-master.
 
 ---
 
 ## What this file does
 
-`pre-write-guard.sh` reads `doc-dependencies.json` on every `Edit`, `Write`, or `MultiEdit` tool call against a vault file. If the write target matches an entry's `primary`, `primary_dir`, or one of its `mirrors[].file` paths, the hook injects an advisory message into the tool result — "this write touches a registered dependency, review the mirrors." You can review and update the mirror in the same session OR file a waiver via `cascade_waiver_write` (waivers are documented in the librarian SKILL.md).
+`pre-write-guard.sh` reads the cascade registry on every `Edit`, `Write`, or `MultiEdit` tool call against a vault file. If the write target matches an entry's `primary`, `primary_dir`, or one of its `mirrors[].file` paths, the hook injects an advisory message — "this write touches a registered dependency, review the mirrors." You can review and update the mirror in the same session OR file a waiver via `cascade_waiver_write` (waivers are documented in the librarian SKILL.md).
 
-The cascade registry is **advisory** — it does not block writes. Its job is to surface the dependency at the moment of edit so you don't ship a write whose mirror has silently rotted.
+The cascade registry is **advisory** — it never blocks writes. Its job is to surface the dependency at the moment of edit so you don't ship a write whose mirror has silently rotted.
 
 ---
 
-## Skeleton vs overlay (the two-file model)
+## Foundation pillar + overlay-master extension
 
-The cascade registry is split across **two paired files** at `${CLAUDE_HOME}/hooks/config/`:
+The cascade registry is structured per canonical §A + §H:
 
-| File | Source | Purpose |
+| Layer | Location | Purpose |
 |---|---|---|
-| `doc-dependencies.json` | foundation-repo (shipped by `install.sh`) | **Skeleton.** Generic, vault-agnostic entries that ship to every adopter — currently the `vault-schema-type-consistency` cascade and the `skill` / `plan` / `memory-file` entity rows. |
-| `vault-overlay.json` | per-vault (hand-edited / onboarder-generated) | **Additive overlay.** Vault-specific entries that mirror local conventions — engagement directory cascades, hub-spoke vault-architecture mirrors, project-tree directory listings, etc. Ships empty (`{version:2, entries:[], entities:{}}`). |
+| Foundation pillar | `governance/doc-dependencies.json` | Foundation-shipped entries: vault-root mandatory file hub-spoke cascades, skill-to-backlog cascades, plan-state cascades. Generic across all adopters. Composed into `governance/foundation-master.json`. |
+| Overlay-master extension | `overlay-master.json#doc_dependencies` | Adopter-added cascade entries. Per canonical §H, overlay-master is a perfect parallel of foundation-master — the `doc_dependencies` slot holds adopter entries in the same `entries[]` shape. Populated via `/govern register --kind doc-dep` or hand-edit. |
 
-**Why split.** The skeleton stays portable across adopters; per-vault entries don't pollute the foundation distribution. Same structural shape on both sides — same schema, same merge logic — so an entry authored against the overlay is byte-identical to what would have been an inline addition to the unified file.
+**Why separate.** The foundation pillar stays portable across adopters. Per-vault cascade entries — folder directory mirrors, hub-spoke documentation pairs, project-tree indexes — belong in the overlay-master extension, not in the foundation pillar. The foundation pillar is authored in the foundation-repo and requires a PR + bundle rebuild to change; the overlay extension lives in the adopter's vault.
 
-### Merge precedence (runtime)
-
-Consumers (`pre-write-guard.sh`, `wikilink-repair.sh`, `rename-history-sync.sh`, `entity-parity.sh`, `waiver-audit.sh`, `frontmatter-enforce.sh`) merge the two files additively at read time:
-
-1. **Read skeleton** → `doc-dependencies.json::entries[]` and `entities{}`.
-2. **Read overlay** → `vault-overlay.json::entries[]` and `entities{}`.
-3. **Merge entries** by `.id`. **Overlay rows replace skeleton rows of the same id.** Overlay ids absent from the skeleton are appended.
-4. **Merge entities** by top-level key. **Overlay keys override skeleton keys of the same name.** Overlay keys absent from the skeleton are added.
-
-Same-id and same-key collisions are explicitly resolved overlay-wins so adopters can locally override a foundation-shipped row (e.g., widen `path_inferred_exceptions` on `vault-schema-type-consistency`) without forking the skeleton.
-
-### Schema
-
-Both files validate against the same structural shape:
-
-- Skeleton: [`schemas/doc-dependencies-schema.json`](../schemas/doc-dependencies-schema.json) (`$id: https://stem.peter.dev/schemas/doc-dependencies/v1.json`, Draft 2020-12). Authored Session 16 mirroring the overlay schema.
-- Overlay: [`schemas/vault-overlay-schema.json`](../schemas/vault-overlay-schema.json) (`$id: https://stem.peter.dev/schemas/vault-overlay/v1.json`, Draft 2020-12).
-
-`install.sh` Step 13.6 jsonschema-validates both against their respective schemas at install time when the `python3 jsonschema` module is reachable; it graceful-skips with a warn when the module is absent. Failure exits with code 30 (pre-allocated post-install schema parse / validation failure).
-
-`version` is locked at `2` on both files; consumers reject mismatched versions to surface schema drift early.
+Per canonical §B, `pre-write-guard.sh` reads from `governance/foundation-master.json` (the composed bundle loaded once per write session). Overlay-master extension is loaded alongside and merged additively at read time by id: overlay entries with a matching `id` replace foundation entries; overlay entries with new ids are appended.
 
 ---
 
 ## Entry shape
 
-Every entry under `.entries[]` has this shape:
+Every entry under `entries[]` has this shape:
 
 ```json
 {
-  "id": "engagement-list",
-  "kind": "directory-mirror",
-  "primary": "<path-or-relative-to-vault>",
-  "primary_dir": "<directory prefix>",
+  "id": "va-hub-spoke",
+  "kind": "hub-spoke-cascade",
+  "primary": "Vault Architecture.md",
   "mirrors": [
-    {"file": "<path>", "section": "<section name or anchor>"}
+    {"file": "Vault Architecture - Frontmatter.md", "section": "(whole)"},
+    {"file": "Vault Architecture - Tagging.md", "section": "(whole)"},
+    {"file": "Vault Architecture - Naming.md", "section": "(whole)"},
+    {"file": "Vault Architecture - Mandatory-Files.md", "section": "(whole)"},
+    {"file": "Vault Architecture - Doc-Dependencies.md", "section": "(whole)"},
+    {"file": "Vault Architecture - File-Type-Contracts.md", "section": "(whole)"}
   ],
-  "rationale": "<why this cascade exists>"
+  "rationale": "Vault Architecture.md is the hub; the 6 pillar spokes are its mirrors per canonical §D."
 }
 ```
 
 | Field | Required | Meaning |
 |---|---|---|
 | `id` | yes | Unique stable identifier. Convention: kebab-case noun phrase describing what's mirrored. |
-| `kind` | yes | Common values: `directory-write-constraint`, `directory-membership-cascade`, `hub-spoke-cascade`, `cross-file-type-union`, `directory-mirror`, `satellite-cascade`, `external-mirror`. Free-form — consumers tolerate unknown kinds with advisory warnings; the hook does not branch on this. Convention-only documentation for humans auditing the registry. |
+| `kind` | yes | Common values: `directory-write-constraint`, `directory-membership-cascade`, `hub-spoke-cascade`, `cross-file-type-union`, `directory-mirror`, `satellite-cascade`, `external-mirror`. Free-form — consumers tolerate unknown kinds with advisory warnings. Convention-only for humans auditing the registry. |
 | `primary` | one-of | Single canonical source path (vault-relative for vault paths; `~/...` or `$VAR/...` for paths outside the vault). |
 | `primary_dir` | one-of | Directory prefix; matches any write under it. Either `primary` OR `primary_dir` must be set. |
-| `mirrors` | yes | Array of `{file, section}` objects. Empty `mirrors[]` means the primary is canonical with no review-target — discouraged but allowed for documentation purposes. |
+| `mirrors` | yes | Array of `{file, section}` objects. Empty `mirrors[]` is discouraged but allowed for documentation purposes. |
 | `mirrors[].file` | yes | Mirror path. Same path conventions as `primary`. |
 | `mirrors[].section` | optional | Markdown section name or anchor scope. Surfaces in the cascade prompt as "review mirrors → \<file\> §\<section\>". `(whole)` is convention for "the whole file." |
-| `rationale` | optional | Why this cascade exists. Helps future maintainers decide whether to keep / update / drop the entry as the vault evolves. |
+| `rationale` | optional | Why this cascade exists. Helps future maintainers decide whether to keep, update, or drop the entry. |
 
 ---
 
 ## When to add an entry
 
-Add an entry when **a piece of authoritative content is duplicated by design**
-in two or more locations. Common cases:
+Add an entry when **a piece of authoritative content is duplicated by design** in two or more locations. Common cases:
 
-1. **Schema-mirror.** A schema declaration mirrors documentation that describes it. Example: `vault-schema.json::types[]` ↔ vault `CLAUDE.md` "canonical file types" section. Both sides describe the same type taxonomy; editing one without the other creates drift.
+1. **Hub-spoke cascade.** A hub document mirrors content to spoke documents. Example: `Vault Architecture.md` ↔ 6 pillar narrative spokes. Editing the hub without updating a spoke creates drift.
 
-2. **Satellite-cascade.** A summary row mirrors per-row history files. Example: System Backlog rows ↔ `Logs/backlog-progress/<slug>.md`. The row carries only the current-state pointer; the satellite is the single source of session history.
+2. **File-type-contracts mirror.** A file-type contract mirrors documentation that describes it. Example: `governance/file-type-contracts/CLAUDE.md.json` ↔ `Vault Architecture - File-Type-Contracts.md` spoke entry for `CLAUDE.md`. Both describe the same body-structure contract.
 
-3. **Directory-mirror.** A folder's children are enumerated in an index file. Example: each `Engagements/<name>/` directory is enumerated in vault `CLAUDE.md`'s "Directory layout" section and (when present) in `Engagements/_index.md`'s "Engagements" section. Adding a new engagement directory must update both indexes.
+3. **Satellite-cascade.** A summary row mirrors per-row history files. Example: System Backlog rows ↔ `Logs/backlog-progress/<slug>.md`. The row carries the current-state pointer; the satellite is the single source of session history.
 
-4. **External-mirror.** A symlink or pointer references content outside the vault. Example: `Plans/` symlinks to `$PLANS_HOME/`; the vault-side path is read-only navigation, the canonical state lives at `$PLANS_HOME`.
+4. **Directory-mirror.** A folder's children are enumerated in an index file. Example: a top-level cluster directory is enumerated in vault `CLAUDE.md`'s directory layout section. Adding a new entry to the cluster must update the index.
+
+5. **External-mirror.** A symlink or pointer references content outside the vault. Example: `Plans/` symlinks to `$PLANS_HOME/`; the vault-side path is read-only navigation, the canonical state lives at `$PLANS_HOME`.
 
 If you find yourself editing the same content in two places without the hook prompting, add an entry. If the prompt fires for a cascade you no longer maintain, drop the entry.
 
@@ -100,32 +85,19 @@ If you find yourself editing the same content in two places without the hook pro
 
 | Entry describes... | Goes in... |
 |---|---|
-| Vault-local convention (an engagement folder, a vault-architecture hub, a project tree) | `vault-overlay.json` |
-| A mirror that exists in any vault that adopts the foundation (skill spec ↔ vault Skill catalog row, plan spec ↔ backlog row) | `doc-dependencies.json` (skeleton — rare; usually a foundation-repo PR) |
-| A local override of a skeleton row (e.g., widening `path_inferred_exceptions`) | `vault-overlay.json` with `id` matching the skeleton row |
+| A mirror that exists in any vault adopting the foundation (skill spec ↔ backlog row; plan spec ↔ backlog row) | `governance/doc-dependencies.json` (foundation pillar — requires foundation-repo PR) |
+| Vault-local convention (a folder mirror, a hub-spoke pair, a project tree) | `overlay-master.json#doc_dependencies.entries[]` |
+| A local override of a foundation row (e.g., widening path_inferred_exceptions) | `overlay-master.json#doc_dependencies.entries[]` with `id` matching the foundation row |
 
-When in doubt, write to the overlay. The skeleton is foundation-distributed and changing it requires a foundation-repo release.
-
----
-
-## What `/onboard` ships
-
-The onboarder writes 3-5 entries into **`vault-overlay.json`** (not the skeleton) based on the structure flags you declared during the interview:
-
-| Always-on | Conditional |
-|---|---|
-| `system-backlog` (System Backlog.md ↔ Logs/backlog-progress/) | `engagement-list` (gated on `vault.has_structured_projects: true`) |
-| `vault-claude-md-canonical-types` (CLAUDE.md ↔ vault-schema.json types[]) | `people-list` (gated on `organizational_method` containing `engagement`) |
-| `plan-state` (Plans/ ↔ $PLANS_HOME/_index.md) | |
-
-The generator output carries a top-level `_provenance` field (see [provenance-frontmatter.md](provenance-frontmatter.md)) — consumers read `.entries[]` and `.entities{}` only, so the additional sibling key is non-breaking.
+When in doubt, write to the overlay-master extension. The foundation pillar is foundation-distributed and changing it requires a foundation-repo release.
 
 ---
 
 ## How the hook reads the file
 
-`pre-write-guard.sh` extracts the registry path from `${HOOKS_DIR}/config/doc-dependencies.json`. The match logic (jq pipeline, abbreviated):
+`pre-write-guard.sh` loads `governance/foundation-master.json` (the composed bundle) once per write session (per canonical §B bundle-at-load). The cascade registry is available at `bundle.doc_dependencies.entries[]`. The overlay-master extension is loaded alongside and merged additively at read time.
 
+The match logic (jq pipeline, abbreviated):
 ```jq
 .entries[]?
 | select(
@@ -141,93 +113,51 @@ Three trigger paths: exact-match on `primary`, exact-match on any `mirrors[].fil
 
 ---
 
-## Editing the registry by hand
+## Extending the registry via overlay-master
 
-Editing either file directly is supported — `/onboard` does not clobber user edits on a re-author run because the file-level `_provenance.last_user_edit` field is checked by the regen workflow.
+To add a vault-local cascade, write to `overlay-master.json#doc_dependencies.entries[]`. The `/govern register --kind doc-dep` skill writes this slot for you; hand-editing is also supported.
 
-**For vault-specific entries, write to `vault-overlay.json`.** The skeleton (`doc-dependencies.json`) is foundation-distributed; per-vault edits there get overwritten on the next foundation upgrade unless you maintain a local fork.
+**Example — consultant archetype, engagement directory mirror:**
 
-Best practice when hand-editing:
+If you maintain engagement folders under a cluster and enumerate them in an index file, add a cascade so pre-write-guard reminds you when a folder is added or removed. This entry belongs in overlay-master — it references a user-named cluster that is a consultant-archetype extension, not a foundation-shipped surface (per canonical §H):
 
-1. Add or modify entries with `jq` (overlay example):
-   ```bash
-   jq '.entries += [{id:"my-cascade",kind:"directory-mirror",primary_dir:"Reference/",mirrors:[{file:"CLAUDE.md","section":"Reference"}]}]' \
-     ~/.claude/hooks/config/vault-overlay.json > /tmp/vo.json && mv /tmp/vo.json ~/.claude/hooks/config/vault-overlay.json
-   ```
+```json
+{
+  "id": "engagement-list",
+  "kind": "directory-membership-cascade",
+  "primary_dir": "Engagements/",
+  "primary_scope": "top-level-children",
+  "mirrors": [
+    {"file": "Engagements/_index.md", "section": "Engagements"}
+  ],
+  "rationale": "Each engagement folder appears as a row in the catalog index."
+}
+```
 
-2. Validate with `jq -e .` after every edit. For schema validation:
-   ```bash
-   jsonschema -i ~/.claude/hooks/config/vault-overlay.json \
-     ~/.claude/schemas/vault-overlay-schema.json
-   ```
-
-3. Bump `_provenance.last_user_edit` to the current ISO timestamp so the regen workflow recognizes the file as user-owned:
-   ```bash
-   ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-   jq --arg ts "$ts" '._provenance.last_user_edit = $ts' \
-     ~/.claude/hooks/config/vault-overlay.json > /tmp/vo.json && \
-     mv /tmp/vo.json ~/.claude/hooks/config/vault-overlay.json
-   ```
+Smoke-test: touch any file under `Engagements/` and confirm the advisory message lists `engagement-list` with `mirrors → Engagements/_index.md §Engagements`.
 
 ---
 
-## Adopter walkthrough — adding a new vault-local cascade
+## Upstream→downstream propagation (SP14 scope)
 
-Scenario: you've started enumerating per-client engagements in `Engagements/_index.md` and you want pre-write-guard to remind you when a write to `Engagements/<name>/` should be reflected in the index.
-
-1. **Identify the cascade shape.** This is a `directory-membership-cascade` (or `directory-mirror`): writes under `Engagements/` should review `Engagements/_index.md`.
-
-2. **Author the entry against the overlay schema.** Append to `~/.claude/hooks/config/vault-overlay.json`:
-
-   ```jsonc
-   {
-     "id": "engagement-list",
-     "kind": "directory-membership-cascade",
-     "primary_dir": "Engagements/",
-     "primary_scope": "top-level-children",
-     "mirrors": [
-       {"file": "Engagements/_index.md", "section": "Engagements"}
-     ],
-     "rule": "if-primary-changes-mirrors-must-be-reviewed",
-     "severity": "warn",
-     "rationale": "Each engagement folder appears as a row in the catalog index; adding/removing a folder requires updating the index."
-   }
-   ```
-
-3. **Validate.**
-   ```bash
-   jq -e . ~/.claude/hooks/config/vault-overlay.json && \
-   jsonschema -i ~/.claude/hooks/config/vault-overlay.json \
-     ~/.claude/schemas/vault-overlay-schema.json
-   ```
-
-4. **Smoke-test.** Touch any file under `Engagements/` and confirm the advisory message lists `engagement-list` with `mirrors → Engagements/_index.md §Engagements`. The hook is advisory; the write proceeds either way.
-
-5. **Iterate.** Tighten `severity` to `deny` (block-not-warn) only after you're confident the cascade is correct — false positives on a `deny` entry cost more than false negatives on a `warn` entry.
-
-### Adding an entity-parity row
-
-Same flow for entities (e.g., a new vault-local entity type that mirrors across multiple files). Append a top-level key to `vault-overlay.json::entities{}`. The merge-by-key semantics mean overlay keys override skeleton keys of the same name — useful when you want to extend a skeleton entity (e.g., add a vault-local mirror to `skill`) without forking the foundation.
-
-### Locally overriding a skeleton entry
-
-If a skeleton entry needs adjusting for your vault — say, widening `path_inferred_exceptions` on `vault-schema-type-consistency` — author an overlay entry with the **same `id`** as the skeleton row. Overlay-wins by id means your override replaces the skeleton row at runtime without a foundation-repo fork.
+Per canonical §A pillar #5 (session-1 follow-on amendment), `doc-dependencies.json` also governs **upstream→downstream write-time propagation**: when a change to an upstream document should trigger a write to a downstream document, not just a review prompt. This is the "PROMPT-FOR-DOC-DEPS" stage in the governance-mutation pipeline. Entry shape for propagation entries is a superset of the cascade shape above; full spec deferred to SP14.
 
 ---
 
 ## Known constraints
 
-- **Rename-aware via `rename-history-sync`.** When `librarian` runs at session-close Step 2b, `rename-detect.sh` populates `entries[].rename_history[]` append-only. Hand-editing `rename_history` is discouraged — the rename detector is the canonical writer.
-- **Path resolution is consumer-side.** Both files use `${CLAUDE_HOME}`, `${PLANS_ROOT}`, and the `{project_namespace}` placeholder (resolves via `${HOME//\\//-}` or `user-manifest.json::identity.project_namespace`). The placeholders are unresolved on disk; consumers do the substitution at read time.
-- **Overlay scope guards.** Overlay entries that reference paths outside the vault (e.g., `${CLAUDE_HOME}/...`) are honored by consumers, but consider whether the cascade belongs in the skeleton instead — foundation-infra cascades shipped with the install benefit every adopter, while vault-only cascades stay in the overlay.
-- **`_*` keys are reserved for inline documentation.** Underscore-prefixed string keys (`_comment`, `_note`, `_schema_version`) at the top level and inside `entities{}` are permitted by the schema and ignored by consumers. Use them for inline maintainer notes; do not use them for runtime data.
-- **No deletion semantics.** Overlay merge is additive; you cannot mark a skeleton row as "deleted" from the overlay. To suppress a skeleton row, author an overlay row with the same `id` that is structurally a no-op (e.g., empty `mirrors[]`) — the override wins, but the row still exists in the merged registry.
+- **Path resolution is consumer-side.** Both the foundation pillar and overlay entries use `${CLAUDE_HOME}`, `${PLANS_ROOT}`, and path placeholders. Consumers resolve these at read time.
+- **Overlay merge is additive.** You cannot "delete" a foundation entry from the overlay. To suppress a foundation row, author an overlay entry with the same `id` and empty `mirrors[]` — overlay-wins semantics mean your entry replaces the foundation row at runtime.
+- **`_*` keys are reserved for inline documentation.** Underscore-prefixed string keys (`_comment`, `_note`) at the top level are permitted by the schema and ignored by consumers.
+- **Schema validation.** `schemas/doc-dependencies-schema.json` validates the foundation pillar shape. `install.sh` runs jsonschema validation at install time when the `python3 jsonschema` module is reachable.
 
 ---
 
 ## Related
 
-- [`personalization-model.md`](personalization-model.md) — where doc-dependencies.json sits in the universal/combined/personal taxonomy (Combined tier).
-- [`adding-a-vault-file-type.md`](adding-a-vault-file-type.md) — the 5-surface commit pattern when you add a new file type. doc-dependencies updates often happen in that same lockstep.
-- [`provenance-frontmatter.md`](provenance-frontmatter.md) — the provenance contract; same shape as the file-level `_provenance` block in this file.
+- [`adding-a-vault-file-type.md`](adding-a-vault-file-type.md) — 5-surface lockstep when adding a new file type; Surface 3 (doc-dependencies cascade) applies when the new type's folder is enumerated in an index file.
+- [`provenance-frontmatter.md`](provenance-frontmatter.md) — provenance contract for auto-authored overlay files.
+- `governance/doc-dependencies.json` — the foundation pillar (canonical authoring source).
+- `governance/foundation-master.json` — the composed bundle; `doc_dependencies` slot is available to hooks at write-time.
+- `schemas/doc-dependencies-schema.json` — JSON Schema for entry validation.
 - `skills/librarian/SKILL.md` (waiver-audit capability) — how to file a cascade waiver when you intentionally ship a write without updating the mirror.
