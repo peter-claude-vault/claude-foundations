@@ -191,6 +191,11 @@
       "drop_then_fail_loudly_disallowed": true,
       "frozen_artifact_policy": "File at schemas/vault-schema.json remains intact (content preserved) and carries `_dissolved: true` top-level marker + `_canonical_successors` pointer block. No new authoring against this file — all updates go to the named successors. install.sh continues to ship the file until SP13 T-8 updates the ship list."
     },
+    "governance/enforcement-map.schema.json": {
+      "frozen_at": "2026-05-16",
+      "reason": "Operator decision Session 9 2026-05-16 — kept-orthogonal Session 8 B-7 path REVERSED; rule-shape validation migrates to governance/_index.json validator",
+      "canonical_successor": "governance/_index.json#coupled_surfaces (canonical §A pillar registry)"
+    },
     "schemas/gate-config.json": {
       "frozen_at": "2026-05-14",
       "dissolution_sp_task": "SP13 T-3",

@@ -3,6 +3,10 @@
   "$id": "https://claude-stem.local/governance/enforcement-map.schema.json",
   "title": "Governance pillar schema",
   "description": "Validates the four pillar files (frontmatter/tagging/naming/mandatory-files-rules.json) plus _index.json. Enforces the canonical rule-entry shape. R-37 lockstep coupled-surface with the four pillar JSONs. additionalProperties:true on rule entries permits adopter Layer 3 overlay.",
+  "_dissolved": true,
+  "_frozen_at": "2026-05-16",
+  "_reason": "Operator decision Session 9 2026-05-16 — kept-orthogonal Session 8 B-7 path REVERSED; rule-shape validation migrates to governance/_index.json validator",
+  "_successor": "governance/_index.json#coupled_surfaces (canonical §A pillar registry)",
   "definitions": {
     "rule_entry": {
       "type": "object",
