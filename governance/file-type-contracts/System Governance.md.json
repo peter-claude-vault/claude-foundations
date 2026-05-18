@@ -38,9 +38,11 @@
       "naming",
       "mandatory-files",
       "doc-dependencies",
-      "file-type-contracts"
+      "file-type-contracts",
+      "vault-writers",
+      "plans"
     ]
   },
 
-  "mirrors_pillar_rationale": "Each spoke mirrors exactly one of the 6 foundation governance pillars (canonical §D pattern); R-37 lockstep couples spoke <-> pillar JSON <-> _index.json registry."
+  "mirrors_pillar_rationale": "Each spoke mirrors exactly one of the 8 foundation governance pillars (canonical §D pattern); R-37 lockstep couples spoke <-> pillar JSON <-> _index.json registry."
 }
