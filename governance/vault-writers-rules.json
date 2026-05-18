@@ -1,0 +1,17 @@
+{
+  "$schema": "schemas/vault-writers-rules-schema.json",
+  "_description": "Pillar 7 — Vault Writers Rules (operational-config-only). Slimmed per Plan 81 SP13 Session 5 L-58 (SHAPE relocated to governance/file-type-contracts/vault-writer.md.json under pillar 6). Extended per Session 6 A47 (historical_data_warning_default). Authored by SP14 Batch A T-15.1 (2026-05-18).",
+  "_rules": ["R-58"],
+  "_source": "alignment/connector-reference-files.md Session 5 L-58 + alignment/hook-branch-implementations.md Session 6 A47",
+  "processing_defaults": {
+    "dedup": "sha256-content",
+    "survivorship": "operator-edit-wins",
+    "merge": "winner-pick"
+  },
+  "staging_area": "~/.claude/state/vault-staging/",
+  "reconciler_skill": "writer-reconciler",
+  "reconciler_tick_minutes_default": 15,
+  "unreconciled_archive_days_default": 14,
+  "foundation_variable_namespace": ["date", "title", "slug", "source_id"],
+  "historical_data_warning_default": "^\\d{4}-\\d{2}-\\d{2}"
+}

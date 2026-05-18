@@ -38,7 +38,7 @@ This is the **first canonical self-healing capability under the R-34 boundary**.
 - Read `governance/mandatory-files-rules.json` `mandates._index_md` (matcher + exemption list).
 - Read `governance/file-type-contracts/_index.md.json` (body-structure contract + sentinel markers + column shape).
 - Read `governance/frontmatter-rules.json#types.index` + `governance/frontmatter-rules.json#archetype_conditional_fields` (frontmatter contract).
-- Validate every input read against its source schema (`governance/enforcement-map.schema.json` for the mandatory-files pillar; JSON Schema draft-07 for the body-structure contract).
+- Validate every input read against its source schema (`governance/foundation-master.json` for the mandatory-files pillar rule shape — successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18; JSON Schema draft-07 for the body-structure contract).
 - Abort the audit run with a `pillar-schema-malformed` log entry if any input fails validation; never `write and hope`.
 
 **Failure mode:**
@@ -100,7 +100,7 @@ The capability reads from (in order):
 1. **`governance/mandatory-files-rules.json`** — `mandates._index_md` (matcher + exemption list).
 2. **`governance/file-type-contracts/_index.md.json`** — body-structure contract (sentinel markers, columns, ordering, fallback rules).
 3. **`governance/frontmatter-rules.json`** — `#types.index` (frontmatter contract) + `#archetype_conditional_fields` (depth-conditional parent_folder semantics; dissolved from schemas/vault-schema.json in SP13 T-4).
-4. **`governance/enforcement-map.schema.json`** — schema validation gate for the mandatory-files pillar JSON.
+4. **`governance/foundation-master.json`** — schema validation gate for the mandatory-files pillar rule shape (canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18; foundation-master is the populated 6→8-pillar bundle conforming to the rule shapes the retired schema defined).
 5. **Adopter Layer-3 overlays** — `$CLAUDE_HOME/governance/file-type-contracts/_index.md.adopter.json` (if present); shadows foundation per R-52 with `_override_reason`.
 6. **Vault walk** — every folder under the configured vault root, filtered by `mandates._index_md.exemption_paths`.
 

@@ -7,7 +7,7 @@
 #
 # ENFORCEMENT-MAP rules implemented here (see ~/.claude-plans/ENFORCEMENT-MAP.md):
 #   R-01  dead plans path DENY                        — line 26+
-#   R-03  VA.md size guard                            — line 39+ (VA_MAX_LINES=400)
+#   R-03  System Governance.md size guard             — line 39+ (SG_MAX_LINES from governance/file-type-contracts/System Governance.md.json; fallback 400)
 #   R-04  vault-root allowlist                        — line ~532
 #   R-07  doc-dependency cascade                      — line ~495
 #   R-09  Logs/ deny-list (soft-warn)                 — line ~549
@@ -268,11 +268,27 @@ except Exception:
 fi
 # === end plan status enforcement =========================================
 
-# === VA.md size guard (spine-remediation Session 07) ====================
+# === System Governance.md size guard (spine-remediation Session 07; SG_MAX_LINES migrated SP14 T-17 2026-05-18) ====================
 # Block any Write/Edit on System Governance.md whose result exceeds the
 # navigational-index threshold. Force extraction-first discipline.
+# SP14 T-17 — SG_MAX_LINES (was VA_MAX_LINES) reads from
+# governance/file-type-contracts/System Governance.md.json :: size_limits.max_lines
+# via foundation-master.json bundle. R-37 lockstep with T-13.9 contract authoring
+# (same-commit). Fallback to 400 if bundle lookup fails (same posture as legacy
+# missing-bundle fail-OPEN pattern at SP13 T-3 line 599+).
 VA_PATH="$HOME/Documents/Obsidian Vault/System Governance.md"
-VA_MAX_LINES=400
+SG_FOUNDATION_MASTER="${FOUNDATION_MASTER_PATH:-$HOME/Code/claude-stem/governance/foundation-master.json}"
+SG_MAX_LINES=$(
+  if [[ -f "$SG_FOUNDATION_MASTER" ]]; then
+    jq -r '.file_type_contracts."System Governance.md.json".size_limits.max_lines // 400' "$SG_FOUNDATION_MASTER" 2>/dev/null || echo 400
+  else
+    echo 400
+  fi
+)
+# Defensive: if jq returned an empty / non-numeric string, fall back.
+case "$SG_MAX_LINES" in
+  ''|*[!0-9]*) SG_MAX_LINES=400 ;;
+esac
 
 if [[ "$FILE_PATH" == "$VA_PATH" ]]; then
   va_new_lines=0
@@ -317,8 +333,8 @@ with open(sys.argv[5], 'w') as f:
       ;;
   esac
 
-  if [[ "$va_new_lines" -gt "$VA_MAX_LINES" ]]; then
-    REASON="System Governance.md would become ${va_new_lines} lines, exceeding the navigational-index threshold (${VA_MAX_LINES}). VA.md is the hub; long content belongs in a spoke file at System Governance/System Governance - {Topic}.md. To proceed: (1) identify a self-contained section to extract, (2) create or extend a spoke, (3) replace the section in VA.md with a stub redirect, (4) retry the write."
+  if [[ "$va_new_lines" -gt "$SG_MAX_LINES" ]]; then
+    REASON="System Governance.md would become ${va_new_lines} lines, exceeding the navigational-index threshold (${SG_MAX_LINES}). VA.md is the hub; long content belongs in a spoke file at System Governance/System Governance - {Topic}.md. To proceed: (1) identify a self-contained section to extract, (2) create or extend a spoke, (3) replace the section in VA.md with a stub redirect, (4) retry the write."
     format_output_deny "PreToolUse" "$REASON"
     exit 0
   fi

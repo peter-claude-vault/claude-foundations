@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude-stem.example/schemas/governance-action-log/v1.json",
+  "title": "Governance Action Log Row",
+  "description": "Append-only JSONL row format for ~/.claude/governance/governance-action-log.jsonl. Each line is an independent JSON object representing one governance mutation event. Authored by SP14 Batch A T-14.2 (2026-05-18) per Plan 81 SP13 Session 3 A31 + L-34 row shape extensions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["timestamp", "kind", "proposed_by", "session_id"],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the mutation event."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["folder-registered", "file-type-registered", "tag-extension-registered", "writer-registered", "unregistered-write"],
+      "description": "Mutation kind. unregistered-write captures the frictionless-skip case per feedback_soft_mandate_pattern."
+    },
+    "proposed_by": {
+      "type": "string",
+      "enum": [
+        "hook-branch-1-class-a",
+        "hook-branch-1-class-b",
+        "hook-branch-1-class-c",
+        "hook-branch-1-class-d",
+        "sp07-wizard",
+        "direct-govern-register-invocation"
+      ],
+      "description": "Entry path that proposed the mutation. Class-A = new top-level folder; B = new vault-root file; C = new file-type; D = capability-with-vault-write. SP07 wizard = richer setup-time entry. Direct = user-invoked /govern register."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Claude session ID at time of mutation. Cross-references session checkpoints."
+    },
+    "validated_fields": {
+      "type": "object",
+      "description": "Map of pillar.field-path → accepted-value pairs."
+    },
+    "rejected_fields": {
+      "type": "object",
+      "description": "Map of pillar.field-path → {value, reason} pairs for user-rejected propositions."
+    },
+    "override_reasons": {
+      "type": "object",
+      "description": "Map of pillar.field-path → free-text override reason (R-52 collision tiebreaker for shadowing entries)."
+    },
+    "unregistered": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when user invoked frictionless skip; write proceeded without governance registration. Librarian governance-parity-audit surfaces as drift finding."
+    },
+    "target": {
+      "type": "string",
+      "description": "Path or identifier of the registered surface (folder path, file-type slug, tag dimension, writer name)."
+    },
+    "claude_version": {
+      "type": "string",
+      "description": "Claude model + harness version string."
+    }
+  }
+}

@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude-stem.example/schemas/plans-rules/v1.json",
+  "title": "Plans Rules (Pillar 8)",
+  "description": "JSON Schema 2020-12 validator for governance/plans-rules.json (pillar 8). Locked plans-tree governance per Plan 81 SP13 Session 2 A21 + A22 + A24 + A25 + A26. Authored by SP14 Batch A T-14.5 (2026-05-18).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "root_files",
+    "plan_folder_quartet",
+    "slug_rules",
+    "subplan_rules",
+    "backlog_row",
+    "lifecycle",
+    "validation"
+  ],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "_description": {"type": "string"},
+    "_rules": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "doc_dependencies": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+
+    "root_files": {
+      "type": "object",
+      "description": "3 entries: _index.md / _backlog.md / _archive.md — librarian-generated, writers_allowed: [librarian] enforced by hook branch #4.",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^_(index|backlog|archive)\\.md$": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mandatory", "generated_by", "writers_allowed"],
+          "properties": {
+            "mandatory": {"type": "boolean"},
+            "generated_by": {"type": "string"},
+            "writers_allowed": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+
+    "plan_folder_quartet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required"],
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Required quartet: spec.md / tasks.md / handoff.md / manifest.json"
+        },
+        "conditional": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "required_if"],
+            "properties": {
+              "file": {"type": "string"},
+              "required_if": {"type": "string"},
+              "gate_fires_at": {"type": "string"},
+              "enforcement_mvp": {"type": "string", "enum": ["advisory", "blocking"]},
+              "promotion_path": {"type": "string"}
+            }
+          }
+        },
+        "file_type_contracts_dir": {"type": "string"}
+      }
+    },
+
+    "slug_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pattern", "plan_root_numbering", "sub_plan_numbering"],
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "description": "Regex pattern for plan slug. Locked: ^[0-9]{2}-[a-z][a-z0-9-]+$"
+        },
+        "shame_slug_blocklist_ref": {"type": "string"},
+        "plan_root_numbering": {
+          "type": "string",
+          "enum": ["next-available-prefix-creation-order"]
+        },
+        "sub_plan_numbering": {
+          "type": "string",
+          "enum": ["execution-order-not-creation-order"]
+        }
+      }
+    },
+
+    "subplan_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["naming", "parent_plan_required_at_depth"],
+      "properties": {
+        "naming": {"type": "string"},
+        "parent_plan_required_at_depth": {"type": "integer", "minimum": 1},
+        "parent_plan_exempt_files": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "metadata_flow": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "master_owns": {"type": "array", "items": {"type": "string"}},
+            "sub_publishes_upward": {"type": "array", "items": {"type": "string"}},
+            "sub_peer_communication": {"type": "string"}
+          }
+        }
+      }
+    },
+
+    "backlog_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_fields", "status_enum", "disposition_enum"],
+      "description": "6-column flat table per Session 2 A22: Project Dir / Initiative / Status / Disposition / Updated / Notes.",
+      "properties": {
+        "required_fields": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "project_directory_format": {"type": "string"},
+        "project_directory_registry": {"type": "string"},
+        "status_enum": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["new", "triaged", "briefed", "planned", "in-progress", "closed"]
+          }
+        },
+        "disposition_enum": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["FIX NOW", "ABSORB", "STANDALONE", "DEFERRED"]
+          }
+        },
+        "stale_advisory_days": {
+          "type": "array",
+          "items": {"type": "integer"}
+        },
+        "cross_directory_initiatives": {"type": "string"}
+      }
+    },
+
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status_enum"],
+      "description": "7-state status enum per Session 2 A26.",
+      "properties": {
+        "status_enum": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["researching", "planned", "in-progress", "on-hold", "closed", "superseded", "archived"]
+          }
+        },
+        "status_transitions": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["five_validation_classes", "firing_surfaces"],
+      "description": "5 validation classes + 5-surface firing pattern per Session 2 A22.",
+      "properties": {
+        "five_validation_classes": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["id", "tier"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "enum": [
+                  "filename_to_type",
+                  "plan_root_status_and_prefix",
+                  "subtask_parent_plan",
+                  "trinity_status_agreement",
+                  "handoff_section_schema"
+                ]
+              },
+              "tier": {"type": "string"},
+              "promotion_eligible": {"type": ["boolean", "null"]},
+              "reason_no_promotion": {"type": "string"}
+            }
+          }
+        },
+        "structural_vs_semantic_classification": {"type": "string"},
+        "firing_surfaces": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "type": "string",
+            "enum": ["PreToolUse", "PostToolUse", "SessionStart", "Stop", "librarian-sweeps"]
+          }
+        },
+        "foundation_hook_target_loc": {"type": "integer"}
+      }
+    },
+
+    "advisory_rules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tier": {"type": "string"},
+          "promotion_eligible": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude-stem.example/schemas/processing-rules/v1.json",
+  "title": "Folder-Level Processing Rules",
+  "description": "Schema for <folder>/_processing-rules.json distributed across vault; resolved by writer-reconciler at reconciliation time (NOT pre-discovery by writers). Precedence: folder-level > file-type-contracts > universal pillar 7 defaults. Per Plan 81 SP13 Session 4 A36. Authored by SP14 Batch A T-14.4 (2026-05-18).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["posture", "applies_to"],
+  "properties": {
+    "posture": {
+      "type": "string",
+      "enum": ["direct", "staged"],
+      "description": "Per-destination-folder declaration of write posture. direct = writer writes directly to destination (default). staged = writer emits packets to ~/.claude/state/vault-staging/; reconciler picks up and writes canonical destination."
+    },
+    "dedup": {
+      "type": "string",
+      "enum": ["sha256-content", "destination-path-key", "none"],
+      "description": "Folder-level dedup strategy override. Falls back to file-type-contracts then universal pillar 7 default."
+    },
+    "survivorship": {
+      "type": "string",
+      "enum": ["operator-edit-wins", "newest-wins", "merge"],
+      "description": "Folder-level survivorship strategy override."
+    },
+    "merge": {
+      "type": "string",
+      "enum": ["append", "winner-pick", "section-merge"],
+      "description": "Folder-level merge strategy override."
+    },
+    "applies_to": {
+      "type": "string",
+      "enum": ["this-folder-only", "this-folder-and-subfolders"],
+      "description": "Inheritance scope. this-folder-and-subfolders = subfolders inherit unless they declare their own _processing-rules.json override."
+    }
+  }
+}

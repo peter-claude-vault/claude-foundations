@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "claude-stem/governance/file-type-contracts/vault-writer.md.json",
+  "title": "vault-writer.md (writer-reference file) runtime body-structure contract",
+  "description": "Hook-consumable runtime artifact for Vault Writers/<writer>.md writer-reference files. Per-writer definitions describing systems writing into the vault (connectors, agentic flows, auto-research, scheduled skills, custom). Relocated from pillar 7 (vault-writers-rules.json) to pillar 6 (file-type-contracts) per Plan 81 SP13 Session 5 L-58 SHAPE redistribution. Authored by SP14 Batch A T-13.7 (2026-05-18).",
+  "version": "1.0.0",
+  "status": "runtime",
+  "design_source": "alignment/connector-reference-files.md Session 5 L-58 + L-69 + 'Writer-reference frontmatter contract (final)'",
+  "matcher_pillar": "governance/mandatory-files-rules.json",
+  "matcher_entry": "mandates.vault_writer_reference",
+  "_design_notes": {
+    "consumer": "hooks/pre-write-guard.sh branch #3 (vault-writers-writer-reference-only — frontmatter conformance DENY on schema violation) + librarian writers-index-refresh / writers-overlap-refresh / writers-health-audit",
+    "lockstep_pair": "governance/vault-writers-rules.json (operational defaults + enums) + templates/vault-writers/_generic-writer.md.template + templates/vault-writers/granola-meetings.md.template",
+    "evolution_protocol": "R-37 atomic lockstep with vault-writers-rules.json + templates"
+  },
+
+  "type": "vault-writer",
+  "applies_to": {
+    "path_glob": "$VAULT_ROOT/Vault Writers/*.md"
+  },
+  "excluded_paths": [
+    "$VAULT_ROOT/Vault Writers/_index.md",
+    "$VAULT_ROOT/Vault Writers/_overlap-matrix.md"
+  ],
+  "excluded_paths_rationale": "Librarian-managed derived artifacts; writers_allowed: [librarian] enforced by branch #3 / branch #4 parallel pattern.",
+
+  "frontmatter_required": [
+    "type",
+    "writer_name",
+    "writer_kind",
+    "writer_skill",
+    "destinations",
+    "status",
+    "created",
+    "updated",
+    "tags"
+  ],
+
+  "frontmatter_optional": [
+    "failure_mode",
+    "last_run",
+    "last_success",
+    "last_failure",
+    "last_updated_by"
+  ],
+
+  "frontmatter_conditional_by_writer_kind": {
+    "connector": {
+      "required": ["writer_subtype", "source", "authentication", "connector_id", "connector_runtime"]
+    },
+    "agentic-flow": {
+      "required": ["source", "flow_runtime", "cron_schedule"]
+    },
+    "auto-research": {
+      "required": ["source", "research_topic", "research_cadence"]
+    },
+    "scheduled-skill": {
+      "required": ["skill_id", "cron_schedule"]
+    },
+    "manual": {
+      "required": []
+    }
+  },
+
+  "frontmatter_enums": {
+    "type": ["vault-writer"],
+    "writer_kind": ["connector", "agentic-flow", "auto-research", "scheduled-skill", "manual", "custom"],
+    "writer_subtype": ["gmail", "calendar", "granola", "teams", "gchat", "custom"],
+    "status": ["active", "paused", "retired"],
+    "failure_mode": ["block-and-log", "skip-and-log", "retry-N"]
+  },
+
+  "destinations_entry_shape": {
+    "required": ["path", "output_type"],
+    "optional": ["posture", "processing_rules_ref"],
+    "path_format": "Mustache-substituted vault-relative path; foundation-shipped variable namespace per Session 5 L-69 = {{date}}, {{title}}, {{slug}}, {{source_id}}",
+    "enums": {
+      "output_type": ["md", "json", "sqlite", "db", "opaque"],
+      "posture": ["direct", "staged"]
+    },
+    "posture_default": "direct"
+  },
+
+  "body_section_allowlist": [
+    "Description",
+    "Source",
+    "Destinations",
+    "Processing Rules",
+    "Notes",
+    "Configuration",
+    "Edge cases",
+    "Operational notes"
+  ],
+  "body_section_allowlist_enforcement": "suggested",
+  "body_free_form": true
+}

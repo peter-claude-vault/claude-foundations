@@ -90,6 +90,13 @@
       "rule": "hub-stub-must-have-matching-spoke",
       "severity": "warn",
       "notes": "System Governance.md is the hub with 6 narrative spokes under System Governance/ (one per governance pillar; canonical §D). When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200-250 on spokes.",
+      "propagation_rule": {
+        "_provenance": "SP14 Batch A T-15.2 (2026-05-18) — first foundation-shipped example of propagation_rule field per Plan 81 SP13 Session 4 A38 (doc-deps shape extension for AUTO-write semantics).",
+        "auto_write": true,
+        "direction": "uni-directional",
+        "skip_on_operator_edit": true,
+        "extraction_strategy": "section-named"
+      },
       "rename_history": []
     },
     {

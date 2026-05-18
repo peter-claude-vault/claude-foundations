@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "claude-stem/governance/file-type-contracts/CLAUDE.md.json",
+  "title": "CLAUDE.md (vault-root) runtime body-structure contract",
+  "description": "Hook-consumable runtime artifact for the vault-root CLAUDE.md body-structure contract. The k8s ValidatingAdmissionPolicy paramKind for the only mandatory vault-root file per Plan 81 SP13 T-13 A1+A2. Authored by SP14 Batch A T-13.1 (2026-05-18) from alignment/claude-md-shape.md §'v3.1 vault-root CLAUDE.md template LOCKED'.",
+  "version": "1.0.0",
+  "status": "runtime",
+  "design_source": "alignment/claude-md-shape.md (SP13 T-13 lock)",
+  "matcher_pillar": "governance/mandatory-files-rules.json",
+  "matcher_entry": "mandates.claude_md_vault_root",
+  "_design_notes": {
+    "consumer": "hooks/pre-write-guard.sh (size cap + section presence) + hooks/post-write-verify.sh (Mustache substitution validation post-install)",
+    "lockstep_pair": "templates/vault-claude-md-template.md (v3.1 shipped) + alignment/claude-md-shape.md (T-13 lock record)",
+    "evolution_protocol": "R-37 atomic lockstep — runtime artifact + template + alignment-lock-record updated in one commit"
+  },
+
+  "type": "CLAUDE.md",
+  "applies_to": {
+    "path_glob": "$VAULT_ROOT/CLAUDE.md"
+  },
+
+  "required_sections": [
+    "Vault Structure",
+    "Vault-Specific Rules"
+  ],
+
+  "size_limits": {
+    "max_lines": 80,
+    "soft_target_lines_min": 30,
+    "soft_target_lines_max": 50,
+    "rationale": "v3.1 hard cap per Stream G + operator directive (claude-md-shape.md A6)."
+  },
+
+  "mustache_substitution": [
+    "{{IDENTITY_NAME}}",
+    "{{IDENTITY_ROLE}}",
+    "{{IDENTITY_ORGANIZATION}}",
+    "{{IDENTITY_INDUSTRY}}",
+    "{{VAULT_ROOT}}",
+    "{{VAULT_ORGANIZATIONAL_METHOD}}",
+    "{{VAULT_TOP_LEVEL_FOLDER}}",
+    "{{VAULT_DEFAULT_AUDIENCE}}",
+    "{{VAULT_ARCHITECTURE_DOC}}",
+    "{{PLANS_HOME}}",
+    "{{CLAUDE_HOME}}"
+  ],
+
+  "prohibited_sections": [
+    "@import directives"
+  ],
+
+  "prohibited_rationale": "Per Stream I (T-13 lock A3): hooks read governance bundles from disk directly; CLAUDE.md @import is for Claude's reading context only, not hook function. @import of foundation-master / overlay-master / plans-rules pollutes context without serving runtime enforcement."
+}

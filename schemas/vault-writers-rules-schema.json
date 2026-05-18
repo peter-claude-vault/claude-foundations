@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude-stem.example/schemas/vault-writers-rules/v1.json",
+  "title": "Vault Writers Rules (Pillar 7)",
+  "description": "Operational-config-only schema for governance/vault-writers-rules.json (pillar 7). SLIMMED to operational config per Plan 81 SP13 Session 5 A41 (SHAPE moved to file-type-contracts pillar 6) + extended per Session 6 A47 (historical_data_warning_default field). Authored by SP14 Batch A T-14.3 (2026-05-18).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "processing_defaults",
+    "staging_area",
+    "reconciler_skill",
+    "reconciler_tick_minutes_default",
+    "unreconciled_archive_days_default",
+    "foundation_variable_namespace"
+  ],
+  "properties": {
+    "processing_defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Universal defaults for writer-reconciler skill. Folder-level _processing-rules.json overrides; file-type-contracts pillar overrides above universal; precedence: folder > file-type > universal.",
+      "properties": {
+        "dedup": {
+          "type": "string",
+          "enum": ["sha256-content", "destination-path-key", "none"],
+          "description": "Default dedup strategy. content-hash matches Session 4 L-44 lock value (sha256 is the canonical content-hash strategy)."
+        },
+        "survivorship": {
+          "type": "string",
+          "enum": ["operator-edit-wins", "newest-wins", "merge"],
+          "description": "Default survivorship. Two-signal operator-edit detection per Session 4 L-45 (last_user_edit timestamp + content-diff against writer's last-known-hash)."
+        },
+        "merge": {
+          "type": "string",
+          "enum": ["append", "winner-pick", "section-merge"],
+          "description": "Default merge strategy for tabular data."
+        }
+      }
+    },
+    "staging_area": {
+      "type": "string",
+      "default": "~/.claude/state/vault-staging/",
+      "description": "Out-of-vault staging path per Session 4 L-42. Writers emit packets via lib/staging-emit.sh; reconciler reads from this path; writes canonical output to vault destinations via standard write path."
+    },
+    "reconciler_skill": {
+      "type": "string",
+      "default": "writer-reconciler",
+      "description": "Skill identity for the runtime reconciler. Renamed from inbox-processor per Session 4 L-51."
+    },
+    "reconciler_tick_minutes_default": {
+      "type": "integer",
+      "default": 15,
+      "minimum": 1,
+      "description": "Default cron tick for async batch reconciliation per Session 4 L-43."
+    },
+    "unreconciled_archive_days_default": {
+      "type": "integer",
+      "default": 14,
+      "minimum": 1,
+      "description": "After N days unreconciled, move packets to ~/.claude/state/vault-staging/_archive/ + librarian governance-parity-audit finding (Session 4 L-55)."
+    },
+    "foundation_variable_namespace": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["date", "title", "slug", "source_id"]
+      },
+      "description": "Generic foundation-shipped Mustache variables for destinations[].path substitution per Session 5 L-69. Cluster variables ({{engagement}}, {{project}}, etc.) are ADOPTER-DEFINED via overlay-master path_routing patterns — NEVER appear in foundation-shipped templates."
+    },
+    "historical_data_warning_default": {
+      "type": "string",
+      "default": "^\\d{4}-\\d{2}-\\d{2}",
+      "description": "Universal default regex for hook branch #2 historical-data-warning per Session 6 A47. Per-type overrides via file-type-contracts/<type>.md.json :: historical_data_warning_pattern (Session 6 L-75)."
+    }
+  }
+}

@@ -29,10 +29,10 @@ The capability is the load-bearing companion to the dual-surface design. Without
 **Schema each is gated by:**
 - NDJSON output validates against `librarian-finding-schema.json`.
 - Manifest subtree mirror validates against `librarian-manifest-schema.json` `drift_findings.governance_parity`.
-- Source-input validation: each pillar JSON validates against `governance/enforcement-map.schema.json` before the audit runs; failure aborts the audit with a `pillar-schema-malformed` log entry.
+- Source-input validation: each pillar JSON validates against `governance/foundation-master.json` (canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18) before the audit runs; failure aborts the audit with a `pillar-schema-malformed` log entry.
 
 **Pre-write validation steps:**
-- Read all 6 governance pillar surfaces (`_index.json` registry, `frontmatter-rules.json`, `tagging-rules.json`, `naming-rules.json`, `mandatory-files-rules.json`, `doc-dependencies.json`, `file-type-contracts/*.json`) + `enforcement-map.schema.json` (meta-validator for rule-entry shape).
+- Read all 6 governance pillar surfaces (`_index.json` registry, `frontmatter-rules.json`, `tagging-rules.json`, `naming-rules.json`, `mandatory-files-rules.json`, `doc-dependencies.json`, `file-type-contracts/*.json`) + `governance/foundation-master.json` (meta-validator for rule-entry shape — canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18).
 - Read all 6 narrative spokes (`System Governance - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Doc-Dependencies.md`, `- File-Type-Contracts.md`) per canonical §D.
 - Validate every input against its source schema before walking the parity comparison.
 
@@ -50,7 +50,7 @@ The capability is the load-bearing companion to the dual-surface design. Without
 | `source-divergence` | info | A rule entry's `source:` field cites a research-packet path that does not exist or has been renamed | `{pillar, rule_id, json_source_pointer, resolution, detected_at, first_seen}` |
 | `foundation-upgrade-touches-shadowed-entry` | warning | A foundation upgrade has touched an entity the adopter overlay shadows; surfaces at `git fetch` cadence (per R-52 / ADR-0006) | `{kind, entity_id, foundation_diff_summary, overlay_path, detected_at, first_seen}` |
 | `meta-rule-coverage-gap` | warning | A meta-rule (cross-cutting in `_index.json cross_cutting_meta_rules[]`) is not referenced in any of the 6 narrative spokes per pillar mapping (canonical §D dissolved the Enforcement meta-spoke; meta-rule coverage now distributes across the 6 mirror spokes) | `{rule_id, candidate_spokes[], detected_at, first_seen}` |
-| `pillar-schema-malformed` | warning | A pillar JSON fails `enforcement-map.schema.json` validation at audit-time | `{pillar, schema_validation_error, detected_at, first_seen}` |
+| `pillar-schema-malformed` | warning | A pillar JSON fails `governance/foundation-master.json` rule-shape validation at audit-time (validator successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18) | `{pillar, schema_validation_error, detected_at, first_seen}` |
 
 Severity `warning` findings count against the librarian's session-close summary; `info` findings surface but do not block close-out. The `foundation-upgrade-touches-shadowed-entry` finding is the hand-off surface from ADR-0006 / R-52 (the Layer-3 overlay collision tiebreaker); collisions at adopter-write time are caught by pre-write-guard.sh's write-time DENY, not by this audit.
 
@@ -83,7 +83,7 @@ The capability reads from (in order):
 
 1. **`governance/_index.json`** — pillar registry + `cross_cutting_meta_rules[]` + adopter overlay discovery (via `overlay-master.frontmatter.path_routing` per canonical §H).
 2. **`governance/{frontmatter,tagging,naming,mandatory-files,doc-dependencies}-rules.json`** + **`governance/file-type-contracts/*.json`** — the six pillar registries per canonical §A.
-3. **`governance/enforcement-map.schema.json`** — schema validation gate for each pillar JSON (meta-validator for rule-entry shape).
+3. **`governance/foundation-master.json`** — schema validation gate for each pillar JSON (meta-validator for rule-entry shape; canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18 — foundation-master is the populated 6→8-pillar bundle conforming to the rule shapes the retired schema defined).
 4. **`onboarding/scaffold/vault-architecture/System Governance - {Frontmatter,Tagging,Naming,Mandatory-Files,Doc-Dependencies,File-Type-Contracts}.md`** — the six narrative spokes per canonical §D.
 5. **Adopter overlay-master** — `~/.claude/governance/overlay-master.json` per canonical §H (6-pillar parallel of foundation-master; if a slot doesn't exist in foundation-master, it doesn't exist in overlay-master).
 6. **Foundation diff context** (when `--upgrade` flag set) — `git diff foundation/<previous-tag>..foundation/<current-tag> -- governance/`.
@@ -100,7 +100,7 @@ This capability sits OUTSIDE the per-pillar R-37 lockstep — it is the audit-ti
 
 The capability itself is coupled with:
 
-- `governance/enforcement-map.schema.json` — schema-validation gate for source inputs.
+- `governance/foundation-master.json` — schema-validation gate for source inputs (canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18).
 - `librarian-finding-schema.json` — output schema for findings.
 - `librarian-manifest-schema.json` — `drift_findings.governance_parity` subtree.
 - ADR-0006 (Layer-3 overlay collision tiebreaker) — design hand-off for the `foundation-upgrade-touches-shadowed-entry` finding category (the `layer3-collision` finding category was retired Session 15; collision detection moved to pre-write-guard.sh write-time DENY).
@@ -123,5 +123,5 @@ The capability is specified at this contract; a downstream implementation sub-pl
 - Collision design: ADR-0006 (Layer-3 overlay collision tiebreaker) → R-52 in `_index.json` — write-time DENY in pre-write-guard.sh; this capability covers only the upgrade-time finding
 - Source narrative: `research/vault-construction/enforcement-map-design.md`
 - Sibling capability: `governance/librarian-capabilities/archetype-consistency.md`
-- Schema validation: `governance/enforcement-map.schema.json`
+- Schema validation: `governance/foundation-master.json` (canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18)
 - Output schemas: `schemas/librarian-finding-schema.json`, `schemas/librarian-manifest-schema.json`

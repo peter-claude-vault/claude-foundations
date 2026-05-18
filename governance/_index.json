@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.1.0",
-  "_description": "6-pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded.",
+  "schema_version": "1.2.0",
+  "_description": "8-pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded. SP14 Batch A (2026-05-18) expanded 6 → 8 pillars (vault-writers + plans) per Plan 81 SP13 Session 2 + Sessions 4-5 locks; added SP14 T-16 retirement entry for governance/enforcement-map.schema.json (canonical successor = governance/foundation-master.json).",
   "_design_notes": {
     "consumer": "pre-write-guard.sh, post-write-verify.sh, librarian governance-parity-audit",
     "lockstep_pair": "System Governance/ folder narrative spokes (6, one per pillar) per canonical §D",
@@ -106,6 +106,43 @@
         "hooks/post-write-verify.sh (body-structure validation)",
         "governance/foundation-master.json (forward — composed file_type_contracts slot)"
       ]
+    },
+    {
+      "id": "vault-writers",
+      "path": "vault-writers-rules.json",
+      "rule_id_range": ["R-58"],
+      "size_bytes": "1-2K",
+      "loaded_by": ["hooks/pre-write-guard.sh", "skills/writer-reconciler"],
+      "spoke": "Vault-Writers.md",
+      "_first_class_provenance": "SP14 Batch A T-15.4 (2026-05-18): vault-writers elevated to 7th pillar per Plan 81 SP13 Session 1 L-2 (proposed) + Session 4 L-52 (locked at 1 pillar) + Session 5 L-58 (SHAPE redistributed to file-type-contracts/vault-writer.md.json; pillar 7 SLIMMED to operational-config-only). Operational defaults + staging-area + reconciler identity + foundation Mustache variable namespace + branch #2 historical_data_warning_default.",
+      "r37_coupled_surfaces": [
+        "governance/vault-writers-rules.json",
+        "schemas/vault-writers-rules-schema.json",
+        "governance/file-type-contracts/vault-writer.md.json (writer-reference SHAPE per Session 5 L-58 relocation)",
+        "schemas/processing-rules-schema.json (folder-level overrides per Session 4 L-48)",
+        "hooks/pre-write-guard.sh (branch #3 vault-writers-writer-reference-only + branch #2 historical-data-warning fallback)",
+        "skills/writer-reconciler (Session 4 L-51 rename target; consumes processing_defaults + staging_area)",
+        "governance/foundation-master.json (forward — composed vault_writers slot)"
+      ]
+    },
+    {
+      "id": "plans",
+      "path": "plans-rules.json",
+      "rule_id_range": ["R-15", "R-27", "R-28", "R-29", "R-30", "R-31"],
+      "size_bytes": "3-5K",
+      "loaded_by": ["hooks/pre-write-guard.sh", "skills/librarian/capabilities/plan-index", "skills/librarian/capabilities/plan-archive", "skills/librarian/capabilities/backlog-index"],
+      "spoke": "Plans.md",
+      "_first_class_provenance": "SP14 Batch A T-15.4 (2026-05-18): plans-tree elevated to 8th pillar per Plan 81 SP13 Session 2 L-locked schema. Plan-tree governance (slugs / quartet / sub-plan execution-order numbering / backlog row shape / lifecycle 7-state enum / validation classes / firing surfaces) lives here.",
+      "r37_coupled_surfaces": [
+        "governance/plans-rules.json (pending T-15 author; this batch authors schema only)",
+        "schemas/plans-rules-schema.json",
+        "schemas/plan-manifest-schema.json (manifest.json validator with conditional fields per Session 2 A24)",
+        "hooks/pre-write-guard.sh (R-27 status header + R-28 parent_plan + branch #4 librarian-only writes)",
+        "skills/librarian/capabilities/plan-index (consumes lifecycle.status_enum + root_files)",
+        "skills/librarian/capabilities/plan-archive (consumes lifecycle.status_transitions.closed_to_archived)",
+        "skills/librarian/capabilities/backlog-index (consumes backlog_row schema)",
+        "governance/foundation-master.json (forward — composed plans slot)"
+      ]
     }
   ],
   "cross_cutting_meta_rules": [
@@ -193,8 +230,13 @@
     },
     "governance/enforcement-map.schema.json": {
       "frozen_at": "2026-05-16",
-      "reason": "Operator decision Session 9 2026-05-16 — kept-orthogonal Session 8 B-7 path REVERSED; rule-shape validation migrates to governance/_index.json validator",
-      "canonical_successor": "governance/_index.json#coupled_surfaces (canonical §A pillar registry)"
+      "retired_at": "2026-05-18",
+      "retired_in": "SP14 Batch A T-16 absorb of SP13 T-19 (operator decision 2026-05-18)",
+      "retirement_artifact": "governance/enforcement-map.schema.json.retired-2026-05-18",
+      "reason": "Operator decision Session 9 2026-05-16 — kept-orthogonal Session 8 B-7 path REVERSED; rule-shape validation migrates. SP14 T-16 operator addendum (2026-05-18): retire entirely. Validator pointer redirected to governance/foundation-master.json (not _index.json) — foundation-master is the populated 6→8-pillar bundle that already conforms to the rule shapes the retired schema defined; it can serve as the rule-shape attestation surface post-retirement.",
+      "canonical_successor": "governance/foundation-master.json (validator pointer per SP14 T-16 operator addendum 2026-05-18)",
+      "consumer_redirect_target": "governance/foundation-master.json",
+      "documentary_citations_preserved": "References in scope_note + source fields of governance/foundation-master.json, governance/frontmatter-rules.json, governance/tagging-rules.json, governance/mandatory-files-rules.json, governance/_index.json are historical attribution to the original ENFORCEMENT-MAP.md design doc, not active validator reads — preserved as-is per SP14 T-16 operator addendum."
     },
     "schemas/gate-config.json": {
       "frozen_at": "2026-05-14",

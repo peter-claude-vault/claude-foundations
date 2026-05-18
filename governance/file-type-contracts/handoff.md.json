@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "claude-stem/governance/file-type-contracts/handoff.md.json",
+  "title": "handoff.md (plan/sub-plan) runtime body-structure contract",
+  "description": "Hook-consumable runtime artifact for plan-tree handoff.md files. Strict append-only newest-first per Plan 83 SP02 session-continuity protocol + Plan 81 SP13 Session 2 A23. Authored by SP14 Batch A T-13.4 (2026-05-18).",
+  "version": "1.0.0",
+  "status": "runtime",
+  "design_source": "alignment/plans-folder-governance.md Session 2 A23 + Plan 83 SP02 session-continuity-protocol",
+  "matcher_pillar": "governance/plans-rules.json",
+  "matcher_entry": "plan_folder_quartet.required",
+  "_design_notes": {
+    "consumer": "hooks/pre-write-guard.sh (append-only enforcement) + skill session-close-and-handoff + librarian plan-index",
+    "lockstep_pair": "alignment/plans-folder-governance.md + Plan 83 SP02 session-continuity-protocol",
+    "evolution_protocol": "Append-only; historical session entries never edited in place"
+  },
+
+  "type": "handoff",
+  "applies_to": {
+    "path_glob": "~/.claude-plans/**/handoff.md"
+  },
+
+  "append_only": true,
+  "append_only_rationale": "No in-place edits to historical session entries. New session entries prepend at top (newest-first). Historical entries are immutable record of plan execution arc.",
+
+  "newest_first": true,
+  "newest_first_rationale": "Repository convention — readers scroll top to find latest session; pre-existing entries shift downward without modification.",
+
+  "section_schema": "## (Alignment )?Session N — <session-title>(\\n### .*)*",
+  "section_schema_format": "regex",
+
+  "section_subsections": [
+    "Scope",
+    "Decision-Quality Protocol passes",
+    "Locks captured",
+    "Spec deltas",
+    "Files modified",
+    "Follow-up dispositions",
+    "Memories saved"
+  ],
+  "section_subsections_enforcement": "suggested",
+
+  "size_limits": {
+    "max_kb": 50,
+    "split_strategy": "split to handoff-archive.md at threshold"
+  }
+}
