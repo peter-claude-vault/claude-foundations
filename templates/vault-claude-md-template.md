@@ -1,71 +1,43 @@
-# {{IDENTITY_NAME}}'s Vault
+# CLAUDE.md — {{IDENTITY_NAME}}'s Obsidian Vault
 
-> **Setup — launch Claude Code from inside this vault.** This file (`CLAUDE.md` at the vault root) plus the `@import` directives below auto-load only when Claude Code launches from this directory or a subfolder. To switch Claude Code's launch location, run `cd "<path-to-this-vault>"` before invoking `claude` (or whatever launch command you use). Launching from elsewhere (e.g., your home directory) loads only the global `~/.claude/CLAUDE.md`, not this file — vault context still works via on-demand reads, but the `@import` block won't fire.
+<!-- This file gives Claude an at-a-glance view of the vault's folder
+     structure. STEM seeded it at install (substituting identity fields
+     from user-manifest.json) and will never overwrite it on re-run.
 
-## 1. Role + Operating Posture
+     All governance (frontmatter / tagging / naming / mandatory files /
+     plans-tree discipline / vault-specific behaviors like historical-data-
+     warning / propose-and-validate-on-new-folders / connector-driven-Inbox)
+     is enforced by STEM hooks at write-time — this file does NOT carry
+     rules.
 
-Claude operates as **librarian, secretary, and agent** for this vault:
-- **Librarian:** Place information where it will be most useful. Surface related context without being asked.
-- **Secretary:** Handle filing, meeting prep, note processing, and maintenance without per-action approval.
-- **Agent:** Execute defined workflows (daily processing, briefings, audits) autonomously within established rules.
+     Hard cap 80 lines. Claude self-maintains the structure tree when
+     user adds new top-level folders (via propose-and-validate flow). -->
 
-## 2. User Identity
+## Vault Structure
 
-| Field | Value |
-|---|---|
-| Name | {{IDENTITY_NAME}} |
-| Role | {{IDENTITY_ROLE}} |
-| Organization | {{IDENTITY_ORGANIZATION}} |
-| Industry | {{IDENTITY_INDUSTRY}} |
-| Default audience | {{VAULT_DEFAULT_AUDIENCE}} |
-
-Identity values are sourced from `$CLAUDE_HOME/user-manifest.json` at adoption time. To update them, re-run `/onboard --section a` and then `/adopt`.
-
-## 3. Hard Rules
-
-- File automatically when the destination is clear; route without asking.
-- Ask before creating new top-level structures (folders, file classes) — surface a proposal, get confirmation.
-- Historical data is frozen — never overwrite past-dated content.
-- `Logs/` is Claude's scratch space — write freely.
-- **Skill check:** Before building any capability from scratch, read `Skills/_index.md`.
-- When the user raises architecture-bearing questions, or you need to make a judgment call on system structure, load `Vault Architecture.md` first.
-- Frontmatter on every non-exempt file. Tags from the controlled taxonomy. Orphans in the graph view are a hygiene alert.
-
-## 4. Communication Style
-
-{{IDENTITY_NAME}} composes verbally first, then structures. Values firmness over hedging, specificity over generality. Direct feedback with concrete examples.
-
-## 5. Active Work Pointers
-
-Paths are stable; contents evolve. Read the relevant index/folder on demand:
-
-- **Client engagements / major projects:** `{{VAULT_TOP_LEVEL_FOLDER}}/` — see cluster `_index.md` for current active set
-- **Personal tracks / initiatives:** named at onboarding — see vault root for folder names
-- **System backlog:** `System Backlog.md` (Claude-system project ideas; librarian-maintained)
-- **Plans:** `Plans/` (symlink to `$PLANS_HOME`)
-
-## 6. Authoritative References
-
-### `@import` directives (force-loaded at session start)
+<!-- Compact tree; foundation-shipped folders marked [F]. User-defined
+     cluster names seeded from user-manifest.json at install time. -->
 
 ```
-@$CLAUDE_HOME/governance/foundation-master.json
+{{VAULT_ROOT}}/
+├── CLAUDE.md                          [this file]
+├── System Governance/           [F]  → narrative spokes for 6 governance pillars
+├── Plans/                        [F]  → symlink to {{PLANS_HOME}}
+├── Inbox/                        [F]  → connector reference files
+├── Archive/                      [F]  → cold storage
+├── Daily/                        [F]  → date-prefixed daily notes
+├── Logs/                         [F]  → Claude's scratch space (write freely)
+├── Meetings/                     [F]  → date-prefixed meeting notes
+├── Skills/                       [F]  → symlink to {{CLAUDE_HOME}}/skills/
+├── {{VAULT_TOP_LEVEL_FOLDER}}/        → user-defined cluster (e.g., client work)
+├── <USER_CLUSTER_2>/                  → user-defined
+└── <USER_CLUSTER_N>/                  → user-defined; ask before adding new ones
 ```
 
-The composed governance bundle — single artifact carrying all 6 pillar contents (frontmatter, tagging, naming, mandatory-files, doc-dependencies, file-type-contracts). Read at write-time per the bundle-at-load discipline. High reference frequency; amortizes across the session. Note: this directive only fires when Claude Code launches from inside the vault (see setup note above).
+## Vault-Specific Rules
 
-### Pointer table (load on trigger)
+<!-- Optional. STEM-foundational rules are hook-enforced; this section is
+     for VAULT-SPECIFIC overrides or additions the adopter wants. Leave
+     empty if you have no vault-specific behavioral preferences. -->
 
-| Trigger | Primary read (APPLY) | Rationale read (UNDERSTAND) |
-|---|---|---|
-| Architecture-bearing question | `Vault Architecture.md` | — |
-| Authoring/editing a vault file | `$CLAUDE_HOME/governance/frontmatter-rules.json` | `Vault Architecture/Vault Architecture - Frontmatter.md` |
-| Tagging a file | `$CLAUDE_HOME/governance/tagging-rules.json` | `Vault Architecture/Vault Architecture - Tagging.md` |
-| Naming a new file/structure | `$CLAUDE_HOME/governance/naming-rules.json` | `Vault Architecture/Vault Architecture - Naming.md` |
-| Creating new top-level structure | `$CLAUDE_HOME/governance/mandatory-files-rules.json` | `Vault Architecture/Vault Architecture - Mandatory-Files.md` |
-| System-project ideas | `System Backlog.md` | — |
-| **Before building any capability** | `Skills/_index.md` | — |
-| Inbox / connector / dashboard work | `Inbox/_index.md` | — |
-| Plan or sub-plan references | `Plans/` | — |
-
-**Discipline:** JSON for APPLY (machine-readable, applied per-write/per-tag/per-structure). Markdown spoke for UNDERSTAND (rationale, edge cases, pedagogy).
+- <USER: 0-N vault-specific rules>

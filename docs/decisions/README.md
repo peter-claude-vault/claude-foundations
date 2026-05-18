@@ -12,7 +12,7 @@ ADRs are the **audit-trail tier** of Claude Stem's three-tier content discipline
 - The decision itself
 - Consequences (positive, negative, neutral)
 
-ADRs are NOT meant for the casual adopter. They exist so that a future-self auditor (human or LLM) can trace "why does this thing work this way" back to the design moment without polluting the consumer-facing surfaces (`research/`, `governance/`, `schemas/`, `Vault Architecture/`).
+ADRs are NOT meant for the casual adopter. They exist so that a future-self auditor (human or LLM) can trace "why does this thing work this way" back to the design moment without polluting the consumer-facing surfaces (`research/`, `governance/`, `schemas/`, `System Governance/`).
 
 ## ADR format
 

@@ -27,7 +27,7 @@ tests/foundation/
       librarian-manifest.json          # copy of templates/librarian-manifest-skeleton.json
     vault-minimal/                   # synthetic vault root (passes both manifests)
       CLAUDE.md                        # plain markdown, no frontmatter (silent skip)
-      Vault Architecture.md            # plain markdown, no frontmatter (silent skip)
+      System Governance.md            # plain markdown, no frontmatter (silent skip)
       Logs/.gitkeep                    # empty Logs/ → log-archive no-op
 ```
 

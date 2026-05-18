@@ -4,8 +4,8 @@
   "_description": "Claude-consumed JSON registry for the naming pillar. Loaded by pre-write-guard.sh at runtime. Carries R-04, R-10, R-20, R-27, R-28.",
   "_design_notes": {
     "consumer": "pre-write-guard.sh — naming-rule evaluation branch",
-    "lockstep_pair": "Vault Architecture - Naming.md (narrative spoke) + hooks/pre-write-guard.sh (enforcement) + research/vault-construction/file-naming-conventions.md (research mirror)",
-    "evolution_protocol": "R-37 atomic lockstep — naming-rules.json + Vault Architecture - Naming.md + pre-write-guard.sh + file-naming-conventions.md (research mirror) updated in one commit",
+    "lockstep_pair": "System Governance - Naming.md (narrative spoke) + hooks/pre-write-guard.sh (enforcement) + research/vault-construction/file-naming-conventions.md (research mirror)",
+    "evolution_protocol": "R-37 atomic lockstep — naming-rules.json + System Governance - Naming.md + pre-write-guard.sh + file-naming-conventions.md (research mirror) updated in one commit",
     "source_dependencies": [
       "../research/vault-construction/file-naming-conventions.md",
       "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
@@ -18,7 +18,7 @@
       "tier": "3",
       "source": "ENFORCEMENT-MAP.md R-04 + pre-write-guard.sh known-root allowlist",
       "enforcement_layer": ["pre-write-guard.sh known-root allowlist", "pre-write-guard.sh single-file exemption block", "librarian placement-validation"],
-      "failure_mode": "File written to undocumented vault-root drifts structure; Vault Architecture.md falls out of sync; navigation guides stale. Tier 3 advisory: write proceeds; operator told to move file or update Vault Architecture.md.",
+      "failure_mode": "File written to undocumented vault-root drifts structure; System Governance.md falls out of sync; navigation guides stale. Tier 3 advisory: write proceeds; operator told to move file or update System Governance.md.",
       "rule_text": "Files written to a vault-root directory must reside in a documented root. Known roots are a hardcoded allowlist in pre-write-guard.sh covering foundation-shipped system folders only (per canonical §F); user-created top-level folders register via overlay-master.frontmatter.path_routing extensions per canonical §H. A small set of top-level files is exempt from the root-must-be-a-directory rule (canonical §C mandatory files + System Backlog satellite). Adding a new foundation-shipped root requires R-10's checklist + R-37 lockstep — not mid-session improvisation.",
       "known_roots": [
         "Archive",
@@ -28,16 +28,16 @@
         "Meetings",
         "Plans",
         "Skills",
-        "Vault Architecture"
+        "System Governance"
       ],
       "vault_root_file_exemptions": [
         "CLAUDE.md",
-        "Vault Architecture.md",
+        "System Governance.md",
         "System Backlog.md",
         "System Backlog - Archive.md"
       ],
-      "_sp13_session_4_phase_1b_provenance": "SP13 Session 4 Phase 1b (2026-05-14): known_roots reduced 15 → 8 per canonical §F (foundation-shipped system folders only: Archive/Daily/Inbox/Logs/Meetings/Plans/Skills/Vault Architecture). REMOVED user-named clusters (About Me / Artefact-BD / Engagements / Personal Initiatives / Reference / Tags / Dashboard) — user-named clusters belong in overlay-master.frontmatter.path_routing per canonical §H. About Me + Tags also retired per canonical §G (About Me/ folder retired entirely; Tags/ is Obsidian Make.md plugin artifact, not foundation-shipped). vault_root_file_exemptions: dropped Tasks.md per canonical §G (foundation-imposing a single task-tracking shape is unwarranted). System Backlog - Archive.md retained (consequence-of-lifecycle satellite; operator-disposition deferred). Closes C1 audit H6 + H7.",
-      "_sp13_session_8_d2_p4_3_closeout": "SP13 Session 8 D-2 (2026-05-15): P4.3 naming known_roots cleanup verified. known_roots confirmed at target state (8 entries per canonical §F). vault_root_file_exemptions confirmed (Tasks.md already dropped in Session 4; System Backlog - Archive.md retained pending operator disposition on lifecycle-satellite status). Lockstep pair extended: pre-write-guard.sh:1129 loop + Vault Architecture - Naming.md:50-69 table + file-naming-conventions.md:96-101 reference all reduced to 8-entry canonical set in Session 8 D-2 commit (524a1d3). _design_notes.lockstep_pair updated to enumerate all 3 R-37 coupled surfaces."
+      "_sp13_session_4_phase_1b_provenance": "SP13 Session 4 Phase 1b (2026-05-14): known_roots reduced 15 → 8 per canonical §F (foundation-shipped system folders only: Archive/Daily/Inbox/Logs/Meetings/Plans/Skills/System Governance). REMOVED user-named clusters (About Me / Artefact-BD / Engagements / Personal Initiatives / Reference / Tags / Dashboard) — user-named clusters belong in overlay-master.frontmatter.path_routing per canonical §H. About Me + Tags also retired per canonical §G (About Me/ folder retired entirely; Tags/ is Obsidian Make.md plugin artifact, not foundation-shipped). vault_root_file_exemptions: dropped Tasks.md per canonical §G (foundation-imposing a single task-tracking shape is unwarranted). System Backlog - Archive.md retained (consequence-of-lifecycle satellite; operator-disposition deferred). Closes C1 audit H6 + H7.",
+      "_sp13_session_8_d2_p4_3_closeout": "SP13 Session 8 D-2 (2026-05-15): P4.3 naming known_roots cleanup verified. known_roots confirmed at target state (8 entries per canonical §F). vault_root_file_exemptions confirmed (Tasks.md already dropped in Session 4; System Backlog - Archive.md retained pending operator disposition on lifecycle-satellite status). Lockstep pair extended: pre-write-guard.sh:1129 loop + System Governance - Naming.md:50-69 table + file-naming-conventions.md:96-101 reference all reduced to 8-entry canonical set in Session 8 D-2 commit (524a1d3). _design_notes.lockstep_pair updated to enumerate all 3 R-37 coupled surfaces."
     },
     {
       "id": "R-10",
@@ -50,13 +50,13 @@
       "checklist_items": [
         "Declare purpose — what archetype/content the directory holds",
         "Declare consumer — which skill, hook, capability, or query parses this path",
-        "Update the relevant Vault Architecture/ narrative spoke (one of the 6 per canonical §D)",
+        "Update the relevant System Governance/ narrative spoke (one of the 6 per canonical §D)",
         "Add governance/frontmatter-rules.json#types entry + governance/file-type-contracts/<file>.json body-structure contract (the latter only if the new root carries a foundation-shipped mandatory file)",
         "Extend pre-write-guard.sh known-root list (R-04 allowlist update)",
         "Add librarian-capability entry (placement-validation / plan-index / walker)",
         "Commit R-37 atomic lockstep — all surfaces move in one commit"
       ],
-      "_checklist_items_provenance": "SP13 Session 4 Phase 1d follow-on (2026-05-14): item 3 generalized from `Vault Architecture.md (or the relevant pillar spoke)` to `the relevant Vault Architecture/ narrative spoke (one of the 6 per canonical §D)` — vault-root Vault Architecture.md governed by file-type-contract per canonical §C, but the spoke-update reference belongs to the 6 spokes in Vault Architecture/ folder. Item 4 flipped from dissolved schemas/vault-schema.json to canonical successors per `_index.json#dissolved_schemas`. Item 7 generalized 'four surfaces' to 'all surfaces' (Phase 1a expanded the pillar set to 6 + bundle + spokes; explicit count would drift)."
+      "_checklist_items_provenance": "SP13 Session 4 Phase 1d follow-on (2026-05-14): item 3 generalized from `System Governance.md (or the relevant pillar spoke)` to `the relevant System Governance/ narrative spoke (one of the 6 per canonical §D)` — vault-root System Governance.md governed by file-type-contract per canonical §C, but the spoke-update reference belongs to the 6 spokes in System Governance/ folder. Item 4 flipped from dissolved schemas/vault-schema.json to canonical successors per `_index.json#dissolved_schemas`. Item 7 generalized 'four surfaces' to 'all surfaces' (Phase 1a expanded the pillar set to 6 + bundle + spokes; explicit count would drift)."
     },
     {
       "id": "R-20",

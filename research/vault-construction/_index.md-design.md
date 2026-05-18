@@ -225,17 +225,17 @@ Anyone scaffolding a public GitHub artifact uses `README.md`; anyone scaffolding
 
 ## Exemptions
 
-A meaningful minority of folders (depth ≤ 3) do NOT carry `_index.md` by design. The exemption list is exactly the 5 foundation-shipped folders per canonical §E:
+A meaningful minority of folders (depth ≤ 3) are exempt from the standard `_index.md` auto-bootstrap. The canonical exemption list per `governance/mandatory-files-rules.json#mandates._index_md.exemption_paths` is exactly the 5 foundation-shipped folders:
 
 - **`Archive/**`** — cold storage; navigation by name is low-signal because contents are append-only history.
 - **`Daily/**`** — date-prefixed file collections. Navigation by date or tag query, not by folder listing.
+- **`Inbox/**`** — scraper aggregation surface; uses a different content shape (active-connection enumeration + destination-overlap matrix from connector briefs) maintained by the dedicated `inbox-index-refresh` capability rather than the standard `index-maintain` sweep. Implementation deferred to SP07 (connector wizard) per `feedback_inbox_connector_driven` — Inbox shape is connector-driven, not foundation-locked.
 - **`Logs/**`** — Claude's scratch space; emission-driven, not navigation-targeted.
-- **`Tags/**`** — Obsidian Make.md plugin artifact directory; adopter-disposable, gitignored, never carries named content files.
 - **`Meetings/**`** — date-prefixed meeting notes. Navigation by date or tag query, not by folder listing.
 
-Per canonical §E: every other folder — including `Inbox/`, user-defined clusters, projects, and any named-content directory — receives the `_index.md` auto-bootstrap on first write. `Inbox/` uses the dedicated `inbox-index-refresh` capability (a different maintenance path) rather than the standard `index-maintain` sweep; it still carries an `_index.md`.
+Per canonical §E counter-clause: every folder NOT listed above — including user-defined clusters, projects, people directories, skills, personal tracks, and any user-created named-content directory — is mandatory-`_index.md` with standard auto-bootstrap. Non-vault infrastructure directories (`Templates/`, `Tags/`, `_orchestrator/`, `tests/`, `tests/fixtures/`) are foundation-repo-only and do not appear in adopter vaults; if a user creates a folder by those names, normal `_index.md` auto-bootstrap fires.
 
-Generalized: **a folder is exempt when it is foundation-shipped AND its contents are date-prefixed sequences, gitignored plugin artifacts, or scratch-space emissions.** Folders carrying named content files for human and LLM consumption — user-defined clusters, projects, instance directories, Inbox — are mandatory-`_index.md`.
+Generalized: **a folder is exempt when it is foundation-shipped AND its contents are date-prefixed sequences, scraper-aggregated data, or scratch-space emissions.** Folders carrying named content files for human and LLM consumption — clusters, projects, people directories, reference, skills, personal tracks — are mandatory-`_index.md`.
 
 ## Anti-patterns
 
@@ -254,7 +254,7 @@ Generalized: **a folder is exempt when it is foundation-shipped AND its contents
 - **CQ-I1.** Underscore-prefix vs no-underscore for the folder index filename? → **Underscore-prefix (`_index.md`).** Rationale: sorts to top of directory listings; unambiguous versus human-facing `README.md`. Adopted via an atomic R-37 commit that renamed several existing folder indexes (e.g., `Skills Index.md`, `README.md` variants) to `_index.md`.
 - **CQ-I2.** Should `_index.md` be normalized to mkdocs `index.md` at the vault filesystem layer? → **No — filesystem-sort property is load-bearing.** The underscore-prefix IS the point of the filename. The mkdocs/GH-Pages divergence is resolved at build time via rename/symlink at the rendering layer, not by changing the vault filesystem name.
 - **CQ-I3.** Are folders with date-prefixed collections (`Daily/`, `Meetings/`, `Archive/<X>/`) exempt? → **Yes — exempt.** Rationale: contents are sequenced by date, not by name; navigation happens via date queries or tag-based filters; an index-by-name would be the wrong primitive.
-- **CQ-I4.** Does the vault need a root-level meta-index aggregating all `_index.md` locations? → **No.** Vault-root `CLAUDE.md` + `Vault Architecture.md` together already serve as the meta-navigation surface. A separate cross-folder index would be redundant.
+- **CQ-I4.** Does the vault need a root-level meta-index aggregating all `_index.md` locations? → **No.** Vault-root `CLAUDE.md` + `System Governance.md` together already serve as the meta-navigation surface. A separate cross-folder index would be redundant.
 - **CQ-I5.** Should `_index.md` maintenance ship as a regeneration capability (build-time rebuild) or a per-write sync mechanism (live propagation)? → **Per-write sync, three-tier.** Post-write hook for live Claude-driven writes; librarian `index-maintain` capability for non-Claude writes (cron, Obsidian, manual moves); deep-audit mode for opt-in semantic validation. The hook's one-line loop guard (`_index.md` self-exemption) resolves the recursion concern at architectural cost zero. See §Maintenance architecture.
 
 ## Source pointers

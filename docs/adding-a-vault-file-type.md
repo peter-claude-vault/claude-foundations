@@ -71,13 +71,13 @@ If the new type has path-routing guidance (e.g., it belongs under `Interviews/`)
 
 ### 3. `governance/mandatory-files-rules.json#mandates` — vault-root presence mandate (conditional)
 
-**Only needed when the new type is a vault-root mandatory file.** Per canonical §C, vault-root mandatory files are: `CLAUDE.md`, `System Backlog.md`, `Vault Architecture.md`, `_index.md`. For content types like `interview-note`, **skip this surface**.
+**Only needed when the new type is a vault-root mandatory file.** Per canonical §C, vault-root mandatory files are: `CLAUDE.md`, `System Backlog.md`, `System Governance.md`, `_index.md`. For content types like `interview-note`, **skip this surface**.
 
 If your new type IS a vault-root mandatory, add a mandate entry under `mandates` in `governance/mandatory-files-rules.json`.
 
-### 4. `onboarding/scaffold/vault-architecture/Vault Architecture - File-Type-Contracts.md` — spoke entry
+### 4. `onboarding/scaffold/vault-architecture/System Governance - File-Type-Contracts.md` — spoke entry
 
-Per canonical §D, the `Vault Architecture/` folder carries 6 narrative spokes — one per governance pillar. The File-Type-Contracts spoke is the user-facing description of all recognized file-type contracts. It is seeded into every new adopter vault by the onboarding wizard.
+Per canonical §D, the `System Governance/` folder carries 6 narrative spokes — one per governance pillar. The File-Type-Contracts spoke is the user-facing description of all recognized file-type contracts. It is seeded into every new adopter vault by the onboarding wizard.
 
 **Edit:** add an entry to the spoke doc describing the new type's body-structure contract: its purpose, required fields, and contract JSON path.
 
@@ -141,7 +141,7 @@ Also add to `path_routing.rules[]`:
 
 **Surface 3 — `governance/mandatory-files-rules.json`:** skip. `interview-note` is not a vault-root mandatory per canonical §C.
 
-**Surface 4 — `Vault Architecture - File-Type-Contracts.md`:**
+**Surface 4 — `System Governance - File-Type-Contracts.md`:**
 Add a row to the file-type contracts table:
 ```markdown
 | `interview-note` | `governance/file-type-contracts/interview-note.json` | Transcripts of stakeholder interviews. Required: subject, interviewer, tags, updated. |
@@ -165,7 +165,7 @@ Land all five in one commit:
 - [ ] **`governance/file-type-contracts/<type>.json`** — new body-structure contract (required sections, max line count, frontmatter fields)
 - [ ] **`governance/frontmatter-rules.json#types.<type>`** — type registry entry + optional path_routing.rules[] entry
 - [ ] **`governance/mandatory-files-rules.json#mandates`** — presence mandate (vault-root mandatory only; skip for content types)
-- [ ] **`onboarding/scaffold/vault-architecture/Vault Architecture - File-Type-Contracts.md`** — spoke narrative entry
+- [ ] **`onboarding/scaffold/vault-architecture/System Governance - File-Type-Contracts.md`** — spoke narrative entry
 - [ ] **`governance/_index.json#pillars.file-type-contracts.r37_coupled_surfaces`** — lockstep coupling declaration
 - [ ] **Bundle rebuild** — run `tools/build-foundation-master.sh`; include rebuilt `governance/foundation-master.json` in commit
 

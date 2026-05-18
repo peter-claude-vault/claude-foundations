@@ -124,7 +124,7 @@ Routing rules `/ingest` consults (per adopter installation):
 - Adopter processing-rules overlay at `$CLAUDE_HOME/governance/processing-rules.adopter.json` (smart routing destinations + deduplication preferences + survivorship precedence).
 - Connector emission-rules overlay at `$CLAUDE_HOME/governance/connector-emission-rules.adopter.json` (per-connector emission schema; `/ingest` validates content against this before propagating).
 - Per-cluster `_index.md` navigation when routing into a known user-defined cluster.
-- Naming conventions spoke at `Vault Architecture/Vault Architecture - Naming.md`.
+- Naming conventions spoke at `System Governance/System Governance - Naming.md`.
 
 The earlier framing imagined `/ingest` walking `Inbox/*.md` aggregation files. That model required markdown to be both human surface AND machine surface — a forced collapse the operator's live evolution refuted (the markdown files went stale; the dashboard moved to JSON/SQLite reads). The reshape unburdens the markdown: it does one job (documentation) and does it well; the data layer does the other job (APPLY substrate) at its own location.
 

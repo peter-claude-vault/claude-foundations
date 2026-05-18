@@ -33,7 +33,7 @@ The capability is the load-bearing companion to the dual-surface design. Without
 
 **Pre-write validation steps:**
 - Read all 6 governance pillar surfaces (`_index.json` registry, `frontmatter-rules.json`, `tagging-rules.json`, `naming-rules.json`, `mandatory-files-rules.json`, `doc-dependencies.json`, `file-type-contracts/*.json`) + `enforcement-map.schema.json` (meta-validator for rule-entry shape).
-- Read all 6 narrative spokes (`Vault Architecture - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Doc-Dependencies.md`, `- File-Type-Contracts.md`) per canonical §D.
+- Read all 6 narrative spokes (`System Governance - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Doc-Dependencies.md`, `- File-Type-Contracts.md`) per canonical §D.
 - Validate every input against its source schema before walking the parity comparison.
 
 **Failure mode:**
@@ -84,7 +84,7 @@ The capability reads from (in order):
 1. **`governance/_index.json`** — pillar registry + `cross_cutting_meta_rules[]` + adopter overlay discovery (via `overlay-master.frontmatter.path_routing` per canonical §H).
 2. **`governance/{frontmatter,tagging,naming,mandatory-files,doc-dependencies}-rules.json`** + **`governance/file-type-contracts/*.json`** — the six pillar registries per canonical §A.
 3. **`governance/enforcement-map.schema.json`** — schema validation gate for each pillar JSON (meta-validator for rule-entry shape).
-4. **`onboarding/scaffold/vault-architecture/Vault Architecture - {Frontmatter,Tagging,Naming,Mandatory-Files,Doc-Dependencies,File-Type-Contracts}.md`** — the six narrative spokes per canonical §D.
+4. **`onboarding/scaffold/vault-architecture/System Governance - {Frontmatter,Tagging,Naming,Mandatory-Files,Doc-Dependencies,File-Type-Contracts}.md`** — the six narrative spokes per canonical §D.
 5. **Adopter overlay-master** — `~/.claude/governance/overlay-master.json` per canonical §H (6-pillar parallel of foundation-master; if a slot doesn't exist in foundation-master, it doesn't exist in overlay-master).
 6. **Foundation diff context** (when `--upgrade` flag set) — `git diff foundation/<previous-tag>..foundation/<current-tag> -- governance/`.
 

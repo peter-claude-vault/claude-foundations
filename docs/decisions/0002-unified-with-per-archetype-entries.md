@@ -34,7 +34,7 @@ Use the **unified-with-per-archetype-entries** model:
 - Adding a type is a bounded R-37 commit (schema entry + hook branch + spoke row).
 - Adopter extensibility lives inside the same shape — no overlay-file forking, no shadow schemas.
 - Tier definitions live once at the top; per-type entries reference the tier names by enum value.
-- The narrative spoke (`Vault Architecture - Frontmatter.md`) documents the universal sections once + enumerates per-type entries in a table — one-to-one with the schema.
+- The narrative spoke (`System Governance - Frontmatter.md`) documents the universal sections once + enumerates per-type entries in a table — one-to-one with the schema.
 
 **Negative:**
 - The schema file grows as types accumulate. The reference deployment hit ~13K / 474 lines at 21 active types; ship-tier discipline holds the file readable but it's monolithic.

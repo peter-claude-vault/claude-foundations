@@ -118,7 +118,7 @@ These five templates ARE the deliverable surface for users — content needs to 
 | `tests/foundation/README.md` | n/a | Foundation test harness intro | n/a | Need to read. Likely heavy plan-tracking; rewrite for contributors. |
 | `tests/foundation/architect-fixtures/README.md` | n/a | Architect test fixtures | n/a | Probably 1-3 lines stub; rewrite or delete. |
 | `tests/foundation/fixtures/vault-minimal/CLAUDE.md` | n/a | Minimal vault CLAUDE.md fixture | n/a | Fixture content; out of scope (acts as test data). |
-| `tests/foundation/fixtures/vault-minimal/Vault Architecture.md` | n/a | Minimal Vault Architecture fixture | n/a | Fixture content; out of scope. |
+| `tests/foundation/fixtures/vault-minimal/System Governance.md` | n/a | Minimal System Governance fixture | n/a | Fixture content; out of scope. |
 | `tests/grep-audit-fixtures/README.md` | n/a | Grep-audit test fixture intro | n/a | Need to read. |
 | `tests/sp16/fixtures/greenfield-seed/README.md` | n/a | Greenfield seed fixture | n/a | Need to read. |
 | `tests/sp16/fixtures/greenfield-seed/vault-content/*.md` (7 files) | n/a | Synthetic vault content for greenfield E2E | n/a | Fixture content. Out of scope; might rename to remove "sp16" but leave content alone. |

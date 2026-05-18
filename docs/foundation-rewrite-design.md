@@ -23,7 +23,7 @@ These rules enforced conventions specific to the operator's vault structure, eng
 taxonomy, or operational workflow. The foundation distribution does not bundle
 them because they have no generic interpretation.
 
-- **R-03** — VA.md size guard hardcode. Generalized into `manifest.schema.size_guards[]` (per-file template); the original hardcoded `Vault Architecture.md`/400-line cap moves to user manifest.
+- **R-03** — VA.md size guard hardcode. Generalized into `manifest.schema.size_guards[]` (per-file template); the original hardcoded `System Governance.md`/400-line cap moves to user manifest.
 - **R-05** — _(unassigned)_
 - **R-06** — _(unassigned)_
 - **R-07** — Doc-dependency cascade. Reframed as **R-54** in foundation (generic, reads `$HOOKS_DIR/config/doc-dependencies.json`).

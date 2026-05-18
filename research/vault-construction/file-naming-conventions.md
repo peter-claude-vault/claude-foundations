@@ -82,7 +82,7 @@ Optional class prefixes group files by kind; the system parses them to route, fi
 | `_` | `_index.md`, `_session-*.md` | Per-folder index (see [`_index.md-design.md`](./_index.md-design.md)); session ledgers under a plan tree | `Engagements/Acme Corp/_index.md` |
 | `Session-NN-` | `Session-04-architecture-decision.md` | Numbered session artifacts inside a sub-plan; lexical-chronological alongside spec/tasks/handoff | `{plans_root}/<plan>/<sub-plan>/Session-04-architecture-decision.md` |
 | Bare slug | `backlog-progress/<slug>.md` | Backlog-progress satellites (sentinel pattern) — no date prefix because the file is *overwritten* with current-state pointer, not appended | `Logs/backlog-progress/<plan-slug>.md` |
-| `Vault Architecture - ` | `Vault Architecture - <Pillar>.md` | Narrative spokes — human-facing, hand-authored, spaces deliberate | `Vault Architecture/Vault Architecture - Frontmatter.md` |
+| `System Governance - ` | `System Governance - <Pillar>.md` | Narrative spokes — human-facing, hand-authored, spaces deliberate | `System Governance/System Governance - Frontmatter.md` |
 
 The `_` prefix sorts to the top of directory listings and signals "system-utility infrastructure, treat differently." Note: underscore-prefix alone is not an automatic exemption — a closed set of specific names (`_index.md`, `File-Index.md`, `Logs/ideation-brief-*`, `Logs/build-*`) is whitelisted in librarian and hook gates. New underscore-prefix filenames do NOT inherit exemption by virtue of the prefix.
 
@@ -93,16 +93,16 @@ The `_` prefix sorts to the top of directory listings and signals "system-utilit
 A fixed enumeration of 8 foundation-shipped vault-root folder names is enforced at the pre-write-guard hook per canonical §F. User-named clusters (Engagements/, Personal Initiatives/, etc.) register in `overlay-master.frontmatter.path_routing` per canonical §H and are not in this foundation-locked set.
 
 ```
-Archive    Daily    Inbox    Logs    Meetings    Plans    Skills    Vault Architecture
+Archive    Daily    Inbox    Logs    Meetings    Plans    Skills    System Governance
 ```
 
-Single-file vault-root exemptions: `CLAUDE.md`, `Vault Architecture.md`, `System Backlog.md`, `System Backlog - Archive.md` (per canonical §C; Tasks.md retired per canonical §G).
+Single-file vault-root exemptions: `CLAUDE.md`, `System Governance.md`, `System Backlog.md`, `System Backlog - Archive.md` (per canonical §C; Tasks.md retired per canonical §G).
 
 The foundation allowlist is sourced from `governance/naming-rules.json#R-04.known_roots` (8 entries) and composed into `governance/foundation-master.json` for hook consumption.
 
-**Enforcement.** `pre-write-guard.sh` compares the path's first segment against the literal list and emits a Tier 3 advisory (`[NEW DIRECTORY]`) when unknown. Tier 3 is non-blocking — the write proceeds but the operator is told to move the file or update `Vault Architecture.md`.
+**Enforcement.** `pre-write-guard.sh` compares the path's first segment against the literal list and emits a Tier 3 advisory (`[NEW DIRECTORY]`) when unknown. Tier 3 is non-blocking — the write proceeds but the operator is told to move the file or update `System Governance.md`.
 
-**Adding a new root.** R-10's 7-item New Structure Checklist is the gate. Load-bearing items: declare purpose, declare consumer, update `Vault Architecture.md`, add schema entry, add hook entry, add librarian-capability entry, commit R-37 lockstep so all four governance surfaces move together. New roots appear by deliberate R-10 walk, not by drift.
+**Adding a new root.** R-10's 7-item New Structure Checklist is the gate. Load-bearing items: declare purpose, declare consumer, update `System Governance.md`, add schema entry, add hook entry, add librarian-capability entry, commit R-37 lockstep so all four governance surfaces move together. New roots appear by deliberate R-10 walk, not by drift.
 
 **Anti-pattern: creating a top-level folder mid-session because "there's no obvious home for this file."** Find the existing home (R-04 + R-33 placement advisory) or run the R-10 walk deliberately. Mid-session improvisation produces orphan roots — a prior vault-cleanup initiative had to retire dozens of folders accumulated from earlier drift.
 
@@ -154,11 +154,11 @@ Closed set. New filenames are NOT auto-whitelisted; additions go through R-37 lo
 | **Camelcase or PascalCase filenames** | Tag-grammar mismatch — folder name and tag value diverge in casing. APFS case-insensitivity masks the bug locally; queries on case-sensitive systems silently miss files. Folder-mirrors-tag invariant collapses. | Lowercase + kebab-case grammar; system writes filenames on capture; templates ship pre-cased. |
 | **Date-suffix instead of date-prefix** | `slug-2026-05-12.md` defeats lexical-chronological sort. Every consumer assuming time-ordering on directory listing breaks. | Always prefix with ISO-8601. Skills emit the prefix; templates include it; reviewers check it. |
 | **Shame slugs** (auto-generated adjective-verb-noun) | `async-wiggling-donut` tells the operator nothing about scope. Plan-index, backlog routing, search-by-name all degrade. | `/new-plan` rejects shame-slug regex at the creation gate. R-27 names the failure pattern explicitly. |
-| **Spaces in system-emitted filenames** | Shell-quoting hostile downstream — every cron, scraper, skill consumer must double-quote paths. Wikilink behavior becomes ambiguous. | Spaces forbidden in system-emitted filenames. Human-titled narrative documents (`Vault Architecture.md`) are documented exception; spaces appear there deliberately. |
+| **Spaces in system-emitted filenames** | Shell-quoting hostile downstream — every cron, scraper, skill consumer must double-quote paths. Wikilink behavior becomes ambiguous. | Spaces forbidden in system-emitted filenames. Human-titled narrative documents (`System Governance.md`) are documented exception; spaces appear there deliberately. |
 
 ## Open questions
 
-- **OQ-N1** — archetype-template naming for adopter scaffolds. Narrative-spoke filenames (`Vault Architecture - <Pillar>.md`) use spaces and title case as human-facing reading material. The scaffold sub-plan must decide whether adopter-side spokes follow verbatim or adopt a parseable alternative. Likely answer: verbatim (the spoke pattern is deliberate); flag for scaffold reviewer.
+- **OQ-N1** — archetype-template naming for adopter scaffolds. Narrative-spoke filenames (`System Governance - <Pillar>.md`) use spaces and title case as human-facing reading material. The scaffold sub-plan must decide whether adopter-side spokes follow verbatim or adopt a parseable alternative. Likely answer: verbatim (the spoke pattern is deliberate); flag for scaffold reviewer.
 - **OQ-N2** — exact JSON shape for encoding R-04 known-root entries, R-27 plan-slug regex, R-28 parent_plan resolver — pillar-JSON schema constraints (`enforcement-map.schema.json`) lock the field set.
 
 ## Closed questions (with disposition)
@@ -166,7 +166,7 @@ Closed set. New filenames are NOT auto-whitelisted; additions go through R-37 lo
 - **CQ-N1** Should date-prefix granularity be uniform across all artifacts? → **No — two patterns coexist.** `YYYY-MM-DD-slug.md` for human-readable daily artifacts; `YYYYMMDD-HHMMSS-slug.md` for high-frequency system emission. Rationale: daily granularity sufficient for human-authored content; second granularity required where multiple emissions per minute are common. Both preserve lexical-chronological sort.
 - **CQ-N2** Should plan slugs be allowed without numeric prefixes during initial draft? → **No — prefix at creation.** Missing prefix breaks plan-index; missing status breaks plan-index status grouping. Both gate at write-time. Sanctioned creation paths emit prefix automatically; no "draft" mode exempts it.
 - **CQ-N3** Should sub-plan files (depth ≥ 3) repeat the parent's numeric prefix in their filename? → **No — `parent_plan:` frontmatter inheritance.** Repeating the prefix in the filename adds noise without disambiguation; the frontmatter field is the structural answer. Librarian walks frontmatter, not filenames, to resolve plan ancestry.
-- **CQ-N4** Should the foundation-repo target-state preserve the narrative-spoke filename pattern (`Vault Architecture - <Pillar>.md` with spaces and title case)? → **Yes — verbatim port.** The spoke pattern is deliberate human-facing reading material; spaces are documented exceptions. Target-state authoring tracks the canonical convention, not live drift.
+- **CQ-N4** Should the foundation-repo target-state preserve the narrative-spoke filename pattern (`System Governance - <Pillar>.md` with spaces and title case)? → **Yes — verbatim port.** The spoke pattern is deliberate human-facing reading material; spaces are documented exceptions. Target-state authoring tracks the canonical convention, not live drift.
 
 ## Source pointers
 

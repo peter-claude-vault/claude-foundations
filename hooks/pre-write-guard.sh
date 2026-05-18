@@ -269,9 +269,9 @@ fi
 # === end plan status enforcement =========================================
 
 # === VA.md size guard (spine-remediation Session 07) ====================
-# Block any Write/Edit on Vault Architecture.md whose result exceeds the
+# Block any Write/Edit on System Governance.md whose result exceeds the
 # navigational-index threshold. Force extraction-first discipline.
-VA_PATH="$HOME/Documents/Obsidian Vault/Vault Architecture.md"
+VA_PATH="$HOME/Documents/Obsidian Vault/System Governance.md"
 VA_MAX_LINES=400
 
 if [[ "$FILE_PATH" == "$VA_PATH" ]]; then
@@ -318,7 +318,7 @@ with open(sys.argv[5], 'w') as f:
   esac
 
   if [[ "$va_new_lines" -gt "$VA_MAX_LINES" ]]; then
-    REASON="Vault Architecture.md would become ${va_new_lines} lines, exceeding the navigational-index threshold (${VA_MAX_LINES}). VA.md is the hub; long content belongs in a spoke file at Vault Architecture/Vault Architecture - {Topic}.md. To proceed: (1) identify a self-contained section to extract, (2) create or extend a spoke, (3) replace the section in VA.md with a stub redirect, (4) retry the write."
+    REASON="System Governance.md would become ${va_new_lines} lines, exceeding the navigational-index threshold (${VA_MAX_LINES}). VA.md is the hub; long content belongs in a spoke file at System Governance/System Governance - {Topic}.md. To proceed: (1) identify a self-contained section to extract, (2) create or extend a spoke, (3) replace the section in VA.md with a stub redirect, (4) retry the write."
     format_output_deny "PreToolUse" "$REASON"
     exit 0
   fi
@@ -1117,7 +1117,7 @@ Logs
 Meetings
 Plans
 Skills
-Vault Architecture"
+System Governance"
         fi
         while IFS= read -r _d; do
           [[ -z "$_d" ]] && continue
@@ -1128,10 +1128,10 @@ Vault Architecture"
         done <<< "$_KNOWN_ROOTS"
 
         if [[ "$IS_KNOWN" == "false" ]] && [[ "$ROOT_DIR" != "CLAUDE.md" ]] && \
-           [[ "$ROOT_DIR" != "Vault Architecture.md" ]] && \
+           [[ "$ROOT_DIR" != "System Governance.md" ]] && \
            [[ "$ROOT_DIR" != "System Backlog.md" ]] && \
            [[ "$ROOT_DIR" != "System Backlog - Archive.md" ]]; then
-          TIER3_MSGS="${TIER3_MSGS}[NEW DIRECTORY] File is being written to '${ROOT_DIR}/' which is not a documented vault-root directory. After this write, update Vault Architecture.md to document this new directory or move the file to an existing directory.\n"
+          TIER3_MSGS="${TIER3_MSGS}[NEW DIRECTORY] File is being written to '${ROOT_DIR}/' which is not a documented vault-root directory. After this write, update System Governance.md to document this new directory or move the file to an existing directory.\n"
         fi
 
         # --- Emit combined Tier 1 + Tier 3 + engagement reminder guidance if any ---

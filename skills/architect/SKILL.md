@@ -7,7 +7,7 @@ argument-hint: "[--skill {name}] [--focus {dimension}] [--compare {report-path}]
 
 # Architect
 
-Strategic advisor for your vault. Analyzes the system across seven dimensions, optionally measures convergence over time, and writes a single report with confidence-tagged recommendations. Reads from the librarian manifest, your Vault Architecture document, the skills index, the System Backlog, and prior architect reports. Proposes; never modifies.
+Strategic advisor for your vault. Analyzes the system across seven dimensions, optionally measures convergence over time, and writes a single report with confidence-tagged recommendations. Reads from the librarian manifest, your System Governance document, the skills index, the System Backlog, and prior architect reports. Proposes; never modifies.
 
 ## Invocation
 

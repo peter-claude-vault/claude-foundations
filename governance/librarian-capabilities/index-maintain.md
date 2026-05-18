@@ -106,7 +106,7 @@ The capability reads from (in order):
 
 ## Exemptions
 
-Folders matching `mandates._index_md.exemption_paths` glob (positive list): `Templates/**`, `Archive/**`, `Daily/**`, `Meetings/**`, `Inbox/**` (handled by `inbox-index-refresh` capability), `Logs/**`, `Tags/**`, `_orchestrator/**`, `tests/**`, `tests/fixtures/**`. Exemption-list amendments require R-37 atomic lockstep updating the registry + post-write hook + this capability + Mandatory-Files spoke.
+Folders matching `mandates._index_md.exemption_paths` glob (positive list, canonical per SP13 Session 3 AC #11): `Archive/**`, `Daily/**`, `Inbox/**` (handled by `inbox-index-refresh` capability — implementation deferred to SP07 connector wizard per `feedback_inbox_connector_driven`), `Logs/**`, `Meetings/**`. Templates/Tags/_orchestrator/tests/tests/fixtures are NOT exempt — they are foundation-repo infrastructure, not foundation-shipped adopter vault folders; if a user creates folders by those names, normal `_index.md` auto-bootstrap fires. Exemption-list amendments require R-37 atomic lockstep updating the registry + post-write hook + this capability + Mandatory-Files spoke.
 
 ## Self-healing boundary declaration (R-34)
 
@@ -143,7 +143,7 @@ This contract is an R-37 lockstep peer with:
 - `governance/mandatory-files-rules.json` R-44 + `mandates._index_md` (matcher + exemption list)
 - `governance/file-type-contracts/_index.md.json` (body-structure contract)
 - `governance/frontmatter-rules.json#types.index` + `governance/frontmatter-rules.json#archetype_conditional_fields` (frontmatter contract)
-- `onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md` (narrative spoke)
+- `onboarding/scaffold/vault-architecture/System Governance - Mandatory-Files.md` (narrative spoke)
 - `hooks/post-write-verify.sh` (Tier 1 sibling — auto-bootstrap + live-sync + loop guard)
 - `target-state/_index.md-design/` (design source — conventions-and-rationale.md + structural-requirements.md + structural-requirements.json + governance.md)
 
@@ -166,7 +166,7 @@ The capability is specified at this contract; SP05 delivers the runtime at `skil
 - R-44 rule entry: `governance/mandatory-files-rules.json` `rules[0]` + `mandates._index_md`
 - Body-structure contract: `governance/file-type-contracts/_index.md.json`
 - Frontmatter contract: `governance/frontmatter-rules.json#types.index`
-- Narrative spoke: `onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md`
+- Narrative spoke: `onboarding/scaffold/vault-architecture/System Governance - Mandatory-Files.md`
 - Tier 1 sibling: `hooks/post-write-verify.sh` (auto-bootstrap + live-sync + loop guard)
 - Sibling capabilities: `governance/librarian-capabilities/archetype-consistency.md`, `governance-parity-audit.md`, `packet-staleness-audit.md`, `log-subtype-canonical.md`
 - Design source: `target-state/_index.md-design/` (conventions-and-rationale.md + structural-requirements.md + structural-requirements.json + governance.md)

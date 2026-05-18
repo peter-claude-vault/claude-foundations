@@ -39,16 +39,16 @@ Every entry under `entries[]` has this shape:
 {
   "id": "va-hub-spoke",
   "kind": "hub-spoke-cascade",
-  "primary": "Vault Architecture.md",
+  "primary": "System Governance.md",
   "mirrors": [
-    {"file": "Vault Architecture - Frontmatter.md", "section": "(whole)"},
-    {"file": "Vault Architecture - Tagging.md", "section": "(whole)"},
-    {"file": "Vault Architecture - Naming.md", "section": "(whole)"},
-    {"file": "Vault Architecture - Mandatory-Files.md", "section": "(whole)"},
-    {"file": "Vault Architecture - Doc-Dependencies.md", "section": "(whole)"},
-    {"file": "Vault Architecture - File-Type-Contracts.md", "section": "(whole)"}
+    {"file": "System Governance - Frontmatter.md", "section": "(whole)"},
+    {"file": "System Governance - Tagging.md", "section": "(whole)"},
+    {"file": "System Governance - Naming.md", "section": "(whole)"},
+    {"file": "System Governance - Mandatory-Files.md", "section": "(whole)"},
+    {"file": "System Governance - Doc-Dependencies.md", "section": "(whole)"},
+    {"file": "System Governance - File-Type-Contracts.md", "section": "(whole)"}
   ],
-  "rationale": "Vault Architecture.md is the hub; the 6 pillar spokes are its mirrors per canonical §D."
+  "rationale": "System Governance.md is the hub; the 6 pillar spokes are its mirrors per canonical §D."
 }
 ```
 
@@ -69,9 +69,9 @@ Every entry under `entries[]` has this shape:
 
 Add an entry when **a piece of authoritative content is duplicated by design** in two or more locations. Common cases:
 
-1. **Hub-spoke cascade.** A hub document mirrors content to spoke documents. Example: `Vault Architecture.md` ↔ 6 pillar narrative spokes. Editing the hub without updating a spoke creates drift.
+1. **Hub-spoke cascade.** A hub document mirrors content to spoke documents. Example: `System Governance.md` ↔ 6 pillar narrative spokes. Editing the hub without updating a spoke creates drift.
 
-2. **File-type-contracts mirror.** A file-type contract mirrors documentation that describes it. Example: `governance/file-type-contracts/CLAUDE.md.json` ↔ `Vault Architecture - File-Type-Contracts.md` spoke entry for `CLAUDE.md`. Both describe the same body-structure contract.
+2. **File-type-contracts mirror.** A file-type contract mirrors documentation that describes it. Example: `governance/file-type-contracts/CLAUDE.md.json` ↔ `System Governance - File-Type-Contracts.md` spoke entry for `CLAUDE.md`. Both describe the same body-structure contract.
 
 3. **Satellite-cascade.** A summary row mirrors per-row history files. Example: System Backlog rows ↔ `Logs/backlog-progress/<slug>.md`. The row carries the current-state pointer; the satellite is the single source of session history.
 

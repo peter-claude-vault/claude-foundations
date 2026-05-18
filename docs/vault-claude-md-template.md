@@ -53,26 +53,26 @@ The template references the three files that must be present at every vault root
 |---|---|
 | `CLAUDE.md` | This file — vault instruction root; loaded at session start |
 | `System Backlog.md` | System-project idea tracker; librarian-maintained |
-| `Vault Architecture.md` | Governance overview hub; load when architecture questions arise |
+| `System Governance.md` | Governance overview hub; load when architecture questions arise |
 
-The template's pointer table includes a trigger row for `Vault Architecture.md` so Claude knows to load it on architecture-bearing questions.
+The template's pointer table includes a trigger row for `System Governance.md` so Claude knows to load it on architecture-bearing questions.
 
 ### 6-spoke governance surface (§D)
 
-`Vault Architecture/` contains six narrative markdown spokes, one per governance pillar:
+`System Governance/` contains six narrative markdown spokes, one per governance pillar:
 
-1. `Vault Architecture - Frontmatter.md`
-2. `Vault Architecture - Tagging.md`
-3. `Vault Architecture - Naming.md`
-4. `Vault Architecture - Mandatory-Files.md`
-5. `Vault Architecture - Doc-Dependencies.md`
-6. `Vault Architecture - File-Type-Contracts.md`
+1. `System Governance - Frontmatter.md`
+2. `System Governance - Tagging.md`
+3. `System Governance - Naming.md`
+4. `System Governance - Mandatory-Files.md`
+5. `System Governance - Doc-Dependencies.md`
+6. `System Governance - File-Type-Contracts.md`
 
 These are user-facing prose documentation — not Claude's source of truth (that is the JSON bundle). Users read the spokes for understanding; Claude reads the JSON for enforcement.
 
 ### In-folder `_index.md` auto-bootstrap (§E)
 
-The template does not declare `_index.md` files for individual folders — they are auto-bootstrapped by `post-write-verify.sh` at first write to any non-exempt folder that lacks one. The template describes the convention ("Orphans in the graph view are a hygiene alert") and points at `Vault Architecture.md` for the full mandate.
+The template does not declare `_index.md` files for individual folders — they are auto-bootstrapped by `post-write-verify.sh` at first write to any non-exempt folder that lacks one. The template describes the convention ("Orphans in the graph view are a hygiene alert") and points at `System Governance.md` for the full mandate.
 
 **Exempt folders** (no `_index.md` required): `Archive/`, `Daily/`, `Inbox/`, `Logs/`, `Meetings/`. These are foundation-shipped folders with date-prefixed or aggregation-only contents.
 

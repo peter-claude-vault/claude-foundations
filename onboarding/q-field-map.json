@@ -168,7 +168,7 @@
       "targets": [
         {"path": "U.vault.organizational_method", "type": "string", "cardinality": "single", "nullable": true},
         {"path": "U.vault.has_structured_projects", "type": "boolean", "cardinality": "single", "nullable": true, "notes": "Inferred from organizational_method text."},
-        {"path": "U.vault.architecture_doc", "type": "string", "cardinality": "single", "nullable": true, "notes": "Vault-relative path or name of the vault's architecture/conventions doc (e.g. 'Vault Architecture.md'). Inferred from C-1 transcript when the user names a structural reference doc; null otherwise. 1.5.x additive (no const bump), per SP10 T-6 / audit-2026-05-02 Gap #4. Consumed by librarian SKILL.md L53."}
+        {"path": "U.vault.architecture_doc", "type": "string", "cardinality": "single", "nullable": true, "notes": "Vault-relative path or name of the vault's architecture/conventions doc (e.g. 'System Governance.md'). Inferred from C-1 transcript when the user names a structural reference doc; null otherwise. 1.5.x additive (no const bump), per SP10 T-6 / audit-2026-05-02 Gap #4. Consumed by librarian SKILL.md L53."}
       ],
       "required": false,
       "fallback": "If null or low-confidence, archetype inference (§9) seeds organizational_method via seeds.vault_organizational_method_hint. architecture_doc defaults to null (no inferred fallback)."

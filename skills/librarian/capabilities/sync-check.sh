@@ -19,7 +19,7 @@
 #     5. Vault CLAUDE.md       — cluster list matches <cluster_folder>/*/ dirs
 #        (read from manifest.vault.cluster_folder; skipped if unset) and
 #        Overview `status:` frontmatter                         (auto-fix)
-#     6. Vault Architecture    — directory tree documented in VA.md matches
+#     6. System Governance    — directory tree documented in VA.md matches
 #        actual filesystem; new dirs undoc'd OR doc'd dirs missing (manual)
 #   cross (7) — gated on manifest.vault.has_structured_projects:
 #     7. Cluster status        — root CLAUDE.md vs cluster-dir/*/ Overview status
@@ -71,7 +71,7 @@ done
 BACKEND_ROOT="${SC_BACKEND_ROOT:-${CLAUDE_HOME:-$HOME/.claude}}"
 ROOT_CLAUDE_MD="${SC_ROOT_CLAUDE_MD:-${CLAUDE_HOME:-$HOME/.claude}/CLAUDE.md}"
 VAULT_CLAUDE_MD="${SC_VAULT_CLAUDE_MD:-$VAULT_ROOT/CLAUDE.md}"
-VAULT_ARCH_MD="${SC_VAULT_ARCH_MD:-$VAULT_ROOT/Vault Architecture.md}"
+VAULT_ARCH_MD="${SC_VAULT_ARCH_MD:-$VAULT_ROOT/System Governance.md}"
 SKILLS_INDEX="${SC_SKILLS_INDEX:-$VAULT_ROOT/Skills/_index.md}"
 
 # Memory dir: first-run glob $CLAUDE_HOME/projects/*/memory + env override.
@@ -355,7 +355,7 @@ def check_vault_claude_md():
             "Engagement documented in CLAUDE.md but folder missing",
             "manual")
 
-# ---------- Check 6: Vault Architecture directory tree ----------
+# ---------- Check 6: System Governance directory tree ----------
 def check_vault_architecture():
     t = read_file(vault_arch)
     if not t:

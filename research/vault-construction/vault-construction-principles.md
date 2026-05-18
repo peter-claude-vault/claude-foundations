@@ -120,14 +120,14 @@ Every adopter's vault, day one, carries a 10-item system set at root, scaffolded
 | File | Purpose |
 |---|---|
 | `CLAUDE.md` | Vault-root operational frame loaded at every session start. ONE-CLASS only (no deeper CLAUDE.md scopes) |
-| `Vault Architecture.md` | Authoritative system manual — copy of the foundation's mental-model doc |
+| `System Governance.md` | Authoritative system manual — copy of the foundation's mental-model doc |
 | `System Backlog.md` | Vault-root index of Claude-system projects; librarian-maintained. Companion archive at `Archive/System Backlog - Archive.md` |
 
 **System folders at vault root (5) — per canonical §F:**
 
 | Folder | Purpose |
 |---|---|
-| `Vault Architecture/` | Container for the 6 narrative spokes per canonical §D: Frontmatter / Tagging / Naming / Mandatory-Files / Doc-Dependencies / File-Type-Contracts |
+| `System Governance/` | Container for the 6 narrative spokes per canonical §D: Frontmatter / Tagging / Naming / Mandatory-Files / Doc-Dependencies / File-Type-Contracts |
 | `Inbox/` | Connector-brief surface — per-connector briefs + active-connection `_index.md`; connector DATA lives outside vault at `$CLAUDE_HOME/connector-data/<slug>/` by default (see [`inbox-flow-architecture.md`](./inbox-flow-architecture.md)) |
 | `Archive/` | Cold storage for closed engagements + retired plan trees; hosts `Archive/System Backlog - Archive.md` |
 | `Logs/` | System-emitted logs only (session-close, digest-run, backlog-progress, etc.) |
@@ -141,13 +141,13 @@ Every adopter's vault, day one, carries a 10-item system set at root, scaffolded
 | `Plans/` | `~/.claude-plans/` | Plan tree visibility from inside the vault |
 | `Skills/` | `~/.claude/skills/` | Skills index visibility from inside the vault |
 
-**Per-folder navigation mandate.** Every user-facing folder carries an `_index.md` for active-instance / per-file enumeration and navigation. The index files navigate via wiki links — both the user (in Obsidian) and Claude (when scoping into the folder) follow them to the right destination. In-scope: `Vault Architecture/`, and every user-defined cluster + cluster-instance folder. Out-of-scope per canonical §E: `Archive/`, `Daily/`, `Inbox/`, `Logs/`, `Meetings/` (foundation-shipped system folders with date-prefixed sequences, scraper-aggregation contents, or scratch-space emissions).
+**Per-folder navigation mandate.** Every user-facing folder carries an `_index.md` for active-instance / per-file enumeration and navigation. The index files navigate via wiki links — both the user (in Obsidian) and Claude (when scoping into the folder) follow them to the right destination. In-scope: `System Governance/`, and every user-defined cluster + cluster-instance folder. Out-of-scope per canonical §E: `Archive/`, `Daily/`, `Inbox/`, `Logs/`, `Meetings/` (foundation-shipped system folders with date-prefixed sequences, scraper-aggregation contents, or scratch-space emissions).
 
-**The retired set (explicit "not shipped"):** `README.md` at vault root, `Templates/` as adopter artifact, `Reference/` folder entirely, folder-scoped `CLAUDE.md` at any depth, `Tasks.md` at vault root, `About Me/` folder, `enforcement-map.md` at vault root, `Vault Architecture - Enforcement.md` meta-spoke — all retired per canonical §G (Plan-81 canonical reference, 2026-05-14).
+**The retired set (explicit "not shipped"):** `README.md` at vault root, `Templates/` as adopter artifact, `Reference/` folder entirely, folder-scoped `CLAUDE.md` at any depth, `Tasks.md` at vault root, `About Me/` folder, `enforcement-map.md` at vault root, `System Governance - Enforcement.md` meta-spoke — all retired per canonical §G (Plan-81 canonical reference, 2026-05-14).
 
 **Beyond the system set.** User-defined clusters (e.g., `Engagements/`, `Studies/`, `Clients/`, `Major Projects/` — named per the adopter's archetype and vocabulary) and personal tracks (e.g., `Personal Initiatives/`, `BD/`, `MBA Prep/` — named freely). Foundation mandates **cluster SHAPE** — `_index.md` at cluster + instance levels; 3-file-per-bucket triad per instance (Overview / Updates / Context); optional `People/` subfolder when stakeholders multiply. Foundation does NOT mandate cluster names.
 
-The full enumeration was locked at [`mandatory-file-lock.md`](./mandatory-file-lock.md) (**SUPERSEDED 2026-05-14** by Plan-81 canonical reference §A/§C/§E/§G; preserved as historical context); the user-facing rendering ships at `Vault Architecture - Mandatory-Files.md` (one of the 6 narrative spokes per canonical §D).
+The full enumeration was locked at [`mandatory-file-lock.md`](./mandatory-file-lock.md) (**SUPERSEDED 2026-05-14** by Plan-81 canonical reference §A/§C/§E/§G; preserved as historical context); the user-facing rendering ships at `System Governance - Mandatory-Files.md` (one of the 6 narrative spokes per canonical §D).
 
 The lock is the architectural floor. Below it, the system cannot guarantee its own invariants. Above it, adopters add files freely; they cannot remove the floor and expect the system to function. Governance discipline (frontmatter + tagging + pre-write hooks + librarian-manifest inclusion) auto-applies to every net-new user-created artifact regardless of where it lives (Session 16 lock #10).
 
@@ -193,7 +193,7 @@ The dimension name appears in the folder (`<Cluster>/`), in the frontmatter fiel
 
 **Naming is also what keeps wiki links intact.** Every wiki link in the vault targets a file by path. When a file moves or is renamed, every wiki link pointing to it has to update or the link breaks. The librarian's `rename-cascade` capability handles this automatically — on a rename, every wiki link to the old path is rewritten to the new path in one atomic pass. The `xref-check` and `wikilink-repair` capabilities audit broken cross-references on a cron cadence. The naming conventions are what give those capabilities deterministic targets to walk: parseable paths in, parseable paths out. Free-form or inconsistent naming would force fuzzy-match repair (lossy and stochastic); the convention discipline keeps the repair surface deterministic.
 
-The full pattern catalog lives at [`file-naming-conventions.md`](./file-naming-conventions.md); enforced via `governance/naming-rules.json` and surfaced in `Vault Architecture - Naming.md`.
+The full pattern catalog lives at [`file-naming-conventions.md`](./file-naming-conventions.md); enforced via `governance/naming-rules.json` and surfaced in `System Governance - Naming.md`.
 
 The principle: naming is parseable. The system extracts structure from file paths and names — date, archetype, slug, lineage — and the extraction works only if the conventions hold. Naming drift is silent query drift downstream AND silent wiki-link rot.
 

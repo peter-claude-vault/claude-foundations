@@ -4,7 +4,7 @@
 # Sources `lib/findings.sh`.
 #
 # Rules per SKILL.md:
-#   1. Vault root allowlist: CLAUDE.md, Vault Architecture.md, Tasks.md,
+#   1. Vault root allowlist: CLAUDE.md, System Governance.md, Tasks.md,
 #      System Backlog.md, System Backlog - Archive.md
 #   2. Project folders: only `{Project} - *.md` + `_index.md` + `File-Index.md`
 #   3. People files: must be in <cluster_folder>/*/People/ (read from manifest.vault.cluster_folder;
@@ -90,7 +90,7 @@ def emit(payload):
 
 # Vault root allowlist (canonical 5 per CLAUDE.md) + index-file convention
 VAULT_ROOT_ALLOWLIST = {
-    "CLAUDE.md", "Vault Architecture.md",
+    "CLAUDE.md", "System Governance.md",
     "System Backlog.md", "System Backlog - Archive.md",
     "_index.md", "File-Index.md",
 }

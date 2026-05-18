@@ -4,8 +4,8 @@
   "_description": "Claude-consumed JSON registry for the mandatory-files pillar. Loaded by pre-write-guard.sh + post-write-verify.sh at runtime. Carries the universal mandatory-file enumeration (Session 16 13-locks) plus per-file mandate metadata. Following the k8s ValidatingAdmissionPolicy pattern, the `mandates` block carries matchers + parameters per file type; per-file-type body-structure contracts live at governance/file-type-contracts/<file>.json. See research/vault-construction/mandatory-file-lock.md for the narrative.",
   "_design_notes": {
     "consumer": "pre-write-guard.sh (mandate-presence DENY); post-write-verify.sh (Tier 1 auto-bootstrap + live-sync); librarian index-maintain capability (Tier 2 sweep + Tier 3 deep audit)",
-    "lockstep_pair": "Vault Architecture - Mandatory-Files.md (narrative spoke) + governance/file-type-contracts/_index.md.json (per-file-type body-structure contract) + hooks/post-write-verify.sh (auto-bootstrap implementation)",
-    "evolution_protocol": "R-37 atomic lockstep — this registry + Vault Architecture - Mandatory-Files.md + governance/file-type-contracts/<file>.json + hooks/post-write-verify.sh updated in one commit",
+    "lockstep_pair": "System Governance - Mandatory-Files.md (narrative spoke) + governance/file-type-contracts/_index.md.json (per-file-type body-structure contract) + hooks/post-write-verify.sh (auto-bootstrap implementation)",
+    "evolution_protocol": "R-37 atomic lockstep — this registry + System Governance - Mandatory-Files.md + governance/file-type-contracts/<file>.json + hooks/post-write-verify.sh updated in one commit",
     "source_dependencies": [
       "../research/vault-construction/mandatory-file-lock.md",
       "../research/vault-construction/_index.md-design.md",
@@ -14,7 +14,7 @@
       "../target-state/_index.md-design/governance.md",
       "../docs/decisions/0005-two-surface-governance-dual-pattern.md"
     ],
-    "scope_note": "SP13 Session 4 Phase 1b stub. Only the `_index.md` mandate (R-44) has landed with full body + file-type-contract. T-12 authors the 3 vault-root file-type-contracts per canonical §C (governance/file-type-contracts/{CLAUDE.md,System Backlog.md,Vault Architecture.md}.json) + 3 corresponding `mandates._<file>_md` entries here in this pillar. Canonical §G EXPLICITLY RETIRES Tasks.md / About Me/ / per-cluster CLAUDE.md / enforcement-map.md / Vault Architecture - Enforcement.md meta-spoke — those surfaces are NOT in the mandate roadmap. Authoritative inventory: ~/.claude-plans/81-claude-stem-dogfood-optimization/foundation-governance-target-state.md §C + §G. The original R-07 / R-09 / R-12 / R-14 rule range allocation predates Session 3 amendments; reconciliation deferred to Phase D-E pillar.",
+    "scope_note": "SP13 Session 4 Phase 1b stub. Only the `_index.md` mandate (R-44) has landed with full body + file-type-contract. T-12 authors the 3 vault-root file-type-contracts per canonical §C (governance/file-type-contracts/{CLAUDE.md,System Backlog.md,System Governance.md}.json) + 3 corresponding `mandates._<file>_md` entries here in this pillar. Canonical §G EXPLICITLY RETIRES Tasks.md / About Me/ / per-cluster CLAUDE.md / enforcement-map.md / System Governance - Enforcement.md meta-spoke — those surfaces are NOT in the mandate roadmap. Authoritative inventory: ~/.claude-plans/81-claude-stem-dogfood-optimization/foundation-governance-target-state.md §C + §G. The original R-07 / R-09 / R-12 / R-14 rule range allocation predates Session 3 amendments; reconciliation deferred to Phase D-E pillar.",
     "phase_d_e_gap_reference": "No single canonical R-XX registry exists yet (per the governance-enforcement-baseline audit gap #1). R-44 is allocated for the _index.md universal mandate as a fresh ID outside the pillar's initial assigned range (R-07/R-09/R-12/R-14). Phase D-E session reconciles all R-XX allocations into a registry; until then, new rule-ID allocations must grep governance/ + schemas/ + hooks/ + onboarding/scaffold/vault-architecture/ for duplicates before authoring."
   },
   "mandates": {
@@ -34,7 +34,7 @@
         "Meetings/**"
       ],
       "_exemption_paths_provenance": "SP13 Session 4 Phase 1a (2026-05-14): shrunk from 10 entries to 5 per canonical §E. Foundation ships ONLY these 5 folders into adopter vault; user-created folders with non-shipped names (Templates/, Tags/, _orchestrator/, tests/, tests/fixtures/) get normal _index.md auto-bootstrap fire. The 5 retained entries each carry a single-concern justification: Archive/ = cold storage append-only history; Daily/ = date-prefixed file collection; Inbox/ = scraper aggregation surface; Logs/ = Claude scratch-space emissions; Meetings/ = date-prefixed file collection.",
-      "exemption_semantics": "positive-list — unenumerated user-facing folders default to the mandate firing. Adding a new exemption requires R-37 atomic lockstep updating this entry + hooks/post-write-verify.sh exemption-check + skills/librarian/capabilities/index-maintain.sh exemption-check + Vault Architecture - Mandatory-Files.md narrative spoke.",
+      "exemption_semantics": "positive-list — unenumerated user-facing folders default to the mandate firing. Adding a new exemption requires R-37 atomic lockstep updating this entry + hooks/post-write-verify.sh exemption-check + skills/librarian/capabilities/index-maintain.sh exemption-check + System Governance - Mandatory-Files.md narrative spoke.",
       "exemption_categories": [
         "date-prefixed sequence folders (Daily/, Meetings/, Archive/<YYYY>/)",
         "scraper aggregation surfaces (Inbox/ — uses inbox-index-refresh capability, not index-maintain)",

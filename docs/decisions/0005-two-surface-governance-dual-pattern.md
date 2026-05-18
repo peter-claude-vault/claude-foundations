@@ -14,7 +14,7 @@ Vault governance must do two jobs at once:
 
 The two requirements pull in opposite directions. Collapsing them onto a single artifact — the one-big-markdown-file approach — produces a document that's bad at both jobs at once. Narrative gets diluted by enforcement metadata; machine consumption pays a 23-28K-token cost per read for content where the section-of-interest ratio is under 10%.
 
-A comprehensive research lane (Plan 81 SP03 Session 4) measured the failure of the monolith approach. The original ENFORCEMENT-MAP.md ledger ran 90K with 4,247-character rows. Hooks referenced it only in header comments — no runtime load. It functioned as a process artifact (the R-XX narrative ledger) but failed as a runtime artifact. Meanwhile, the reference deployment's existing dual-surface PoC — `vault-schema.json` (Claude-consumed) + `Vault Architecture - Frontmatter.md` (user-consumed) — had coexisted for ~4 weeks with ~2-3 types of bounded drift, manageable via atomic-lockstep commit discipline.
+A comprehensive research lane (Plan 81 SP03 Session 4) measured the failure of the monolith approach. The original ENFORCEMENT-MAP.md ledger ran 90K with 4,247-character rows. Hooks referenced it only in header comments — no runtime load. It functioned as a process artifact (the R-XX narrative ledger) but failed as a runtime artifact. Meanwhile, the reference deployment's existing dual-surface PoC — `vault-schema.json` (Claude-consumed) + `System Governance - Frontmatter.md` (user-consumed) — had coexisted for ~4 weeks with ~2-3 types of bounded drift, manageable via atomic-lockstep commit discipline.
 
 Industry-converged signal: Anthropic Skills (progressive disclosure), Cursor `.cursor/rules/*.mdc` (multi-file scoped rules), GitHub Copilot path-scoped instructions, AGENTS.md (nested instructions) — all four reference implementations exile build-tier metadata from runtime artifacts and split human-narrative from machine-readable scope declarations.
 
@@ -28,9 +28,9 @@ Governance ships across **two surfaces** with separate consumers but synchronize
 - Each ≤10K, terse, rule-entry shape `{id, pillar, tier, source, enforcement_layer, failure_mode, rule_text}`
 - Validated by `enforcement-map.schema.json`
 
-**Surface 2 — User-consumed** (adopter vault `Vault Architecture/`):
+**Surface 2 — User-consumed** (adopter vault `System Governance/`):
 - Narrative markdown spokes following a 7-spoke pattern
-- Files: `Vault Architecture - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Enforcement.md` (meta)
+- Files: `System Governance - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Enforcement.md` (meta)
 - Each 4-8K, hand-authored narrative voice + pedagogy + examples + anti-patterns + citations
 - Rendered from foundation-repo scaffold at install time
 
@@ -68,7 +68,7 @@ Bounded drift is tolerated (the reference deployment runs at 2-3 types of drift 
 - Plan 81 SP03 spec §Governance Architecture (`~/.claude-plans/81-claude-stem-dogfood-optimization/03-standards/spec.md` L174-222)
 - Plan 81 SP03 Session 4 architecture decision (`~/.claude-plans/81-claude-stem-dogfood-optimization/03-standards/Session-04-architecture-decision.md` — Peter-approved 2026-05-11)
 - Research lane (single-comprehensive lane, "Lane J") empirical measurement: ENFORCEMENT-MAP.md monolith at 90K with 4,247-char rows; runtime-cost 23-28K tokens per read with <10% section-of-interest ratio; pre-write-guard.sh + post-write-verify.sh grep results — no runtime load, only header-comment references
-- Live PoC: `vault-schema.json` ↔ `Vault Architecture - Frontmatter.md` coexistence for ~4 weeks with bounded drift
+- Live PoC: `vault-schema.json` ↔ `System Governance - Frontmatter.md` coexistence for ~4 weeks with bounded drift
 - Industry references: Anthropic Skills progressive disclosure (claude.com/skills); Cursor `.cursor/rules/*.mdc` (cursor.com/docs); GitHub Copilot path-scoped instructions (docs.github.com/copilot); AGENTS.md (agents-md.com)
 
 ## Related ADRs
@@ -80,15 +80,15 @@ Bounded drift is tolerated (the reference deployment runs at 2-3 types of drift 
 
 ## SP13 Post-Onboarding Governance Architecture — Amendment (2026-05-16)
 
-**Surface 2 spoke count revised to 6.** The `Vault Architecture - Enforcement.md` meta-spoke referenced in this ADR is **retired** per the canonical post-onboarding governance architecture (SP13 Session 9). The meta-spoke carried governance-narrative content that belongs in the JSON pillars and hook logic, not in a user-facing spoke. Surface 2 now mirrors exactly the 6 governance pillars:
+**Surface 2 spoke count revised to 6.** The `System Governance - Enforcement.md` meta-spoke referenced in this ADR is **retired** per the canonical post-onboarding governance architecture (SP13 Session 9). The meta-spoke carried governance-narrative content that belongs in the JSON pillars and hook logic, not in a user-facing spoke. Surface 2 now mirrors exactly the 6 governance pillars:
 
-1. `Vault Architecture - Frontmatter.md`
-2. `Vault Architecture - Tagging.md`
-3. `Vault Architecture - Naming.md`
-4. `Vault Architecture - Mandatory-Files.md`
-5. `Vault Architecture - Doc-Dependencies.md`
-6. `Vault Architecture - File-Type-Contracts.md`
+1. `System Governance - Frontmatter.md`
+2. `System Governance - Tagging.md`
+3. `System Governance - Naming.md`
+4. `System Governance - Mandatory-Files.md`
+5. `System Governance - Doc-Dependencies.md`
+6. `System Governance - File-Type-Contracts.md`
 
 **Surface 1 `enforcement-map.schema.json` retired.** The schema referenced in the "Files" list above is retired entirely (SP13 Session 9 reversal of the B-7 kept-orthogonal decision). The 6-pillar governance set described in §A of `foundation-governance-target-state.md` is the canonical Surface 1.
 
-See `foundation-governance-target-state.md` §D (Vault Architecture/ folder content) and §G (retired items) for the canonical reference.
+See `foundation-governance-target-state.md` §D (System Governance/ folder content) and §G (retired items) for the canonical reference.

@@ -111,20 +111,20 @@ Structured JSON registries loaded by hooks at runtime. Files are small (≤10K e
 
 Hooks read exclusively from `foundation-master.json` (the composed bundle, canonical §B) — not individual pillar files directly. The bundle-at-load discipline ships the composed bundle to every adopter at install time; hooks read it at write-time without rebuilding it on the consumer side.
 
-### Surface 2 — User-consumed (vault `Vault Architecture/`)
+### Surface 2 — User-consumed (vault `System Governance/`)
 
 Narrative markdown spokes — one per governance pillar, 6 total per canonical §D. Each spoke is hand-authored, carries the project's voice + pedagogy, and ships pre-populated in the adopter scaffold (install.sh writes spokes from foundation-repo into the adopter's vault).
 
 | File | Size target |
 |---|---|
-| `Vault Architecture - Frontmatter.md` | 4-8K |
-| `Vault Architecture - Tagging.md` | 4-8K |
-| `Vault Architecture - Naming.md` | 4-8K |
-| `Vault Architecture - Mandatory-Files.md` | 4-8K |
-| `Vault Architecture - Doc-Dependencies.md` | 4-8K |
-| `Vault Architecture - File-Type-Contracts.md` | 4-8K |
+| `System Governance - Frontmatter.md` | 4-8K |
+| `System Governance - Tagging.md` | 4-8K |
+| `System Governance - Naming.md` | 4-8K |
+| `System Governance - Mandatory-Files.md` | 4-8K |
+| `System Governance - Doc-Dependencies.md` | 4-8K |
+| `System Governance - File-Type-Contracts.md` | 4-8K |
 
-Per canonical §G: the vault-root `enforcement-map.md` thin pointer file and the `Vault Architecture - Enforcement.md` meta-spoke are retired. Governance is orchestrated by the 6 JSON pillars + `foundation-master.json` bundle consumed by hooks; the 6 narrative spokes carry pedagogy.
+Per canonical §G: the vault-root `enforcement-map.md` thin pointer file and the `System Governance - Enforcement.md` meta-spoke are retired. Governance is orchestrated by the 6 JSON pillars + `foundation-master.json` bundle consumed by hooks; the 6 narrative spokes carry pedagogy.
 
 ### Alignment mechanism — R-37 atomic lockstep + governance-parity-audit
 
@@ -146,7 +146,7 @@ The architecture was decided after a single-comprehensive-lane research dispatch
 
 **Finding 2 — the enforcement-map ledger is NOT load-bearing for runtime.** Grepping `pre-write-guard.sh` + `post-write-verify.sh` for ledger references showed only header comments and the write-time whitelist. No hook loads the ledger as data. The ledger at ~90K with multi-thousand-character rows is a *process artifact* — purely a human and dispatched-Claude reading cost, 23-28K tokens per read with section-of-interest ratio under 10%.
 
-**Finding 3 — the dual-surface pattern already existed at single-pillar scale.** The frontmatter schema (Claude-consumed) and `Vault Architecture - Frontmatter.md` (user-consumed) split the frontmatter pillar into two surfaces in the reference deployment. They coexisted through multi-week production validation with ~2-3 types of bounded drift. R-37 lockstep held them aligned. The architecture *documents and scales* the existing dual-surface pattern from 1 pillar to 4 — it is not inventing a new architecture.
+**Finding 3 — the dual-surface pattern already existed at single-pillar scale.** The frontmatter schema (Claude-consumed) and `System Governance - Frontmatter.md` (user-consumed) split the frontmatter pillar into two surfaces in the reference deployment. They coexisted through multi-week production validation with ~2-3 types of bounded drift. R-37 lockstep held them aligned. The architecture *documents and scales* the existing dual-surface pattern from 1 pillar to 4 — it is not inventing a new architecture.
 
 **Anti-pattern: the monolith.** A single canonical runtime-consumed markdown ledger was the original framing before the empirical measurement. It fails on three independent axes simultaneously: (a) hooks have no runtime load — the file is comments and whitelist references only; (b) 23-28K-token read cost crowds out skill-listing budget per dispatched session; (c) wide-table monolith with hundreds of rows fails every 2026 industry-convergence threshold for scoped-rule files. The monolith is preserved as the historical narrative ledger (where it works) and superseded as a runtime artifact (where it never was).
 
@@ -193,7 +193,7 @@ The enforcement contract has three layers:
 
 - **OQ-E1** — exact rule ID for log-subtype near-match DENY behavior is assigned at hook implementation in the consuming sub-plan's lockstep ledger.
 - **OQ-E2** — `governance-parity-audit` finding categories may expand beyond the initial four (`rule-id-mismatch`, `field-missing`, `tier-mismatch`, `source-divergence`) once drift patterns are empirically observed. Schema permits extension.
-- **OQ-E3** — two-destination install (foundation-repo governance JSONs → adopter `{claude_home}/governance/`; foundation-repo scaffold spokes → adopter `{vault_root}/Vault Architecture/`) needs an idempotent re-install contract for adopters upgrading between releases. An analogous collision pattern (foundation-repo install paths clobbering downstream nudges) surfaced during cross-plan integration work; the resolution informs install.sh design.
+- **OQ-E3** — two-destination install (foundation-repo governance JSONs → adopter `{claude_home}/governance/`; foundation-repo scaffold spokes → adopter `{vault_root}/System Governance/`) needs an idempotent re-install contract for adopters upgrading between releases. An analogous collision pattern (foundation-repo install paths clobbering downstream nudges) surfaced during cross-plan integration work; the resolution informs install.sh design.
 
 ## Closed questions (with disposition)
 

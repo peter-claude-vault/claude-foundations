@@ -153,7 +153,7 @@ file_path = sys.argv[1]
 rel_path = sys.argv[2]
 
 ALLOWLIST_PREFIXES = ('Inbox/', 'Archive/', 'Daily/', 'Logs/', '.claude/skills/')
-ALLOWLIST_EXACT = {'CLAUDE.md', 'System Backlog.md', 'System Backlog - Archive.md', 'Vault Architecture.md'}
+ALLOWLIST_EXACT = {'CLAUDE.md', 'System Backlog.md', 'System Backlog - Archive.md', 'System Governance.md'}
 CANONICAL_SCOPE = {'reference', 'context', 'briefing',
                    'strategic', 'planning', 'index', 'navigation', 'people',
                    'prd', 'personal-initiative'}

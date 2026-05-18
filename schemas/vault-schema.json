@@ -34,7 +34,7 @@
     "model": "unified-with-per-archetype-entries",
     "tiers": "Strict | Standard | Minimal",
     "consumer": "pre-write-guard.sh case statement; loaded at runtime",
-    "lockstep_pair": "frontmatter-rules.json ↔ Vault Architecture - Frontmatter.md",
+    "lockstep_pair": "frontmatter-rules.json ↔ System Governance - Frontmatter.md",
     "evolution_protocol": "atomic lockstep — schema + hook + docs updated in one commit",
     "source_dependencies": [
       "../docs/decisions/0001-tiered-compliance.md",

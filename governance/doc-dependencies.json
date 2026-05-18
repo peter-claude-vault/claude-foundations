@@ -52,36 +52,36 @@
     {
       "id": "va-hub-spoke",
       "kind": "hub-spoke-cascade",
-      "primary": "Vault Architecture.md",
+      "primary": "System Governance.md",
       "mirrors": [
         {
-          "file": "Vault Architecture/Vault Architecture - Frontmatter.md",
+          "file": "System Governance/System Governance - Frontmatter.md",
           "section": "Frontmatter Standards / Governance Pillar Coverage",
           "kind": "extracted-section"
         },
         {
-          "file": "Vault Architecture/Vault Architecture - Tagging.md",
+          "file": "System Governance/System Governance - Tagging.md",
           "section": "Tagging / Governance Pillar Coverage",
           "kind": "extracted-section"
         },
         {
-          "file": "Vault Architecture/Vault Architecture - Naming.md",
+          "file": "System Governance/System Governance - Naming.md",
           "section": "Naming Conventions / Governance Pillar Coverage",
           "kind": "extracted-section"
         },
         {
-          "file": "Vault Architecture/Vault Architecture - Mandatory-Files.md",
+          "file": "System Governance/System Governance - Mandatory-Files.md",
           "section": "Mandatory-Files / Governance Pillar Coverage",
           "kind": "extracted-section"
         },
         {
-          "file": "Vault Architecture/Vault Architecture - Doc-Dependencies.md",
+          "file": "System Governance/System Governance - Doc-Dependencies.md",
           "section": "Doc-Dependencies / Governance Pillar Coverage",
           "kind": "extracted-section",
           "_deferred": "Spoke not yet authored (pending S1.1); entry acceptable per SP13 Phase 3 scope."
         },
         {
-          "file": "Vault Architecture/Vault Architecture - File-Type-Contracts.md",
+          "file": "System Governance/System Governance - File-Type-Contracts.md",
           "section": "File-Type Contracts / Governance Pillar Coverage",
           "kind": "extracted-section",
           "_deferred": "Spoke not yet authored (pending S1.1); entry acceptable per SP13 Phase 3 scope."
@@ -89,13 +89,13 @@
       ],
       "rule": "hub-stub-must-have-matching-spoke",
       "severity": "warn",
-      "notes": "Vault Architecture.md is the hub with 6 narrative spokes under Vault Architecture/ (one per governance pillar; canonical §D). When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200-250 on spokes.",
+      "notes": "System Governance.md is the hub with 6 narrative spokes under System Governance/ (one per governance pillar; canonical §D). When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200-250 on spokes.",
       "rename_history": []
     },
     {
       "id": "va-structure-claude-md-mirror",
       "kind": "cross-file-type-union",
-      "primary": "Vault Architecture/Vault Architecture - Structure.md",
+      "primary": "System Governance/System Governance - Structure.md",
       "mirrors": [
         {
           "file": "CLAUDE.md",
@@ -105,7 +105,7 @@
       ],
       "rule": "directory-tree-must-stay-synchronized",
       "severity": "warn",
-      "notes": "CLAUDE.md carries an abridged directory tree. The canonical tree lives in Vault Architecture - Structure.md. If top-level vault directories are added/removed, both must update.",
+      "notes": "CLAUDE.md carries an abridged directory tree. The canonical tree lives in System Governance - Structure.md. If top-level vault directories are added/removed, both must update.",
       "rename_history": []
     },
     {

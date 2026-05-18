@@ -1,6 +1,6 @@
 # adopt.md — `/adopt` reference
 
-`/adopt` reads the manifest produced by `/onboard` and scaffolds a working Obsidian-compatible vault on disk. It writes directories, seeds the three vault-root mandatory files (`CLAUDE.md`, `System Backlog.md`, `Vault Architecture.md`), seeds the six governance spokes under `Vault Architecture/`, and symlinks a `Plans/` directory into your plan root.
+`/adopt` reads the manifest produced by `/onboard` and scaffolds a working Obsidian-compatible vault on disk. It writes directories, seeds the three vault-root mandatory files (`CLAUDE.md`, `System Backlog.md`, `System Governance.md`), seeds the six governance spokes under `System Governance/`, and symlinks a `Plans/` directory into your plan root.
 
 **Audience:** anyone who has run `/onboard` and wants a working vault skeleton.
 **Companion:** [installer.md](installer.md) for `install.sh` reference.
@@ -9,7 +9,7 @@
 
 ## What `/adopt` does
 
-`/adopt` reads `$CLAUDE_HOME/user-manifest.json` and scaffolds a minimum-viable vault at `vault.root`. It writes the foundation-scaffolded directory set, seeds the three vault-root mandatory files (`CLAUDE.md`, `System Backlog.md`, `Vault Architecture.md`) and the six governance spokes under `Vault Architecture/`, and symlinks `Plans/` to `$PLANS_HOME`.
+`/adopt` reads `$CLAUDE_HOME/user-manifest.json` and scaffolds a minimum-viable vault at `vault.root`. It writes the foundation-scaffolded directory set, seeds the three vault-root mandatory files (`CLAUDE.md`, `System Backlog.md`, `System Governance.md`) and the six governance spokes under `System Governance/`, and symlinks `Plans/` to `$PLANS_HOME`.
 
 A round-trip on a fresh vault takes seconds (the documented ceiling is two minutes for slow filesystems). The skill is **idempotent** — re-running on an already-scaffolded vault is a no-op modulo post-write validation.
 
@@ -87,7 +87,7 @@ After `/onboard` completes, `$CLAUDE_HOME/user-manifest.json` contains (excerpt)
    - `~/notes/jane-vault/Inbox/`
    - `~/notes/jane-vault/Logs/`
    - `~/notes/jane-vault/Logs/backlog-progress/`
-   - `~/notes/jane-vault/Vault Architecture/`
+   - `~/notes/jane-vault/System Governance/`
    - `~/notes/jane-vault/Plans` symlinked via `ln -sfn` to `$PLANS_HOME`
 6. **`CLAUDE.md` seed.** If `~/notes/jane-vault/CLAUDE.md` does not exist, render the vault template with substitution:
    - `{{IDENTITY_NAME}}` → `Jane Doe`
@@ -101,14 +101,14 @@ After `/onboard` completes, `$CLAUDE_HOME/user-manifest.json` contains (excerpt)
    Atomic tmp+rename. Post-write validation greps for `{{[A-Z_]+}}`; any remaining placeholder triggers exit 50 (the script halts and logs rather than shipping a broken file).
 
 7. **`System Backlog.md` seed.** Empty index file with `type: index` frontmatter and `## Active` / `## Archived` H2 sections.
-8. **`Vault Architecture.md` seed.** Governance overview hub at vault root — describes the six-pillar governance architecture in human-readable form and links to the spokes in `Vault Architecture/`.
-9. **`Vault Architecture/` spokes seed.** Six narrative markdown files (one per governance pillar) seeded from foundation scaffold:
-   - `Vault Architecture - Frontmatter.md`
-   - `Vault Architecture - Tagging.md`
-   - `Vault Architecture - Naming.md`
-   - `Vault Architecture - Mandatory-Files.md`
-   - `Vault Architecture - Doc-Dependencies.md`
-   - `Vault Architecture - File-Type-Contracts.md`
+8. **`System Governance.md` seed.** Governance overview hub at vault root — describes the six-pillar governance architecture in human-readable form and links to the spokes in `System Governance/`.
+9. **`System Governance/` spokes seed.** Six narrative markdown files (one per governance pillar) seeded from foundation scaffold:
+   - `System Governance - Frontmatter.md`
+   - `System Governance - Tagging.md`
+   - `System Governance - Naming.md`
+   - `System Governance - Mandatory-Files.md`
+   - `System Governance - Doc-Dependencies.md`
+   - `System Governance - File-Type-Contracts.md`
 10. **Manifest update.** Vault root confirmed written; manifest `vault.is_fresh` flipped to `false` via jq + atomic tmp+rename.
 11. **Summary emit.** Print scaffolding summary + next-steps pointer to stdout.
 
@@ -120,20 +120,20 @@ After `/onboard` completes, `$CLAUDE_HOME/user-manifest.json` contains (excerpt)
 Inbox/
 Logs/
   backlog-progress/
-Vault Architecture/
-  Vault Architecture - Frontmatter.md
-  Vault Architecture - Tagging.md
-  Vault Architecture - Naming.md
-  Vault Architecture - Mandatory-Files.md
-  Vault Architecture - Doc-Dependencies.md
-  Vault Architecture - File-Type-Contracts.md
+System Governance/
+  System Governance - Frontmatter.md
+  System Governance - Tagging.md
+  System Governance - Naming.md
+  System Governance - Mandatory-Files.md
+  System Governance - Doc-Dependencies.md
+  System Governance - File-Type-Contracts.md
 Plans -> /home/jane/.claude-plans/
 CLAUDE.md                 ← personalized with Jane's identity
 System Backlog.md         ← empty index, ready for backlog rows
-Vault Architecture.md     ← governance hub; load when architecture questions arise
+System Governance.md     ← governance hub; load when architecture questions arise
 ```
 
-Open the vault in Obsidian (or any editor). The `CLAUDE.md` carries identity-substituted instructions; `System Backlog.md` is the entry point for system-project tracking; `Vault Architecture.md` + `Vault Architecture/` spokes are the governance reference.
+Open the vault in Obsidian (or any editor). The `CLAUDE.md` carries identity-substituted instructions; `System Backlog.md` is the entry point for system-project tracking; `System Governance.md` + `System Governance/` spokes are the governance reference.
 
 ---
 

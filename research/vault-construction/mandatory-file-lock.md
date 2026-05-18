@@ -43,16 +43,16 @@ Fourteen items make up the mandatory system set at the adopter vault root (5 fil
 | # | Path | Loaded when | Purpose |
 |---|---|---|---|
 | 1 | `CLAUDE.md` | every session start | Vault-root operational frame — identity, active engagements, key files, behavioral rules. ONE-CLASS only; no deeper CLAUDE.md scopes (see §3). |
-| 2 | `Vault Architecture.md` | on demand | Authoritative system manual; copy of foundation's mental-model doc. SP04 scaffold writes this at step 7. |
+| 2 | `System Governance.md` | on demand | Authoritative system manual; copy of foundation's mental-model doc. SP04 scaffold writes this at step 7. |
 | 3 | `System Backlog.md` | librarian-maintained | Vault-root index of Claude-system projects (live since 2026-03-30 in reference deployment; librarian-regenerated). Companion archive lives at `Archive/System Backlog - Archive.md`. |
 | 4 | `Tasks.md` | dashboard + librarian + reconciler | THE single task list (table format; Responses + Deliverables sections; sole writer of vault checkboxes). Universal-mandatory per Peter Message 1 + Session-02 applicability matrix (defaulted-on, opt-out). Survivorship: user edits SURVIVE re-pull; OR-merge with connector emissions via `<!-- id:xxx -->` markers. |
-| 5 | `enforcement-map.md` (thin pointer ≤2K) | hook + librarian | Vault-level thin pointer indexing the 5 governance narrative spokes + foundation-repo `governance/` JSON registries. Bulk content at spokes, not here. **At vault root** (NOT inside `Vault Architecture/`) per Session 4 two-surface governance decision (handoff §Session 4 L966 verbatim: "Vault root enforcement-map.md: REPURPOSED to thin pointer indexing the spokes + foundation-repo JSONs"). |
+| 5 | `enforcement-map.md` (thin pointer ≤2K) | hook + librarian | Vault-level thin pointer indexing the 5 governance narrative spokes + foundation-repo `governance/` JSON registries. Bulk content at spokes, not here. **At vault root** (NOT inside `System Governance/`) per Session 4 two-surface governance decision (handoff §Session 4 L966 verbatim: "Vault root enforcement-map.md: REPURPOSED to thin pointer indexing the spokes + foundation-repo JSONs"). |
 
 **System folders at vault root (7):**
 
 | # | Path | Loaded when | Purpose |
 |---|---|---|---|
-| 6 | `Vault Architecture/` | on demand | Container for the 5 narrative spokes: Frontmatter / Tagging / Naming / Mandatory-Files / Enforcement (meta-spoke). |
+| 6 | `System Governance/` | on demand | Container for the 5 narrative spokes: Frontmatter / Tagging / Naming / Mandatory-Files / Enforcement (meta-spoke). |
 | 7 | `Inbox/` | dashboard + librarian | **Connector-brief surface** (Session 18 Option B ratification). Foundation mandates the folder, `Inbox/_index.md` (always), and `Inbox/<connector>.md` brief per active connector (conditional-mandatory once a connector activates). The connector's actual DATA lives outside vault at `$CLAUDE_HOME/connector-data/<connector-slug>/` by foundation default (adopter-overridable). |
 | 8 | `Archive/` | librarian lifecycle | Long-term cold storage; rolled-over inbox-archive entries; closed engagements. Hosts `Archive/System Backlog - Archive.md` (canonical archived-backlog destination per Peter resolution 2026-05-10; promoted to universal-mandatory + relocated inside `Archive/`). |
 | 9 | `Logs/` | system-emitted only | Writable surface for system-emitted logs (session-close, digest-run, backlog-progress, etc.). |
@@ -100,7 +100,7 @@ Folder-navigation scaffolding (`_index.md`) carries different obligations at dif
 | User-defined cluster folders (`<cluster>/`) | Mandatory | Active-instance enumeration; archetype-overlay status markers. Critical for both adopter wayfinding and Claude routing. |
 | User-defined cluster instance folders (`<cluster>/<instance>/`) | Mandatory | Per-instance file enumeration + line counts + skip rules. Replaces what folder-scoped `CLAUDE.md` used to carry. |
 | `Inbox/` | Mandatory | Active-connection enumeration: which connectors are configured, when each last ran. Important for both adopter (operational visibility) and Claude (routing inputs). |
-| `Vault Architecture/` | Mandatory | Navigation across the 5 narrative spokes. |
+| `System Governance/` | Mandatory | Navigation across the 5 narrative spokes. |
 | `About Me/` | Mandatory | Navigation across adopter-profile files (career history, LLM preferences, etc.); Claude scopes here on demand for user-context questions. |
 | `Meetings/` | Mandatory | Enumeration / chronological navigation of per-meeting notes; both adopter and meeting-processor pipeline consume. |
 | `Logs/` | OUT OF SCOPE | Claude's own writing space; high-churn. An index would re-stale every cron run. No navigation value. |
@@ -129,7 +129,7 @@ A structure is more defensible when it enumerates what is NOT in scope alongside
 | Retired item | Why retired | Operator direction |
 |---|---|---|
 | `README.md` at vault root | Not in Session-02b §A.5 Peter Message 2 universal-kit list; was a draft proposal that did not survive the authoritative inventory | Session 16 lock #6 |
-| `Templates/` folder in adopter vault | Foundation-repo `~/Code/claude-stem/templates/` is Claude-onboarding REFERENCE only (consumed by SP04 scaffold to write adopter files; not shipped as adopter artifact). No `Vault Architecture - Templates.md` spoke either. | Session 16 lock #5 (3× operator direction) |
+| `Templates/` folder in adopter vault | Foundation-repo `~/Code/claude-stem/templates/` is Claude-onboarding REFERENCE only (consumed by SP04 scaffold to write adopter files; not shipped as adopter artifact). No `System Governance - Templates.md` spoke either. | Session 16 lock #5 (3× operator direction) |
 | `Reference/` folder | Retired entirely — not as system folder, not as user-defined cluster, not as Topic-altitude packet location, not as anything. The 4-altitude packets taxonomy that proposed `Reference/<topic>/` as Topic-altitude location is also retired (see §7). | Session 16 lock #4 (3× operator direction) |
 | Folder-scoped `CLAUDE.md` at any depth below vault root | One-class CLAUDE.md mandate (see §3) | Session 16 lock #1 |
 | Per-instance `CLAUDE.md` (e.g., `<cluster>/<instance>/CLAUDE.md`) | Same as folder-scoped — engagement context is READ surfaces (Overview/Updates/Context/People + `_index.md`), not eager-loaded CLAUDE.md | Session 16 lock #1 + lock #7 |
@@ -144,9 +144,9 @@ Each retirement carries an operator-direction citation. The audit hooks (T-38 + 
 ### The 14-item system set, file-by-file
 
 **`CLAUDE.md`** (system-file).
-Vault-root operational frame loaded every session. ~150–200 lines body (8–15K bytes per `content-length-limits.md` system-file class). Carries identity, active engagements with one-line summaries, top 5–10 key files, behavioral conventions, schema-enforcement pointer, tagging-taxonomy compact reference, pointer to `Vault Architecture.md` for depth. Authored by SP04 install.sh from the `vault-claude-md-template.md` reference. Length discipline enforced by R-37 lockstep on edits + librarian `claude-md-bloat` finding above 25K bytes.
+Vault-root operational frame loaded every session. ~150–200 lines body (8–15K bytes per `content-length-limits.md` system-file class). Carries identity, active engagements with one-line summaries, top 5–10 key files, behavioral conventions, schema-enforcement pointer, tagging-taxonomy compact reference, pointer to `System Governance.md` for depth. Authored by SP04 install.sh from the `vault-claude-md-template.md` reference. Length discipline enforced by R-37 lockstep on edits + librarian `claude-md-bloat` finding above 25K bytes.
 
-**`Vault Architecture.md`** (system-file).
+**`System Governance.md`** (system-file).
 Authoritative system manual. Copy of foundation-repo `research/vault-construction/mental-model.md` (the T8 deliverable). SP04 step 7 writes this at scaffold time. The adopter does not author it — it is canonical foundation content, refreshed only via R-37 lockstep when the foundation's mental-model packet revises.
 
 **`System Backlog.md`** (system-file).
@@ -156,10 +156,10 @@ Vault-root index of Claude-system projects (research questions, infrastructure i
 THE single task list at vault root (table format; Responses + Deliverables sections). Universal-mandatory per Peter Message 1 + Session-02 applicability matrix (defaulted-on, opt-out). The sole writer of vault checkboxes — Inbox checkbox state is read for sync but `Tasks.md` state wins (per reference-deployment dashboard-sync OR-merge survivorship pattern). User edits SURVIVE re-pull from connectors; the `<!-- id:xxx refs:yyy -->` marker convention links Task cells back to source emission for dedup. Cross-archetype scope: consultants track engagement deliverables; developers track higher-level deliverables (OR-merging with GitHub Issues / Linear / Jira via dashboard sync); managers track at deliverable-level (cadence-stack files like `Status/`, `Reviews/` carry finer-grained tracking). Content varies; the slot is universal.
 
 **`enforcement-map.md`** (system-file; thin pointer ≤2K bytes).
-Vault-level pointer indexing the 5 narrative spokes at `Vault Architecture/` + the foundation-repo `governance/` JSON registries. NOT the bulk-content surface; just the pointer table. The earlier ENFORCEMENT-MAP.md monolith (90K with 4,247-char rows) is retired per the two-surface governance architecture (`enforcement-map-design.md` companion packet); bulk content lives at the pillar spokes + JSON registries.
+Vault-level pointer indexing the 5 narrative spokes at `System Governance/` + the foundation-repo `governance/` JSON registries. NOT the bulk-content surface; just the pointer table. The earlier ENFORCEMENT-MAP.md monolith (90K with 4,247-char rows) is retired per the two-surface governance architecture (`enforcement-map-design.md` companion packet); bulk content lives at the pillar spokes + JSON registries.
 
-**`Vault Architecture/`** (system-folder).
-Container for the 5 narrative spokes — `Vault Architecture - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Enforcement.md` (thin meta-spoke). Each spoke 4–8K bytes; the meta-spoke 3–5K. Reference deployment ports 3 spokes verbatim from live (Frontmatter, Tagging, Naming); SP03 T-32 authors the remaining 2.
+**`System Governance/`** (system-folder).
+Container for the 5 narrative spokes — `System Governance - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Enforcement.md` (thin meta-spoke). Each spoke 4–8K bytes; the meta-spoke 3–5K. Reference deployment ports 3 spokes verbatim from live (Frontmatter, Tagging, Naming); SP03 T-32 authors the remaining 2.
 
 **`Inbox/`** (system-folder).
 Connector-brief surface for human-readable per-connector companion docs (Session 18 Option B ratification, 2026-05-13). Carries: (a) `_index.md` (always mandatory) — active-connection enumeration + cross-connector destination-overlap matrix; (b) `<connector>.md` brief per active connector (conditional-mandatory once a connector activates) — SP07 wizard authors at activation from the foundation template at `templates/connector-brief-template.md`; structure is `Strict`-tier per `vault-schema.json connector-brief` type entry. The connector's actual DATA (JSON aggregates, SQLite databases, binary blobs) lives outside vault at `$CLAUDE_HOME/connector-data/<connector-slug>/` by foundation default (adopter-overridable per-connector via Layer-3 overlay). SP05 auto-routing reads the data store, not the brief markdown; the brief is documentation. See `inbox-flow-architecture.md` companion packet for the full bi-surface architecture + processing-rules contract + destination-overlap mechanics.
@@ -236,10 +236,10 @@ The two-surface governance architecture catches anti-pattern occurrences via `go
 
 | ID | Question | Disposition |
 |---|---|---|
-| **OQ-MF-1** | `System Backlog.md` shape — table-with-sentinel-pattern (Phase 2 schema; current reference deployment) vs single-row-per-item simpler shape — is the sentinel pattern part of the foundation mandate or an adopter customization? | Defer to T-32 spoke authoring; document the sentinel pattern in `Vault Architecture - Mandatory-Files.md` and let adopters opt-down via Layer-3 overlay if they want simpler. |
+| **OQ-MF-1** | `System Backlog.md` shape — table-with-sentinel-pattern (Phase 2 schema; current reference deployment) vs single-row-per-item simpler shape — is the sentinel pattern part of the foundation mandate or an adopter customization? | Defer to T-32 spoke authoring; document the sentinel pattern in `System Governance - Mandatory-Files.md` and let adopters opt-down via Layer-3 overlay if they want simpler. |
 | **OQ-MF-2** | `Plans/` + `Skills/` symlinks: SP04 install.sh creates these post-scaffold; should the symlink target paths be configurable for adopters who deploy `claude-stem` to non-standard install roots? | Lean yes; SP04 install.sh accepts `--claude-home` flag; symlink targets follow. |
-| **OQ-MF-3** | `Daily/` activation: gated by adopter Q-flow answer, or always-scaffolded-with-explanation? | Always-scaffold; the folder is cheap; the discipline (date-keyed convention) is documented at `Vault Architecture - Naming.md`. |
-| **OQ-MF-4** | Re-naming `Inbox/` — some adopters request `Mailbox/` or `Capture/`. Allow rename via Layer-3 overlay or hard-mandate? | Hard-mandate. Every governance hook + scraper config keys off `Inbox/` by exact path. Rename would cascade to 20+ surfaces. Document the rationale in `Vault Architecture - Mandatory-Files.md`. |
+| **OQ-MF-3** | `Daily/` activation: gated by adopter Q-flow answer, or always-scaffolded-with-explanation? | Always-scaffold; the folder is cheap; the discipline (date-keyed convention) is documented at `System Governance - Naming.md`. |
+| **OQ-MF-4** | Re-naming `Inbox/` — some adopters request `Mailbox/` or `Capture/`. Allow rename via Layer-3 overlay or hard-mandate? | Hard-mandate. Every governance hook + scraper config keys off `Inbox/` by exact path. Rename would cascade to 20+ surfaces. Document the rationale in `System Governance - Mandatory-Files.md`. |
 
 ## Closed questions (with disposition)
 
@@ -268,9 +268,9 @@ The two-surface governance architecture catches anti-pattern occurrences via `go
 
 **Downstream consumers** (bind against this packet):
 - `~/Code/claude-stem/governance/mandatory-files-rules.json` (T-27) — machine-readable rule registry
-- `~/Code/claude-stem/onboarding/scaffold/vault-architecture/Vault Architecture - Mandatory-Files.md` (T-32) — narrative spoke
+- `~/Code/claude-stem/onboarding/scaffold/vault-architecture/System Governance - Mandatory-Files.md` (T-32) — narrative spoke
 - `~/Code/claude-stem/onboarding/scaffold/install.sh` (SP04) — scaffold-time write logic
-- `~/Code/claude-stem/onboarding/scaffold/vault-architecture/Vault Architecture - Enforcement.md` (T-32) — thin meta-spoke
+- `~/Code/claude-stem/onboarding/scaffold/vault-architecture/System Governance - Enforcement.md` (T-32) — thin meta-spoke
 - SP05 auto-routing rules — read mandatory paths to validate destinations
 - SP07 connector wizard — emits to `Inbox/` per connector configuration
 - SP08 dogfood-harness verification fixtures — assert mandatory set present + retired set absent

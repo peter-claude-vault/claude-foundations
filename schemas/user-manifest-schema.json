@@ -95,7 +95,7 @@
         },
         "architecture_doc": {
           "type": ["string", "null"],
-          "description": "Vault-relative path or name of the vault's architecture/conventions doc (e.g. 'Vault Architecture.md'). Consumed by librarian SKILL.md L53 as the structural source-of-truth for the vault's own conventions. Null when the user has no such doc. 1.5.x additive (no const bump), per Plan 71 SP10 T-6."
+          "description": "Vault-relative path or name of the vault's architecture/conventions doc (e.g. 'System Governance.md'). Consumed by librarian SKILL.md L53 as the structural source-of-truth for the vault's own conventions. Null when the user has no such doc. 1.5.x additive (no const bump), per Plan 71 SP10 T-6."
         },
         "tag_prefix_archetype": {
           "type": ["string", "null"],

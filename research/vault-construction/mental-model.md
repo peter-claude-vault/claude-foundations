@@ -1,12 +1,12 @@
 ---
 altitude: system
-scope: Canonical three-layer mental model for Claude Stem — experience layer, AI system architecture (4 pillars), autonomous orchestration. Source for Vault Architecture.md copied to user vault root at scaffold execution.
+scope: Canonical three-layer mental model for Claude Stem — experience layer, AI system architecture (4 pillars), autonomous orchestration. Source for System Governance.md copied to user vault root at scaffold execution.
 validity_window: 2026-05-10..2026-11-10
 source_dependencies:
   - Plan 81 SP02 spec (~/.claude-plans/81-claude-stem-dogfood-optimization/02-foundation-framing/spec.md)
   - Plan 80 master packet (~/Desktop/plan-80-packets/00-master.md §4)
   - Plan 80 SP02 source packet T8 (~/Desktop/plan-80-packets/02 - foundation-framing (PACKET).md §3)
-  - Plan 80 SP03 source packet T4 (~/Desktop/plan-80-packets/03 - standards (PACKET).md §3.4 Vault Architecture.md mandate; §3.6 7-step flow)
+  - Plan 80 SP03 source packet T4 (~/Desktop/plan-80-packets/03 - standards (PACKET).md §3.4 System Governance.md mandate; §3.6 7-step flow)
   - Plan 71 v2.1.2 closed dogfood walkthrough (Finding 1 — product-definition)
   - feedback_propose_and_confirm_pattern, feedback_soft_mandate_pattern (memory)
 last_reviewed: 2026-05-10
@@ -123,6 +123,6 @@ These criteria are the dogfood test target for SP08's harness — a simulated no
 - **Spec text** — Plan 81 SP02 spec.md §Three-layer mental model (L29-67), §Four pillars (L54-67), §UX primitives (L69-89), §Mental-model success criteria (L155-166).
 - **Source packet** — Plan 80 SP02 packet T8 §3 (canonical mental model), §4 (UX primitives), §8 (articulation success criteria).
 - **Master packet** — Plan 80 master §4.1-§4.12 cross-cutting principles; §4.1-§4.4 specifically anchor the three-layer model + four pillars + two UX primitives + compliance-tier referent.
-- **T4 binding contracts** — SP03 packet §3.3 (research context packet schema, 6-criteria quality bar), §3.4 (Vault Architecture.md mandate at vault root), §3.6 (7-step onboarder flow contract).
+- **T4 binding contracts** — SP03 packet §3.3 (research context packet schema, 6-criteria quality bar), §3.4 (System Governance.md mandate at vault root), §3.6 (7-step onboarder flow contract).
 - **Predecessor evidence** — Plan 71 v2.1.2 dogfood walkthrough Finding 1 (product-definition) and Finding 4 (system-completeness) are the two findings this mental-model document directly addresses.
 - **Sibling docs** — [`ux-primitives.md`](./ux-primitives.md) for canonical primitive definitions; [`setup-directions/`](./setup-directions/) for soft-mandated pre-req setup.

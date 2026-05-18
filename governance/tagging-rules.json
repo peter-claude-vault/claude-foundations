@@ -7,8 +7,8 @@
     "absorbed_from_vault_schema": [
       "canonical tag-prefix taxonomy (was vault-schema._tag_prefixes + _tag_prefixes_meta; now governance/tagging-rules.json#taxonomy)"
     ],
-    "lockstep_pair": "Vault Architecture - Tagging.md (narrative spoke) + governance/log-subtype-registry.json (system-utility canonicality discipline)",
-    "evolution_protocol": "R-37 atomic lockstep — tagging-rules.json + Vault Architecture - Tagging.md + pre-write-guard.sh + governance/log-subtype-registry.json updated in one commit. NOTE: schemas/vault-schema.json was DISSOLVED in SP13 T-4 (2026-05-14); the tag-prefix taxonomy (formerly vault-schema._tag_prefixes + _tag_prefixes_meta) is now canonical in this pillar's `taxonomy` block. No more 3-way declaration; pillar shard removes the duplication.",
+    "lockstep_pair": "System Governance - Tagging.md (narrative spoke) + governance/log-subtype-registry.json (system-utility canonicality discipline)",
+    "evolution_protocol": "R-37 atomic lockstep — tagging-rules.json + System Governance - Tagging.md + pre-write-guard.sh + governance/log-subtype-registry.json updated in one commit. NOTE: schemas/vault-schema.json was DISSOLVED in SP13 T-4 (2026-05-14); the tag-prefix taxonomy (formerly vault-schema._tag_prefixes + _tag_prefixes_meta) is now canonical in this pillar's `taxonomy` block. No more 3-way declaration; pillar shard removes the duplication.",
     "source_dependencies": [
       "../research/vault-construction/tagging-strategy.md",
       "../research/vault-construction/frontmatter-design.md",
@@ -75,7 +75,7 @@
       "pillar": "tagging",
       "tier": "1",
       "source": "../research/vault-construction/tagging-strategy.md Rule 1 (25-tag cap on user-facing dimensions) + Forte/Dubois working-vocabulary research + Hedden faceted-classification literature + Adobe AEM and SharePoint enterprise CMS picklist patterns",
-      "enforcement_layer": ["librarian tag-coverage-audit (audit-time consolidation prompt at 80% threshold)", "onboarder consolidation prompt (install-time)", "documentary in Vault Architecture - Tagging.md"],
+      "enforcement_layer": ["librarian tag-coverage-audit (audit-time consolidation prompt at 80% threshold)", "onboarder consolidation prompt (install-time)", "documentary in System Governance - Tagging.md"],
       "failure_mode": "Cap-widening defeats the working-memory rationale silently. An adopter activates a new engagement, user-facing tag count approaches 25, and the path of least resistance is 'raise the cap to 30.' Past 25, decision fatigue produces variant-creation rather than canonical-term selection, the vocabulary fragments, and user-side recall collapses. The cap is structural, not aspirational — silent widening is rejected; deliberate Layer 3 override is supported with audit trail.",
       "rule_text": "Total count of distinct values across user-facing dimensions (declared at runtime by union of foundation-master.tagging.taxonomy.user_facing_dimensions + overlay-master.tagging.taxonomy.user_facing_dimensions) MUST stay under 25. System-utility dimensions (log, status) are exempt — they are machine-emitted and governed by the log-subtype registry (R-05). The librarian tag-coverage-audit emits an advisory when user-facing usage approaches 80% of the cap (≥20 active values), surfaces a consolidation prompt with retire-candidate recommendations, and requires deliberate Layer 3 override (`overlay-master.json :: tagging_cap_override` with rationale + audit-trail entry) before silent widening can proceed. (SP13 Phase 1c 2026-05-14: foundation user_facing_dimensions abstracted to [] per canonical §G+§H; adopter populates via onboarding archetype seeds at install time.)",
       "cap_value": 25,
