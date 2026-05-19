@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "claude-stem/governance/file-type-contracts/doc-amender-prompt.md.json",
+  "title": "doc-amender-prompt.md runtime body-structure contract",
+  "description": "Hook-consumable runtime artifact for doc-amender-prompt.md files — operator-authored prompt assets consumed by the doc-amender skill (T-28) when round-tripping LLM-guided amendments through staging-emit per L-106. Prompts ship outside-vault as state-tier assets under $VAULT_WRITER_STATE_ROOT/prompts/*.md (per writer-pipeline-layering.md L-108 and foundation-governance-target-state.md §A62). Declares the foundation-shipped variable namespace the prompt body may reference; declares the 3-signal survivorship policy (operator-edit-wins + amender-conflict-sidecar + amender-paused-frontmatter) that extends the existing 2-signal operator-edit-wins detection per L-107. Companion contract to skills/doc-amender (T-28). Authored under SP14 Batch D T-29 (2026-05-19).",
+  "version": "1.0.0",
+  "status": "runtime",
+  "design_source": "alignment/writer-pipeline-layering.md L-108 / foundation-governance-target-state.md §A62",
+  "matcher_pillar": "governance/mandatory-files-rules.json",
+  "matcher_entry": "mandates.doc_amender_prompt",
+  "_design_notes": {
+    "consumer": "skills/doc-amender (T-28)",
+    "lockstep_pair": "governance/doc-dependencies.json :: entries[] kind: writer-fan-in (per T-30)",
+    "evolution_protocol": "R-37 atomic lockstep with doc-amender skill + writer-fan-in doc-deps entries"
+  },
+
+  "type": "doc-amender-prompt",
+  "applies_to": {
+    "path_glob": "$VAULT_WRITER_STATE_ROOT/prompts/*.md"
+  },
+
+  "frontmatter_required": [
+    "type",
+    "prompt_id",
+    "amendment_strategy",
+    "destination_glob",
+    "survivorship_policy",
+    "created",
+    "updated"
+  ],
+
+  "frontmatter_optional": [
+    "amender_paused",
+    "model",
+    "max_tokens",
+    "tags",
+    "notes"
+  ],
+
+  "frontmatter_enums": {
+    "type": ["doc-amender-prompt"],
+    "amendment_strategy": ["append-section", "template-fill", "prompt-guided-amend"],
+    "survivorship_policy": ["operator-edit-wins", "amender-conflict-sidecar", "amender-paused-frontmatter"]
+  },
+
+  "variable_namespace": [
+    "packet_body",
+    "destination_current_content",
+    "destination_path",
+    "upstream_writers",
+    "writer_metadata",
+    "amendment_history"
+  ],
+
+  "body_section_allowlist": [
+    "Goal",
+    "Variables",
+    "Prompt",
+    "Output Format",
+    "Edge cases",
+    "Notes"
+  ],
+  "body_section_allowlist_enforcement": "suggested",
+  "body_free_form": true,
+
+  "survivorship_policy_detail": {
+    "signals": [
+      {"name": "operator-edit-wins", "trigger": "Existing operator-edit-wins two-signal detection (last_user_edit timestamp + content-diff against writer's last-known-hash)", "action": "Amender SKIPS LLM call; emits _amender-conflict.json sidecar"},
+      {"name": "amender-conflict-sidecar", "trigger": "Conflict detected via signal 1", "action": "Sidecar file at <destination>.amender-conflict.json; operator triages via /amend-accept <sidecar> skill"},
+      {"name": "amender-paused-frontmatter", "trigger": "Destination file frontmatter declares amender_paused: true", "action": "Amender permanently skips this destination until operator removes the flag"}
+    ],
+    "boundary": "doc-amender NEVER writes destination directly; round-trips through staging via staging-emit per L-106"
+  }
+}

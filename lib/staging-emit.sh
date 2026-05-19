@@ -16,16 +16,20 @@
 #     mechanical-only reconciliation per folder > file-type > universal
 #     precedence (per Session 4 L-44 + L-49 + L-50).
 #
-# Packet shape (per Session 4 A35 + L-39):
+# Packet shape (per Session 4 A35 + L-39; v1.1 per SP14 Batch D T-26 adds
+# source_id + packet_kind fields per writer-pipeline-layering L-106 + L-110
+# + foundation-governance-target-state §A62):
 #   {
-#     "packet_version": "1.0",
+#     "packet_version": "1.1",
 #     "writer_id": "<writer-reference filename minus .md>",
 #     "emitted_at": "<ISO-8601 UTC>",
 #     "destination_path": "<Mustache-resolved absolute path>",
 #     "content_sha256": "<sha256 of body>",
 #     "body": "<string for md / object for json/structured>",
 #     "output_type": "md | json | sqlite | db | opaque",
-#     "metadata": { ... opaque to reconciler ... }
+#     "metadata": { ... opaque to reconciler ... },
+#     "packet_kind": "writer-emit | amender-replacement | amender-conflict",
+#     "source_id": "<optional caller-supplied source identifier; omitted if empty>"
 #   }
 #
 # bash 3.2 compatible (no `declare -A`, no `mapfile`, no `${var,,}`).
@@ -46,6 +50,8 @@ OUTPUT_TYPE=""
 BODY_FILE=""
 METADATA_FILE=""
 DEDUP=""
+SOURCE_ID=""
+PACKET_KIND="writer-emit"
 
 usage() {
   cat <<EOF
@@ -58,6 +64,8 @@ Usage:
                   --body-file <path>
                   [--metadata-file <path>]
                   [--dedup sha256-content]
+                  [--source-id <id>]
+                  [--packet-kind <writer-emit|amender-replacement|amender-conflict>]
 
 Required:
   --writer-id           Writer reference filename minus .md (e.g.,
@@ -80,6 +88,16 @@ Optional:
                         writer_id has matching content_sha256. Returns
                         rc=0 + emits "duplicate-skip" diagnostic. Full
                         dedup decision still at reconciler per Session 4 R-34.
+  --source-id           Optional caller-supplied source identifier (e.g.,
+                        upstream meeting-id, ingest batch-id). When empty
+                        (default), field is omitted from the packet entirely.
+                        Per writer-pipeline-layering L-106 + foundation-
+                        governance-target-state §A62.
+  --packet-kind         One of: writer-emit (default) | amender-replacement |
+                        amender-conflict. Discriminates regular writer emits
+                        from amender-driven replacement / conflict packets.
+                        Per writer-pipeline-layering L-110 + foundation-
+                        governance-target-state §A62.
 
 Env:
   STAGING_ROOT          Default ~/.claude/state/vault-staging. Override
@@ -102,6 +120,8 @@ while [ $# -gt 0 ]; do
     --body-file)         BODY_FILE="$2"; shift 2 ;;
     --metadata-file)     METADATA_FILE="$2"; shift 2 ;;
     --dedup)             DEDUP="$2"; shift 2 ;;
+    --source-id)         SOURCE_ID="$2"; shift 2 ;;
+    --packet-kind)       PACKET_KIND="$2"; shift 2 ;;
     -h|--help)           usage; exit 0 ;;
     *) printf 'staging-emit.sh: unknown arg: %s\n' "$1" >&2; usage >&2; exit 2 ;;
   esac
@@ -152,6 +172,16 @@ if [ -n "$DEDUP" ]; then
       ;;
   esac
 fi
+
+# Validate --packet-kind enum (block-and-log per SP14 Batch D T-26).
+case "$PACKET_KIND" in
+  writer-emit|amender-replacement|amender-conflict) : ;;
+  *)
+    printf 'staging-emit.sh: --packet-kind must be one of: writer-emit, amender-replacement, amender-conflict (got: %s)\n' \
+      "$PACKET_KIND" >&2
+    exit 2
+    ;;
+esac
 
 # ---- pre-flight -------------------------------------------------------------
 
@@ -209,8 +239,10 @@ if [ -z "${STAGING_EMIT_LOCKED:-}" ]; then
        --destination-path "$DESTINATION_PATH" \
        --output-type "$OUTPUT_TYPE" \
        --body-file "$BODY_FILE" \
+       --packet-kind "$PACKET_KIND" \
        ${METADATA_FILE:+--metadata-file "$METADATA_FILE"} \
-       ${DEDUP:+--dedup "$DEDUP"}; then
+       ${DEDUP:+--dedup "$DEDUP"} \
+       ${SOURCE_ID:+--source-id "$SOURCE_ID"}; then
     rc=$?
     if [ "$rc" = "75" ]; then
       printf 'staging-emit.sh: lock contention on %s; deferring\n' "$LOCK_FILE" >&2
@@ -285,13 +317,15 @@ TMP_PATH="$WRITER_DIR/.$CONTENT_SHA256.tmp.$$"
 # Compose packet via jq for safe JSON construction (handles destination_path
 # with special characters; preserves output_type enum).
 if ! printf '%s\n' "$BODY_JSON" | jq -c \
-    --arg packet_version "1.0" \
+    --arg packet_version "1.1" \
     --arg writer_id "$WRITER_ID" \
     --arg emitted_at "$EMITTED_AT" \
     --arg destination_path "$DESTINATION_PATH" \
     --arg content_sha256 "$CONTENT_SHA256" \
     --arg output_type "$OUTPUT_TYPE" \
     --argjson metadata "$METADATA_JSON" \
+    --arg packet_kind "$PACKET_KIND" \
+    --arg source_id "$SOURCE_ID" \
     '{
       packet_version: $packet_version,
       writer_id: $writer_id,
@@ -300,8 +334,11 @@ if ! printf '%s\n' "$BODY_JSON" | jq -c \
       content_sha256: $content_sha256,
       body: .,
       output_type: $output_type,
-      metadata: $metadata
-    }' > "$TMP_PATH" 2>/dev/null; then
+      metadata: $metadata,
+      packet_kind: $packet_kind
+    }
+    + (if $source_id == "" then {} else {source_id: $source_id} end)' \
+    > "$TMP_PATH" 2>/dev/null; then
   rm -f "$TMP_PATH"
   printf 'staging-emit.sh: packet composition failed\n' >&2
   exit 5

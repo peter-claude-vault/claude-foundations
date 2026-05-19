@@ -13,5 +13,9 @@
   "reconciler_tick_minutes_default": 15,
   "unreconciled_archive_days_default": 14,
   "foundation_variable_namespace": ["date", "title", "slug", "source_id"],
-  "historical_data_warning_default": "^\\d{4}-\\d{2}-\\d{2}"
+  "historical_data_warning_default": "^\\d{4}-\\d{2}-\\d{2}",
+  "vault_writer_state_root": "~/.local/share/claude-stem/vault-writers/",
+  "claude_state_root": "~/.local/state/claude-stem/",
+  "daily_processing_root": "~/.local/share/claude-stem/vault-writers/daily-processing/",
+  "writer_manifest_path": "~/.local/share/claude-stem/vault-writers/manifest.sqlite"
 }

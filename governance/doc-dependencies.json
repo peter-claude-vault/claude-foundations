@@ -156,6 +156,15 @@
       "rule": "if-primary-changes-mirrors-must-be-reviewed",
       "severity": "warn",
       "rename_history": []
+    },
+    {
+      "id": "meetings-fan-in-reference",
+      "kind": "writer-fan-in",
+      "consumer": "Meetings/<meeting-note>.md",
+      "upstream_writers": ["meeting-processor", "teams-scrape", "gchat-scrape"],
+      "amendment_strategy": "prompt-guided-amend",
+      "rationale": "Reference entry — declares that meeting notes are a fan-in destination of 3 writers; doc-amender uses prompt-guided-amend strategy. Per writer-pipeline-layering.md L-110 entry shape lock. Adopter MAY override with overlay row or remove if not applicable.",
+      "rename_history": []
     }
   ],
   "entities": {

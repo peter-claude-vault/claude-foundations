@@ -53,8 +53,12 @@ The capability is the canonical writer for `Vault Writers/_overlap-matrix.md`. T
 | `multi-writer-overlap-detected` | info (event) | A destination glob is shared by ≥2 writers; emitted once per detected cluster per run | `{destination_glob, writer_count, writer_names[], processing_rules_resolution_pointer, detected_at}` |
 | `destination-collision-unresolved` | warning | A multi-writer cluster targets a destination where folder-level `_processing-rules.json` is absent AND universal pillar 7 `processing_defaults` would be applied (no folder-level override declared); surfaces as drift candidate for operator triage — the cluster may need an explicit reconciliation rule | `{destination_glob, writer_names[], applicable_pillar_defaults, detected_at, first_seen}` |
 | `overlap-matrix-regenerated` | info (event) | `_overlap-matrix.md` was regenerated; emitted once per audit run | `{clusters_rendered_count, total_writers_scanned, sentinel_recreated_bool, detected_at}` |
+| `write-shape-conflict` | warning | Two or more writers target the same destination glob AND their writer-reference `destinations[].path` declarations resolve (via file-type-contract `write_shape` enum) to incompatible shapes (e.g., one writer declares `write_shape: create-only`; another targeting the same glob declares `write_shape: append-template`) | `{destination_glob, conflicting_writers[{writer_name, declared_write_shape}], detected_at, first_seen}` |
+| `consumer-references-unmatched-producer` | warning | A doc-deps `writer-fan-in` entry's `upstream_writers[]` references a writer name that does not exist in `Vault Writers/*.md` OR whose `destinations[]` does not include the entry's `consumer` path (npm peerDeps validation per L-112) | `{consumer, missing_or_mismatched_writer, upstream_writers_declared[], detected_at, first_seen}` |
 
 Severity `warning` findings count against the librarian's session-close summary; `info` event findings are surfaced for operator visibility but do not block close-out.
+
+The `write-shape-conflict` class catches cross-writer conflicts on the `write_shape` enum at audit time (per writer-pipeline-layering.md L-108). The `consumer-references-unmatched-producer` class validates the consumer-labels-with-producer directionality of doc-deps `writer-fan-in` entries (per L-112) — when a fan-in entry declares upstream writers, this capability joins against `Vault Writers/*.md` to confirm each named producer exists and actually targets the consumer's destination.
 
 ## Audit cadence
 
@@ -88,6 +92,8 @@ Severity `warning` findings count against the librarian's session-close summary;
    - Sentinel-end marker (or "No multi-writer overlaps detected." sentinel-inner message when cluster set is empty)
 9. **Atomic write.** Write tempfile; validate parseability + frontmatter; atomic rename.
 10. **Emit per-cluster `multi-writer-overlap-detected` events** + cluster-level `destination-collision-unresolved` warnings where applicable + run-level `overlap-matrix-regenerated` event.
+11. **Write-shape conflict check.** For each multi-writer cluster, resolve each member writer's `destinations[].output_type` (or `write_shape` declaration if present on the destination entry) against the corresponding `governance/file-type-contracts/<type>.md.json` `write_shape` enum. When ≥2 cluster members resolve to incompatible `write_shape` values, emit a `write-shape-conflict` warning carrying the destination glob and the per-writer declared write-shape values. This step runs after cluster composition (step 6) and is independent of folder-level `_processing-rules.json` resolution.
+12. **Writer-fan-in producer-join validation.** Read `governance/doc-dependencies.json` `entries[]`; filter to `kind: "writer-fan-in"`. For each fan-in entry: iterate `upstream_writers[]`. For each named writer, confirm (a) a writer-reference exists at `$VAULT_ROOT/Vault Writers/<writer-name>.md`, AND (b) that writer's `destinations[]` array contains a `path` whose derived glob (step 4) matches the entry's `consumer` field (glob match — Mustache substitution applied to the consumer path if it contains variables). When either check fails, emit a `consumer-references-unmatched-producer` warning carrying the consumer, the missing or mismatched writer, and the full `upstream_writers_declared[]` array for triage context.
 
 ## Input sources
 
@@ -98,6 +104,8 @@ The capability reads from (in order):
 3. **`$VAULT_ROOT/Vault Writers/*.md`** — writer-reference files (current state).
 4. **Folder-level `_processing-rules.json` files** — discovered via walk-up from each destination glob to detect override declarations (input to the `processing_rules_resolution` column).
 5. **`$VAULT_ROOT/Vault Writers/_overlap-matrix.md`** — current file (for operator narrative preservation).
+6. **`governance/doc-dependencies.json`** — `entries[]` filtered to `kind: "writer-fan-in"`; input to the producer-join validation (step 12 / `consumer-references-unmatched-producer` finding).
+7. **`governance/file-type-contracts/<type>.md.json`** — per-output-type contracts; consulted for `write_shape` enum lookup during the write-shape conflict check (step 11 / `write-shape-conflict` finding).
 
 ## Self-healing boundary declaration (R-34)
 
@@ -113,7 +121,7 @@ The boundary is enforced by code structure — regeneration touches only content
 | Capability | Cooperation pattern |
 |---|---|
 | `writers-index-refresh` (T-12.3) | Owns `$VAULT_ROOT/Vault Writers/_index.md` exclusively. `_index.md` pointer-links to `_overlap-matrix.md` via `## See also` (NOT embed) per L-68. The two capabilities share writer-reference reads but write disjoint files. |
-| `writers-health-audit` (T-12.5) | Emits `multi-writer-overlap` finding class that cross-references `_overlap-matrix.md` (per L-62). Operator can pivot from a health-audit finding to the matrix file for full destination cluster context. |
+| `writers-health-audit` (T-12.5) | Emits `multi-writer-overlap` finding class that cross-references `_overlap-matrix.md` (per L-62). Operator can pivot from a health-audit finding to the matrix file for full destination cluster context. May also cross-reference `consumer-references-unmatched-producer` findings emitted by this capability (per L-112 producer-join semantics) when surfacing operator-actionable writer-fan-in drift. |
 | `index-maintain` | Skips `Vault Writers/_overlap-matrix.md` (parallel exemption to `_index.md` — librarian-owned indices live outside `index-maintain`'s reconciliation scope). |
 | Hook branch #4 | Enforces `writers_allowed: ["librarian"]` write posture on `Vault Writers/_overlap-matrix.md` — `writers-overlap-refresh` writes through the librarian's authenticated path. |
 

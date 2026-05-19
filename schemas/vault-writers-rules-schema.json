@@ -11,7 +11,11 @@
     "reconciler_skill",
     "reconciler_tick_minutes_default",
     "unreconciled_archive_days_default",
-    "foundation_variable_namespace"
+    "foundation_variable_namespace",
+    "vault_writer_state_root",
+    "claude_state_root",
+    "daily_processing_root",
+    "writer_manifest_path"
   ],
   "properties": {
     "processing_defaults": {
@@ -70,6 +74,26 @@
       "type": "string",
       "default": "^\\d{4}-\\d{2}-\\d{2}",
       "description": "Universal default regex for hook branch #2 historical-data-warning per Session 6 A47. Per-type overrides via file-type-contracts/<type>.md.json :: historical_data_warning_pattern (Session 6 L-75)."
+    },
+    "vault_writer_state_root": {
+      "type": "string",
+      "default": "~/.local/share/claude-stem/vault-writers/",
+      "description": "Durable second-brain artifact root (manifest, raw retention, daily-processing). XDG-compliant; Time Machine / restic backup-included. Per writer-pipeline-layering.md L-95 + §A60 / §A61."
+    },
+    "claude_state_root": {
+      "type": "string",
+      "default": "~/.local/state/claude-stem/",
+      "description": "Ephemeral Claude-runtime root (staging packets, locks, queues); rebuildable. XDG-compliant. Per writer-pipeline-layering.md L-95 + §A60 / §A61."
+    },
+    "daily_processing_root": {
+      "type": "string",
+      "default": "~/.local/share/claude-stem/vault-writers/daily-processing/",
+      "description": "Reconciler step 8.5 append target for daily-processing artifacts. Per writer-pipeline-layering.md L-99 + L-104 + §A60 / §A61."
+    },
+    "writer_manifest_path": {
+      "type": "string",
+      "default": "~/.local/share/claude-stem/vault-writers/manifest.sqlite",
+      "description": "SQLite manifest substrate path (LangChain SQLRecordManager-aligned writes table). Per writer-pipeline-layering.md L-96 + §A60 / §A61."
     }
   }
 }

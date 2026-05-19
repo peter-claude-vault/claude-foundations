@@ -81,6 +81,21 @@
     "posture_default": "direct"
   },
 
+  "raw_retention": {
+    "description": "Per-writer raw retention policy. Additive optional. Mandatory-default for writer_kind in {agentic-flow, auto-research}; opt-in for direct-fetch connectors. Per writer-pipeline-layering.md L-97-L-98 / foundation-governance-target-state.md A60. Raw retention preserves pre-distillation transcripts/sources for replayability of LLM-driven writers, and serves as the 5-precaution substitute for the retired _landing/ folder convention (L-98).",
+    "applies_to_writer_kinds": {
+      "mandatory_default": ["agentic-flow", "auto-research"],
+      "opt_in": ["connector", "scheduled-skill", "custom"]
+    },
+    "partition_strategies": {
+      "daily_jsonl": "High-volume scrapers (gchat-scrape, teams-scrape pattern); one JSONL file per UTC date under $VAULT_WRITER_STATE_ROOT/raw/<writer-id>/<YYYY-MM-DD>.jsonl",
+      "per_record_json": "LLM-driven writers (meeting-processor, agentic-flow); one JSON file per source record under $VAULT_WRITER_STATE_ROOT/raw/<writer-id>/<source-id>.json"
+    },
+    "worm_immutability": "Raw retention files are append-only or write-once-and-immutable; reconciler + doc-amender MUST NOT mutate raw files post-write. Daily integrity check via librarian writers-health-audit (per L-98 precaution #4).",
+    "manifest_link": "Each write to a destination records raw_path in manifest.sqlite writes table (per T-24 writer-manifest-schema.json :: raw_path column). Reconciler step 8.6 populates this field from packet metadata.",
+    "backup_locality": "Storage root $VAULT_WRITER_STATE_ROOT defaults to ~/.local/share/claude-stem/vault-writers/ (XDG-compliant; Time Machine / restic backup-included; per L-95 + L-98 precaution #5)."
+  },
+
   "body_section_allowlist": [
     "Description",
     "Source",

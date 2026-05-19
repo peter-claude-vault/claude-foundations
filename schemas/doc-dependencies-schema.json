@@ -32,6 +32,12 @@
         "type": "object",
         "required": ["id", "kind"],
         "additionalProperties": true,
+        "allOf": [
+          {
+            "if": {"properties": {"kind": {"const": "writer-fan-in"}}, "required": ["kind"]},
+            "then": {"required": ["consumer", "upstream_writers", "amendment_strategy"]}
+          }
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -39,7 +45,21 @@
           },
           "kind": {
             "type": "string",
-            "description": "Entry kind. Common values: directory-write-constraint, directory-membership-cascade, hub-spoke-cascade, cross-file-type-union. Unconstrained for forward-compatible additions; consumers tolerate unknown kinds with advisory warnings."
+            "description": "Entry kind. Common values: directory-write-constraint, directory-membership-cascade, hub-spoke-cascade, cross-file-type-union, writer-fan-in. Unconstrained for forward-compatible additions; consumers tolerate unknown kinds with advisory warnings."
+          },
+          "consumer": {
+            "type": "string",
+            "description": "Consumer file or folder path (writer-fan-in kind only). Destination of fan-in. Per writer-pipeline-layering.md L-110 + §A63."
+          },
+          "upstream_writers": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Array of writer-reference filenames (minus .md) that fan in to this consumer (writer-fan-in kind only). Validated against Vault Writers/<name>.md existence + destinations[] join via librarian writers-overlap-refresh capability. Per L-110 + L-112 + §A63."
+          },
+          "amendment_strategy": {
+            "type": "string",
+            "enum": ["append-section", "template-fill", "prompt-guided-amend"],
+            "description": "Strategy doc-amender uses to merge upstream writer packets into consumer (writer-fan-in kind only). Per L-111 + §A62/§A63."
           },
           "primary_dir": {
             "type": "string",
