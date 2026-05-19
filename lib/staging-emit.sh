@@ -122,11 +122,11 @@ if [ -z "$BODY_FILE" ]; then
   printf 'staging-emit.sh: --body-file required\n' >&2; exit 2
 fi
 
-# Validate output-type enum (per Session 4 L-38 + vault-writer.md.json).
+# Validate output-type enum (per Session 4 L-38 + L-39 + Session 5 L-58 + vault-writer.md.json).
 case "$OUTPUT_TYPE" in
-  md|json|sqlite|db|opaque) : ;;
+  markdown|json|sql-db|opaque) : ;;
   *)
-    printf 'staging-emit.sh: --output-type must be one of: md, json, sqlite, db, opaque (got: %s)\n' \
+    printf 'staging-emit.sh: --output-type must be one of: markdown, json, sql-db, opaque (got: %s)\n' \
       "$OUTPUT_TYPE" >&2
     exit 3
     ;;

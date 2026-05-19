@@ -1,6 +1,6 @@
 ---
 type: reference
-description: Librarian plan-archive capability contract. Promotes plans whose manifest status has transitioned to `closed` into the archived state — appends a row to `~/.claude-plans/_archive.md` (quarterly-grouped retrospective table) and flips `manifest.status` to `archived` atomically. Trigger is volume-/event-based per `feedback_no_calendar_gates`.
+description: Librarian plan-archive capability contract. Promotes plans whose manifest status has transitioned to `closed` into the archived state — appends a row to `~/.claude-plans/_archive.md` (quarterly-grouped retrospective table) and flips `manifest.status` to `archived` atomically. Trigger is event-driven (manifest status transition to `closed`); no calendar gate per `feedback_no_calendar_gates`.
 provides:
   - plan-archive-capability
   - plans-tree-lifecycle-promotion

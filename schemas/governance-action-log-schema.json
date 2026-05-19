@@ -14,20 +14,22 @@
     },
     "kind": {
       "type": "string",
-      "enum": ["folder-registered", "file-type-registered", "tag-extension-registered", "writer-registered", "unregistered-write"],
-      "description": "Mutation kind. unregistered-write captures the frictionless-skip case per feedback_soft_mandate_pattern."
+      "enum": ["folder", "file-type", "tag-extension", "writer"],
+      "description": "Governance pillar slot being registered. Bare nouns per Session 3 A31. Frictionless-skip outcome captured separately by `unregistered: true` boolean field; do NOT collapse the two axes."
     },
     "proposed_by": {
       "type": "string",
       "enum": [
-        "hook-branch-1-class-a",
-        "hook-branch-1-class-b",
-        "hook-branch-1-class-c",
-        "hook-branch-1-class-d",
-        "sp07-wizard",
-        "direct-govern-register-invocation"
+        "claude-inline",
+        "claude-skill-invocation",
+        "user-direct",
+        "hook-class-a",
+        "hook-class-b",
+        "hook-class-c",
+        "hook-class-d",
+        "skipped"
       ],
-      "description": "Entry path that proposed the mutation. Class-A = new top-level folder; B = new vault-root file; C = new file-type; D = capability-with-vault-write. SP07 wizard = richer setup-time entry. Direct = user-invoked /govern register."
+      "description": "Entry path that proposed the mutation. claude-inline = mutation made directly by Claude without a skill or hook in the chain. claude-skill-invocation = skill body invoked the mutation pathway. user-direct = explicit `/govern register` invocation by the operator. hook-class-a/b/c/d = pre-write-guard branch #1 detection class (A=new top-level folder, B=new vault-root file, C=new file-type in existing folder, D=capability-with-vault-write skill declares unregistered destinations). skipped = soft-mandate proposal declined by operator; pair with `unregistered: true` for drift detection by librarian writers-health-audit."
     },
     "session_id": {
       "type": "string",

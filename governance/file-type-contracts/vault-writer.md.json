@@ -46,25 +46,25 @@
 
   "frontmatter_conditional_by_writer_kind": {
     "connector": {
-      "required": ["writer_subtype", "source", "authentication", "connector_id", "connector_runtime"]
+      "required": ["writer_subtype", "source", "authentication", "schedule"]
     },
     "agentic-flow": {
-      "required": ["source", "flow_runtime", "cron_schedule"]
+      "required": ["source"]
     },
     "auto-research": {
-      "required": ["source", "research_topic", "research_cadence"]
+      "required": ["source", "schedule"]
     },
     "scheduled-skill": {
-      "required": ["skill_id", "cron_schedule"]
+      "required": ["schedule"]
     },
-    "manual": {
+    "custom": {
       "required": []
     }
   },
 
   "frontmatter_enums": {
     "type": ["vault-writer"],
-    "writer_kind": ["connector", "agentic-flow", "auto-research", "scheduled-skill", "manual", "custom"],
+    "writer_kind": ["connector", "agentic-flow", "auto-research", "scheduled-skill", "custom"],
     "writer_subtype": ["gmail", "calendar", "granola", "teams", "gchat", "custom"],
     "status": ["active", "paused", "retired"],
     "failure_mode": ["block-and-log", "skip-and-log", "retry-N"]
@@ -75,7 +75,7 @@
     "optional": ["posture", "processing_rules_ref"],
     "path_format": "Mustache-substituted vault-relative path; foundation-shipped variable namespace per Session 5 L-69 = {{date}}, {{title}}, {{slug}}, {{source_id}}",
     "enums": {
-      "output_type": ["md", "json", "sqlite", "db", "opaque"],
+      "output_type": ["markdown", "json", "sql-db", "opaque"],
       "posture": ["direct", "staged"]
     },
     "posture_default": "direct"
