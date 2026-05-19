@@ -4,7 +4,7 @@ description: Librarian writers-health-audit capability contract. Daily sweep of 
 provides:
   - writers-health-audit-capability
   - vault-writers-drift-detection
-updated: 2026-05-18
+updated: 2026-05-19
 tags: ["#scope/reference"]
 ---
 
@@ -34,7 +34,7 @@ Daily sweep of writer-reference files + skill registry + adopter path_routing su
 - Read `governance/file-type-contracts/vault-writer.md.json` (writer-reference contract).
 - Read `governance/vault-writers-rules.json` operational config (for cross-references).
 - Read `$VAULT_ROOT/Vault Writers/*.md` writer-reference files.
-- Read `~/.claude/state/writer-last-run.jsonl` (if present) for `last_success` timestamps per writer (informs `dormant-writer` finding).
+- Read writer last-run state via `lib/manifest-record.sh query-last-run --writer-id <writer-name>` per writer (or batch via direct `sqlite3` query against `$WRITER_MANIFEST_PATH`: `SELECT writer_id, MAX(ingestion_date) FROM writes WHERE status='active' GROUP BY writer_id`) — replaces retired `~/.claude/state/writer-last-run.jsonl` per writer-pipeline-layering L-96 (informs `dormant-writer` finding).
 - Read foundation-master + overlay-master bundles via `governance/foundation-master.json` + `~/.claude/governance/overlay-master.json` for the resolved `path_routing` map (informs `unresolved-destination` + `orphan-destination-ref` findings).
 - Read installed skill registry via filesystem walk of `~/.claude/skills/*/SKILL.md` (informs `orphan-writer-skill-ref` finding).
 
@@ -49,7 +49,7 @@ Per SP13 alignment Session 5 L-62 (verbatim list — 5 classes):
 
 | Category | Severity | Trigger | Findings payload |
 |---|---|---|---|
-| `dormant-writer` | warning | A writer-reference has `last_success > 30 days` (per `~/.claude/state/writer-last-run.jsonl`) OR has `status: active` AND `last_run == null` (never observed running) | `{writer_name, writer_kind, status, last_success_iso, days_since_last_success, detected_at, first_seen}` |
+| `dormant-writer` | warning | A writer-reference has `last_success > 30 days` (per `manifest.sqlite` query `MAX(ingestion_date) GROUP BY writer_id`; replaces retired `writer-last-run.jsonl` per L-96) OR has `status: active` AND `last_run == null` (never observed running) | `{writer_name, writer_kind, status, last_success_iso, days_since_last_success, detected_at, first_seen}` |
 | `unresolved-destination` | warning | A writer-reference's `destinations[].path` glob (derived per Session 5 L-69) matches zero existing folders AND no `path_routing` entry declares `auto_create: true` for the pattern (so the reconciler would fail at write-time per Session 4 L-70) | `{writer_name, destination_path_mustache, destination_path_glob, path_routing_resolution, detected_at, first_seen}` |
 | `orphan-writer-skill-ref` | warning | A writer-reference's `writer_skill` field points to a skill slug that does not exist in `~/.claude/skills/<slug>/SKILL.md` | `{writer_name, writer_skill_ref, resolved_skill_path_or_null, detected_at, first_seen}` |
 | `orphan-destination-ref` | warning | A writer-reference's `destinations[].path` references a `path_routing` pattern that has been retired (no longer present in foundation-master + overlay-master union OR present but flagged retired) | `{writer_name, destination_path_mustache, retired_pattern_id, detected_at, first_seen}` |
@@ -69,7 +69,7 @@ Severity `warning` findings count against the librarian's session-close summary;
 
 1. **Read pillar + contract.** Load `governance/file-type-contracts/vault-writer.md.json` + `governance/vault-writers-rules.json`.
 2. **Enumerate writer-references.** Walk `$VAULT_ROOT/Vault Writers/*.md`; exclude `_index.md` + `_overlap-matrix.md` + leading-underscore files.
-3. **Read last-run state.** Load `~/.claude/state/writer-last-run.jsonl` (if present); build `writer_name → last_success_iso` map.
+3. **Read last-run state.** Build `writer_name → last_success_iso` map via `lib/manifest-record.sh query-last-run` per enumerated writer (or single `sqlite3` batch query against `$WRITER_MANIFEST_PATH`: `SELECT writer_id, MAX(ingestion_date) FROM writes WHERE status='active' GROUP BY writer_id`). Per writer-pipeline-layering L-96 — retires `~/.claude/state/writer-last-run.jsonl`.
 4. **Read path-routing resolution.** Load foundation-master + overlay-master bundles; build resolved `path_routing` map (overlay shadows foundation per R-52).
 5. **Read skill registry.** Walk `~/.claude/skills/*/SKILL.md`; build slug set.
 6. **Per-writer checks** (5 finding classes):
@@ -88,7 +88,7 @@ The capability reads from (in order):
 1. **`governance/file-type-contracts/vault-writer.md.json`** — writer-reference contract (frontmatter shape + destinations entry shape).
 2. **`governance/vault-writers-rules.json`** — operational config + `foundation_variable_namespace`.
 3. **`$VAULT_ROOT/Vault Writers/*.md`** — writer-reference files (current state).
-4. **`~/.claude/state/writer-last-run.jsonl`** — last-success state per writer (if present).
+4. **`$WRITER_MANIFEST_PATH`** (default `~/.local/share/claude-stem/vault-writers/manifest.sqlite` per pillar 7 — read via `lib/manifest-record.sh query-last-run` OR direct `sqlite3` query `SELECT writer_id, MAX(ingestion_date) FROM writes WHERE status='active' GROUP BY writer_id`) — last-success state per writer; subsumes retired `~/.claude/state/writer-last-run.jsonl` per writer-pipeline-layering L-96.
 5. **`governance/foundation-master.json` + `~/.claude/governance/overlay-master.json`** — bundled `path_routing` map resolution.
 6. **`~/.claude/skills/*/SKILL.md`** — skill registry filesystem walk.
 7. **`$VAULT_ROOT/Vault Writers/_overlap-matrix.md`** — pre-existing cluster signals (for `multi-writer-overlap` cross-reference).
@@ -118,10 +118,13 @@ This contract is an R-37 lockstep peer with:
 - `governance/file-type-contracts/vault-writer.md.json` (writer-reference contract — drift signal source)
 - `governance/vault-writers-rules.json` (operational config)
 - `governance/_index.json` pillar 7 registry (vault-writers)
+- `schemas/writer-manifest-schema.json` (writes-table contract — `dormant-writer` finding now derives `last_success_iso` from `MAX(ingestion_date)` per L-96 swap)
 
 Changes to any of the above require R-37 atomic lockstep including this contract spec.
 
 ## Implementation hand-off
+
+**Last-run derivation migration (2026-05-19).** Last-run derivation migrated 2026-05-19 from the retired `~/.claude/state/writer-last-run.jsonl` (which was never shipped — see writer-pipeline-layering L-96) to the SQLite manifest at `$WRITER_MANIFEST_PATH` (T-24 schema + T-25 library landed SP14). Implementation reads via `lib/manifest-record.sh query-last-run --writer-id <name>` (per-writer) or a single `sqlite3` SELECT batch (audit-time efficiency). Findings shape UNCHANGED — the only change is the data source.
 
 The capability is specified at this contract; a downstream implementation sub-plan delivers the runtime at `~/.claude/skills/librarian/capabilities/writers-health-audit.sh`. Implementation requirements:
 

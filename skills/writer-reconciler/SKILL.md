@@ -8,7 +8,10 @@ description: >
   universal pillar 7 default). NO classification, NO routing decisions —
   those are the writers' responsibility upstream. Renamed + reshaped from
   inbox-processor under Plan 81 SP14 Batch B T-11 (2026-05-18) per SP13
-  alignment Session 4 A37.
+  alignment Session 4 A37. Extended SP14 Batch F T-27 (2026-05-19) with
+  step 8.5 (daily-processing JSONL append) + step 8.6 (manifest.sqlite
+  record-write) per writer-pipeline-layering L-102..L-104 / §A61 — both
+  mechanical writes preserving R-34.
 disable-model-invocation: true
 argument-hint: "[--staging-root PATH] [--destination PATH] [--dry-run]"
 ---
@@ -96,6 +99,44 @@ Per packet under `~/.claude/state/vault-staging/<writer-id>/*.json`:
    write path passes through pre-write-guard.sh + post-write-verify.sh.
 8. **Remove processed packet** from staging (delete the `.json` file under
    `~/.claude/state/vault-staging/<writer-id>/`).
+8.5. **Append row to daily-processing JSONL** per writer-pipeline-layering
+   L-99 + L-102 + L-104 / §A61. Target path:
+   `$VAULT_WRITER_STATE_ROOT/daily-processing/YYYY-MM-DD/<destination-slug>.jsonl`
+   (pillar 7 `daily_processing_root` default
+   `~/.local/share/claude-stem/vault-writers/daily-processing/`). One row
+   per writer-emit that touched this destination today. Row fields:
+   `{ts, packet_sha, writer_id, destination_path, content_sha256,
+   output_type, packet_kind, write_bucket}`. **`<destination-slug>`
+   derivation:** strip leading `/`; replace `/`, ` `, `.` with `_` (e.g.,
+   `/Vault/Meetings/2026-05-19 standup.md` →
+   `Vault_Meetings_2026-05-19_standup_md`). **MPSC discipline (L-101):**
+   reconciler is the sole writer; subsequent ticks READ this file BEFORE
+   step 4 (dedup) / step 5 (survivorship) to recover prior-writer activity
+   on the destination without re-reading vault state. **Day-rollover
+   immutability (L-100):** filename keyed by UTC date at append time;
+   active file freezes at midnight UTC; new day starts empty;
+   archived-not-cleared. Atomic append via `>>` (POSIX atomic for
+   sub-PIPE_BUF writes; per-line JSONL fits). R-34 preserved: this is a
+   LOG OF mechanical decisions, NOT a re-merge surface per L-103.
+8.6. **Write manifest.sqlite row** per writer-pipeline-layering L-96 +
+   L-104 / §A60 + §A61. Invoke
+   `bash $REPO_ROOT/lib/manifest-record.sh record-write` with
+   `--writer-id <packet.writer_id>` `--destination-path
+   <packet.destination_path>` `--content-sha256 <packet.content_sha256>`
+   `--write-bucket <create|modify-append|modify-amend>` (derived from
+   prior history at `query-destination-history`: zero rows → `create`;
+   non-empty + `packet_kind == amender-replacement` → `modify-amend`;
+   else → `modify-append`) `--packet-kind <packet.packet_kind>`
+   `[--source-id <packet.source_id>]` `[--raw-path <packet.metadata.raw_path>]`.
+   When the new write supersedes a prior active row (same
+   `(writer_id, destination_path)` tuple), pass
+   `--supersedes <prior-row-id>` so the library marks the predecessor
+   `status='superseded' + superseded_by=<new-id>` in the same transaction.
+   Target file: `$WRITER_MANIFEST_PATH` (pillar 7 default
+   `~/.local/share/claude-stem/vault-writers/manifest.sqlite`); schema
+   contract: `schemas/writer-manifest-schema.json`. R-34 preserved: this
+   is a mechanical INSERT against a fixed 12-field row contract, NOT a
+   semantic merge.
 9. **Emit one audit-log row** per reconciliation. Idempotent: re-running on
    an empty staging dir is a no-op.
 
@@ -115,6 +156,21 @@ Per packet under `~/.claude/state/vault-staging/<writer-id>/*.json`:
   `unreconciled_archive_days_default` per pillar 7).
 - One JSONL row per packet processed in `$CLAUDE_LOG_DIR/writer-reconciler-audit.log`
   (append-only; rotated externally by librarian log-archive capability).
+- **NEW SP14 Batch F T-27 (2026-05-19) — daily-processing JSONL** at
+  `$VAULT_WRITER_STATE_ROOT/daily-processing/YYYY-MM-DD/<destination-slug>.jsonl`
+  (pillar 7 `daily_processing_root` default
+  `~/.local/share/claude-stem/vault-writers/daily-processing/`). One row
+  appended per reconciled write (step 8.5). MPSC discipline (single-writer
+  reconciler; multi-reader future) per L-101. Day-rollover immutability per
+  L-100. Atomic POSIX `>>` append. Archived-not-cleared lifecycle.
+- **NEW SP14 Batch F T-27 (2026-05-19) — SQLite manifest row** at
+  `$WRITER_MANIFEST_PATH` (pillar 7 default
+  `~/.local/share/claude-stem/vault-writers/manifest.sqlite`). One row
+  written per reconciled write (step 8.6) via
+  `lib/manifest-record.sh record-write`. Logical supersession on amend
+  (predecessor row receives `status='superseded' + superseded_by=<new-id>`
+  in same transaction per `--supersedes <id>` flag). WAL mode + 4 indexes
+  per L-96.
 
 **Schema:** every reconciled-write conforms to the destination file-type's
 contract — the writer-reference frontmatter was validated against
@@ -125,10 +181,19 @@ re-validate writer-reference frontmatter** at reconciliation time (per Session
 own file-type-contract (resolved in step 3 above).
 
 **Pre-write validation:**
-- Packet JSON validates against the embedded `packet_version: "1.0"` shape
-  per Session 4 A35 (required fields: `packet_version`, `writer_id`,
-  `emitted_at`, `destination_path`, `content_sha256`, `body`, `output_type`,
-  `metadata`).
+- Packet JSON validates against the embedded `packet_version` shape — admits
+  BOTH `"1.0"` (Session 4 A35 baseline) AND `"1.1"` (SP14 Batch D T-26
+  extension; adds optional `source_id` + `packet_kind` fields with
+  back-compat defaults). v1.0 packets continue to be admitted; v1.1
+  `packet_kind` defaults to `writer-emit` for back-compat. Required fields
+  for both versions: `packet_version`, `writer_id`, `emitted_at`,
+  `destination_path`, `content_sha256`, `body`, `output_type`, `metadata`.
+- Daily-processing JSONL append (step 8.5) validates the constructed row
+  shape before `>>` append (block-and-log on malformed row composition).
+- Manifest record-write (step 8.6) is gated by `lib/manifest-record.sh`'s
+  CHECK constraints (status enum + write_bucket enum + packet_kind enum)
+  per `schemas/writer-manifest-schema.json`; SQLite CHECK violation
+  surfaces as rc=5 from the library.
 - `destination_path` MUST resolve within `{$VAULT_ROOT/**, ~/.claude/**}`.
   Packets declaring out-of-bounds destinations are rejected with sidecar.
 - Resolved `_processing-rules.json` (if present at destination folder)
@@ -145,6 +210,17 @@ own file-type-contract (resolved in step 3 above).
   parity-audit` consumes per Session 4 L-55).
 - Tick-level errors (lock contention; staging root missing; rules file
   unreadable) exit non-zero so launchd surfaces the failure.
+- **NEW SP14 Batch F T-27 (2026-05-19) — step 8.5 / 8.6 failure handling.**
+  If destination write (step 7) succeeded but step 8.5 (daily-processing
+  append) OR step 8.6 (manifest record-write) fails, the destination is
+  already canonical. Reconciler emits a sidecar
+  `<packet-sha>._state-tier-error.json` recording which state-tier step
+  failed + the SQLite/JSONL error; the destination write is NOT rolled
+  back (canonical source of truth wins per L-103). Operator triages via
+  `governance-parity-audit` finding `state-tier-write-drift`. Next-tick
+  reconciler runs do NOT retry the failed state-tier writes (they would
+  double-record); manifest reconstruction (if needed) is a SP15+ recovery
+  capability.
 
 ## Why cron, not SessionStart
 
