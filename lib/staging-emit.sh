@@ -122,11 +122,13 @@ if [ -z "$BODY_FILE" ]; then
   printf 'staging-emit.sh: --body-file required\n' >&2; exit 2
 fi
 
-# Validate output-type enum (per Session 4 L-38 + L-39 + Session 5 L-58 + vault-writer.md.json).
+# Validate output-type enum (operator-amended 2026-05-18 supersedes Session 5 L-58
+# consolidation; split sqlite vs db preserves the local-file-DB vs remote-service-DB
+# distinction operationally relevant for writer audit + reconciler merge semantics).
 case "$OUTPUT_TYPE" in
-  markdown|json|sql-db|opaque) : ;;
+  markdown|json|sqlite|db|opaque) : ;;
   *)
-    printf 'staging-emit.sh: --output-type must be one of: markdown, json, sql-db, opaque (got: %s)\n' \
+    printf 'staging-emit.sh: --output-type must be one of: markdown, json, sqlite, db, opaque (got: %s)\n' \
       "$OUTPUT_TYPE" >&2
     exit 3
     ;;

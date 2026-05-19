@@ -1,6 +1,6 @@
 ---
 type: reference
-description: Librarian plan-archive capability contract. Promotes plans whose manifest status has transitioned to `closed` into the archived state — appends a row to `~/.claude-plans/_archive.md` (quarterly-grouped retrospective table) and flips `manifest.status` to `archived` atomically. Trigger is event-driven (manifest status transition to `closed`); no calendar gate per `feedback_no_calendar_gates`.
+description: Librarian plan-archive capability contract. Promotes plans whose manifest status has transitioned to `closed` into the archived state — appends a row to `~/.claude-plans/_archive.md` (quarterly-grouped retrospective table) and flips `manifest.status` to `archived` atomically. Two-axis trigger — eligibility signal is event-driven (manifest status transition to `closed`); promotion is gated by a tight data-driven cooldown (foundation default 3 days post-close; operator-tunable via `plans-rules.json :: lifecycle.status_transitions.closed_to_archived.cooldown_days`) so a closed plan that gets reopened within the window stays in the backlog rather than oscillating.
 provides:
   - plan-archive-capability
   - plans-tree-lifecycle-promotion
@@ -17,7 +17,7 @@ tags: ["#scope/reference"]
 
 ## Purpose
 
-Promote `~/.claude-plans/<plan-slug>/` from `status: closed` to `status: archived` and append the canonical retrospective row to `~/.claude-plans/_archive.md`. The capability is the librarian's mechanical companion to the `closed → archived` lifecycle transition declared in `plans-rules.json`. Trigger is **event-driven** (manifest status transition to `closed`) — NOT calendar-gated per `feedback_no_calendar_gates`. The capability sweeps for `status: closed` plans, derives the retrospective row from manifest fields, appends to `_archive.md` under the appropriate `## YYYY-Qn` quarterly section, and atomically flips `manifest.status` to `archived`.
+Promote `~/.claude-plans/<plan-slug>/` from `status: closed` to `status: archived` and append the canonical retrospective row to `~/.claude-plans/_archive.md`. The capability is the librarian's mechanical companion to the `closed → archived` lifecycle transition declared in `plans-rules.json`. Trigger has two axes: eligibility is **event-driven** (manifest status transition to `closed`); promotion is gated by a **tight data-driven cooldown** (foundation default 3 days; operator-tunable via `plans-rules.json :: lifecycle.status_transitions.closed_to_archived.cooldown_days`). The cooldown is NOT an arbitrary calendar gate — it is the smallest window that handles the data-driven reopen/reactivation case so the backlog doesn't oscillate. Without the cooldown, the backlog would churn on transient status flips; without the event signal, archival would be calendar-spam. Per `feedback_no_calendar_gates` carve-out for cleanup-cooldown gates. The capability sweeps for `status: closed AND today >= closed_at + cooldown_days`, derives the retrospective row from manifest fields, appends to `_archive.md` under the appropriate `## YYYY-Qn` quarterly section, and atomically flips `manifest.status` to `archived`.
 
 The capability is the second canonical self-healing capability under the R-34 boundary (after `index-maintain`). The boundary doctrine: mutations bounded to mechanically-derivable values (retrospective row composed from manifest fields; status field flipped from `closed` to `archived`); semantic content (outcome_summary text, successor pointer, postmortem path) is read from the manifest and never auto-generated.
 
@@ -68,7 +68,8 @@ Severity `warning` findings count against the librarian's session-close summary;
 
 1. **Read manifest.** Load `~/.claude-plans/<plan-slug>/manifest.json`. Validate against `schemas/plan-manifest-schema.json`. On failure: emit `manifest-schema-violation`; skip plan.
 2. **Status gate.** Skip unless `status == "closed"`. (`researching` / `planned` / `in-progress` / `on-hold` / `superseded` / `archived` all skipped.)
-3. **Required-on-close field check.** Assert presence of `closed_at`, `outcome_summary`, `shipped_artifacts`. If any missing: emit `manifest-schema-violation`; skip plan.
+3. **Cooldown gate.** Read `cooldown_days` from `plans-rules.json :: lifecycle.status_transitions.closed_to_archived.cooldown_days` (fallback to foundation default `3` if field absent). Compute `eligibility_date = closed_at + cooldown_days`. Skip plan if `today < eligibility_date` (plan is closed but inside the cooldown window — preserves grace period for reopen/reactivation). Do NOT emit a finding on this skip; it's the normal pre-eligibility state.
+4. **Required-on-close field check.** Assert presence of `closed_at`, `outcome_summary`, `shipped_artifacts`. If any missing: emit `manifest-schema-violation`; skip plan.
 4. **Compose retrospective row.** Fields from manifest:
    - `slug` from directory name
    - `closed_at` from `manifest.closed_at` (ISO date)

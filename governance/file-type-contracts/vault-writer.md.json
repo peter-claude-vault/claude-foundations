@@ -73,9 +73,9 @@
   "destinations_entry_shape": {
     "required": ["path", "output_type"],
     "optional": ["posture", "processing_rules_ref"],
-    "path_format": "Mustache-substituted vault-relative path; foundation-shipped variable namespace per Session 5 L-69 = {{date}}, {{title}}, {{slug}}, {{source_id}}",
+    "path_format": "Mustache-substituted path; foundation-shipped variable namespace per Session 5 L-69 = {{date}}, {{title}}, {{slug}}, {{source_id}}. Paths MAY be outside vault root for raw-data staging cases (e.g., a Google Chat scrape writing structured records to ~/.claude/state/raw-data/gchat/messages.sqlite); the in-vault default applies to human-readable processed outputs like Meeting Notes per feedback_vault_writer_staging_architecture (default raw landing = outside-vault structured; in-vault markdown reserved for direct-read artifacts).",
     "enums": {
-      "output_type": ["markdown", "json", "sql-db", "opaque"],
+      "output_type": ["markdown", "json", "sqlite", "db", "opaque"],
       "posture": ["direct", "staged"]
     },
     "posture_default": "direct"
