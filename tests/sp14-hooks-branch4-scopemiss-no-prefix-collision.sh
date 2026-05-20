@@ -22,10 +22,10 @@ stage_substrate
 
 printf '[fixture] Branch #4 — non-protected basename in .claude-plans/ (scope-miss)\n'
 
-# Target: $HOME/.claude-plans/something-else.md
+# Target: $PLANS_DIR/something-else.md (post-fix#3 honors $PLANS_DIR).
 # Branch #4 only protects {_index, _backlog, _archive}.md. This basename
 # is NOT in that set — Branch #4 does not fire.
-target="$HOME/.claude-plans/some-other-file.md"
+target="$PLANS_DIR/some-other-file.md"
 mkdir -p "$(dirname "$target")"
 
 content="---
@@ -43,30 +43,16 @@ payload=$(build_write_payload "$target" "$content")
 out=$(printf '%s' "$payload" | bash "$HOME/.claude/hooks/pre-write-guard.sh" 2>&1)
 rc=$?
 
-# Substrate divergence finding (DOCUMENTED, NOT FIXED per fixture-only scope):
-#   pre-write-guard.sh:457 references PL_CONTENT under `set -u` without first
-#   initializing it. When PL_EXPECTED_TYPE is empty (basename not one of the 4
-#   canonical plan-artifact filenames: spec.md / tasks.md / handoff.md /
-#   00-ideation-brief.md), the line-411 init block is skipped, so line 457
-#   hits "PL_CONTENT: unbound variable" → hook exits 1 with no JSON output.
-#
-# Real-world impact: ANY .md write under ~/.claude-plans/ whose basename is
-# not in the 4-canonical set triggers this — including research notes,
-# session logs, AND the very librarian-managed _index/_backlog/_archive files
-# when CLAUDE_LIBRARIAN_WRITE=1 short-circuits Branch #4 (since the short-
-# circuit exit 0 at line 184 happens BEFORE line 457). Confirmed via repro.
-#
-# Suggested fix: insert `PL_CONTENT=""` immediately after the outer if at
-# line 400 (before the case ... in block).
-#
-# Until fix lands, this fixture asserts the substrate's CURRENT behavior
-# (rc=1 + unbound-variable stderr message) so a regression is visible
-# once authored fix lands.
+# Substrate divergence FIXED in Batch J 2026-05-20 (T-33 fix #2):
+#   pre-write-guard.sh now initializes PL_CONTENT="" at top of the plan-tree .md
+#   block (immediately after the outer if-guard, before the case statement).
+#   This fixture now anchors to the post-fix behavior: hook allows (rc=0), no
+#   unbound-variable error, Branch #4 falls through cleanly (this basename is
+#   not in the {_index,_backlog,_archive}.md protected set).
 
-assert_rc "current substrate exits 1 (PL_CONTENT unbound variable bug)" 1 "$rc"
-assert_contains "stderr cites unbound variable" "$out" "PL_CONTENT: unbound variable"
-assert_contains "error references substrate line 457" "$out" "line 457"
-# Branch #4 itself never gets to fire for this path → no Branch #4 marker.
+assert_rc "post-fix#2: hook completes cleanly (rc=0)" 0 "$rc"
+assert_not_contains "post-fix#2: no PL_CONTENT unbound error" "$out" "PL_CONTENT: unbound variable"
+# Branch #4 itself never gets to fire for this basename → no Branch #4 marker.
 assert_not_contains "Branch #4 deny NOT present" "$out" "SP14 Branch #4"
 
 fixture_summary

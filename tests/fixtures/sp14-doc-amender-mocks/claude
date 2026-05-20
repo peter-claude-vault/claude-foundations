@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# tests/fixtures/sp14-doc-amender-mocks/claude — PATH-shim mock for doc-amender
+# LLM calls. Fixtures prepend $(dirname "$0")/fixtures/sp14-doc-amender-mocks
+# to PATH so `claude -p` resolves to this mock instead of the real binary.
+#
+# Behavior:
+#   - Read prompt from stdin (process.sh uses `claude -p < prompt-file`)
+#   - Emit scripted replacement body to stdout
+#   - Exit 0 on happy path; exit 1 if MOCK_FAIL=1 is exported
+#   - Honors -p flag (other flags ignored)
+#
+# Per [[feedback_claude_p_subscription_cost_semantics]] — never invoke real
+# `claude -p` in fixtures (subscription cost floor ~$0.03/call).
+
+if [ "${MOCK_FAIL:-0}" = "1" ]; then
+  printf 'mock-claude: scripted failure (MOCK_FAIL=1)\n' >&2
+  exit 1
+fi
+
+if [ "${MOCK_EMPTY:-0}" = "1" ]; then
+  # Empty stdout — exercises doc-amender's empty-output rejection path
+  exit 0
+fi
+
+# Drain stdin so the parent's pipe doesn't block. Also exercises the "claude
+# reads the prompt" contract (real claude consumes the prompt fully).
+cat >/dev/null
+
+# Emit scripted replacement body.
+if [ -n "${MOCK_OUTPUT:-}" ]; then
+  printf '%s' "$MOCK_OUTPUT"
+else
+  cat <<'BODY'
+# Amended Meeting Note
+
+This is the doc-amender mock replacement body. The real claude binary would
+produce LLM-generated content; this mock emits a deterministic stub so the
+fixture can assert the doc-amender pipeline shape end-to-end.
+
+## Summary
+
+- Amender ran
+- Replacement packet emitted
+- staging-emit invoked with --packet-kind amender-replacement
+BODY
+fi
+
+exit 0

@@ -169,7 +169,7 @@ fi
 # enforcement (vault/3-tier/doc-dep checks no-op on ~/.claude-plans/ paths).
 # Rationale: plans-rules.json.root_files.writers_allowed: ["librarian"] —
 # direct hand-edits drift the index out of sync with manifest reality.
-B4_PT_PARENT="$HOME/.claude-plans"
+B4_PT_PARENT="${PLANS_DIR:-$HOME/.claude-plans}"
 if [[ "$(dirname "$FILE_PATH")" == "$B4_PT_PARENT" ]]; then
   case "$(basename "$FILE_PATH")" in
     _index.md|_backlog.md|_archive.md)
@@ -399,6 +399,7 @@ fi
 # Never blocks. Always exit 0 with permissionDecision: allow.
 if [[ "$FILE_PATH" == *"/.claude-plans/"*".md" ]]; then
   R40_ADVISORY=""
+  PL_CONTENT=""
   PL_BASE=$(basename "$FILE_PATH")
   PL_EXPECTED_TYPE=""
   case "$PL_BASE" in
@@ -858,7 +859,7 @@ if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
     if [[ -n "$B1_C_CONTENT" ]]; then
       B1_C_TYPE=$(printf '%s\n' "$B1_C_CONTENT" | awk '/^---[[:space:]]*$/{n++; next} n==1{print} n>=2{exit}' | grep -E '^type:' | head -1 | sed -E 's/^type:[[:space:]]*//; s/[[:space:]]*$//; s/^"//; s/"$//; s/^'\''//; s/'\''$//' || true)
       if [[ -n "$B1_C_TYPE" ]] && [[ -n "${BUNDLE_JSON:-}" ]]; then
-        B1_FM_TYPES=$(jq -r '.types // {} | keys[]?, .r32_type_aliases // {} | keys[]?' <<<"$BUNDLE_JSON" 2>/dev/null || true)
+        B1_FM_TYPES=$(jq -r '(.types // {} | keys[]?), (.r32_type_aliases // {} | keys[]?)' <<<"$BUNDLE_JSON" 2>/dev/null || true)
         B1_OVERLAY_TYPES=""
         if [[ -f "$B1_OVERLAY" ]]; then
           B1_OVERLAY_TYPES=$(jq -r '.frontmatter.types // {} | keys[]?' "$B1_OVERLAY" 2>/dev/null || true)

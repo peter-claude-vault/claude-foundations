@@ -106,6 +106,53 @@ Exit codes:
 EOF
 }
 
+# ---- failure-mode helper ----------------------------------------------------
+#
+# Called from pre-commit failure paths to ensure block-and-log discipline:
+# tempfile already deleted by caller; this writes an action-log row with the
+# failure reason so librarian governance-parity-audit surfaces the rejection.
+# Variables (KIND/DRY_RUN/PROPOSED_BY/TARGET/ACTION_LOG/CLAUDE_SESSION_ID)
+# resolve at call-time, so they may be set by arg-parsing below.
+
+_append_failed_action_log() {
+  # $1 pillar(s) string, $2 payload-files string, $3 reason
+  if [ -z "${KIND:-}" ]; then
+    return 0
+  fi
+  if [ "$DRY_RUN" = "1" ]; then
+    return 0
+  fi
+  local pillar_s="$1" reason="$3"
+  local ts session_id
+  ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  session_id="${CLAUDE_SESSION_ID:-unknown-session}"
+  mkdir -p "$(dirname "$ACTION_LOG")" 2>/dev/null || true
+  local row
+  row=$(jq -nc \
+    --arg timestamp "$ts" \
+    --arg kind "$KIND" \
+    --arg proposed_by "$PROPOSED_BY" \
+    --arg session_id "$session_id" \
+    --arg target "$TARGET" \
+    --arg pillar "$pillar_s" \
+    --arg reason "$reason" \
+    '
+      {
+        timestamp: $timestamp,
+        kind: $kind,
+        proposed_by: $proposed_by,
+        session_id: $session_id,
+        target: ($target | if . == "" then null else . end),
+        rejected_fields: { ($pillar): { reason: $reason } },
+        unregistered: false
+      }
+      | with_entries(select(.value != null))
+    ' 2>/dev/null)
+  if [ -n "$row" ]; then
+    printf '%s\n' "$row" >> "$ACTION_LOG" 2>/dev/null || true
+  fi
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --pillar)
@@ -250,8 +297,9 @@ if [ -z "${OVERLAY_MASTER_LOCKED:-}" ]; then
     REEXEC_ARGS="$REEXEC_ARGS --dry-run"
   fi
   # shellcheck disable=SC2086
-  if ! /usr/bin/lockf -k -t 0 "$LOCK_FILE" "$0" $REEXEC_ARGS; then
-    rc=$?
+  rc=0
+  /usr/bin/lockf -k -t 0 "$LOCK_FILE" "$0" $REEXEC_ARGS || rc=$?
+  if [ "$rc" -ne 0 ]; then
     if [ "$rc" = "75" ]; then
       printf 'overlay-master-mutate.sh: lock contention on %s\n' "$LOCK_FILE" >&2
       exit 5
@@ -402,49 +450,3 @@ done
 
 printf 'overlay-master-mutate.sh: committed %s mutation(s) to %s\n' "$PILLAR_COUNT" "$OVERLAY_MASTER" >&2
 exit 0
-
-# ---- failure-mode helper ----------------------------------------------------
-#
-# Defined late because it references env state populated above. Called from
-# pre-commit failure paths to ensure block-and-log discipline: tempfile
-# already deleted by caller; this writes an action-log row with the failure
-# reason so librarian governance-parity-audit surfaces the rejection.
-
-_append_failed_action_log() {
-  # $1 pillar(s) string, $2 payload-files string, $3 reason
-  if [ -z "${KIND:-}" ]; then
-    return 0
-  fi
-  if [ "$DRY_RUN" = "1" ]; then
-    return 0
-  fi
-  local pillar_s="$1" reason="$3"
-  local ts session_id
-  ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-  session_id="${CLAUDE_SESSION_ID:-unknown-session}"
-  mkdir -p "$(dirname "$ACTION_LOG")" 2>/dev/null || true
-  local row
-  row=$(jq -nc \
-    --arg timestamp "$ts" \
-    --arg kind "$KIND" \
-    --arg proposed_by "$PROPOSED_BY" \
-    --arg session_id "$session_id" \
-    --arg target "$TARGET" \
-    --arg pillar "$pillar_s" \
-    --arg reason "$reason" \
-    '
-      {
-        timestamp: $timestamp,
-        kind: $kind,
-        proposed_by: $proposed_by,
-        session_id: $session_id,
-        target: ($target | if . == "" then null else . end),
-        rejected_fields: { ($pillar): { reason: $reason } },
-        unregistered: false
-      }
-      | with_entries(select(.value != null))
-    ' 2>/dev/null)
-  if [ -n "$row" ]; then
-    printf '%s\n' "$row" >> "$ACTION_LOG" 2>/dev/null || true
-  fi
-}

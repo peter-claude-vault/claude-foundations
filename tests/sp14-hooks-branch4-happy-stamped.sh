@@ -23,9 +23,9 @@ stage_substrate
 
 printf '[fixture] Branch #4 — librarian-stamped write to plans-tree (happy)\n'
 
-# Substrate line 172 hardcodes B4_PT_PARENT="$HOME/.claude-plans" — does NOT
-# use $PLANS_DIR. Target must live under jailed-HOME-rooted .claude-plans.
-target="$HOME/.claude-plans/_index.md"
+# Post-fix#3 (T-33 2026-05-20): substrate line 172 now honors $PLANS_DIR.
+# Setup helper exports PLANS_DIR="$TEMPROOT/plans".
+target="$PLANS_DIR/_index.md"
 mkdir -p "$(dirname "$target")"
 
 content="# Plans — Auto Index

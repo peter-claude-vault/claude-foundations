@@ -10,22 +10,11 @@
 #   foundation-master.types ∪ r32_type_aliases ∪ overlay.types → propose-
 #   and-validate fragment fires with /govern register --kind file-type.
 #
-# Substrate divergence finding (DOCUMENTED, NOT FIXED per fixture-only scope):
-#   pre-write-guard.sh:861 jq filter `.types // {} | keys[]?,
-#   .r32_type_aliases // {} | keys[]?` is malformed — the comma binds
-#   to the second filter so jq pipes `.r32_type_aliases // {}` into
-#   `keys[]?` which fails (the value is an object but the intermediate
-#   step yields strings on iteration). Result: B1_KNOWN_TYPES is always
-#   empty, Class C nudge NEVER fires for any unregistered type. The
-#   downstream 3-tier R-32 UNKNOWN TYPE deny catches the unregistered
-#   type instead, but with a different message + behavior (DENY vs nudge).
-#
-#   Corrected filter: `(.types // {} | keys[]?), (.r32_type_aliases // {} | keys[]?)`
-#
-# This fixture asserts the substrate's CURRENT behavior so the divergence
-# is surfaced in test failures when it gets fixed (then update the fixture
-# expectations to match the spec). Filename retained per dispatch brief
-# inventory.
+# Substrate divergence FIXED in Batch J 2026-05-20 (T-33 fix #1):
+#   pre-write-guard.sh:861 jq filter now `(.types // {} | keys[]?),
+#   (.r32_type_aliases // {} | keys[]?)` — parens group each arm so both
+#   key sets contribute to B1_KNOWN_TYPES. Class C nudge now fires
+#   correctly for unregistered types (allow + propose-and-validate context).
 
 set -u
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -56,16 +45,12 @@ payload=$(build_write_payload "$target" "$content")
 out=$(printf '%s' "$payload" | bash "$HOME/.claude/hooks/pre-write-guard.sh" 2>/dev/null)
 rc=$?
 
-# Current substrate behavior: Branch #1 Class C never fires (jq malformed),
-# falls through to 3-tier R-32 Tier 2 DENY. rc=0 (hook always exits 0 in
-# the format_output path; deny is signaled in JSON, not rc).
-assert_rc "exit code is 0 (deny via JSON, not rc)" 0 "$rc"
+# Post-fix#1: Branch #1 Class C fires correctly. Hook exits 0 with
+# permissionDecision=allow + propose-and-validate additionalContext.
+assert_rc "exit code is 0 (Class C nudge is allow-with-context)" 0 "$rc"
 assert_contains "names the offending type slug" "$out" "bogus-unregistered-type"
-# When substrate is fixed, swap the next two assertions:
-#   - desired: assert_contains "Class C nudge fragment" "$out" "SP14 Branch #1 Class C"
-#   - desired: assert_contains "/govern register hint" "$out" "/govern register --kind file-type"
-# Until fix lands, assert the actual fall-through behavior:
-assert_contains "current substrate falls through to R-32 Tier 2 deny" "$out" "R-32 UNKNOWN TYPE"
-assert_contains "permissionDecision is deny" "$out" "\"permissionDecision\": \"deny\""
+assert_contains "Class C nudge fragment" "$out" "SP14 Branch #1 Class C"
+assert_contains "/govern register hint" "$out" "/govern register --kind file-type"
+assert_contains "permissionDecision is allow" "$out" "\"permissionDecision\": \"allow\""
 
 fixture_summary

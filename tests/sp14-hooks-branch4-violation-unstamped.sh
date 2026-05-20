@@ -17,9 +17,10 @@ stage_substrate
 
 printf '[fixture] Branch #4 — unstamped write to plans-tree (violation/deny)\n'
 
-# Substrate line 172 hardcodes B4_PT_PARENT="$HOME/.claude-plans" — does NOT
-# use $PLANS_DIR. Target must live under jailed-HOME-rooted .claude-plans.
-target="$HOME/.claude-plans/_backlog.md"
+# Post-fix#3 (T-33 2026-05-20): substrate line 172 now honors $PLANS_DIR
+# (`B4_PT_PARENT="${PLANS_DIR:-$HOME/.claude-plans}"`). Setup helper exports
+# PLANS_DIR="$TEMPROOT/plans" so the librarian-files target lives there.
+target="$PLANS_DIR/_backlog.md"
 mkdir -p "$(dirname "$target")"
 
 content="# System Backlog

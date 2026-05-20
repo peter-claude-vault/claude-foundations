@@ -70,7 +70,7 @@ decision_quality_branch() {
   # data flows in through argv[1..3].
   aq_decision=$(python3 - "$aq_input_file" "$aq_telemetry_path" "$aq_phase" "${CLAUDE_SESSION_ID:-unknown}" <<'PYEOF' 2>/dev/null || echo "allow"
 import sys, json, re, datetime, os
-KEYWORDS = re.compile(r'\b(approach|option|path|strategy|direction|which way|should we)\b', re.I)
+KEYWORDS = re.compile(r'\b(approach|option|(?:which|code|execution|happy|critical|decision) path|strategy|direction|which way|should we)\b', re.I)
 YESNO = re.compile(r'^(yes|yeah|yep|sure|ok|okay|no|nope|cancel|skip|continue|stop|done|abort|allow|deny)\b', re.I)
 ANNOTATION = re.compile(r'\bresearch_complete:\s*\S+', re.I)
 input_path, telemetry_path, phase, session_id = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
@@ -190,7 +190,7 @@ hard_constraints_branch() {
   printf '%s' "$INPUT" > "$hc_input_file"
   hc_substantive=$(python3 - "$hc_input_file" <<'PYEOF' 2>/dev/null || echo "false"
 import sys, json, re
-KEYWORDS = re.compile(r'\b(approach|option|path|strategy|direction|which way|should we)\b', re.I)
+KEYWORDS = re.compile(r'\b(approach|option|(?:which|code|execution|happy|critical|decision) path|strategy|direction|which way|should we)\b', re.I)
 YESNO = re.compile(r'^(yes|yeah|yep|sure|ok|okay|no|nope|cancel|skip|continue|stop|done|abort|allow|deny)\b', re.I)
 input_path = sys.argv[1]
 try:

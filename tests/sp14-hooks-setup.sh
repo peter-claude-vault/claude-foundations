@@ -139,6 +139,23 @@ stage_substrate() {
 
   # 6. Ensure exec bits on substrate
   chmod +x "$HOME/.claude/hooks/pre-write-guard.sh" "$HOME/.claude/hooks/pre-asq-guard.sh" 2>/dev/null || true
+
+  # 7. Stage an overlay-master.json that registers `vault-writer` as a known
+  #    file-type so Branch #1 Class C does not intercept Vault Writers/*.md
+  #    writes (those are owned by Branch #3 which validates the writer-
+  #    reference frontmatter contract). foundation-master.json does NOT yet
+  #    ship vault-writer in frontmatter.types (deferred to SP15 foundation-
+  #    master regen per spec.md Scope (out)); the overlay fills that gap for
+  #    fixture-time so Branch #3 can fire without Class C short-circuit.
+  cat > "$HOME/.claude/governance/overlay-master.json" <<'JSON'
+{
+  "frontmatter": {
+    "types": {
+      "vault-writer": {}
+    }
+  }
+}
+JSON
 }
 
 # --- Payload builders --------------------------------------------------------

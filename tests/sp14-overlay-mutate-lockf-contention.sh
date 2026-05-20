@@ -57,13 +57,10 @@ else
   emit_fail "background lock holder died prematurely"
 fi
 
-# Foreground library invocation: should fail-fast.
-# The library contract documents rc=5 on lock contention but the lib has a
-# substrate bug: `if ! /usr/bin/lockf ...; then rc=$?; ...; exit "$rc"` — `$?`
-# inside the `if !` then-branch is 0 (inverted), not the lockf exit code 75.
-# So library returns rc=0 with no exit 5 fired. Fixture asserts the
-# observable signals that ARE correct (stderr "already locked" / no partial
-# write / fail-fast timing) and flags the rc=0 outcome as a substrate divergence.
+# Foreground library invocation: should fail-fast with rc=5.
+# Substrate bug FIXED in Batch J 2026-05-20 (T-33 fix #6): the lockf invocation
+# now uses `lockf ... || rc=$?` pattern instead of `if ! lockf; then rc=$?`,
+# so the documented rc=5 on lock contention now fires correctly.
 PAYLOAD="$TEMPROOT/p.json"
 printf '%s\n' '{"taxonomy":{"dimension_prefixes":{"x":["y"]}}}' > "$PAYLOAD"
 
@@ -85,12 +82,11 @@ fi
 # Fail-fast timing (lockf -k -t 0 is non-blocking).
 [ "$DUR" -le "2" ] && emit_pass "fail-fast: rejection took ${DUR}s (<=2s)" || emit_fail "rejection took ${DUR}s (expected fail-fast <=2s)"
 
-# Library rc — documents rc=5 but lockf-rc-handling has a bug; record actual
-# behavior for substrate-divergence audit trail.
+# Library rc — post-fix#6, contention is signaled as rc=5 per library contract.
 if [ "$RC" = "5" ]; then
-  emit_pass "rc=5 (library contract honored)"
+  emit_pass "rc=5 (library contract honored post-T-33 fix #6)"
 else
-  emit_pass "rc=$RC (substrate divergence: library contract documents rc=5 on lock contention but \`if ! lockf; then rc=\$?\` captures inverted status; flagged for follow-up library batch fix)"
+  emit_fail "rc=$RC (expected rc=5 post-T-33 fix #6; library contract violated)"
 fi
 
 # No partial write: overlay-master.json still empty (PRE_STATE intact).
