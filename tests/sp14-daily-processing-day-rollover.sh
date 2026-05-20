@@ -75,7 +75,7 @@ PACKET="$WRITER_DIR/$PACKET_SHA.json"
 jq -nc \
   --arg pv "1.1" --arg w "$WRITER_ID" --arg ts "${TODAY}T12:00:00Z" \
   --arg dp "$DEST" --arg sha "$PACKET_SHA" --arg body "$BODY" \
-  --arg ot "md" --arg pk "writer-emit" \
+  --arg ot "markdown" --arg pk "writer-emit" \
   '{packet_version:$pv,writer_id:$w,emitted_at:$ts,destination_path:$dp,content_sha256:$sha,body:$body,output_type:$ot,metadata:{},packet_kind:$pk}' \
   > "$PACKET"
 

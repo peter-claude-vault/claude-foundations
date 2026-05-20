@@ -248,6 +248,93 @@ operator_edit_detected() {
   return 1
 }
 
+# Step 8.5 + 8.6 helper (per SKILL.md L-102..L-139 / spec.md §8 / writer-
+# pipeline-layering.md L-99..L-104 + L-121..L-139 / §A60 + §A61).
+#
+# Inputs: destination, writer_id, content_sha, output_type, packet_kind, source_id.
+#
+# Behavior:
+#   - Step 8.5: append one row to
+#     $VAULT_WRITER_STATE_ROOT/daily-processing/$(utc-today)/<dest-slug>.jsonl.
+#     Destination-slug derivation: strip leading `/`; replace `/`, ` `, `.`
+#     with `_`. Row shape: {ts, packet_sha, writer_id, destination_path,
+#     content_sha256, output_type, packet_kind, write_bucket}. Atomic `>>`
+#     append (POSIX atomic for sub-PIPE_BUF writes). MPSC discipline:
+#     reconciler is the sole writer. Day-rollover immutability via UTC-date
+#     filename keying.
+#   - Step 8.6: invoke `bash $REPO_ROOT/lib/manifest-record.sh record-write`
+#     with derived write_bucket (create | modify-append | modify-amend) +
+#     optional --supersedes <prior-active-row-id> in the same library
+#     transaction. Best-effort: when manifest not yet bootstrapped (no
+#     `init` called; typical in dev/fixture for step-8.5-isolated tests),
+#     skip silently — install scaffolding bootstraps in production.
+#
+# write_bucket derivation per SKILL.md L-126-129:
+#   - 0 prior rows at destination          → "create"
+#   - >0 prior rows + packet_kind=amender-replacement → "modify-amend"
+#   - else                                 → "modify-append"
+#
+# Returns 0 on success or skip-manifest-best-effort; 1 on JSONL write failure
+# (hard requirement; step 8.5 row IS the audit signal that the reconciler
+# touched the destination).
+emit_daily_processing_and_manifest_row() {
+  local destination="$1" writer_id="$2" content_sha="$3" output_type="$4" packet_kind="$5" source_id="$6"
+  local vault_writer_state_root="${VAULT_WRITER_STATE_ROOT:-$HOME/.local/share/claude-stem/vault-writers}"
+  local today daily_dir dest_slug jsonl_file
+  today=$(date -u +%Y-%m-%d)
+  daily_dir="$vault_writer_state_root/daily-processing/$today"
+  dest_slug=$(printf '%s' "$destination" | sed 's|^/||; s|/|_|g; s/ /_/g; s/\./_/g')
+  jsonl_file="$daily_dir/$dest_slug.jsonl"
+
+  # Manifest history query (for write_bucket derivation + supersession id).
+  local manifest_record manifest_path
+  manifest_record="$REPO_ROOT/lib/manifest-record.sh"
+  manifest_path="${WRITER_MANIFEST_PATH:-$vault_writer_state_root/manifest.sqlite}"
+  local write_bucket="create"
+  local prior_active_id=""
+  if [ -r "$manifest_record" ] && [ -f "$manifest_path" ]; then
+    local history
+    history=$(bash "$manifest_record" query-destination-history --destination-path "$destination" 2>/dev/null)
+    if [ -n "$history" ]; then
+      prior_active_id=$(printf '%s\n' "$history" | jq -rs '[.[] | select(.status == "active")] | .[0].id // ""' 2>/dev/null)
+      if [ "$packet_kind" = "amender-replacement" ]; then
+        write_bucket="modify-amend"
+      else
+        write_bucket="modify-append"
+      fi
+    fi
+  fi
+
+  # Step 8.5: append daily-processing JSONL row.
+  mkdir -p "$daily_dir" 2>/dev/null || return 1
+  local row
+  row=$(jq -nc \
+    --arg ts "$(now_utc)" \
+    --arg packet_sha "$content_sha" \
+    --arg writer_id "$writer_id" \
+    --arg destination_path "$destination" \
+    --arg content_sha256 "$content_sha" \
+    --arg output_type "$output_type" \
+    --arg packet_kind "$packet_kind" \
+    --arg write_bucket "$write_bucket" \
+    '{ts:$ts,packet_sha:$packet_sha,writer_id:$writer_id,destination_path:$destination_path,content_sha256:$content_sha256,output_type:$output_type,packet_kind:$packet_kind,write_bucket:$write_bucket}')
+  printf '%s\n' "$row" >> "$jsonl_file" || return 1
+
+  # Step 8.6: write manifest row (best-effort; skip when manifest not initialized).
+  if [ -r "$manifest_record" ] && [ -f "$manifest_path" ]; then
+    bash "$manifest_record" record-write \
+      --writer-id "$writer_id" \
+      --destination-path "$destination" \
+      --content-sha256 "$content_sha" \
+      --write-bucket "$write_bucket" \
+      ${packet_kind:+--packet-kind "$packet_kind"} \
+      ${source_id:+--source-id "$source_id"} \
+      ${prior_active_id:+--supersedes "$prior_active_id"} \
+      >/dev/null 2>&1 || true
+  fi
+  return 0
+}
+
 # Apply a packet to its destination per the resolved rules.
 # Returns 0 on success; non-zero on failure.
 apply_packet() {
@@ -258,11 +345,13 @@ apply_packet() {
     audit_emit "$packet" "$writer_id" "" "parse" "FAIL"
     return 1
   fi
-  local destination output_type emitted_at content_sha
+  local destination output_type emitted_at content_sha packet_kind source_id
   destination=$(jq -r '.destination_path // empty' "$packet")
   output_type=$(jq -r '.output_type // empty' "$packet")
   emitted_at=$(jq -r '.emitted_at // empty' "$packet")
   content_sha=$(jq -r '.content_sha256 // empty' "$packet")
+  packet_kind=$(jq -r '.packet_kind // "writer-emit"' "$packet")
+  source_id=$(jq -r '.source_id // empty' "$packet")
   if [ -z "$destination" ] || [ -z "$output_type" ] || [ -z "$content_sha" ]; then
     sidecar_error "$packet" "packet-missing-required-fields"
     audit_emit "$packet" "$writer_id" "$destination" "parse" "FAIL"
@@ -304,10 +393,10 @@ apply_packet() {
   local tmp_dest="$destination.tmp.$$"
   mkdir -p "$(dirname "$destination")" 2>/dev/null || true
   case "$output_type" in
-    md)
+    markdown)
       if ! jq -r '.body' "$packet" > "$tmp_dest" 2>/dev/null; then
         rm -f "$tmp_dest"
-        sidecar_error "$packet" "body-write-md-failed"
+        sidecar_error "$packet" "body-write-markdown-failed"
         audit_emit "$packet" "$writer_id" "$destination" "write" "FAIL"
         return 1
       fi
@@ -344,6 +433,15 @@ apply_packet() {
     return 1
   fi
   rm -f "$packet" 2>/dev/null || true
+  # Step 8.5 + 8.6 (per SKILL.md L-102..L-139). JSONL is hard requirement
+  # (row IS the audit signal); manifest is best-effort (skip when not
+  # bootstrapped; install scaffolding handles in production).
+  if ! emit_daily_processing_and_manifest_row \
+        "$destination" "$writer_id" "$content_sha" "$output_type" \
+        "$packet_kind" "$source_id"; then
+    audit_emit "$packet" "$writer_id" "$destination" "manifest" "FAIL"
+    return 1
+  fi
   audit_emit "$packet" "$writer_id" "$destination" "$merge" "OK"
   return 0
 }

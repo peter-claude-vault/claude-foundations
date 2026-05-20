@@ -25,8 +25,8 @@
 #     "emitted_at": "<ISO-8601 UTC>",
 #     "destination_path": "<Mustache-resolved absolute path>",
 #     "content_sha256": "<sha256 of body>",
-#     "body": "<string for md / object for json/structured>",
-#     "output_type": "md | json | sqlite | db | opaque",
+#     "body": "<string for markdown / object for json/structured>",
+#     "output_type": "markdown | json | sqlite | db | opaque",
 #     "metadata": { ... opaque to reconciler ... },
 #     "packet_kind": "writer-emit | amender-replacement | amender-conflict",
 #     "source_id": "<optional caller-supplied source identifier; omitted if empty>"
@@ -60,7 +60,7 @@ staging-emit.sh — vault writer staging-packet emission helper.
 Usage:
   staging-emit.sh --writer-id <id>
                   --destination-path <path>
-                  --output-type <md|json|sqlite|db|opaque>
+                  --output-type <markdown|json|sqlite|db|opaque>
                   --body-file <path>
                   [--metadata-file <path>]
                   [--dedup sha256-content]
@@ -73,9 +73,10 @@ Required:
   --destination-path    Absolute path where reconciler will eventually write
                         (Mustache substitution already resolved by caller per
                         Session 5 L-69 foundation_variable_namespace).
-  --output-type         One of: md | json | sqlite | db | opaque (per Session
-                        4 L-38 output-type universe + file-type-contracts/
-                        vault-writer.md.json destinations_entry_shape enums).
+  --output-type         One of: markdown | json | sqlite | db | opaque (per
+                        Session 4 L-38 output-type universe + file-type-
+                        contracts/vault-writer.md.json destinations_entry_shape
+                        enums).
   --body-file           Path to file containing the proposed-write body.
                         Reads bytes; sha256 computed over body content.
 
@@ -268,7 +269,7 @@ fi
 
 # ---- body marshaling --------------------------------------------------------
 #
-# For output_type=md: body is read as-is as a string.
+# For output_type=markdown: body is read as-is as a string.
 # For output_type=json: body is parsed as JSON object (jq -e .).
 # For sqlite/db/opaque: body is read as base64-encoded bytes for safe JSON
 # embedding (these output types are not text-readable; reconciler base64-
@@ -277,7 +278,7 @@ fi
 BODY_JQ_ARGS=""
 
 case "$OUTPUT_TYPE" in
-  md)
+  markdown)
     BODY_RAW=$(cat "$BODY_FILE")
     BODY_JSON=$(printf '%s' "$BODY_RAW" | jq -Rs '.')
     ;;

@@ -56,7 +56,7 @@ PACKET="$WRITER_DIR/$PACKET_SHA.json"
 jq -nc \
   --arg pv "1.1" --arg w "$WRITER_ID" --arg ts "2026-05-20T12:00:00Z" \
   --arg dp "$DEST" --arg sha "$PACKET_SHA" --arg body "$BODY" \
-  --arg ot "md" --arg pk "writer-emit" --arg src "granola-mtg-create" \
+  --arg ot "markdown" --arg pk "writer-emit" --arg src "granola-mtg-create" \
   '{packet_version:$pv,writer_id:$w,emitted_at:$ts,destination_path:$dp,content_sha256:$sha,body:$body,output_type:$ot,metadata:{},packet_kind:$pk,source_id:$src}' \
   > "$PACKET"
 
@@ -109,7 +109,7 @@ PACKET2="$WRITER_DIR2/$PACKET_SHA2.json"
 jq -nc \
   --arg pv "1.1" --arg w "$WRITER_ID" --arg ts "2026-05-20T12:05:00Z" \
   --arg dp "$DEST2" --arg sha "$PACKET_SHA2" --arg body "$BODY2" \
-  --arg ot "md" --arg pk "writer-emit" \
+  --arg ot "markdown" --arg pk "writer-emit" \
   '{packet_version:$pv,writer_id:$w,emitted_at:$ts,destination_path:$dp,content_sha256:$sha,body:$body,output_type:$ot,metadata:{},packet_kind:$pk}' \
   > "$PACKET2"
 

@@ -312,6 +312,24 @@ sig1_amender_paused() {
   return 1
 }
 
+# Signal 3: Karpathy `reviewed: true` checkpoint per spec §8.5 3-signal
+# survivorship hybrid. Destination frontmatter `reviewed: true` indicates
+# operator has reviewed and accepted the current state; amender short-circuits
+# cleanly (no LLM call, no sidecar). Distinct from sig2 operator-edit (which
+# can fire on stale content-hash drift even without explicit operator review)
+# and from sig1 amender_paused (which is an explicit pause directive).
+# Returns 0 if reviewed:true present; 1 otherwise.
+sig3_reviewed_checkpoint() {
+  local dest="$1"
+  if [ ! -f "$dest" ]; then return 1; fi
+  local val
+  val=$(fm_value "$dest" "reviewed")
+  case "$val" in
+    true|True|TRUE|yes|Yes|YES) return 0 ;;
+  esac
+  return 1
+}
+
 # Signal 2: operator-edit-wins.
 # Signal A: last_user_edit frontmatter timestamp > packet emitted_at.
 # Signal B: content-hash diff against most-recent manifest active row's
@@ -403,6 +421,15 @@ process_packet() {
     return 0
   fi
 
+  # Survivorship signal 3: Karpathy reviewed:true checkpoint (clean pause; no
+  # LLM call, no sidecar). Per spec §8.5 3-signal hybrid. Numbered #3 in spec
+  # but invoked between sig1 and sig2 because reviewed:true is a simpler,
+  # explicit-intent gate than the heuristic content-drift sig2.
+  if sig3_reviewed_checkpoint "$destination"; then
+    audit_emit "$packet" "$writer_id" "$destination" "survivorship-skip" "REVIEWED-CHECKPOINT" "$prompt_id" "reviewed-checkpoint-frontmatter"
+    return 0
+  fi
+
   # Survivorship signal 2: operator-edit-wins.
   if sig2_operator_edit "$destination" "$packet_emitted_at"; then
     # Signal 3: terminal — write conflict sidecar.
@@ -461,8 +488,9 @@ process_packet() {
     printf '%s\n' "$prompt_body"
   } > "$tmp_prompt"
 
-  if ! claude -p < "$tmp_prompt" > "$tmp_output" 2>/dev/null; then
-    rc=$?
+  rc=0
+  claude -p < "$tmp_prompt" > "$tmp_output" 2>/dev/null || rc=$?
+  if [ "$rc" -ne 0 ]; then
     rm -f "$tmp_prompt" "$tmp_output"
     audit_emit "$packet" "$writer_id" "$destination" "claude-p" "FAIL" "$prompt_id" "claude-p-rc-$rc"
     sidecar_conflict "$packet" "claude-p-rc-$rc" "$destination" "[]"
@@ -486,7 +514,7 @@ process_packet() {
 
   STAGING_EMIT_ARGS=" --writer-id $emit_writer_id"
   STAGING_EMIT_ARGS="$STAGING_EMIT_ARGS --destination-path $destination"
-  STAGING_EMIT_ARGS="$STAGING_EMIT_ARGS --output-type md"
+  STAGING_EMIT_ARGS="$STAGING_EMIT_ARGS --output-type markdown"
   STAGING_EMIT_ARGS="$STAGING_EMIT_ARGS --body-file $tmp_output"
   STAGING_EMIT_ARGS="$STAGING_EMIT_ARGS --packet-kind amender-replacement"
   if [ -n "$source_id" ]; then
@@ -494,8 +522,9 @@ process_packet() {
   fi
 
   # shellcheck disable=SC2086
-  if ! STAGING_ROOT="$STAGING_ROOT" bash "$STAGING_EMIT" $STAGING_EMIT_ARGS 2>/dev/null; then
-    rc=$?
+  rc=0
+  STAGING_ROOT="$STAGING_ROOT" bash "$STAGING_EMIT" $STAGING_EMIT_ARGS 2>/dev/null || rc=$?
+  if [ "$rc" -ne 0 ]; then
     rm -f "$tmp_output"
     audit_emit "$packet" "$writer_id" "$destination" "staging-emit" "FAIL" "$prompt_id" "staging-emit-rc-$rc"
     sidecar_conflict "$packet" "staging-emit-rc-$rc" "$destination" "[]"

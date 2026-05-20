@@ -58,7 +58,7 @@ jq -nc \
   --arg dp "$DEST" \
   --arg sha "$PACKET_SHA" \
   --arg body "$BODY" \
-  --arg ot "md" \
+  --arg ot "markdown" \
   --arg pk "writer-emit" \
   '{packet_version:$pv,writer_id:$w,emitted_at:$ts,destination_path:$dp,content_sha256:$sha,body:$body,output_type:$ot,metadata:{},packet_kind:$pk}' \
   > "$PACKET"
@@ -96,7 +96,7 @@ if [ -f "$JSONL_FILE" ]; then
     ".writer_id == \"$WRITER_ID\"" \
     ".destination_path == \"$DEST\"" \
     ".content_sha256 == \"$PACKET_SHA\"" \
-    '.output_type == "md"' \
+    '.output_type == "markdown"' \
     '.packet_kind == "writer-emit"' \
     '.write_bucket == "create"'
   do
