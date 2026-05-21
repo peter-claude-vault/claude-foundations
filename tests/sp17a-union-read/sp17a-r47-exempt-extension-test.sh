@@ -64,7 +64,10 @@ esac
 
 # ---- Sandbox setup ----------------------------------------------------------
 
-FOUNDATION_REPO="${FOUNDATION_REPO:-$HOME/Code/claude-stem}"
+# Resolve repo from script location so tests bind to THIS worktree, not the
+# live ~/Code/claude-stem (matches T-5 sp17a-r52-write-time-deny-test.sh).
+_TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+FOUNDATION_REPO="${FOUNDATION_REPO:-$(cd "$_TEST_DIR/../.." && pwd)}"
 HOOK="$FOUNDATION_REPO/hooks/pre-write-guard.sh"
 FOUNDATION_SRC="$FOUNDATION_REPO/governance/foundation-master.json"
 
