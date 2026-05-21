@@ -21,7 +21,7 @@
 #   R-34  self-healing boundary                          — documentary (53-spine-remediation-followup/_research/r34-self-healing-boundary.md)
 #   R-35  stage-gated promotion framework               — documentary (53-spine-remediation-followup/_research/r35-stage-gated-promotion.md)
 #   R-36  Stop-hook touched-file drift scan            — ~/.claude/hooks/stop-drift-scan.sh
-#   R-37  schema-addition lockstep commit rule         — documentary (enforced by git atomicity)
+#   R-37  schema-addition lockstep commit rule         — documentary (enforced by git atomicity); NO hook branch exists. SP17a T-3 audit (2026-05-21) confirmed: the "R-37 atomic lockstep DENY" referenced in the SP17a tasks.md T-3 description is a misframing — there is no enforcement code to retrofit. Documentary-only across pre-write-guard.sh.
 #   R-38  blockquote summary advisory                  — ~/.claude/hooks/post-write-verify.sh (combined R-38+R-39 block)
 #   R-39  provides: presence advisory                  — ~/.claude/hooks/post-write-verify.sh (same block)
 set -euo pipefail
@@ -724,6 +724,49 @@ if [[ -n "$BUNDLE_JSON" ]]; then
 fi
 
 # =============================================================================
+# SP17a T-3 retrofit: foundation+overlay union view at TOP LEVEL.
+# SP16 + SP17a-T-1/T-2 confined the helper invocation to the 3-tier vault
+# block. SP17a T-3 lifts the load here so SP14 Branch #1/#2 below can
+# consume the same union view without a separate helper round-trip — single
+# invocation per hook fire instead of N. Per spec risk row (helper ~50ms
+# per call): one call per fire is acceptable; existing in-block load below
+# is replaced by a no-op pass-through using $UNION_JSON.
+#
+# Helper invoked with --force-override: hook READ for enforcement, not
+# overlay WRITE. R-52 write-time DENY is the SINGLE branch WITHOUT
+# --force-override (added in SP17a T-5 at a narrow file-path scope).
+#
+# Helper path resolution mirrors the in-block pattern: $FOUNDATION_OVERLAY_LOAD
+# env override for test isolation, else $_HOOK_DIR/../lib/foundation-overlay-load.sh.
+# Fall-back to UNION_JSON="$BUNDLE_JSON" if helper unavailable or fails
+# (preserves pre-retrofit foundation-only semantics).
+# =============================================================================
+_HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd 2>/dev/null || true)
+# Helper path resolution: support BOTH foundation-repo layout (lib/ sibling
+# of hooks/) AND post-install layout (lib/*.sh shipped INTO hooks/lib/ per
+# install.sh Step 3 cp at L576). Env override takes precedence for test
+# isolation. SP17a T-3 catches the SP16 latent path bug surfaced by Branch
+# #1/#2/#3 needing the helper at hook-top time.
+_FOUNDATION_OVERLAY_LOAD="${FOUNDATION_OVERLAY_LOAD:-}"
+if [[ -z "$_FOUNDATION_OVERLAY_LOAD" ]]; then
+  if [[ -x "$_HOOK_DIR/lib/foundation-overlay-load.sh" ]]; then
+    _FOUNDATION_OVERLAY_LOAD="$_HOOK_DIR/lib/foundation-overlay-load.sh"
+  elif [[ -x "$_HOOK_DIR/../lib/foundation-overlay-load.sh" ]]; then
+    _FOUNDATION_OVERLAY_LOAD="$_HOOK_DIR/../lib/foundation-overlay-load.sh"
+  fi
+fi
+UNION_JSON=""
+if [[ -n "$_FOUNDATION_OVERLAY_LOAD" ]] && [[ -x "$_FOUNDATION_OVERLAY_LOAD" ]] && [[ -f "$FOUNDATION_MASTER" ]]; then
+  UNION_JSON=$("$_FOUNDATION_OVERLAY_LOAD" \
+    --foundation-path "$FOUNDATION_MASTER" \
+    --overlay-path "${OVERLAY_MASTER_PATH:-$HOME/.claude/governance/overlay-master.json}" \
+    --force-override 2>/dev/null || true)
+fi
+if [[ -z "$UNION_JSON" ]]; then
+  UNION_JSON="$BUNDLE_JSON"
+fi
+
+# =============================================================================
 # DOC-DEPENDENCY REGISTRY CHECK (spine-remediation Session 10; SP13 T-3 reads
 # from foundation-master.json#doc_dependencies instead of legacy
 # ~/.claude/hooks/doc-dependencies.json)
@@ -836,16 +879,21 @@ if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
   if [[ -z "$B1_FRAGMENT" ]] && [[ "$B1_DEPTH" -ge "1" ]]; then
     # Foundation system folders per SP13 Session 1 lock.
     B1_FOUNDATION_FOLDERS=$'Archive\nLogs\nMeetings\nPlans\nSkills\nSystem Governance\nVault Writers'
-    # Augment with foundation-master.path_routing keys + overlay-master keys.
-    B1_FM_ROUTING=""
-    if [[ -n "${BUNDLE_JSON:-}" ]]; then
-      B1_FM_ROUTING=$(jq -r '.path_routing // {} | keys[]?' <<<"$BUNDLE_JSON" 2>/dev/null || true)
+    # SP17a T-3: augment with foundation+overlay path_routing keys via union
+    # view. Single jq pass over UNION_JSON captures BOTH the foundation-side
+    # top-level `.path_routing` (legacy denorm slot; retires in T-6) AND the
+    # pillar-nested `.frontmatter.path_routing` (overlay-extended path).
+    # Replaces the prior 3-source manual union (BUNDLE jq + direct overlay
+    # file read) with one helper-mediated read; overlay R-52 enforcement runs
+    # through the helper.
+    B1_KNOWN_ROUTING=""
+    if [[ -n "${UNION_JSON:-}" ]]; then
+      B1_KNOWN_ROUTING=$(jq -r '
+        (.path_routing // {} | keys[]?),
+        (.frontmatter.path_routing // {} | keys[]?)
+      ' <<<"$UNION_JSON" 2>/dev/null || true)
     fi
-    B1_OVERLAY_ROUTING=""
-    if [[ -f "$B1_OVERLAY" ]]; then
-      B1_OVERLAY_ROUTING=$(jq -r '.frontmatter.path_routing // {} | keys[]?' "$B1_OVERLAY" 2>/dev/null || true)
-    fi
-    B1_KNOWN_TOPS=$(printf '%s\n%s\n%s\n' "$B1_FOUNDATION_FOLDERS" "$B1_FM_ROUTING" "$B1_OVERLAY_ROUTING" | LC_ALL=C sort -u)
+    B1_KNOWN_TOPS=$(printf '%s\n%s\n' "$B1_FOUNDATION_FOLDERS" "$B1_KNOWN_ROUTING" | LC_ALL=C sort -u)
     if ! printf '%s\n' "$B1_KNOWN_TOPS" | grep -Fxq "$B1_TOP"; then
       B1_FRAGMENT="[Propose-and-Validate — SP14 Branch #1 Class A / L-28] You are writing to a new top-level vault folder: '${B1_TOP}/'. Foundation system folders (Vault Writers, Logs, Meetings, System Governance, Plans, Skills, Archive) + your registered overlay path_routing entries don't include this. Suggested: run \`/govern register --kind folder --target '${B1_TOP}/'\` to register naming/tagging/doc-deps + type-mapping for this cluster, OR dismiss to proceed (logged in governance-action-log as \`unregistered: true\`, proposed_by: hook-class-a; surfaces via librarian governance-parity-audit). Soft-mandate; frictionless skip available."
     fi
@@ -858,13 +906,16 @@ if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
     B1_C_CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // empty')
     if [[ -n "$B1_C_CONTENT" ]]; then
       B1_C_TYPE=$(printf '%s\n' "$B1_C_CONTENT" | awk '/^---[[:space:]]*$/{n++; next} n==1{print} n>=2{exit}' | grep -E '^type:' | head -1 | sed -E 's/^type:[[:space:]]*//; s/[[:space:]]*$//; s/^"//; s/"$//; s/^'\''//; s/'\''$//' || true)
-      if [[ -n "$B1_C_TYPE" ]] && [[ -n "${BUNDLE_JSON:-}" ]]; then
-        B1_FM_TYPES=$(jq -r '(.types // {} | keys[]?), (.r32_type_aliases // {} | keys[]?)' <<<"$BUNDLE_JSON" 2>/dev/null || true)
-        B1_OVERLAY_TYPES=""
-        if [[ -f "$B1_OVERLAY" ]]; then
-          B1_OVERLAY_TYPES=$(jq -r '.frontmatter.types // {} | keys[]?' "$B1_OVERLAY" 2>/dev/null || true)
-        fi
-        B1_KNOWN_TYPES=$(printf '%s\n%s\n' "$B1_FM_TYPES" "$B1_OVERLAY_TYPES" | LC_ALL=C sort -u)
+      # SP17a T-3: single union-view read covers BOTH foundation-side top-
+      # level `.types` + `.r32_type_aliases` (legacy denorm slots; retire
+      # in T-6) AND pillar-nested `.frontmatter.types` (overlay-extended).
+      # Replaces prior BUNDLE jq + direct overlay file read.
+      if [[ -n "$B1_C_TYPE" ]] && [[ -n "${UNION_JSON:-}" ]]; then
+        B1_KNOWN_TYPES=$(jq -r '
+          (.types // {} | keys[]?),
+          (.r32_type_aliases // {} | keys[]?),
+          (.frontmatter.types // {} | keys[]?)
+        ' <<<"$UNION_JSON" 2>/dev/null | LC_ALL=C sort -u)
         if [[ -n "$B1_KNOWN_TYPES" ]] && ! printf '%s\n' "$B1_KNOWN_TYPES" | grep -Fxq "$B1_C_TYPE"; then
           B1_FRAGMENT="[Propose-and-Validate — SP14 Branch #1 Class C / L-28] You are creating a file with type: '${B1_C_TYPE}' not in foundation-master.frontmatter.types or overlay-master.frontmatter.types. This declares a new semantic extension. Suggested: run \`/govern register --kind file-type --name ${B1_C_TYPE} --contract <path>\` to author the type contract (frontmatter required/optional + body shape + path_routing if subfolder semantic divergence per F5), OR dismiss to proceed (logged as \`unregistered: true\`, proposed_by: hook-class-c). Soft-mandate; frictionless skip available."
         fi
@@ -890,18 +941,27 @@ fi
 # per L-77.
 if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
   B2_BASENAME=$(basename "$FILE_PATH" .md)
+  # SP17a T-3: TZ + pillar 7 universal read via union view (replaces direct
+  # overlay file read at L894-L897 and direct vault-writers-rules.json file
+  # read at L902-L905). Foundation pillar 7 is composed into the bundle at
+  # `.vault_writers`; overlay can extend via `.vault_writers.*` per per-leaf
+  # merge strategy (T-7). TZ default chain: union .system.timezone → empty
+  # → hardcoded "America/New_York" per [[feedback_timezone_edt]] + L-76.
   B2_TZ="America/New_York"
-  if [[ -f "$B1_OVERLAY" ]]; then
-    B2_TZ_OVERLAY=$(jq -r '.system.timezone // empty' "$B1_OVERLAY" 2>/dev/null || true)
-    [[ -n "$B2_TZ_OVERLAY" ]] && B2_TZ="$B2_TZ_OVERLAY"
+  if [[ -n "${UNION_JSON:-}" ]]; then
+    B2_TZ_UNION=$(jq -r '.system.timezone // empty' <<<"$UNION_JSON" 2>/dev/null || true)
+    [[ -n "$B2_TZ_UNION" ]] && B2_TZ="$B2_TZ_UNION"
   fi
   B2_TODAY=$(TZ="$B2_TZ" date +%F 2>/dev/null || date +%F)
 
-  # Pillar 7 universal default (slim field per L-75 + L-85).
+  # Pillar 7 universal default (slim field per L-75 + L-85) sourced from
+  # union view at .vault_writers.historical_data_warning_default. Foundation-
+  # composed pillar always present unless bundle invalid; overlay-extended
+  # value (via /govern register --kind writer or equivalent) wins on collision
+  # after R-52 helper check.
   B2_UNIVERSAL=""
-  B2_VW_RULES="$HOME/Code/claude-stem/governance/vault-writers-rules.json"
-  if [[ -f "$B2_VW_RULES" ]]; then
-    B2_UNIVERSAL=$(jq -r '.historical_data_warning_default // empty' "$B2_VW_RULES" 2>/dev/null || true)
+  if [[ -n "${UNION_JSON:-}" ]]; then
+    B2_UNIVERSAL=$(jq -r '.vault_writers.historical_data_warning_default // empty' <<<"$UNION_JSON" 2>/dev/null || true)
   fi
 
   # Pillar 6 per-type pattern: derive from frontmatter type, look up in
@@ -954,7 +1014,11 @@ if [[ "$FILE_PATH" == "$B3_VW_PREFIX"* ]] && [[ "$FILE_PATH" == *.md ]]; then
       ;;
     *)
       B3_CONTRACT="$HOME/Code/claude-stem/governance/file-type-contracts/vault-writer.md.json"
-      B3_RULES="$HOME/Code/claude-stem/governance/vault-writers-rules.json"
+      # SP17a T-3 audit: prior code at this site set B3_RULES to vault-writers-
+      # rules.json but never consumed it. Branch #3 validation reads exclusively
+      # from B3_CONTRACT (the file-type-contract pillar 6 file); the pillar 7
+      # vault_writers content is consumed by Branch #2 above. Dead-var assignment
+      # removed; if a future check needs pillar 7 here, read $UNION_JSON.vault_writers.
       if [[ -f "$B3_CONTRACT" ]]; then
         B3_CONTENT=""
         if [[ "$TOOL_NAME" == "Write" ]]; then
@@ -1135,43 +1199,23 @@ print(content, end='')
 
         # =====================================================================
         # SP16 T-3 retrofit: foundation+overlay union view for R-32 type-DENY.
-        # Replaces foundation-only reads below at the retired-types lookup +
-        # unknown-type allowlist DENY with a deep-merged union view from
-        # lib/foundation-overlay-load.sh. Single-branch scope: only R-32
-        # retired/unknown DENYs at L1147-L1172 consume UNION_JSON. Other
-        # branches continue to use BUNDLE_JSON (SP17 generalizes the retrofit).
-        # Helper invoked with --force-override: this is a hook READ for type-
-        # allowlist enforcement, not an overlay WRITE; R-52 collision DENY
-        # belongs at write-time (SP17 separate branch). Helper located
-        # relative to hook dir (foundation-repo + post-install both have
-        # ../lib/foundation-overlay-load.sh) with $FOUNDATION_OVERLAY_LOAD
-        # env override for test isolation. Helper failure → fall back to
-        # foundation-only allowlist (preserves pre-spike behavior).
+        # SP17a T-3 lifted helper invocation to top-level (single-load per
+        # hook fire); this block now derives R-32-specific accepted-types
+        # from the already-loaded $UNION_JSON. Fall-back to foundation-only
+        # allowlist if UNION_JSON degenerated to BUNDLE_JSON (helper missing).
         # =====================================================================
-        _HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd 2>/dev/null || true)
-        _FOUNDATION_OVERLAY_LOAD="${FOUNDATION_OVERLAY_LOAD:-$_HOOK_DIR/../lib/foundation-overlay-load.sh}"
-        UNION_JSON=""
         R32_UNION_ACCEPTED_TYPES=""
-        if [[ -x "$_FOUNDATION_OVERLAY_LOAD" ]] && [[ -f "$FOUNDATION_MASTER" ]]; then
-          UNION_JSON=$("$_FOUNDATION_OVERLAY_LOAD" \
-            --foundation-path "$FOUNDATION_MASTER" \
-            --overlay-path "${OVERLAY_MASTER_PATH:-$HOME/.claude/governance/overlay-master.json}" \
-            --force-override 2>/dev/null || true)
-          if [[ -n "$UNION_JSON" ]]; then
-            R32_UNION_ACCEPTED_TYPES=$(jq -r \
-              '(.frontmatter.types // {} | keys[]?), (.r32_type_aliases // {} | keys[]?)' \
-              <<<"$UNION_JSON" 2>/dev/null \
-              | grep -v '^_description$' \
-              | LC_ALL=C sort -u)
-          fi
+        if [[ -n "$UNION_JSON" ]]; then
+          R32_UNION_ACCEPTED_TYPES=$(jq -r \
+            '(.frontmatter.types // {} | keys[]?), (.r32_type_aliases // {} | keys[]?)' \
+            <<<"$UNION_JSON" 2>/dev/null \
+            | grep -v '^_description$' \
+            | LC_ALL=C sort -u)
         fi
-        # Fall-back: helper unavailable or failed → foundation-only allowlist
-        # (bug stays present; helper's stderr surfaces the failure visibly).
+        # Fall-back: union derivation empty → foundation-only allowlist
+        # (bug stays present; matches pre-SP16 behavior).
         if [[ -z "$R32_UNION_ACCEPTED_TYPES" ]]; then
           R32_UNION_ACCEPTED_TYPES="$GATE_R32_ACCEPTED_TYPES"
-        fi
-        if [[ -z "$UNION_JSON" ]]; then
-          UNION_JSON="$BUNDLE_JSON"
         fi
 
         # =====================================================================

@@ -98,6 +98,17 @@ stage_substrate() {
   # 1. Hooks tree (binaries + lib + schemas)
   cp -R "$FOUNDATION_REPO/hooks/." "$HOME/.claude/hooks/" 2>/dev/null
 
+  # 1b. SP17a T-3: stage lib/foundation-overlay-load.sh into hooks/lib/ to
+  #     mirror install.sh Step 3 layout (lib/*.sh → hooks/lib/). Branch #1
+  #     Class A/C + Branch #2 now consume the union view via this helper;
+  #     substrate-without-helper degenerates union to BUNDLE_JSON and Branch
+  #     #1 Class C falsely flags overlay-extended types as unknown.
+  if [ -f "$FOUNDATION_REPO/lib/foundation-overlay-load.sh" ]; then
+    cp "$FOUNDATION_REPO/lib/foundation-overlay-load.sh" \
+       "$HOME/.claude/hooks/lib/foundation-overlay-load.sh" 2>/dev/null
+    chmod +x "$HOME/.claude/hooks/lib/foundation-overlay-load.sh" 2>/dev/null || true
+  fi
+
   # 2. registry.sh — substrate sources $HOME/.claude/hooks/lib/registry.sh
   #    Foundation-repo has lib/registry.sh but it depends on _manifest_get
   #    (defined in foundation-repo lib/paths.sh, NOT hooks/lib/paths.sh —
