@@ -59,7 +59,7 @@
     },
     "frontmatter": {
       "type": "object",
-      "description": "Full governance/frontmatter-rules.json content (SP13 T-4 absorbed types + tiers + path_routing + archetype enum/fields)",
+      "description": "Full governance/frontmatter-rules.json content (SP13 T-4 absorbed types + tiers + path_routing; SP18 retired archetype-as-governance)",
       "required": ["schema_version", "pillar", "rules", "types", "tier_compliance"],
       "additionalProperties": true,
       "properties": {
