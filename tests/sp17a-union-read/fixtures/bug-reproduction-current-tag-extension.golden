@@ -1,0 +1,14 @@
+SP17a T-1 tag-extension bug-reproduction current-state output (captured 2026-05-21T06:57:14Z)
+
+--- hook stdout ---
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Write blocked — vault schema enforcement:\\nTags not matching taxonomy prefixes (#status/, #log/): #client/acme,.\\nAdd the missing fields/fix the issues and retry."
+  }
+}
+
+--- hook stderr ---
+
+exit code: 0

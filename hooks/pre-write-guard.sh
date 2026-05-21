@@ -1175,6 +1175,33 @@ print(content, end='')
         fi
 
         # =====================================================================
+        # SP17a T-1 retrofit: foundation+overlay union view for R-32 TAXONOMY
+        # tag-prefix DENY (Tier 2 at the tag-conformance check below). Mirrors
+        # the SP16 R-32 TYPE-allowlist single-load + variable-hold pattern.
+        # Derives R32_TAXONOMY_UNION_PREFIXES from union .tagging.taxonomy.
+        # dimension_prefixes; composes regex + list mirroring the foundation-
+        # only derivation at L718-L723. Fall-back to foundation-only regex
+        # if UNION_JSON empty (preserves pre-retrofit behavior).
+        # Closes Surprise #3 (SP16 scope packet): packet 06 reproduction
+        # targets this branch but SP16 retargeted to R-32 TYPE-allowlist.
+        # =====================================================================
+        R32_TAXONOMY_UNION_PREFIXES=""
+        R32_TAXONOMY_UNION_LIST=""
+        R32_TAXONOMY_UNION_REGEX=""
+        if [[ -n "$UNION_JSON" ]]; then
+          R32_TAXONOMY_UNION_PREFIXES=$(jq -r '.tagging.taxonomy.dimension_prefixes[]?' <<<"$UNION_JSON" 2>/dev/null)
+          if [[ -n "$R32_TAXONOMY_UNION_PREFIXES" ]]; then
+            R32_TAXONOMY_UNION_LIST=$(echo "$R32_TAXONOMY_UNION_PREFIXES" | awk 'NF{printf "#%s/, ", $0}' | sed 's/, $//')
+            R32_TAXONOMY_UNION_REGEX=$(echo "$R32_TAXONOMY_UNION_PREFIXES" | awk 'NF{printf "%s|", $0}' | sed 's/|$//')
+          fi
+        fi
+        # Fall-back: helper unavailable → foundation-only regex/list
+        if [[ -z "$R32_TAXONOMY_UNION_REGEX" ]]; then
+          R32_TAXONOMY_UNION_REGEX="$GATE_R47_PREFIX_REGEX"
+          R32_TAXONOMY_UNION_LIST="$GATE_R47_PREFIX_LIST"
+        fi
+
+        # =====================================================================
         # R-32 RETIRED TYPES — Tier 2 DENY with specific replacement guidance
         # (SP13 T-3 Session 3 2026-05-14): Pre-T-3, hooks/config/gate-config.json
         # silently listed `engagement` + `project` in r32.accepted_types — drift
@@ -1440,10 +1467,14 @@ PYEOF
         # per gate-config _tag_dimensions_note (T-6, 2026-05-08): same array
         # drives R-47 advisory above AND this Tier 2 R-32 tag-conformance DENY.
         # Empty config → DENY skipped (fail-OPEN, matches R-32 type-allowlist).
-        if [[ -n "$TAGS_RAW" ]] && [[ -n "$GATE_R47_PREFIX_REGEX" ]]; then
-          INVENTED_TAGS=$(echo "$TAGS_RAW" | sed 's/^  - //' | sed 's/^"//' | sed 's/"$//' | grep -E '^#' | grep -v -E "^#(${GATE_R47_PREFIX_REGEX})/" || true)
+        # SP17a T-1: consumes union-derived R32_TAXONOMY_UNION_REGEX (foundation
+        # + overlay deep-merge) so adopter /govern register --kind tag-extension
+        # registrations land in the allowlist. Closes Q1 union-read enforcement
+        # gap (Surprise #3) for this branch.
+        if [[ -n "$TAGS_RAW" ]] && [[ -n "$R32_TAXONOMY_UNION_REGEX" ]]; then
+          INVENTED_TAGS=$(echo "$TAGS_RAW" | sed 's/^  - //' | sed 's/^"//' | sed 's/"$//' | grep -E '^#' | grep -v -E "^#(${R32_TAXONOMY_UNION_REGEX})/" || true)
           if [[ -n "$INVENTED_TAGS" ]]; then
-            TIER2_MSGS="${TIER2_MSGS}Tags not matching taxonomy prefixes (${GATE_R47_PREFIX_LIST}): $(echo "$INVENTED_TAGS" | tr '\n' ', ' | sed 's/, $//').\n"
+            TIER2_MSGS="${TIER2_MSGS}Tags not matching taxonomy prefixes (${R32_TAXONOMY_UNION_LIST}): $(echo "$INVENTED_TAGS" | tr '\n' ', ' | sed 's/, $//').\n"
           fi
         fi
 
