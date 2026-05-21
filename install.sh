@@ -579,7 +579,7 @@ if [ "$APPLY_MODE" != "1" ]; then
     {"step": 6, "op": "cp", "target": "$CLAUDE_HOME/onboarding/", "source": "$SOURCE_REPO/onboarding/", "rationale": "ship onboarding subtree"},
     {"step": 7, "op": "cp", "target": "$CLAUDE_HOME/orchestrator/", "source": "$SOURCE_REPO/orchestrator/", "rationale": "ship orchestrator subtree"},
     {"step": 8, "op": "cp", "target": "$CLAUDE_HOME/installer/", "source": "$SOURCE_REPO/installer/", "rationale": "ship installer subtree (G6 LABEL_PREFIX preserved transitively)"},
-    {"step": 8.5, "op": "cp", "target": "$CLAUDE_HOME/governance/", "source": "$SOURCE_REPO/governance/", "rationale": "ship v3 governance subtree (SP15 T-1a NEW): 8 pillars + librarian-capabilities/ + file-type-contracts/ + onboarding-reference/ (foundation-master.json regen at T-4 lands on top)"},
+    {"step": 8.5, "op": "cp", "target": "$CLAUDE_HOME/governance/", "source": "$SOURCE_REPO/governance/", "rationale": "ship v3 governance subtree (SP15 T-1a NEW): 8 pillars + librarian-capabilities/ + file-type-contracts/ + onboarding-reference/ + overlay-master.json empty 8-pillar parallel skeleton (SP15 T-1f §A54 + §A32 + §H — sibling pattern to plans-rules.json + vault-writers-rules.json; cp -n preserves adopter mutations after first /govern register). foundation-master.json regen at T-4 lands on top."},
     {"step": 8.7, "op": "cp", "target": "$CLAUDE_HOME/vault-init/", "source": "$SOURCE_REPO/vault-init/", "rationale": "ship v3 vault-init/ subtree (SP15 T-1e): foundation-canonical adopter-vault seed tree mirroring target shape per §A53 L-86 (System Governance/ + Vault Writers/ + file-type-contracts/ + Logs/Archive/ + Logs/backlog-progress/_template.md + Meetings/). Source-tree organization mirrors TARGET adopter vault tree EXACTLY; foundation authors edit vault-init/ in target shape; install/adopt copies wholesale. sha256-protected via foundation-manifest.json (T-3 regen captures entries after T-1e ships files). Content arrives via T-5/T-6a/T-6b/T-6c; T-1e ships whatever subtree exists. Renamed from v2 vault-scaffolding/ per Session 7 L-86. System Backlog.md + Archive carryover pending §A53 relocation to ~/.claude-plans/_backlog.md + _archive.md (deferred follow-up; targets undelivered)."},
     {"step": 9, "op": "cp", "target": "$CLAUDE_HOME/schemas/", "source": "$SOURCE_REPO/schemas/{14 named}.json", "rationale": "ship 14 named schemas + README (SP15 T-1a adds 6 SP14 schemas: overlay-master + governance-action-log + vault-writers-rules + processing-rules + plans-rules + writer-manifest; SP15 T-1a also retires vault-overlay-schema reference per SP14 Batch A schema deletion)"},
     {"step": 10, "op": "cp", "target": "$CLAUDE_HOME/templates/", "source": "$SOURCE_REPO/templates/{settings,librarian-manifest-skeleton,README,vault-claude-md,claude-home-claude-md,MEMORY,updates,prd,connector-brief,context}+{launchd,settings-fragments}/", "rationale": "ship templates + launchd tmpl + settings-fragments (SP15 T-1a adds updates/prd/connector-brief/context shape templates)"},
@@ -641,7 +641,9 @@ done
 # OUT OF SCOPE for T-1b (later sub-tasks):
 #   - manifest.sqlite bootstrap at $VAULT_WRITER_STATE_ROOT/manifest.sqlite (T-1c)
 #   - empty governance-action-log.jsonl initializer (T-1c)
-#   - empty overlay-master.json skeleton at $CLAUDE_HOME/governance/ (T-1f)
+#   - empty overlay-master.json skeleton at $CLAUDE_HOME/governance/
+#     (T-1f — landed via Step 8.5 governance/ cp -R; source-tree file
+#     governance/overlay-master.json ships the 8-pillar parallel skeleton)
 #   - meeting-processor-state migration (T-2)
 state_tier_dirs="$VAULT_WRITER_STATE_ROOT $VAULT_WRITER_STATE_ROOT/daily-processing $VAULT_WRITER_STATE_ROOT/raw $CLAUDE_STATE_ROOT $CLAUDE_STATE_ROOT/vault-staging $CLAUDE_STATE_ROOT/vault-staging/_archive"
 for d in $state_tier_dirs; do
@@ -770,6 +772,17 @@ fi
 # rest of the foundation-known tree (cp -n default; --force-all → cp -f).
 # foundation-master.json regen at T-4 (release-time bundle composition) lands
 # on top of whatever this step ships; no exclusion needed.
+#
+# SP15 T-1f overlay-master.json empty 8-pillar parallel skeleton ships here as
+# a sibling governance-tier file (per §A54 + §A32 + §H). Source-tree file at
+# governance/overlay-master.json declares 8 empty pillar slots (frontmatter /
+# tagging / naming / mandatory_files / doc_dependencies / file_type_contracts /
+# vault_writers / plans), each value {} per overlay-master-schema.json $defs
+# (per-pillar stubs are min-viable {type: object}). cp -n inherently preserves
+# adopter mutations after the first /govern register call (lib/overlay-master-
+# mutate.sh is the sole write path per §A32). T-3 foundation-manifest regen
+# captures sha256 baseline automatically. Sibling-of-governance pattern:
+# vault-writers-rules.json, plans-rules.json ship the same way.
 if [ -d "$SOURCE_REPO/governance" ]; then
   cp -R $cp_clobber "$SOURCE_REPO/governance"/. "$CLAUDE_HOME/governance/" 2>/dev/null || true
 fi
