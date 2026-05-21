@@ -196,9 +196,18 @@ assert_eq "0" "$t3_bad_sha" "T3.3: every sha256 is 64 lowercase hex chars"
 t3_bad_mode="$(jq '[.files[] | select(.mode | test("^[0-7]{4}$") | not)] | length' "$T1_OUT")"
 assert_eq "0" "$t3_bad_mode" "T3.4: every mode is 4-digit octal"
 
-# Every size > 0 (no empty files in foundation tree)
-t3_zero_size="$(jq '[.files[] | select(.size <= 0)] | length' "$T1_OUT")"
-assert_eq "0" "$t3_zero_size" "T3.5: every size > 0"
+# Every non-.gitkeep size > 0 (no empty content files in foundation tree).
+# SP15 T-1e: vault-init/ ships 6 .gitkeep scaffolds (System Governance/, Vault Writers/,
+# file-type-contracts/, Logs/Archive/, Logs/backlog-progress/, Meetings/) as empty-dir
+# markers per §A53. These are by-design zero-byte; T3.5b asserts the exact contract.
+t3_zero_size="$(jq '[.files[] | select(.size <= 0 and (.path | test("\\.gitkeep$") | not))] | length' "$T1_OUT")"
+assert_eq "0" "$t3_zero_size" "T3.5: every non-.gitkeep size > 0"
+
+# .gitkeep scaffolds (vault-init/ subdir markers per §A53) must be exactly 6, all zero-byte
+t3_gitkeep_count="$(jq '[.files[] | select(.path | endswith(".gitkeep"))] | length' "$T1_OUT")"
+assert_eq "6" "$t3_gitkeep_count" "T3.5b: exactly 6 .gitkeep scaffold markers in manifest (vault-init/ subdir scaffolds)"
+t3_gitkeep_nonzero="$(jq '[.files[] | select((.path | endswith(".gitkeep")) and .size > 0)] | length' "$T1_OUT")"
+assert_eq "0" "$t3_gitkeep_nonzero" "T3.5c: every .gitkeep file is zero-byte (empty-dir marker contract)"
 
 # Sample known file: hooks/pre-write-guard.sh (verified shipped per T1.1 of install test)
 t3_pwg="$(jq -r '.files[] | select(.path=="hooks/pre-write-guard.sh") | .path' "$T1_OUT")"

@@ -41,13 +41,17 @@
 # Walked source paths (mirrors install.sh ship surface):
 #   hooks/{*.sh,*.md,MANIFEST.txt}        (top-level only; no recursion)
 #   hooks/config/*.json
-#   lib/*.sh                              (translated to hooks/lib/)
-#   skills/{8 named dirs}/**              (recursive)
-#   schemas/{6 named}.json + README.md
+#   lib/*.{sh,sql}                        (translated to hooks/lib/)
+#   hooks/lib/*.{sh,json}                 (identity; install.sh Step 3.5)
+#   skills/{12 named dirs}/**             (recursive)
+#   schemas/{14 named}.json + README.md
 #   onboarding/**                         (recursive)
 #   orchestrator/**                       (recursive)
 #   installer/**                          (recursive)
-#   templates/{settings.json,librarian-manifest-skeleton.json,README.md}
+#   governance/**                         (recursive; SP15 T-1a; install.sh Step 8.5)
+#   vault-init/**                         (recursive; SP15 T-1e; install.sh Step 8.7;
+#                                          renamed from v2 vault-scaffolding/ per Session 7 L-86)
+#   templates/{10 named files at top}
 #   templates/launchd/*.tmpl
 #   templates/settings-fragments/*.json
 #   plugins/claude-mem/v*/**              (recursive; T-1.5 deferred)
@@ -55,7 +59,9 @@
 # Excluded (runtime state, source-only artifacts, distribution-tooling):
 #   hooks/state/**          (session state; install.sh creates empty dir)
 #   tests/**                (test harness, not shipped)
-#   .git/**, .github/**, docs/**, lima/**, docker/**, vault-scaffolding/**
+#   tools/**                (release-time tools: build-foundation-master.sh +
+#                            generate-foundation-manifest.sh siblings; not installed)
+#   .git/**, .github/**, docs/**, lima/**, docker/**, research/**, _doc-overhaul/**
 #   .gitignore, .image-digest, .self-verify/**
 #   install.sh, uninstall.sh, generate-foundation-manifest.sh
 #   foundation-manifest.json (chicken-and-egg: this file is the output)
@@ -72,7 +78,7 @@ set -u
 SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 SOURCE_REPO="${SOURCE_REPO:-$SCRIPT_DIR}"
-VERSION="v2.1.3"
+VERSION="v3.0.0-rc.1"
 OUTPUT=""
 
 usage() {
@@ -86,7 +92,7 @@ Environment:
 
 Options:
   -o <path>     write JSON to <path> (default: stdout)
-  --version <ver>  pin top-level version field (default: v2.0.0-rc1)
+  --version <ver>  pin top-level version field (default: v3.0.0-rc.1)
   -h | --help   this help
 EOF
 }
@@ -134,12 +140,14 @@ emit_pairs() {
     printf 'hooks/config/%s\thooks/config/%s\n' "$base" "$base"
   done
 
-  # lib/*.sh → hooks/lib/*.sh (TRANSLATION; install.sh Step 3)
+  # lib/*.{sh,sql} → hooks/lib/*.{sh,sql} (TRANSLATION; install.sh Step 3)
   # Skip files that also exist at hooks/lib/ — install.sh Step 3.5 cp_clobbers
   # over them, so the post-install effective state is the hooks/lib/ copy.
   # Mirrors install.sh ordering: Step 3 copies lib/*, Step 3.5 overwrites
   # with hooks/lib/*. Manifest reflects post-install state, not intermediate.
-  for f in "$SOURCE_REPO/lib"/*.sh; do
+  # SP15 T-1a: *.sql wildcard captures manifest-migrate.sql (companion to
+  # manifest-record.sh; consumed at install.sh Step 1.6 manifest.sqlite bootstrap).
+  for f in "$SOURCE_REPO/lib"/*.sh "$SOURCE_REPO/lib"/*.sql; do
     [ -f "$f" ] || continue
     base="${f##*/}"
     [ -f "$SOURCE_REPO/hooks/lib/$base" ] && continue
@@ -155,9 +163,11 @@ emit_pairs() {
     printf 'hooks/lib/%s\thooks/lib/%s\n' "$base" "$base"
   done
 
-  # skills/{9 named}/** (recursive within named dirs)
-  # infer-vault-structure added v2.1.2 SP16 T-6 to mirror install.sh's 9-named scope.
-  for skill in librarian architect backlog-hygiene backlog-triage backlog-research morning-brief onboarder adopt infer-vault-structure; do
+  # skills/{12 named}/** (recursive within named dirs)
+  # infer-vault-structure added v2.1.2 SP16 T-6.
+  # SP14 Batches I/J added govern + doc-amender + writer-reconciler to mirror
+  # install.sh's 12-named scope (writer-reconciler renamed from inbox-processor).
+  for skill in librarian architect backlog-hygiene backlog-triage backlog-research morning-brief onboarder adopt infer-vault-structure govern doc-amender writer-reconciler; do
     d="$SOURCE_REPO/skills/$skill"
     [ -d "$d" ] || continue
     LC_ALL=C find "$d" -type f 2>/dev/null | LC_ALL=C sort | while IFS= read -r f; do
@@ -166,10 +176,13 @@ emit_pairs() {
     done
   done
 
-  # schemas — 9 named .json + README.md (mirrors install.sh Step 9 list).
+  # schemas — 14 named .json + README.md (mirrors install.sh Step 9 list).
   # SP13 P0 (2026-05-15) dropped vault-schema + gate-config + gate-config-schema
   # (dissolved per SP13 T-4 pillar shard / SP13 T-6 retirement scope).
-  for s in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema; do
+  # SP14 Batch A (2026-05-18) dropped vault-overlay-schema; added 6 new schemas
+  # (overlay-master, governance-action-log, vault-writers-rules, processing-rules,
+  # plans-rules, writer-manifest) per A60-A65.
+  for s in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema overlay-master-schema governance-action-log-schema vault-writers-rules-schema processing-rules-schema plans-rules-schema writer-manifest-schema; do
     f="$SOURCE_REPO/schemas/$s.json"
     [ -f "$f" ] || continue
     printf 'schemas/%s.json\tschemas/%s.json\n' "$s" "$s"
@@ -205,8 +218,38 @@ emit_pairs() {
     done
   fi
 
-  # templates/ — 6 named files at top (CLAUDE.md spine + memory bootstrap added by SP10/SP11)
-  for f in "$SOURCE_REPO/templates/settings.json" "$SOURCE_REPO/templates/librarian-manifest-skeleton.json" "$SOURCE_REPO/templates/README.md" "$SOURCE_REPO/templates/vault-claude-md-template.md" "$SOURCE_REPO/templates/claude-home-claude-md-template.md" "$SOURCE_REPO/templates/MEMORY.md.template"; do
+  # governance/** (recursive; SP15 T-1a NEW; install.sh Step 8.5)
+  # Captures v3 8-pillar substrate + file-type-contracts/ (11 contracts) +
+  # librarian-capabilities/ + onboarding-reference/ + overlay-master.json
+  # empty 8-pillar parallel skeleton + foundation-master.json bundle (T-4 regen).
+  # cp -R wholesale matches install.sh L787 ship posture; manifest captures
+  # whatever install.sh ships including .retired-* historical markers.
+  d="$SOURCE_REPO/governance"
+  if [ -d "$d" ]; then
+    LC_ALL=C find "$d" -type f 2>/dev/null | LC_ALL=C sort | while IFS= read -r f; do
+      rel="${f#$SOURCE_REPO/}"
+      printf '%s\t%s\n' "$rel" "$rel"
+    done
+  fi
+
+  # vault-init/** (recursive; SP15 T-1e NEW; install.sh Step 8.7)
+  # Foundation-canonical adopter-vault seed tree (renamed from v2 vault-scaffolding/
+  # per §A53 L-86). Includes System Governance/ + Vault Writers/ + file-type-contracts/
+  # + Logs/Archive/ + Logs/backlog-progress/_template.md + Meetings/ + System Backlog
+  # carryover (System Backlog.md + Archive; §A53 relocation deferred per S6 DQP).
+  # cp -R wholesale matches install.sh L806 ship posture; sha256-protected baselines.
+  d="$SOURCE_REPO/vault-init"
+  if [ -d "$d" ]; then
+    LC_ALL=C find "$d" -type f 2>/dev/null | LC_ALL=C sort | while IFS= read -r f; do
+      rel="${f#$SOURCE_REPO/}"
+      printf '%s\t%s\n' "$rel" "$rel"
+    done
+  fi
+
+  # templates/ — 10 named files at top (mirrors install.sh Step 10 list).
+  # CLAUDE.md spine + memory bootstrap added by SP10/SP11.
+  # SP14/SP15 added: updates-template + prd-template + connector-brief-template + context-template.
+  for f in "$SOURCE_REPO/templates/settings.json" "$SOURCE_REPO/templates/librarian-manifest-skeleton.json" "$SOURCE_REPO/templates/README.md" "$SOURCE_REPO/templates/vault-claude-md-template.md" "$SOURCE_REPO/templates/claude-home-claude-md-template.md" "$SOURCE_REPO/templates/MEMORY.md.template" "$SOURCE_REPO/templates/updates-template.md" "$SOURCE_REPO/templates/prd-template.md" "$SOURCE_REPO/templates/connector-brief-template.md" "$SOURCE_REPO/templates/context-template.md"; do
     [ -f "$f" ] || continue
     base="${f##*/}"
     printf 'templates/%s\ttemplates/%s\n' "$base" "$base"
