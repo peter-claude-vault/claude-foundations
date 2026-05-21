@@ -37,6 +37,12 @@ FOUNDATION_PATH="${FOUNDATION_MASTER_PATH:-$HOME/.claude/governance/foundation-m
 OVERLAY_PATH="${OVERLAY_MASTER_PATH:-$HOME/.claude/governance/overlay-master.json}"
 QUERY=""
 FORCE_OVERRIDE=0
+# SP17a T-4: per-pillar R-52 walk scope. Default = all 8 overlay pillars
+# (operator-recommended; per SP17a spec §"Decision Points" #2). Operator can
+# narrow via --collision-pillars <comma-sep> for testing/staged rollout.
+# Recognized pillar tokens: frontmatter, tagging, naming, mandatory_files,
+# doc_dependencies, file_type_contracts, vault_writers, plans.
+COLLISION_PILLARS="frontmatter,tagging,naming,mandatory_files,doc_dependencies,file_type_contracts,vault_writers,plans"
 
 # ---- Usage ------------------------------------------------------------------
 
@@ -49,17 +55,23 @@ Usage:
       [--foundation-path <path>] \\
       [--overlay-path <path>] \\
       [--query <jq-filter>] \\
-      [--force-override]
+      [--force-override] \\
+      [--collision-pillars <comma-sep>]
 
 Args:
-  --foundation-path  Foundation bundle path. Default: \$FOUNDATION_MASTER_PATH
-                     or ~/.claude/governance/foundation-master.json.
-  --overlay-path     Overlay path. Default: \$OVERLAY_MASTER_PATH or
-                     ~/.claude/governance/overlay-master.json.
-  --query            Optional jq filter applied to union JSON before stdout
-                     emission. Default: emit full union.
-  --force-override   Skip R-52 collision DENY for this invocation. Per ADR-0006:
-                     no persistent disable; flag must be added per write.
+  --foundation-path     Foundation bundle path. Default: \$FOUNDATION_MASTER_PATH
+                        or ~/.claude/governance/foundation-master.json.
+  --overlay-path        Overlay path. Default: \$OVERLAY_MASTER_PATH or
+                        ~/.claude/governance/overlay-master.json.
+  --query               Optional jq filter applied to union JSON before stdout
+                        emission. Default: emit full union.
+  --force-override      Skip R-52 collision DENY for this invocation. Per ADR-0006:
+                        no persistent disable; flag must be added per write.
+  --collision-pillars   Comma-separated list of pillars to walk for R-52
+                        collision detection. Default: all 8 (frontmatter,
+                        tagging, naming, mandatory_files, doc_dependencies,
+                        file_type_contracts, vault_writers, plans). SP17a T-4
+                        per-pillar generalization (operator-decided default).
 
 Exit codes:
   0  Success (union emitted; or fail-closed degraded fallback).
@@ -85,11 +97,12 @@ EOF
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --foundation-path) FOUNDATION_PATH="$2"; shift 2 ;;
-    --overlay-path)    OVERLAY_PATH="$2"; shift 2 ;;
-    --query)           QUERY="$2"; shift 2 ;;
-    --force-override)  FORCE_OVERRIDE=1; shift ;;
-    -h|--help)         usage; exit 0 ;;
+    --foundation-path)    FOUNDATION_PATH="$2"; shift 2 ;;
+    --overlay-path)       OVERLAY_PATH="$2"; shift 2 ;;
+    --query)              QUERY="$2"; shift 2 ;;
+    --force-override)     FORCE_OVERRIDE=1; shift ;;
+    --collision-pillars)  COLLISION_PILLARS="$2"; shift 2 ;;
+    -h|--help)            usage; exit 0 ;;
     *) printf 'foundation-overlay-load.sh: unknown arg: %s\n' "$1" >&2; usage >&2; exit 2 ;;
   esac
 done
@@ -119,42 +132,130 @@ if [ -r "$OVERLAY_PATH" ]; then
   fi
 fi
 
-# ---- R-52 collision check ---------------------------------------------------
-# Spike scope: .frontmatter.types pillar only (aligned with R-32 type-DENY
-# retrofit). SP17 generalizes.
+# ---- R-52 collision check (per-pillar walk; SP17a T-4 generalization) -------
+#
+# Per-pillar entity-slot registry. For each pillar, lists the SUB-KEYS where
+# overlay entries are treated as ENTITY-level R-52-collision-checkable. Other
+# sub-keys (scalar config, metadata) are not in the collision domain — they
+# overlay-replace under deep-merge (per-leaf merge strategy concern handled
+# by SP17a T-7 mutation library, not R-52).
+#
+# Pillar coverage notes:
+#   frontmatter:   types (slugs), retired_types (slugs), path_routing (folders),
+#                  rules (rule IDs).
+#   tagging:       rules (rule IDs). The tagging.taxonomy.dimension_prefixes
+#                  ARRAY is per-leaf merge concern (T-7), not entity-level
+#                  collision.
+#   naming:        rules (rule IDs).
+#   mandatory_files: rules (rule IDs), mandates (file slugs).
+#   doc_dependencies: entries (registry IDs), entities (entity names).
+#   file_type_contracts: per-key (each contract file slug) — collision
+#                  enumerated by walking overlay-side TOP-LEVEL keys.
+#   vault_writers: per-key flat config — overlay-extension typically REPLACES
+#                  scalars. Entity-level collision domain is empty; pillar
+#                  walks the slot-list and finds nothing to check (no-op),
+#                  preserving R-52 semantics by design.
+#   plans:         lifecycle (per-stage entries), backlog_row (per-field).
+#
+# Per-pillar entity-slots are emitted by _entity_slots_for(pillar) below.
+# Adding a new pillar = adding a case branch; data-driven registry would
+# require a separate JSON shape change (not in T-4 scope).
+_entity_slots_for() {
+  case "$1" in
+    frontmatter)         printf 'types\nretired_types\npath_routing\nrules\n' ;;
+    tagging)             printf 'rules\n' ;;
+    naming)              printf 'rules\n' ;;
+    mandatory_files)     printf 'rules\nmandates\n' ;;
+    doc_dependencies)    printf 'entries\nentities\n' ;;
+    file_type_contracts) printf '__top_level_keys__\n' ;;
+    vault_writers)       : ;;  # No entity-level collision domain (scalar config only).
+    plans)               printf 'lifecycle\nbacklog_row\n' ;;
+    *)                   : ;;  # Unknown pillar: silently skip (forward-compatible).
+  esac
+}
 
 if [ "$FORCE_OVERRIDE" != "1" ]; then
-  # Collect overlay type slugs that ALSO exist in foundation (collision set).
-  # Exclude _description meta key.
-  COLLISIONS=$(printf '%s' "$OVERLAY_JSON" | jq -r --argjson f "$FOUNDATION_JSON" '
-    (.frontmatter.types // {}) | keys[]?
-    | select(. != "_description")
-    | select($f.frontmatter.types[.] != null)
-  ' 2>/dev/null)
-
   DENIED_KEYS=""
-  if [ -n "$COLLISIONS" ]; then
-    while IFS= read -r ck; do
-      [ -z "$ck" ] && continue
-      # Shape-bridge: per-entry _override_reason OR top-level override_reasons
-      HAS_REASON=$(printf '%s' "$OVERLAY_JSON" | jq -r --arg k "$ck" '
-        (
-          (.frontmatter.types[$k]
-           | if type == "object" then ._override_reason else null end
-          ) // null
-        ) != null
-        or
-        (
-          (.override_reasons.frontmatter.types[$k] // null) != null
-        )
-      ' 2>/dev/null)
-      if [ "$HAS_REASON" != "true" ]; then
-        DENIED_KEYS="${DENIED_KEYS}  - frontmatter.types.${ck}\n"
+
+  # Iterate selected pillars (default = all 8; --collision-pillars narrows).
+  IFS_SAVED="$IFS"
+  IFS=','
+  # shellcheck disable=SC2086
+  set -- $COLLISION_PILLARS
+  IFS="$IFS_SAVED"
+
+  for PILLAR in "$@"; do
+    [ -z "$PILLAR" ] && continue
+    SLOTS=$(_entity_slots_for "$PILLAR")
+    [ -z "$SLOTS" ] && continue
+
+    while IFS= read -r SLOT; do
+      [ -z "$SLOT" ] && continue
+
+      # Special token: walk overlay top-level keys of the pillar object
+      # directly (file_type_contracts shape: pillar value IS a dict of
+      # contract entries; no intermediate slot key).
+      if [ "$SLOT" = "__top_level_keys__" ]; then
+        COLLISIONS=$(printf '%s' "$OVERLAY_JSON" | jq -r --argjson f "$FOUNDATION_JSON" --arg p "$PILLAR" '
+          (.[$p] // {}) | keys[]?
+          | select(startswith("_") | not)
+          | select($f[$p][.] != null)
+        ' 2>/dev/null)
+        SLOT_PATH_PREFIX="${PILLAR}"
+      else
+        COLLISIONS=$(printf '%s' "$OVERLAY_JSON" | jq -r --argjson f "$FOUNDATION_JSON" --arg p "$PILLAR" --arg s "$SLOT" '
+          (.[$p][$s] // {}) | keys[]?
+          | select(startswith("_") | not)
+          | select($f[$p][$s][.] != null)
+        ' 2>/dev/null)
+        SLOT_PATH_PREFIX="${PILLAR}.${SLOT}"
       fi
-    done <<EOF
+
+      [ -z "$COLLISIONS" ] && continue
+
+      while IFS= read -r ck; do
+        [ -z "$ck" ] && continue
+        # Shape-bridge: per-entry _override_reason OR top-level override_reasons
+        # dict. Path under override_reasons mirrors collision path.
+        if [ "$SLOT" = "__top_level_keys__" ]; then
+          HAS_REASON=$(printf '%s' "$OVERLAY_JSON" | jq -r --arg p "$PILLAR" --arg k "$ck" '
+            (
+              (.[$p][$k]
+               | if type == "object" then ._override_reason else null end
+              ) // null
+            ) != null
+            or
+            (
+              (.override_reasons[$p][$k] // null) != null
+            )
+          ' 2>/dev/null)
+        else
+          HAS_REASON=$(printf '%s' "$OVERLAY_JSON" | jq -r --arg p "$PILLAR" --arg s "$SLOT" --arg k "$ck" '
+            (
+              (.[$p][$s][$k]
+               | if type == "object" then ._override_reason else null end
+              ) // null
+            ) != null
+            or
+            (
+              (.override_reasons[$p][$s][$k] // null) != null
+            )
+            or
+            (
+              (.override_reasons[$p][$s + "." + $k] // null) != null
+            )
+          ' 2>/dev/null)
+        fi
+        if [ "$HAS_REASON" != "true" ]; then
+          DENIED_KEYS="${DENIED_KEYS}  - ${SLOT_PATH_PREFIX}.${ck}\n"
+        fi
+      done <<EOF
 $COLLISIONS
 EOF
-  fi
+    done <<EOF2
+$SLOTS
+EOF2
+  done
 
   if [ -n "$DENIED_KEYS" ]; then
     {
@@ -162,7 +263,7 @@ EOF
       printf '%b' "$DENIED_KEYS"
       printf 'To resolve, either:\n'
       printf '  (a) add per-entry _override_reason: "<text>" to the shadowing overlay entry, OR\n'
-      printf '  (b) add top-level override_reasons.frontmatter.types.<slug>: "<text>" to the overlay, OR\n'
+      printf '  (b) add top-level override_reasons.<pillar>.<slot>.<entity>: "<text>" to the overlay, OR\n'
       printf '  (c) pass --force-override for single-invocation bypass (per-write; no persistent disable per ADR-0006).\n'
     } >&2
     exit 1
