@@ -162,7 +162,10 @@ if [ -z "${CLAUDE_HOME:-}" ]; then
 fi
 
 # --- prereq binary check ---
-for bin in jq python3 plutil; do
+# sqlite3 + shasum added SP15 T-1c — required by lib/manifest-record.sh init
+# (T-1c manifest.sqlite bootstrap at Step 1.6 below). Both ship by default on
+# macOS; failing fast here is clearer than failing inside the bootstrap call.
+for bin in jq python3 plutil sqlite3 shasum; do
   if ! command -v "$bin" >/dev/null 2>&1; then
     diag "missing prereq binary: $bin"
     exit 10
@@ -568,6 +571,7 @@ if [ "$APPLY_MODE" != "1" ]; then
   "actions": [
     {"step": 1, "op": "mkdir", "target": "$CLAUDE_HOME/{hooks,hooks/lib,hooks/state,hooks/config,skills,schemas,onboarding,orchestrator,templates,templates/launchd,templates/settings-fragments,plugins,Library/LaunchAgents.staging,installer,logs,governance,governance/file-type-contracts,governance/librarian-capabilities,governance/onboarding-reference}", "rationale": "create target tree (SP15 T-1a: governance/ subtree added)"},
     {"step": 1.5, "op": "mkdir+symlink", "target": "$VAULT_WRITER_STATE_ROOT/{,daily-processing,raw} + $CLAUDE_STATE_ROOT/{,vault-staging,vault-staging/_archive} + $CLAUDE_HOME/state symlink → $CLAUDE_STATE_ROOT", "rationale": "create v3 two-root state-tier scaffold (SP15 T-1b §A60 + L-95): durable second-brain root + ephemeral Claude-runtime root + back-compat symlink at $CLAUDE_HOME/state for one release cycle (deprecated; remove in v4)"},
+    {"step": 1.6, "op": "sqlite-bootstrap+touch", "target": "$VAULT_WRITER_STATE_ROOT/manifest.sqlite + $VAULT_WRITER_STATE_ROOT/governance-action-log.jsonl", "source": "$SOURCE_REPO/lib/manifest-record.sh init (DDL: $SOURCE_REPO/lib/manifest-migrate.sql)", "rationale": "bootstrap writer-manifest SQLite substrate (SP15 T-1c §A60 + L-96): 12-field writes table + WAL mode + 4 indexes (ingestion_date / destination_path / source_id / writer_id); LangChain SQLRecordManager-aligned; idempotent via PRAGMA user_version=1. Initialize empty governance-action-log.jsonl in same step (idempotent skip-if-exists)"},
     {"step": 2, "op": "cp", "target": "$CLAUDE_HOME/hooks/", "source": "$SOURCE_REPO/hooks/{*.sh,*.md,MANIFEST.txt}", "rationale": "ship hook entry-points + MANIFEST (pre-asq-guard.sh ships via wildcard per SP15 T-1a)"},
     {"step": 3, "op": "cp", "target": "$CLAUDE_HOME/hooks/lib/", "source": "$SOURCE_REPO/lib/{*.sh,*.sql}", "rationale": "ship hook libs (lib/ to hooks/lib/ translation per A4; SP15 T-1a: *.sql wildcard ships manifest-migrate.sql companion to manifest-record.sh)"},
     {"step": 4, "op": "cp", "target": "$CLAUDE_HOME/hooks/config/", "source": "$SOURCE_REPO/hooks/config/", "rationale": "ship hook config JSON"},
@@ -655,6 +659,46 @@ elif [ -e "$backcompat_link" ]; then
 else
   ln -s "$CLAUDE_STATE_ROOT" "$backcompat_link" || { diag "state back-compat symlink creation failed: $backcompat_link → $CLAUDE_STATE_ROOT"; exit 11; }
   info "state back-compat symlink created: $backcompat_link → $CLAUDE_STATE_ROOT (deprecated; v4 removal)"
+fi
+
+# Step 1.6: manifest.sqlite bootstrap (SP15 T-1c — §A60 + L-96)
+# Bootstraps the writer-manifest SQLite substrate at
+# $VAULT_WRITER_STATE_ROOT/manifest.sqlite via lib/manifest-record.sh init
+# subcommand. Applies lib/manifest-migrate.sql DDL: single denormalized 12-
+# field writes table + WAL journal mode + 4 indexes on ingestion_date /
+# destination_path / source_id / writer_id. LangChain SQLRecordManager-
+# aligned per L-96; status enum {active, superseded} for logical
+# supersession; write_bucket enum {create, modify-append, modify-amend}
+# partitions audit queries per L-109. One-shot at install; idempotent via
+# PRAGMA user_version=1 checkpoint inside the lib (re-running is a no-op
+# preserving operator-written rows + WAL state).
+#
+# Lib + SQL companion called from $SOURCE_REPO/lib/ because the foundation
+# copy at $CLAUDE_HOME/hooks/lib/ lands later (Step 3, cp_clobber=-n);
+# bootstrap must precede the cp step so dependency order is satisfied. Lib
+# resolves its companion via SCRIPT_DIR ($SOURCE_REPO/lib/manifest-migrate.sql);
+# no separate path arg needed.
+#
+# Env-var propagation: VAULT_WRITER_STATE_ROOT passed via inline-prefix per
+# [[feedback_bash_tool_env_var_propagation]] (lib auto-derives
+# WRITER_MANIFEST_PATH = $VAULT_WRITER_STATE_ROOT/manifest.sqlite per pillar 7).
+#
+# Companion: empty governance-action-log.jsonl initializer at
+# $VAULT_WRITER_STATE_ROOT/governance-action-log.jsonl (governance mutation
+# audit log per spec §1.5; idempotent skip-if-exists).
+if ! VAULT_WRITER_STATE_ROOT="$VAULT_WRITER_STATE_ROOT" \
+     bash "$SOURCE_REPO/lib/manifest-record.sh" init; then
+  diag "manifest.sqlite bootstrap failed via $SOURCE_REPO/lib/manifest-record.sh init"
+  exit 11
+fi
+info "manifest.sqlite bootstrap applied: $VAULT_WRITER_STATE_ROOT/manifest.sqlite"
+
+gov_action_log="$VAULT_WRITER_STATE_ROOT/governance-action-log.jsonl"
+if [ -e "$gov_action_log" ]; then
+  info "governance-action-log.jsonl already present: $gov_action_log (idempotent skip)"
+else
+  : > "$gov_action_log" || { diag "governance-action-log.jsonl init failed: $gov_action_log"; exit 11; }
+  info "governance-action-log.jsonl initialized empty: $gov_action_log"
 fi
 
 # Step 2: hooks/*.sh + hooks/*.md + MANIFEST → $CLAUDE_HOME/hooks/
