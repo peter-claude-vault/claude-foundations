@@ -20,7 +20,7 @@ tags: ["#scope/reference"]
 
 Reconcile every non-exempt folder's `_index.md` against its filesystem reality. The capability is the audit-time companion to the Tier 1 post-write hook that catches writes the hook misses — cron scrapers writing via Bash redirects, direct Obsidian edits, manual file moves, deletes (which never go through the `Edit`/`Write` tool surface). The pair (`post-write-verify.sh` Tier 1 hook + this capability's Tier 2 sweep) closes the full write surface: 80% of writes go through the hook in real time; the remaining 20% surface within one audit cycle.
 
-This is the **first canonical self-healing capability under the R-34 boundary**. The boundary doctrine: mutations bounded to mechanically-derivable values (Lines from `wc -l`, Type from frontmatter `type:`, missing/orphan rows from filesystem reality, `updated:` bump on any mutation); semantic content (descriptions, ordering decisions, exemption-list amendments) is flagged for operator review and never auto-overwritten. Earlier librarian capabilities (`archetype-consistency`, `governance-parity-audit`, `packet-staleness-audit`, `log-subtype-canonical`) are read-only auditors; this capability writes back to `_index.md` files under the bounded mechanical scope.
+This is the **first canonical self-healing capability under the R-34 boundary**. The boundary doctrine: mutations bounded to mechanically-derivable values (Lines from `wc -l`, Type from frontmatter `type:`, missing/orphan rows from filesystem reality, `updated:` bump on any mutation); semantic content (descriptions, ordering decisions, exemption-list amendments) is flagged for operator review and never auto-overwritten. Earlier librarian capabilities (`governance-parity-audit`, `packet-staleness-audit`, `log-subtype-canonical`) are read-only auditors; this capability writes back to `_index.md` files under the bounded mechanical scope.
 
 ## Output Contract
 
@@ -64,7 +64,7 @@ Severity `warning` findings count against the librarian's session-close summary;
 
 | Mode | Trigger | Output |
 |---|---|---|
-| **Tier 2 — daily cron** | Launchd plist runs the capability every 24h; aligned with `archetype-consistency` + `governance-parity-audit` cadence | Manifest-mirrored findings + stdout NDJSON; mechanical auto-corrections written back |
+| **Tier 2 — daily cron** | Launchd plist runs the capability every 24h; aligned with `governance-parity-audit` cadence | Manifest-mirrored findings + stdout NDJSON; mechanical auto-corrections written back |
 | **Tier 2 — /librarian full** | Operator runs `/librarian full` at session-close or on-demand | Same outputs as cron |
 | **Tier 3 — /librarian index-maintain --deep** | Operator opt-in for semantic drift validation | Same as Tier 2 + `index-row-drift-semantic` findings; no auto-overwrite of hand-tuned content |
 
@@ -151,7 +151,7 @@ Changes to any of the above require R-37 atomic lockstep including this contract
 
 ## Implementation hand-off
 
-The capability is specified at this contract; SP05 delivers the runtime at `skills/librarian/capabilities/index-maintain.sh` per the SP03-authors-contract / SP05-implements pattern (matches `governance-parity-audit` + `archetype-consistency` precedent). Implementation requirements:
+The capability is specified at this contract; SP05 delivers the runtime at `skills/librarian/capabilities/index-maintain.sh` per the SP03-authors-contract / SP05-implements pattern (matches `governance-parity-audit` precedent). Implementation requirements:
 
 - **Atomic writes** — `_index.md` updates via atomic temp+rename; manifest updates via `manifest_set`; no partial-state visibility.
 - **Survivorship** — preserve content outside sentinel markers across runs; preserve hand-tuned descriptions and ordering across Tier 2 mechanical sweeps; preserve `first_seen` on matched finding rows.
@@ -168,7 +168,7 @@ The capability is specified at this contract; SP05 delivers the runtime at `skil
 - Frontmatter contract: `governance/frontmatter-rules.json#types.index`
 - Narrative spoke: `onboarding/scaffold/vault-architecture/System Governance - Mandatory-Files.md`
 - Tier 1 sibling: `hooks/post-write-verify.sh` (auto-bootstrap + live-sync + loop guard)
-- Sibling capabilities: `governance/librarian-capabilities/archetype-consistency.md`, `governance-parity-audit.md`, `packet-staleness-audit.md`, `log-subtype-canonical.md`
+- Sibling capabilities: `governance/librarian-capabilities/governance-parity-audit.md`, `packet-staleness-audit.md`, `log-subtype-canonical.md`
 - Design source: `target-state/_index.md-design/` (conventions-and-rationale.md + structural-requirements.md + structural-requirements.json + governance.md)
 - Research narrative: `research/vault-construction/_index.md-design.md`, `mandatory-file-lock.md`
 - ADR-0006 (Layer-3 overlay collision tiebreaker): `docs/decisions/0006-layer3-overlay-collision-tiebreaker.md`

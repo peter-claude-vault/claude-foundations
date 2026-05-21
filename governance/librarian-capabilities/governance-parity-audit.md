@@ -88,12 +88,6 @@ The capability reads from (in order):
 5. **Adopter overlay-master** — `~/.claude/governance/overlay-master.json` per canonical §H (6-pillar parallel of foundation-master; if a slot doesn't exist in foundation-master, it doesn't exist in overlay-master).
 6. **Foundation diff context** (when `--upgrade` flag set) — `git diff foundation/<previous-tag>..foundation/<current-tag> -- governance/`.
 
-## Companion: archetype-consistency capability
-
-The `archetype-consistency` capability (specified at `governance/librarian-capabilities/archetype-consistency.md`) focuses on per-file archetype-field coverage; this `governance-parity-audit` capability focuses on cross-surface drift between governance JSONs and narrative spokes. The two are companion audits with distinct scopes — both run weekly via the cron template.
-
-The `foundation-upgrade-touches-shadowed-entry` finding category is emitted by governance-parity-audit, not archetype-consistency, per ADR-0006's design hand-off. Adopter-write-time shadow detection is the responsibility of pre-write-guard.sh (write-time DENY), not the audit.
-
 ## R-37 lockstep coupled surfaces
 
 This capability sits OUTSIDE the per-pillar R-37 lockstep — it is the audit-time backstop FOR the R-37 lockstep, not a peer of it. Changes to any of the six pillar surfaces, the six narrative spokes, or `_index.json` should trigger this capability's next run to detect drift introduced by the change.
@@ -122,6 +116,5 @@ The capability is specified at this contract; a downstream implementation sub-pl
 - Design rationale: ADR-0005 (two-surface governance dual pattern)
 - Collision design: ADR-0006 (Layer-3 overlay collision tiebreaker) → R-52 in `_index.json` — write-time DENY in pre-write-guard.sh; this capability covers only the upgrade-time finding
 - Source narrative: `research/vault-construction/enforcement-map-design.md`
-- Sibling capability: `governance/librarian-capabilities/archetype-consistency.md`
 - Schema validation: `governance/foundation-master.json` (canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18)
 - Output schemas: `schemas/librarian-finding-schema.json`, `schemas/librarian-manifest-schema.json`

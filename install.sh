@@ -767,24 +767,57 @@ if [ -d "$SOURCE_REPO/installer" ]; then
 fi
 
 # Step 8.5: governance/ → $CLAUDE_HOME/governance/  (SP15 T-1a — v3 NEW top-level)
-# Recursive cp -R; deploys the v3 8-pillar surface + librarian capabilities +
-# file-type-contracts + onboarding-reference. cp_clobber posture matches the
-# rest of the foundation-known tree (cp -n default; --force-all → cp -f).
-# foundation-master.json regen at T-4 (release-time bundle composition) lands
-# on top of whatever this step ships; no exclusion needed.
+# SP18 T-2 ship-surface reduction: replaced blanket recursive copy with SELECTIVE
+# copy. Foundation pillars (the 7 *-rules.json + doc-dependencies.json source files
+# in governance/) compose into foundation-master.json at foundation-repo release
+# time via tools/build-foundation-master.sh; they are NOT load-bearing for runtime
+# consumers post-SP16 union-read retrofit. Shipping pillars is a foundation-repo-
+# specific authoring concern that adopter vaults should not carry. governance/_index.json
+# is foundation-repo author convenience (operator-locked DO NOT SHIP per SP18 T-2).
+# See packet 02 §"install.sh changes" + packet 03 §"Cleanup mechanical list".
 #
-# SP15 T-1f overlay-master.json empty 8-pillar parallel skeleton ships here as
-# a sibling governance-tier file (per §A54 + §A32 + §H). Source-tree file at
-# governance/overlay-master.json declares 8 empty pillar slots (frontmatter /
-# tagging / naming / mandatory_files / doc_dependencies / file_type_contracts /
-# vault_writers / plans), each value {} per overlay-master-schema.json $defs
-# (per-pillar stubs are min-viable {type: object}). cp -n inherently preserves
-# adopter mutations after the first /govern register call (lib/overlay-master-
-# mutate.sh is the sole write path per §A32). T-3 foundation-manifest regen
-# captures sha256 baseline automatically. Sibling-of-governance pattern:
-# vault-writers-rules.json, plans-rules.json ship the same way.
+# Shipped artifacts:
+#  - foundation-master.json — composed governance bundle (single runtime artifact
+#    consumed by hooks per SP16 union-read retrofit)
+#  - overlay-master.json — adopter Layer-3 overlay skeleton (mutation target for
+#    /govern register; cp -n preserves adopter mutations after first write per §A32)
+#  - log-subtype-registry.json — R-05 system-utility canonicality registry
+#  - file-type-contracts/ — k8s paramKind contracts consumed by hooks + librarian
+#  - librarian-capabilities/ — markdown capability contracts read by capability dispatcher
+#  - onboarding-reference/ — wizard-time reference content (archetype-as-inspiration
+#    seeds and consultation rationale templates; consumed by /adopt wizard)
+#
+# NOT shipped (foundation-repo authoring concern only):
+#  - 7 pillar source JSONs: frontmatter-rules, tagging-rules, naming-rules,
+#    mandatory-files-rules, doc-dependencies, plans-rules, vault-writers-rules
+#  - _index.json — pillar registry + cross-cutting meta-rules (author convenience)
+#  - enforcement-map.schema.json.retired-* — retired-artifact markers
+#
+# foundation-manifest.json at $SOURCE_REPO root ships separately via Step 14.
+# governance-action-log.jsonl is bootstrapped at $VAULT_WRITER_STATE_ROOT via
+# Step 1.6 (not a governance/ tree concern).
 if [ -d "$SOURCE_REPO/governance" ]; then
-  cp -R $cp_clobber "$SOURCE_REPO/governance"/. "$CLAUDE_HOME/governance/" 2>/dev/null || true
+  # Bundle (single runtime governance artifact for hooks)
+  cp $cp_clobber "$SOURCE_REPO/governance/foundation-master.json" "$CLAUDE_HOME/governance/" 2>/dev/null || true
+  # Adopter overlay skeleton (mutation target for /govern register)
+  cp $cp_clobber "$SOURCE_REPO/governance/overlay-master.json" "$CLAUDE_HOME/governance/" 2>/dev/null || true
+  # R-05 system-utility canonicality registry
+  cp $cp_clobber "$SOURCE_REPO/governance/log-subtype-registry.json" "$CLAUDE_HOME/governance/" 2>/dev/null || true
+  # File-type contracts subdir (k8s paramKind shape)
+  if [ -d "$SOURCE_REPO/governance/file-type-contracts" ]; then
+    mkdir -p "$CLAUDE_HOME/governance/file-type-contracts"
+    cp -R $cp_clobber "$SOURCE_REPO/governance/file-type-contracts"/. "$CLAUDE_HOME/governance/file-type-contracts/" 2>/dev/null || true
+  fi
+  # Librarian capability contracts (markdown)
+  if [ -d "$SOURCE_REPO/governance/librarian-capabilities" ]; then
+    mkdir -p "$CLAUDE_HOME/governance/librarian-capabilities"
+    cp -R $cp_clobber "$SOURCE_REPO/governance/librarian-capabilities"/. "$CLAUDE_HOME/governance/librarian-capabilities/" 2>/dev/null || true
+  fi
+  # Onboarding reference (wizard-time content)
+  if [ -d "$SOURCE_REPO/governance/onboarding-reference" ]; then
+    mkdir -p "$CLAUDE_HOME/governance/onboarding-reference"
+    cp -R $cp_clobber "$SOURCE_REPO/governance/onboarding-reference"/. "$CLAUDE_HOME/governance/onboarding-reference/" 2>/dev/null || true
+  fi
 fi
 
 # Step 8.7: vault-init/ → $CLAUDE_HOME/vault-init/  (SP15 T-1e — v3 NEW top-level)

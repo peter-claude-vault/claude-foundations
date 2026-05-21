@@ -57,7 +57,7 @@
       "owner_skill": "librarian",
       "owner_cron": null,
       "first_registered_at": "2026-05-12",
-      "description": "Librarian audit-capability output (governance-parity-audit, packet-staleness-audit, archetype-consistency, etc.)."
+      "description": "Librarian audit-capability output (governance-parity-audit, packet-staleness-audit, etc.)."
     },
     {
       "subtype": "log-archive",
