@@ -5,7 +5,7 @@ provides:
   - governance-parity-audit-capability
   - dual-surface-alignment-mechanism
   - foundation-upgrade-shadowed-entry-detection
-updated: 2026-05-13
+updated: 2026-05-21
 tags: ["#scope/reference"]
 ---
 
@@ -32,7 +32,7 @@ The capability is the load-bearing companion to the dual-surface design. Without
 - Source-input validation: each pillar JSON validates against `governance/foundation-master.json` (canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18) before the audit runs; failure aborts the audit with a `pillar-schema-malformed` log entry.
 
 **Pre-write validation steps:**
-- Read all 6 governance pillar surfaces (`_index.json` registry, `frontmatter-rules.json`, `tagging-rules.json`, `naming-rules.json`, `mandatory-files-rules.json`, `doc-dependencies.json`, `file-type-contracts/*.json`) + `governance/foundation-master.json` (meta-validator for rule-entry shape — canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18).
+- Load the foundation+overlay union view via `lib/foundation-overlay-load.sh --force-override` (SP17a T-8 retarget: was direct reads of 6 individual pillar files; union helper composes foundation-master.json + overlay-master.json into a single view with pillar sections at `.frontmatter`, `.tagging`, `.naming`, `.mandatory_files`, `.doc_dependencies`, `.file_type_contracts`, `.vault_writers`, `.plans`, plus `_index`). Foundation-only and overlay-only views remain accessible via separate jq filters against `governance/foundation-master.json` and `~/.claude/governance/overlay-master.json` for the parity-comparison step (audit compares foundation against overlay; this is NOT the same as the union view).
 - Read all 6 narrative spokes (`System Governance - Frontmatter.md`, `- Tagging.md`, `- Naming.md`, `- Mandatory-Files.md`, `- Doc-Dependencies.md`, `- File-Type-Contracts.md`) per canonical §D.
 - Validate every input against its source schema before walking the parity comparison.
 
@@ -79,14 +79,13 @@ The comparison is intentionally conservative: drift surfaces as findings the ope
 
 ## Input sources
 
-The capability reads from (in order):
+The capability reads from (in order). SP17a T-8 retarget (2026-05-21) consolidated pillar reads through the foundation+overlay union helper — adopters previously needed both foundation pillar JSONs and overlay-master.json read separately; now the union helper at `lib/foundation-overlay-load.sh` exposes both via a single composed view, with foundation-only and overlay-only filters remaining accessible for the parity-comparison step.
 
-1. **`governance/_index.json`** — pillar registry + `cross_cutting_meta_rules[]` + adopter overlay discovery (via `overlay-master.frontmatter.path_routing` per canonical §H).
-2. **`governance/{frontmatter,tagging,naming,mandatory-files,doc-dependencies}-rules.json`** + **`governance/file-type-contracts/*.json`** — the six pillar registries per canonical §A.
-3. **`governance/foundation-master.json`** — schema validation gate for each pillar JSON (meta-validator for rule-entry shape; canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18 — foundation-master is the populated 6→8-pillar bundle conforming to the rule shapes the retired schema defined).
+1. **Union view** — `lib/foundation-overlay-load.sh --force-override` returns the composed foundation+overlay view. Pillar sections available at `.frontmatter`, `.tagging`, `.naming`, `.mandatory_files`, `.doc_dependencies`, `.file_type_contracts`, `.vault_writers`, `.plans`, plus `._index`. Replaces direct reads of the 6 individual pillar JSONs (frontmatter-rules.json + tagging-rules.json + naming-rules.json + mandatory-files-rules.json + doc-dependencies.json + file-type-contracts/*.json) — those files remain the AUTHORITATIVE source authored in foundation-repo, but consumer reads now route through the bundled foundation-master.json + overlay-master.json via the helper.
+2. **Foundation-only filter** — `governance/foundation-master.json` directly (for parity-comparison step: "what does foundation alone declare"). Canonical successor per SP14 T-16 retirement of governance/enforcement-map.schema.json 2026-05-18.
+3. **Overlay-only filter** — `~/.claude/governance/overlay-master.json` per canonical §H (for parity-comparison step: "what does the overlay shadow / extend"). 6-pillar parallel of foundation-master; if a slot doesn't exist in foundation-master, it doesn't exist in overlay-master.
 4. **`onboarding/scaffold/vault-architecture/System Governance - {Frontmatter,Tagging,Naming,Mandatory-Files,Doc-Dependencies,File-Type-Contracts}.md`** — the six narrative spokes per canonical §D.
-5. **Adopter overlay-master** — `~/.claude/governance/overlay-master.json` per canonical §H (6-pillar parallel of foundation-master; if a slot doesn't exist in foundation-master, it doesn't exist in overlay-master).
-6. **Foundation diff context** (when `--upgrade` flag set) — `git diff foundation/<previous-tag>..foundation/<current-tag> -- governance/`.
+5. **Foundation diff context** (when `--upgrade` flag set) — `git diff foundation/<previous-tag>..foundation/<current-tag> -- governance/`.
 
 ## Companion: archetype-consistency capability
 

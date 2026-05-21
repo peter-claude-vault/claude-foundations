@@ -4,7 +4,7 @@ description: Librarian packet-staleness-audit capability contract. Walks system-
 provides:
   - packet-staleness-audit-capability
   - 180-day-staleness-contract
-updated: 2026-05-12
+updated: 2026-05-21
 tags: ["#scope/reference"]
 ---
 
@@ -74,10 +74,10 @@ Adopters extend the threshold map via Layer 3 overlay-master at `overlay-master.
 
 ## Input sources
 
-The capability reads from (in order):
+The capability reads from (in order). SP17a T-8 retarget (2026-05-21) migrated the direct `governance/frontmatter-rules.json` read to the foundation+overlay union view — adopter extensions to `types.packet.required` or `packet_only_fields` should compose into the audit semantics without requiring a separate overlay read at this layer.
 
-1. **`governance/frontmatter-rules.json`** — `types.packet.required.last_reviewed` (validates the field is contract-required); `packet_only_fields` (full packet field set; dissolved from schemas/vault-schema.json in SP13 T-4).
-2. **`overlay-master.packet_staleness_thresholds`** (Layer 3 overlay; optional) — per-altitude threshold extensions / overrides.
+1. **Union view at `.frontmatter.types.packet`** — invoke `lib/foundation-overlay-load.sh --force-override`, then read `.frontmatter.types.packet.required.last_reviewed` (validates the field is contract-required) and `.frontmatter.packet_only_fields` (full packet field set; dissolved from schemas/vault-schema.json in SP13 T-4). Replaces direct read of `governance/frontmatter-rules.json`. The union helper composes foundation (`governance/foundation-master.json`) + adopter overlay (`~/.claude/governance/overlay-master.json`) so adopter-extended packet contracts surface here without a second read.
+2. **`overlay-master.packet_staleness_thresholds`** (Layer 3 overlay; optional) — per-altitude threshold extensions / overrides. This slot is OUTSIDE the standard `.frontmatter` pillar shape (not a packet field; an audit-cadence config), so it remains a direct overlay-master read.
 3. **`research/vault-construction/*.md`** + adopter packet roots (configured at install time) — every file with `type: packet` is in scope.
 
 ## Exemptions
