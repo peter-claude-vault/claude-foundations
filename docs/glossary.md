@@ -8,7 +8,7 @@ Every term used in claude-stem documentation, defined in one sentence. Where a t
 
 - **Vault** — your folder of markdown notes. The system uses [Obsidian](https://obsidian.md)'s vault concept: a directory that contains `.md` files plus a few subdirectories (Inbox, Logs, Plans). You don't need Obsidian itself; any editor works.
 
-- **Manifest** — a JSON file at `~/.claude/user-manifest.json` that holds your name, vault path, role, preferences, and dozens of other configuration fields. The single most-read file in the system. Think "config file, but generated for you, structured, and validated against a schema." Several other JSON files in the system are also called manifests (`librarian-manifest.json`, `foundation-manifest.json`, per-plan `manifest.json`); when this docs say "the manifest" without qualification, it means `user-manifest.json`.
+- **Manifest** — a JSON file at `~/.claude/user-manifest.json` that holds your name, vault path, role, preferences, and dozens of other configuration fields. The single most-read file in the system. Think "config file, but generated for you, structured, and validated against a schema." Several other JSON files in the system are also called manifests (`librarian-manifest.json`, `governance/foundation-manifest.json`, per-plan `manifest.json`); when this docs say "the manifest" without qualification, it means `user-manifest.json`.
 
 - **Hook** — a shell command Claude Code runs at lifecycle events. The events the system wires include `PreToolUse` (before a file write), `SessionStart`, `Stop`, `PreCompact`, `SessionEnd`, plus a few others. See [`hooks/README.md`](../hooks/README.md).
 

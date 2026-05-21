@@ -22,7 +22,7 @@ Seed tree `/adopt` copies wholesale into a fresh vault. Source-tree organization
 
 ## Editing seed content
 
-Files in this directory are foundation-canonical. They ship sha256-protected via `foundation-manifest.json`; G2 sha256-fingerprint detects drift at install time. If you want a different starting state, edit here and your next install/adopt picks it up.
+Files in this directory are foundation-canonical. They ship sha256-protected via `governance/foundation-manifest.json` (SP18 T-3 relocated from repo root); G2 sha256-fingerprint detects drift at install time. If you want a different starting state, edit here and your next install/adopt picks it up.
 
 `/adopt` is idempotent. Re-running it on an already-scaffolded vault leaves user edits in place — seed files are written only when the target file does not already exist.
 

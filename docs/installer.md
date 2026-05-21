@@ -9,7 +9,7 @@
 
 ## What it does
 
-The script writes 14 asset categories (hooks, hooks/lib, 8 skills, 10 schemas, the full onboarding subtree, orchestrator, installer, templates, the claude-mem plugin, and `foundation-manifest.json`), atomically merges a `settings.json` snippet, and emits a deterministic provenance log under `$CLAUDE_HOME/logs/install-<ts>-<pid>.log`.
+The script writes 14 asset categories (hooks, hooks/lib, 8 skills, 10 schemas, the full onboarding subtree, orchestrator, installer, templates, the claude-mem plugin, and the governance subtree including `governance/foundation-manifest.json`), atomically merges a `settings.json` snippet, and emits a deterministic provenance log under `$CLAUDE_HOME/logs/install-<ts>-<pid>.log`.
 
 ---
 

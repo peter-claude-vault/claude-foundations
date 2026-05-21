@@ -167,7 +167,7 @@ The gate is **plan-lifetime**, not vault-lifetime. Declare exit conditions expli
 Files authored in foundation-repo (`~/Code/claude-stem/`) and live (`~/.claude/`) must stay in sync. Pattern:
 
 1. **Foundation-first.** Author + commit at `~/Code/claude-stem/` before any live write.
-2. **Manifest tracking.** Every shipped file enumerated in `foundation-manifest.json` (regenerate via `generate-foundation-manifest.sh`).
+2. **Manifest tracking.** Every shipped file enumerated in `governance/foundation-manifest.json` (regenerate via `generate-foundation-manifest.sh`; SP18 T-3 relocated from repo root to governance/).
 3. **Install.sh coverage.** Every foundation file's deploy mechanism in `install.sh` (hooks → Step 3/3.5, schemas → Step 9, etc.).
 4. **Live-deploy.** Use surgical `cp` + `patch` (not `cp -n`) when live has local additions. Per `feedback_plan_81_83_install_collision`.
 5. **Sanity gate.** Run the foundation pre-commit hook + `bash -n` + `jq empty` before pushing.

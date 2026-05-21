@@ -42,7 +42,7 @@ Otherwise, run it manually:
 Four conditions must be true before `/adopt` will write anything:
 
 1. **Manifest present.** `$CLAUDE_HOME/user-manifest.json` exists and contains at least `identity.name`, `vault.root`, and `vault.is_fresh = true`.
-2. **Foundation install evidence.** `$CLAUDE_HOME/foundation-manifest.json` exists. If absent, `/adopt` refuses with exit 21 unless `--force-install` is passed.
+2. **Foundation install evidence.** `$CLAUDE_HOME/governance/foundation-manifest.json` exists (SP18 T-3 relocated from `$CLAUDE_HOME` root). If absent, `/adopt` refuses with exit 21 unless `--force-install` is passed.
 3. **`$PLANS_HOME` resolvable.** Defaults to `$HOME/.claude-plans` if the env var is unset. Created idempotently if absent.
 4. **`jq` on `$PATH`.** A foundation install dependency.
 
@@ -80,7 +80,7 @@ After `/onboard` completes, `$CLAUDE_HOME/user-manifest.json` contains (excerpt)
 ### Step-by-step
 
 1. **Refusal gate.** Reads the manifest. `vault.is_fresh == true` → proceed. (Anything else exits 20.)
-2. **State gate.** `$CLAUDE_HOME/foundation-manifest.json` exists → proceed.
+2. **State gate.** `$CLAUDE_HOME/governance/foundation-manifest.json` exists → proceed.
 3. **Retrofit gate.** No `--retrofit-existing` flag → proceed. (With the flag, exits 22.)
 4. **Path resolution.** `~/notes/jane-vault` expands to an absolute path. `$PLANS_HOME` resolves (env or `$HOME/.claude-plans` fallback).
 5. **Directory scaffold** (`mkdir -p`, idempotent):
@@ -172,7 +172,7 @@ Re-running `/adopt` on an already-scaffolded vault is a no-op modulo the post-wr
 |------|---------------------------------------------------------------------------------|
 | 0    | Success (or dry-run plan emit; or no-op idempotent re-run).                     |
 | 20   | `vault.is_fresh != true` — retrofit-existing flow not supported in this release.|
-| 21   | `$CLAUDE_HOME/foundation-manifest.json` absent. Pass `--force-install` to override.|
+| 21   | `$CLAUDE_HOME/governance/foundation-manifest.json` absent. Pass `--force-install` to override.|
 | 22   | `--retrofit-existing` passed — deferred. Manual-copy workaround in the diagnostic.|
 | 50   | Post-write validation found unresolved `{{IDENTITY_*}}` placeholder. The script halts and logs. |
 

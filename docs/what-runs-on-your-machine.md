@@ -16,7 +16,7 @@ After `./install.sh --apply` and a full `/onboard` + `/adopt`, the system has wr
 | `<vault_root>/` (path you chose during `/onboard`) | Vault skeleton: `Inbox/`, `Logs/`, `.coordination/`, `Plans` symlink, `CLAUDE.md`, `System Backlog.md`. | ~50 KB |
 | `~/.claude-plans/` | Plan tracking directory (created if missing). | <1 KB initially |
 
-The installer writes a SHA-256 fingerprint of every shipped file to `~/.claude/foundation-manifest.json`. Uninstall removes only files whose live SHA-256 still matches. Anything you've edited (your `CLAUDE.md`, your `MEMORY.md`, your manifest) survives the uninstall.
+The installer writes a SHA-256 fingerprint of every shipped file to `~/.claude/governance/foundation-manifest.json`. Uninstall removes only files whose live SHA-256 still matches. Anything you've edited (your `CLAUDE.md`, your `MEMORY.md`, your manifest) survives the uninstall.
 
 ## Hooks (in-process inside Claude Code)
 
@@ -148,7 +148,7 @@ jq '.hooks' ~/.claude/user-manifest.json
 ls -lt ~/.claude/logs/install-*.log | head -1
 
 # What the foundation manifest says got installed
-jq '.files | length' ~/.claude/foundation-manifest.json
+jq '.files | length' ~/.claude/governance/foundation-manifest.json
 ```
 
 A consolidated `claude system status` command is on the maintainer's list but not yet shipped.
@@ -162,7 +162,7 @@ A consolidated `claude system status` command is on the maintainer's list but no
 By default, uninstall:
 
 1. Boots out and removes every `com.claude-stem.*` plist from `~/Library/LaunchAgents/`.
-2. Walks `~/.claude/foundation-manifest.json` and removes only files whose live SHA-256 still matches the baseline.
+2. Walks `~/.claude/governance/foundation-manifest.json` and removes only files whose live SHA-256 still matches the baseline.
 3. Preserves: anything you've edited (foundation files with non-matching SHA), your `user-manifest.json`, your install logs, your vault, your plans directory, your memory files, your `~/.claude/projects/`.
 4. Leaves a `~/.claude-uninstall-backup-<timestamp>/` directory with the pre-uninstall snapshot.
 
