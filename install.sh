@@ -222,7 +222,7 @@ fi
 # Refuse if $CLAUDE_HOME == $HOME/.claude AND target exists with non-foundation
 # content, unless --force-install AND I-UNDERSTAND-OVERWRITE-RISK sentinel typed.
 # String comparison (not resolution) per R-55 carve-out.
-foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs governance settings.json settings.local.json foundation-manifest.json CLAUDE.md projects"
+foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs governance vault-init settings.json settings.local.json foundation-manifest.json CLAUDE.md projects"
 
 g1_main_has_non_foundation_content() {
   local d="$1"
@@ -569,7 +569,7 @@ if [ "$APPLY_MODE" != "1" ]; then
   },
   "guards_passed": ["G1-pre", "G1-main", "G2", "G3", "G4", "G5", "G7", "G8"],
   "actions": [
-    {"step": 1, "op": "mkdir", "target": "$CLAUDE_HOME/{hooks,hooks/lib,hooks/state,hooks/config,skills,schemas,onboarding,orchestrator,templates,templates/launchd,templates/settings-fragments,plugins,Library/LaunchAgents.staging,installer,logs,governance,governance/file-type-contracts,governance/librarian-capabilities,governance/onboarding-reference}", "rationale": "create target tree (SP15 T-1a: governance/ subtree added)"},
+    {"step": 1, "op": "mkdir", "target": "$CLAUDE_HOME/{hooks,hooks/lib,hooks/state,hooks/config,skills,schemas,onboarding,orchestrator,templates,templates/launchd,templates/settings-fragments,plugins,Library/LaunchAgents.staging,installer,logs,governance,governance/file-type-contracts,governance/librarian-capabilities,governance/onboarding-reference,vault-init}", "rationale": "create target tree (SP15 T-1a: governance/ subtree added; SP15 T-1e: vault-init/ top-level added)"},
     {"step": 1.5, "op": "mkdir+symlink", "target": "$VAULT_WRITER_STATE_ROOT/{,daily-processing,raw} + $CLAUDE_STATE_ROOT/{,vault-staging,vault-staging/_archive} + $CLAUDE_HOME/state symlink → $CLAUDE_STATE_ROOT", "rationale": "create v3 two-root state-tier scaffold (SP15 T-1b §A60 + L-95): durable second-brain root + ephemeral Claude-runtime root + back-compat symlink at $CLAUDE_HOME/state for one release cycle (deprecated; remove in v4)"},
     {"step": 1.6, "op": "sqlite-bootstrap+touch", "target": "$VAULT_WRITER_STATE_ROOT/manifest.sqlite + $VAULT_WRITER_STATE_ROOT/governance-action-log.jsonl", "source": "$SOURCE_REPO/lib/manifest-record.sh init (DDL: $SOURCE_REPO/lib/manifest-migrate.sql)", "rationale": "bootstrap writer-manifest SQLite substrate (SP15 T-1c §A60 + L-96): 12-field writes table + WAL mode + 4 indexes (ingestion_date / destination_path / source_id / writer_id); LangChain SQLRecordManager-aligned; idempotent via PRAGMA user_version=1. Initialize empty governance-action-log.jsonl in same step (idempotent skip-if-exists)"},
     {"step": 2, "op": "cp", "target": "$CLAUDE_HOME/hooks/", "source": "$SOURCE_REPO/hooks/{*.sh,*.md,MANIFEST.txt}", "rationale": "ship hook entry-points + MANIFEST (pre-asq-guard.sh ships via wildcard per SP15 T-1a)"},
@@ -580,6 +580,7 @@ if [ "$APPLY_MODE" != "1" ]; then
     {"step": 7, "op": "cp", "target": "$CLAUDE_HOME/orchestrator/", "source": "$SOURCE_REPO/orchestrator/", "rationale": "ship orchestrator subtree"},
     {"step": 8, "op": "cp", "target": "$CLAUDE_HOME/installer/", "source": "$SOURCE_REPO/installer/", "rationale": "ship installer subtree (G6 LABEL_PREFIX preserved transitively)"},
     {"step": 8.5, "op": "cp", "target": "$CLAUDE_HOME/governance/", "source": "$SOURCE_REPO/governance/", "rationale": "ship v3 governance subtree (SP15 T-1a NEW): 8 pillars + librarian-capabilities/ + file-type-contracts/ + onboarding-reference/ (foundation-master.json regen at T-4 lands on top)"},
+    {"step": 8.7, "op": "cp", "target": "$CLAUDE_HOME/vault-init/", "source": "$SOURCE_REPO/vault-init/", "rationale": "ship v3 vault-init/ subtree (SP15 T-1e): foundation-canonical adopter-vault seed tree mirroring target shape per §A53 L-86 (System Governance/ + Vault Writers/ + file-type-contracts/ + Logs/Archive/ + Logs/backlog-progress/_template.md + Meetings/). Source-tree organization mirrors TARGET adopter vault tree EXACTLY; foundation authors edit vault-init/ in target shape; install/adopt copies wholesale. sha256-protected via foundation-manifest.json (T-3 regen captures entries after T-1e ships files). Content arrives via T-5/T-6a/T-6b/T-6c; T-1e ships whatever subtree exists. Renamed from v2 vault-scaffolding/ per Session 7 L-86. System Backlog.md + Archive carryover pending §A53 relocation to ~/.claude-plans/_backlog.md + _archive.md (deferred follow-up; targets undelivered)."},
     {"step": 9, "op": "cp", "target": "$CLAUDE_HOME/schemas/", "source": "$SOURCE_REPO/schemas/{14 named}.json", "rationale": "ship 14 named schemas + README (SP15 T-1a adds 6 SP14 schemas: overlay-master + governance-action-log + vault-writers-rules + processing-rules + plans-rules + writer-manifest; SP15 T-1a also retires vault-overlay-schema reference per SP14 Batch A schema deletion)"},
     {"step": 10, "op": "cp", "target": "$CLAUDE_HOME/templates/", "source": "$SOURCE_REPO/templates/{settings,librarian-manifest-skeleton,README,vault-claude-md,claude-home-claude-md,MEMORY,updates,prd,connector-brief,context}+{launchd,settings-fragments}/", "rationale": "ship templates + launchd tmpl + settings-fragments (SP15 T-1a adds updates/prd/connector-brief/context shape templates)"},
     {"step": 11, "op": "cp", "target": "$CLAUDE_HOME/plugins/claude-mem/", "source": "$SOURCE_REPO/plugins/claude-mem/v*/", "rationale": "ship claude-mem bundle if present (T-1.5 deferred; absence informational)"},
@@ -606,7 +607,7 @@ cp_clobber="-n"
 [ "$FORCE_ALL" = "1" ] && cp_clobber="-f"
 
 # Step 1: mkdir -p target tree
-target_dirs="hooks hooks/lib hooks/state hooks/config skills schemas onboarding orchestrator templates templates/launchd templates/settings-fragments plugins Library/LaunchAgents.staging installer logs governance governance/file-type-contracts governance/librarian-capabilities governance/onboarding-reference"
+target_dirs="hooks hooks/lib hooks/state hooks/config skills schemas onboarding orchestrator templates templates/launchd templates/settings-fragments plugins Library/LaunchAgents.staging installer logs governance governance/file-type-contracts governance/librarian-capabilities governance/onboarding-reference vault-init"
 for d in $target_dirs; do
   mkdir -p "$CLAUDE_HOME/$d" || { diag "mkdir failed: $CLAUDE_HOME/$d"; exit 11; }
 done
@@ -771,6 +772,25 @@ fi
 # on top of whatever this step ships; no exclusion needed.
 if [ -d "$SOURCE_REPO/governance" ]; then
   cp -R $cp_clobber "$SOURCE_REPO/governance"/. "$CLAUDE_HOME/governance/" 2>/dev/null || true
+fi
+
+# Step 8.7: vault-init/ → $CLAUDE_HOME/vault-init/  (SP15 T-1e — v3 NEW top-level)
+# Recursive cp -R; deploys the foundation-canonical adopter-vault seed tree
+# mirroring TARGET adopter vault tree EXACTLY per §A53 L-86 (System Governance/
+# spokes + Vault Writers/ + file-type-contracts/ reference examples + Logs/Archive/
+# + Logs/backlog-progress/_template.md + Meetings/). Foundation authors edit
+# vault-init/ in target shape; install/adopt copies wholesale; what you see in
+# vault-init/ is what the adopter gets. cp_clobber posture matches the rest of
+# the foundation-known tree (cp -n default; --force-all → cp -f). sha256-protected
+# via foundation-manifest.json (T-3 regen captures baselines after T-1e ships the
+# files). Renamed from v2 vault-scaffolding/ per Session 7 L-86; subdir scaffolds
+# (System Governance/ + Vault Writers/ + file-type-contracts/ + Logs/Archive/ +
+# Meetings/) ship as empty dirs with .gitkeep until T-5/T-6a/T-6b/T-6c land
+# content. System Backlog.md + System Backlog - Archive.md carryover from v2
+# pending §A53 relocation to ~/.claude-plans/_backlog.md + _archive.md (deferred
+# follow-up; relocation targets undelivered).
+if [ -d "$SOURCE_REPO/vault-init" ]; then
+  cp -R $cp_clobber "$SOURCE_REPO/vault-init"/. "$CLAUDE_HOME/vault-init/" 2>/dev/null || true
 fi
 
 # Step 9: schemas/ — 14 named files. SP13 P0 (2026-05-15) dropped vault-schema +
