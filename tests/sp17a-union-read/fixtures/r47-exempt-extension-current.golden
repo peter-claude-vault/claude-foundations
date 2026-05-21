@@ -1,0 +1,14 @@
+SP17a T-2-narrow R-47 exempt-path extension current-state output (captured 2026-05-21T08:27:15Z)
+
+--- hook stdout ---
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow",
+    "additionalContext": "[VAULT SCHEMA - AUTO-FIX NEEDED]\\n[R-47 TAG PRESENCE] File at 'Meetings/Adopter-R47-Test/opaque-note.md' has missing tags. Add tags per the taxonomy in CLAUDE.md §Tagging Taxonomy (#status/, #log/). Tags are load-bearing for graph-view health and cross-folder retrieval. Advisory only — not blocking.\\n"
+  }
+}
+
+--- hook stderr ---
+
+exit code: 0

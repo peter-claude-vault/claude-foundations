@@ -1202,6 +1202,24 @@ print(content, end='')
         fi
 
         # =====================================================================
+        # SP17a T-2 retrofit: foundation+overlay union view for R-47 advisory
+        # (Tier 1 tag-presence soft-warn below). Mechanical mirror of the SP17a
+        # T-1 pattern at this same scope. Derives union-side variants of the
+        # GATE_R47_EXEMPT_PATHS (consumer: exemption walk at the R-47 branch)
+        # and GATE_R47_PREFIX_LIST (consumer: advisory message string only;
+        # union REGEX already produced as R32_TAXONOMY_UNION_REGEX above and
+        # is reused by R-47 advisory wording via R32_TAXONOMY_UNION_LIST).
+        # Fall-back to foundation-only vars if UNION_JSON empty.
+        # =====================================================================
+        R47_UNION_EXEMPT_PATHS=""
+        if [[ -n "$UNION_JSON" ]]; then
+          R47_UNION_EXEMPT_PATHS=$(jq -r '.r47_exempt_paths_composed[]?' <<<"$UNION_JSON" 2>/dev/null)
+        fi
+        if [[ -z "$R47_UNION_EXEMPT_PATHS" ]]; then
+          R47_UNION_EXEMPT_PATHS="$GATE_R47_EXEMPT_PATHS"
+        fi
+
+        # =====================================================================
         # R-32 RETIRED TYPES — Tier 2 DENY with specific replacement guidance
         # (SP13 T-3 Session 3 2026-05-14): Pre-T-3, hooks/config/gate-config.json
         # silently listed `engagement` + `project` in r32.accepted_types — drift
@@ -1322,6 +1340,10 @@ print(content, end='')
         # R-47 exempt_paths sourced from gate-config.json::r47.exempt_paths (T-6).
         # Positive-list semantics (Plan 67 SP03 T-3, 2026-04-22): unenumerated
         # paths default to advisory. Patterns are vault-relative globs.
+        # SP17a T-2: consumes union-derived R47_UNION_EXEMPT_PATHS so adopter
+        # /govern register additions land in the exempt-path set; advisory
+        # wording sources R32_TAXONOMY_UNION_LIST (union prefix list emitted
+        # by the SP17a T-1 block above) for consistent overlay-aware text.
         R47_EXEMPT=0
         while IFS= read -r _r47_pattern; do
           [[ -z "$_r47_pattern" ]] && continue
@@ -1329,13 +1351,13 @@ print(content, end='')
             R47_EXEMPT=1
             break
           fi
-        done <<< "$GATE_R47_EXEMPT_PATHS"
+        done <<< "$R47_UNION_EXEMPT_PATHS"
         if [[ $R47_EXEMPT -eq 0 ]] && [[ -n "$FRONTMATTER" ]] && [[ -z "$TAGS_RAW" ]]; then
           R47_KIND="missing"
           if echo "$FRONTMATTER" | grep -q '^tags:'; then
             R47_KIND="empty"
           fi
-          TIER1_MSGS="${TIER1_MSGS}[R-47 TAG PRESENCE] File at '${REL_PATH}' has ${R47_KIND} tags. Add tags per the taxonomy in CLAUDE.md §Tagging Taxonomy (${GATE_R47_PREFIX_LIST}). Tags are load-bearing for graph-view health and cross-folder retrieval. Advisory only — not blocking.\n"
+          TIER1_MSGS="${TIER1_MSGS}[R-47 TAG PRESENCE] File at '${REL_PATH}' has ${R47_KIND} tags. Add tags per the taxonomy in CLAUDE.md §Tagging Taxonomy (${R32_TAXONOMY_UNION_LIST}). Tags are load-bearing for graph-view health and cross-folder retrieval. Advisory only — not blocking.\n"
         fi
 
         # --- R-48: Wikilink write-time advisory (Tier 1, never blocks) ---
