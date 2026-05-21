@@ -1,0 +1,12 @@
+{
+  "_description": "Per-leaf merge-strategy registry consumed by lib/overlay-master-mutate.sh. Default deep-merge semantics (jq `*` operator: recursive object merge; arrays replaced) preserve adopter-override-wins semantics at the entity level. Declared UNION leaves are the explicit exception: foundation declares the list-typed shape; adopter extends rather than shadows. Per-leaf UNION at these paths produces concat+dedup (`(existing + payload) | unique`) at write time. Authored under SP17a T-7 (2026-05-21) per spec.md L222 + AC-6; operator-confirmed DP #4 (a) accept-breaking-change at v3.0.0.",
+  "_spec_provenance": "Plan 81 SP17a spec L222 (AC-6): \"Walk declared per-leaf strategy: UNION for list-typed leaves (dimension_prefixes, user_facing_dimensions, registered_archetypes); REPLACE elsewhere.\" Path-list verbatim from scope-packet §SP17a 'per-leaf merge-strategy' Q4 operator-confirmation; SP16 spike scope-packet lessons §5 (doc-vs-reality mismatch at tag-extension.sh:65).",
+  "_design_rationale": "Three leaves are conceptually SETS, not maps: dimension_prefixes (allowed tag-prefix slugs), user_facing_dimensions (subset elevated for cap-25 audit), registered_archetypes (consultant/researcher/developer/manager + adopter extensions). Foundation lists these as arrays; adopter overlay declares additional members rather than replacing the foundation list. Without UNION semantics, the only way an adopter can preserve foundation members while adding new ones is to repeat the foundation set verbatim in their overlay — fragile and silently breaks on foundation upgrades that touch the list. UNION matches `_adopter_extension_path` notation `overlay-master.tagging.taxonomy.dimension_prefixes[]` already documented in tagging-rules.json:L29.",
+  "strategies": {
+    "tagging.taxonomy.dimension_prefixes": "union",
+    "tagging.taxonomy.user_facing_dimensions": "union",
+    "tagging.taxonomy.registered_archetypes": "union"
+  },
+  "default": "replace",
+  "_shape_handling": "When a declared UNION leaf has dict-shape on either side (legacy/test fixture), the library falls back to object-recursive-merge for that leaf (preserves SP14 baseline test shape). Mixed shape (array on one side, dict on other) resolves to payload-wins. The library does not coerce shape; producers (skills) are responsible for emitting the declared shape per leaf."
+}

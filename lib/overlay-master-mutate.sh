@@ -40,6 +40,20 @@ if [ -z "${ACTION_LOG:-}" ]; then
   ACTION_LOG="${HOME}/.claude/governance/governance-action-log.jsonl"
 fi
 
+# SP17a T-7: per-leaf merge-strategy registry.
+# Declared UNION leaves get array concat+dedup at write-time; everything
+# else uses default jq `*` deep-merge (recursive object merge / array replace).
+# Default path: <repo-root>/lib/merge-strategy-registry.json sibling to this
+# library. Foundation-repo layout AND install-layout (CLAUDE_HOME/lib/) both
+# resolve. Env override $MERGE_REGISTRY supported for fixture testing.
+if [ -z "${MERGE_REGISTRY:-}" ]; then
+  if [ -z "${REPO_ROOT:-}" ]; then
+    SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+    REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+  fi
+  MERGE_REGISTRY="$REPO_ROOT/lib/merge-strategy-registry.json"
+fi
+
 # Parallel arrays (bash 3.2 — no associative arrays).
 # PILLARS[i] holds the pillar name; PAYLOAD_FILES[i] holds the matching path.
 PILLARS=""
@@ -326,26 +340,73 @@ if ! printf '%s' "$CURRENT" | jq empty >/dev/null 2>&1; then
   exit 3
 fi
 
+# SP17a T-7: load per-leaf UNION-strategy paths from merge-strategy-registry.
+# Empty / missing registry → degenerates to legacy REPLACE-everywhere (jq *)
+# behavior. Surface registry-read failure as warning, not fatal — adopters
+# without a registry copy still get safe defaults.
+UNION_PATHS_JSON='[]'
+if [ -r "$MERGE_REGISTRY" ]; then
+  UNION_PATHS_JSON=$(jq -c '(.strategies // {}) | to_entries | map(select(.value == "union") | .key)' "$MERGE_REGISTRY" 2>/dev/null) || UNION_PATHS_JSON='[]'
+  [ -z "$UNION_PATHS_JSON" ] && UNION_PATHS_JSON='[]'
+fi
+
 # Apply each pillar payload as deep-merge into the pillar slot.
 # Per R-52 collision tiebreaker: overlay wins on key collision (adopter
 # overrides). This library performs the merge; the /govern register skill
 # is responsible for collision-flagging + override-reason capture upstream.
+#
+# SP17a T-7 per-leaf strategy walk:
+#   1. Strip declared UNION leaves from payload (prevents jq `*` array-array
+#      multiplication error on REPLACE path).
+#   2. Default deep-merge stripped payload via jq `*`.
+#   3. Walk declared UNION leaves; for each, compute per-leaf merge:
+#      array+array → concat+unique; object+object → recursive merge;
+#      mixed/missing → payload-wins fallback. Result re-set into pillar slot.
 WORKING="$CURRENT"
 i=1
 for p in $PILLARS; do
   pf=$(printf '%s\n' $PAYLOAD_FILES | awk -v n="$i" 'NR==n')
   PAYLOAD=$(cat "$pf")
-  # Deep-merge: overlay (.[pillar]) gets a recursive merge with payload.
-  # Using jq's `* ` operator with --argjson for proper deep object merge.
+  EXISTING_PILLAR_VALUE=$(printf '%s' "$WORKING" | jq -c --arg p "$p" '.[$p] // null' 2>/dev/null)
+  [ -z "$EXISTING_PILLAR_VALUE" ] && EXISTING_PILLAR_VALUE='null'
   WORKING=$(printf '%s' "$WORKING" | jq -c \
     --arg pillar "$p" \
     --argjson payload "$PAYLOAD" \
+    --argjson existing_pillar "$EXISTING_PILLAR_VALUE" \
+    --argjson union_paths "$UNION_PATHS_JSON" \
     '
-      if has($pillar) then
-        .[$pillar] = (.[$pillar] * $payload)
-      else
-        .[$pillar] = $payload
-      end
+      (
+        $union_paths
+        | map(select(startswith($pillar + ".")))
+        | map(split(".") | .[1:])
+      ) as $union_sub_paths
+      | (
+          reduce $union_sub_paths[] as $sp ($payload;
+            if (getpath($sp) != null) then delpaths([$sp]) else . end
+          )
+        ) as $stripped_payload
+      | (
+          if has($pillar) then
+            .[$pillar] = (.[$pillar] * $stripped_payload)
+          else
+            .[$pillar] = $stripped_payload
+          end
+        ) as $merged
+      | reduce $union_sub_paths[] as $sp ($merged;
+          (($existing_pillar // {}) | getpath($sp)) as $e_val
+          | ($payload | getpath($sp)) as $p_val
+          | if $e_val == null and $p_val == null then
+              .
+            elif (($e_val | type) == "array") and (($p_val | type) == "array") then
+              setpath([$pillar] + $sp; (($e_val + $p_val) | unique))
+            elif (($e_val | type) == "object") and (($p_val | type) == "object") then
+              setpath([$pillar] + $sp; ($e_val * $p_val))
+            elif $p_val != null then
+              setpath([$pillar] + $sp; $p_val)
+            else
+              setpath([$pillar] + $sp; $e_val)
+            end
+        )
     ' 2>/dev/null) || {
       printf 'overlay-master-mutate.sh: deep-merge failed for pillar %s\n' "$p" >&2
       rm -f "$TMPFILE"

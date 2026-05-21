@@ -62,7 +62,8 @@ mode_propose() {
         ],
         notes: [
           "Tag-extension is single-pillar; no R-37 bundling.",
-          "R-52 collision: if dimension exists in foundation-master.tagging.taxonomy.dimension_prefixes, library deep-merges arrays — adopter values UNION with foundation values. To shadow foundation values, attach a per-entry `_override_reason: \"<text>\"` field inline on the shadowing payload entry (ADR-0006 canonical shape; per SP17a T-5 Decision Point #1)."
+          "Write-time merge (lib/overlay-master-mutate.sh): per-leaf strategy declared in lib/merge-strategy-registry.json (SP17a T-7 + DP #4 2026-05-21). tagging.taxonomy.dimension_prefixes is declared UNION: array-shape payloads concat+dedup against existing overlay state; dict-shape payloads fall through to object recursive merge (legacy SP14 fixture shape).",
+          "Read-time R-52 collision (lib/foundation-overlay-load.sh): if dimension EXISTS in foundation-master.tagging.taxonomy.dimension_prefixes AND adopter overlay declares the same dimension, overlay wins (adopter shadows foundation). Shadowing requires per-entry `_override_reason: \"<text>\"` inline on the shadowing payload entry (ADR-0006 canonical shape; per SP17a T-5 Decision Point #1). Foundation+overlay UNION semantics at the dimension_prefixes leaf are produced by the helper at read time, not by the library at write time."
         ]
       }
     '
