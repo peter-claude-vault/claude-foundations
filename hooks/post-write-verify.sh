@@ -86,10 +86,12 @@ except yaml.YAMLError as e:
     print(f'YAML_ERROR|YAML parse error: {msg}')
     sys.exit(0)
 
-# Load schema — bundle.types subtree (SP13 T-3: was vault-schema.json top level)
+# Load schema — bundle.frontmatter.types subtree (SP13 T-3: was vault-schema.json
+# top level; SP17a T-6 part-2: migrated from top-level `.types` denorm slot to
+# pillar-nested form after retiring the denormalized convenience slot).
 try:
     bundle = json.load(open(schema_file))
-    schema = bundle.get('types', {})
+    schema = bundle.get('frontmatter', {}).get('types', {})
 except Exception:
     sys.exit(0)
 

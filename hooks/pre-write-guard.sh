@@ -777,11 +777,13 @@ GATE_R47_EXEMPT_PATHS=""
 GATE_R47_PREFIX_LIST=""
 GATE_R47_PREFIX_REGEX=""
 if [[ -n "$BUNDLE_JSON" ]]; then
-  # R-32 accepted_types = union of canonical types (.types | keys) + aliases
-  # (.r32_type_aliases | keys). Mirrors the 26-value gate-config.r32.accepted_types
-  # (21 canonical + 5 aliases) without duplicating the canonical list.
-  GATE_R32_ACCEPTED_TYPES=$(jq -r '(.types // {} | keys[]), (.r32_type_aliases // {} | keys[])' <<<"$BUNDLE_JSON" 2>/dev/null | LC_ALL=C sort -u)
-  GATE_R32_TYPE_ALIASES=$(jq -r '.r32_type_aliases // {} | to_entries[]? | "\(.key)\t\(.value)"' <<<"$BUNDLE_JSON" 2>/dev/null)
+  # R-32 accepted_types = union of canonical types (.frontmatter.types | keys)
+  # + aliases (.frontmatter.r32_type_aliases | keys). Mirrors the 26-value
+  # gate-config.r32.accepted_types (21 canonical + 5 aliases) without duplicating
+  # the canonical list. SP17a T-6 part-2: migrated from top-level `.types` +
+  # `.r32_type_aliases` (legacy denorm slots) to pillar-nested form.
+  GATE_R32_ACCEPTED_TYPES=$(jq -r '(.frontmatter.types // {} | keys[]), (.frontmatter.r32_type_aliases // {} | keys[])' <<<"$BUNDLE_JSON" 2>/dev/null | LC_ALL=C sort -u)
+  GATE_R32_TYPE_ALIASES=$(jq -r '.frontmatter.r32_type_aliases // {} | to_entries[]? | "\(.key)\t\(.value)"' <<<"$BUNDLE_JSON" 2>/dev/null)
   GATE_R32_EXEMPT_PATHS=$(jq -r '.r32_exempt_paths[]?' <<<"$BUNDLE_JSON" 2>/dev/null)
   GATE_R47_TAG_DIMENSIONS=$(jq -r '.tagging.taxonomy.dimension_prefixes[]?' <<<"$BUNDLE_JSON" 2>/dev/null)
   GATE_R47_EXEMPT_PATHS=$(jq -r '.r47_exempt_paths_composed[]?' <<<"$BUNDLE_JSON" 2>/dev/null)
@@ -974,15 +976,14 @@ if [[ "$FILE_PATH" == "$VAULT_ROOT/"* ]] && [[ "$FILE_PATH" == *.md ]]; then
     B1_C_CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // empty')
     if [[ -n "$B1_C_CONTENT" ]]; then
       B1_C_TYPE=$(printf '%s\n' "$B1_C_CONTENT" | awk '/^---[[:space:]]*$/{n++; next} n==1{print} n>=2{exit}' | grep -E '^type:' | head -1 | sed -E 's/^type:[[:space:]]*//; s/[[:space:]]*$//; s/^"//; s/"$//; s/^'\''//; s/'\''$//' || true)
-      # SP17a T-3: single union-view read covers BOTH foundation-side top-
-      # level `.types` + `.r32_type_aliases` (legacy denorm slots; retire
-      # in T-6) AND pillar-nested `.frontmatter.types` (overlay-extended).
-      # Replaces prior BUNDLE jq + direct overlay file read.
+      # SP17a T-3: single union-view read covers pillar-nested `.frontmatter.types`
+      # (overlay-extended) plus alias keys. SP17a T-6 part-2: dropped top-level
+      # `.types` + `.r32_type_aliases` reads (legacy denorm slots retired);
+      # aliases now read from pillar-nested `.frontmatter.r32_type_aliases`.
       if [[ -n "$B1_C_TYPE" ]] && [[ -n "${UNION_JSON:-}" ]]; then
         B1_KNOWN_TYPES=$(jq -r '
-          (.types // {} | keys[]?),
-          (.r32_type_aliases // {} | keys[]?),
-          (.frontmatter.types // {} | keys[]?)
+          (.frontmatter.types // {} | keys[]?),
+          (.frontmatter.r32_type_aliases // {} | keys[]?)
         ' <<<"$UNION_JSON" 2>/dev/null | LC_ALL=C sort -u)
         if [[ -n "$B1_KNOWN_TYPES" ]] && ! printf '%s\n' "$B1_KNOWN_TYPES" | grep -Fxq "$B1_C_TYPE"; then
           B1_FRAGMENT="[Propose-and-Validate — SP14 Branch #1 Class C / L-28] You are creating a file with type: '${B1_C_TYPE}' not in foundation-master.frontmatter.types or overlay-master.frontmatter.types. This declares a new semantic extension. Suggested: run \`/govern register --kind file-type --name ${B1_C_TYPE} --contract <path>\` to author the type contract (frontmatter required/optional + body shape + path_routing if subfolder semantic divergence per F5), OR dismiss to proceed (logged as \`unregistered: true\`, proposed_by: hook-class-c). Soft-mandate; frictionless skip available."
@@ -1274,8 +1275,10 @@ print(content, end='')
         # =====================================================================
         R32_UNION_ACCEPTED_TYPES=""
         if [[ -n "$UNION_JSON" ]]; then
+          # SP17a T-6 part-2: alias keys now read from pillar-nested
+          # `.frontmatter.r32_type_aliases` (was top-level `.r32_type_aliases`).
           R32_UNION_ACCEPTED_TYPES=$(jq -r \
-            '(.frontmatter.types // {} | keys[]?), (.r32_type_aliases // {} | keys[]?)' \
+            '(.frontmatter.types // {} | keys[]?), (.frontmatter.r32_type_aliases // {} | keys[]?)' \
             <<<"$UNION_JSON" 2>/dev/null \
             | grep -v '^_description$' \
             | LC_ALL=C sort -u)
@@ -1390,7 +1393,7 @@ print(content, end='')
         if ! fm_has "updated"; then
           UPDATED_IN_SCHEMA=""
           if [[ -n "$SCHEMA_KEY" ]]; then
-            UPDATED_IN_SCHEMA=$(jq -r --arg key "$SCHEMA_KEY" '.types[$key].required // [] | .[] | select(. == "updated")' <<<"$BUNDLE_JSON" 2>/dev/null)
+            UPDATED_IN_SCHEMA=$(jq -r --arg key "$SCHEMA_KEY" '.frontmatter.types[$key].required // [] | .[] | select(. == "updated")' <<<"$BUNDLE_JSON" 2>/dev/null)
           fi
           if [[ -n "$UPDATED_IN_SCHEMA" ]]; then
             TIER1_MSGS="${TIER1_MSGS}Vault write needs 'updated: ${TODAY}' in frontmatter. Add it before writing.\n"
@@ -1551,7 +1554,7 @@ PYEOF
 
         # Check required fields from schema
         if [[ -n "$SCHEMA_KEY" ]]; then
-          REQUIRED_FIELDS=$(jq -r --arg key "$SCHEMA_KEY" '.types[$key].required // [] | .[]' <<<"$BUNDLE_JSON" 2>/dev/null)
+          REQUIRED_FIELDS=$(jq -r --arg key "$SCHEMA_KEY" '.frontmatter.types[$key].required // [] | .[]' <<<"$BUNDLE_JSON" 2>/dev/null)
           if [[ -n "$REQUIRED_FIELDS" ]]; then
             MISSING_FIELDS=""
             while IFS= read -r field; do
@@ -1572,7 +1575,7 @@ PYEOF
           # Schema shape: .[$key].conditional_required = { "<field>": { "condition": "path_depth >= N", ... } }
           # Currently only one condition kind supported: "path_depth >= N" — REL_PATH segment count.
           # Extensible: future condition kinds register here without schema-shape changes.
-          CONDITIONAL_FIELDS=$(jq -r --arg key "$SCHEMA_KEY" '.types[$key].conditional_required // {} | to_entries[] | "\(.key)|\(.value.condition // "")"' <<<"$BUNDLE_JSON" 2>/dev/null)
+          CONDITIONAL_FIELDS=$(jq -r --arg key "$SCHEMA_KEY" '.frontmatter.types[$key].conditional_required // {} | to_entries[] | "\(.key)|\(.value.condition // "")"' <<<"$BUNDLE_JSON" 2>/dev/null)
           if [[ -n "$CONDITIONAL_FIELDS" ]]; then
             COND_PATH_DEPTH=$(echo "$REL_PATH" | tr -cd '/' | wc -c | tr -d ' ')
             COND_MISSING=""

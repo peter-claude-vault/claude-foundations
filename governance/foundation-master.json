@@ -1,5 +1,5 @@
 {
-  "_description": "Composed foundation governance bundle (SP13 T-2 + T-3; SP15 T-4 absorbed pillars 7 + 8). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
+  "_description": "Composed foundation governance bundle (SP13 T-2 + T-3; SP15 T-4 absorbed pillars 7 + 8; SP17a T-6 part-2 retired top-level .types + .r32_type_aliases denorm slots — r32_type_aliases now lives at .frontmatter.r32_type_aliases). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
   "_index": {
     "_description": "8-pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded. SP14 Batch A (2026-05-18) expanded 6 → 8 pillars (vault-writers + plans) per Plan 81 SP13 Session 2 + Sessions 4-5 locks; added SP14 T-16 retirement entry for governance/enforcement-map.schema.json (canonical successor = governance/foundation-master.json).",
     "_design_notes": {
@@ -340,22 +340,22 @@
   "_meta": {
     "_provenance": "SP13 T-2 build; SP15 T-4 absorbed pillars 7 + 8 (source_files_count 6 -> 8). Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
     "build_tool": "tools/build-foundation-master.sh",
-    "built_at": "2026-05-21T03:24:30Z",
-    "bundle_version": "1ddbd70856557446d42a5c01ab4043177d3d45a3e18b0a2b22cdfbbd4cd5d15f",
+    "built_at": "2026-05-21T19:11:12Z",
+    "bundle_version": "eac69a4caef1e755b2f53276a94e1c92b58b30bbff97c6042d7296383c58a227",
     "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
     "source_file_mtimes": {
-      "governance/_index.json": "2026-05-18T11:41:49Z",
-      "governance/doc-dependencies.json": "2026-05-19T08:16:47Z",
-      "governance/frontmatter-rules.json": "2026-05-18T10:54:48Z",
-      "governance/mandatory-files-rules.json": "2026-05-18T10:54:48Z",
-      "governance/naming-rules.json": "2026-05-18T10:54:48Z",
-      "governance/plans-rules.json": "2026-05-21T00:50:09Z",
-      "governance/tagging-rules.json": "2026-05-18T10:54:48Z",
-      "governance/vault-writers-rules.json": "2026-05-19T08:14:57Z"
+      "governance/_index.json": "2026-05-21T06:54:47Z",
+      "governance/doc-dependencies.json": "2026-05-21T06:54:47Z",
+      "governance/frontmatter-rules.json": "2026-05-21T06:54:47Z",
+      "governance/mandatory-files-rules.json": "2026-05-21T06:54:47Z",
+      "governance/naming-rules.json": "2026-05-21T06:54:47Z",
+      "governance/plans-rules.json": "2026-05-21T06:54:47Z",
+      "governance/tagging-rules.json": "2026-05-21T06:54:47Z",
+      "governance/vault-writers-rules.json": "2026-05-21T06:54:47Z"
     },
     "source_files_count": 8
   },
-  "_sp13_provenance": "SP13 T-2 (2026-05-14) initial build; SP13 T-3 (2026-05-14) extended bundle to absorb gate-config residual slices (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh can drop direct gate-config reads while gate-config physical retirement waits for T-6. Composes 8 pillar files + N file-type-contracts. Gate-config dissolved with marker in SP13 T-3 commit (mirrors T-4 vault-schema freeze-with-marker pattern per feedback_freeze_with_marker_retirement_pattern). SP15 T-4 (2026-05-20) bumped schema_version 1.1.0 -> 1.2.0; absorbed pillars 7 (vault-writers-rules; carries daily_processing_root + writer_manifest_path + historical_data_warning_default per §A47 + §A60 + §A61 + L-104) + 8 (plans-rules; cooldown_days: 3 foundation default per §A59 + §A65); file-type-contracts now carry write_shape enum [create-only|append-template|amend-via-prompt|replace] per §A62 + L-108 (authored at source per feedback_ship_bundle_dont_build_on_consumer).",
+  "_sp13_provenance": "SP13 T-2 (2026-05-14) initial build; SP13 T-3 (2026-05-14) extended bundle to absorb gate-config residual slices (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh can drop direct gate-config reads while gate-config physical retirement waits for T-6. Composes 8 pillar files + N file-type-contracts. Gate-config dissolved with marker in SP13 T-3 commit (mirrors T-4 vault-schema freeze-with-marker pattern per feedback_freeze_with_marker_retirement_pattern). SP15 T-4 (2026-05-20) bumped schema_version 1.1.0 -> 1.2.0; absorbed pillars 7 (vault-writers-rules; carries daily_processing_root + writer_manifest_path + historical_data_warning_default per §A47 + §A60 + §A61 + L-104) + 8 (plans-rules; cooldown_days: 3 foundation default per §A59 + §A65); file-type-contracts now carry write_shape enum [create-only|append-template|amend-via-prompt|replace] per §A62 + L-108 (authored at source per feedback_ship_bundle_dont_build_on_consumer). SP17a T-6 part-2 (2026-05-21) retired denormalized top-level slots .types (was a lift of .frontmatter.types) and .r32_type_aliases (relocated to .frontmatter.r32_type_aliases via build-time composition); hooks + post-write-verify migrated to pillar-nested reads.",
   "doc_dependencies": {
     "_path_placeholders": {
       "_description": "Path placeholders are substituted at install time. Foundation-repo ships paths in this parameterized form; install.sh resolves each placeholder against the adopter's environment.",
@@ -1485,6 +1485,13 @@
       "rules": []
     },
     "pillar": "frontmatter",
+    "r32_type_aliases": {
+      "file-index": "index",
+      "overview": "engagement",
+      "skill-spec": "reference",
+      "tier-2": "reference",
+      "updates": "engagement"
+    },
     "retired_types": {
       "_description": "Types removed from the active type registry; preserved for write-time DENY messaging (R-32 retired_types_handling). (SP13 T-4 2026-05-14: absorbed from vault-schema._retired_types. SP13 Phase 1c 2026-05-14: replacement text abstracted off user-vocabulary folder names per canonical §G; concrete adopter folder patterns live in overlay-master.frontmatter.path_routing.rules[].)",
       "engagement": {
@@ -2343,13 +2350,6 @@
     "CLAUDE.md",
     "**/CLAUDE.md"
   ],
-  "r32_type_aliases": {
-    "file-index": "index",
-    "overview": "engagement",
-    "skill-spec": "reference",
-    "tier-2": "reference",
-    "updates": "engagement"
-  },
   "r47_exempt_paths_composed": [
     ".claude/**",
     ".claude/hooks/lib/**",
@@ -2493,322 +2493,6 @@
       "system_utility_governance": "log-subtype-registry (canonical values per dimension; near-match DENY via R-05)",
       "tag_pattern_regex": "^#[a-z][a-z0-9-]*/[a-z0-9][a-z0-9-]*$",
       "user_facing_dimensions": []
-    }
-  },
-  "types": {
-    "archetype-template": {
-      "_description": "Scaffold templates at `onboarding/templates/<archetype>/` consumed by install. Pre-populated frontmatter; R-32 100% conformant. Anti-drift principle: archetype templates ship pre-populated upfront; user-added files inherit defaults via templates.",
-      "optional": [
-        "max_lines",
-        "provides",
-        "lockstep_pair"
-      ],
-      "required": [
-        "type",
-        "archetype",
-        "template_for",
-        "tags",
-        "updated"
-      ],
-      "tier": "strict"
-    },
-    "archive": {
-      "optional": [
-        "engagement",
-        "project"
-      ],
-      "required": [
-        "type",
-        "source-path",
-        "archived-date",
-        "tags"
-      ],
-      "tier": "strict"
-    },
-    "briefing": {
-      "optional": [
-        "max_lines"
-      ],
-      "required": [
-        "type",
-        "date",
-        "generated",
-        "tags"
-      ],
-      "tier": "strict"
-    },
-    "context": {
-      "optional": [
-        "workstream",
-        "provides",
-        "max_lines"
-      ],
-      "required": [
-        "title",
-        "engagement",
-        "project",
-        "type",
-        "status",
-        "owner",
-        "updated",
-        "tags"
-      ],
-      "tier": "standard"
-    },
-    "daily-archive": {
-      "optional": [],
-      "required": [
-        "type",
-        "month",
-        "date-range",
-        "tags"
-      ],
-      "tier": "strict"
-    },
-    "daily-note": {
-      "optional": [],
-      "required": [
-        "type",
-        "date",
-        "day",
-        "processed",
-        "tags"
-      ],
-      "tier": "strict"
-    },
-    "historical-brief": {
-      "optional": [
-        "kept-as",
-        "merged-into",
-        "copied-to",
-        "tags"
-      ],
-      "required": [
-        "type",
-        "updated",
-        "marked-historical-by"
-      ],
-      "tier": "standard"
-    },
-    "ideation-brief": {
-      "optional": [
-        "status",
-        "tags",
-        "backlog_item"
-      ],
-      "required": [
-        "type",
-        "title",
-        "created",
-        "updated"
-      ],
-      "tier": "strict"
-    },
-    "inbox-archive": {
-      "optional": [],
-      "required": [
-        "type",
-        "date",
-        "day",
-        "sources",
-        "created",
-        "tags"
-      ],
-      "tier": "strict"
-    },
-    "index": {
-      "body_structure_contract": "governance/file-type-contracts/_index.md.json",
-      "body_structure_contract_rationale": "Body-structure rules (H1, folder-context paragraph, contents-enum table with column shape + sentinel markers + ordering convention) live in the per-file-type contract following the k8s ValidatingAdmissionPolicy paramKind pattern (matcher in pillar/schema; parameters in separate replaceable resource). See ../research/vault-construction/_index.md-design.md + ../target-state/_index.md-design/structural-requirements.md.",
-      "conditional_required": {
-        "parent_folder": {
-          "condition": "path_depth >= 2",
-          "condition_semantics": "depth is the number of path segments between the vault root and the file; depth 1 = `<cluster>/_index.md` (parent_folder omitted because the parent IS the vault root); depth >= 2 = `<cluster>/<instance>/_index.md` or deeper (parent_folder mandatory).",
-          "rationale": "Navigation-side lineage pointer auto-populated by post-write-verify auto-bootstrap; librarian index-maintain audits for path-vs-frontmatter drift. Distinct from the content-side folder-lineage convention (`engagement:`/`project:`) which uses path_routing. See ../research/vault-construction/_index.md-design.md §parent_folder."
-        }
-      },
-      "optional": [
-        "provides",
-        "description"
-      ],
-      "required": [
-        "type",
-        "tags",
-        "updated"
-      ],
-      "tier": "strict"
-    },
-    "log": {
-      "optional": [
-        "tags"
-      ],
-      "required": [
-        "type",
-        "log-type",
-        "date",
-        "timestamp"
-      ],
-      "tier": "strict"
-    },
-    "meeting-note": {
-      "optional": [
-        "engagement",
-        "project",
-        "previous_instance",
-        "granola_id",
-        "granola_ids",
-        "granola_url"
-      ],
-      "required": [
-        "type",
-        "date",
-        "meeting_title",
-        "attendees",
-        "tags",
-        "processed",
-        "updated"
-      ],
-      "tier": "strict"
-    },
-    "navigation": {
-      "optional": [
-        "project",
-        "max_lines",
-        "tags"
-      ],
-      "required": [
-        "type",
-        "engagement",
-        "updated"
-      ],
-      "tier": "standard"
-    },
-    "packet": {
-      "_description": "Research context packets at all four altitudes (system / engagement / topic / initiative). System-altitude packets canonical at `claude-stem/research/vault-construction/`; engagement/topic/initiative at user vault. Surfaces 180-day `last_reviewed` cadence (system) / 90-day (topic) / continuous (engagement) / closed-at-plan-close (initiative).",
-      "optional": [
-        "canonical_url",
-        "url_stability",
-        "provides",
-        "max_lines",
-        "engagement",
-        "project"
-      ],
-      "required": [
-        "type",
-        "altitude",
-        "scope",
-        "validity_window",
-        "source_dependencies",
-        "last_reviewed",
-        "tags",
-        "updated"
-      ],
-      "tier": "strict"
-    },
-    "people": {
-      "optional": [
-        "email",
-        "projects",
-        "max_lines"
-      ],
-      "required": [
-        "type",
-        "name",
-        "org",
-        "role",
-        "engagement",
-        "updated",
-        "tags"
-      ],
-      "tier": "standard"
-    },
-    "personal-initiative": {
-      "optional": [
-        "github_repo",
-        "audience",
-        "lines",
-        "max_lines",
-        "provides",
-        "started",
-        "completed"
-      ],
-      "required": [
-        "type",
-        "name",
-        "status",
-        "owner",
-        "updated",
-        "tags"
-      ],
-      "tier": "standard"
-    },
-    "planning": {
-      "optional": [
-        "project",
-        "provides",
-        "max_lines"
-      ],
-      "required": [
-        "type",
-        "engagement",
-        "updated",
-        "tags"
-      ],
-      "tier": "standard"
-    },
-    "prd": {
-      "optional": [
-        "workstream",
-        "provides",
-        "max_lines"
-      ],
-      "required": [
-        "title",
-        "engagement",
-        "project",
-        "type",
-        "status",
-        "owner",
-        "updated",
-        "tags"
-      ],
-      "tier": "standard"
-    },
-    "reference": {
-      "optional": [
-        "provides",
-        "max_lines"
-      ],
-      "required": [
-        "type",
-        "updated",
-        "tags"
-      ],
-      "tier": "standard"
-    },
-    "strategic": {
-      "optional": [
-        "project",
-        "provides",
-        "max_lines"
-      ],
-      "required": [
-        "type",
-        "engagement",
-        "status",
-        "updated",
-        "tags"
-      ],
-      "tier": "standard"
-    },
-    "weekly-summary": {
-      "optional": [],
-      "required": [
-        "type",
-        "week",
-        "date-range",
-        "tags"
-      ],
-      "tier": "strict"
     }
   },
   "vault_writers": {
