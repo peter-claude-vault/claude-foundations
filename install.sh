@@ -305,6 +305,21 @@ fi
 info "CLAUDE_HOME=$CLAUDE_HOME"
 info "SOURCE_REPO=$SOURCE_REPO"
 
+# --- state-tier env-var resolution (SP15 T-1b — §A60 + L-95 two-root topology) ---
+# $VAULT_WRITER_STATE_ROOT default ~/.local/share/claude-stem/vault-writers/
+#   Durable second-brain artifacts (manifest.sqlite, raw retention,
+#   daily-processing, per-writer history). XDG-compliant; backup-included by
+#   Time Machine/restic defaults via ~/.local/share/.
+# $CLAUDE_STATE_ROOT default ~/.local/state/claude-stem/
+#   Ephemeral Claude-runtime (staging packets, locks, queues). Rebuildable.
+# Decision rule (§A60): "would this survive a Claude reinstall + harness
+#   switch?" YES → $VAULT_WRITER_STATE_ROOT; NO → $CLAUDE_STATE_ROOT.
+# Overrides honored when exported pre-invocation; defaults applied when unset.
+VAULT_WRITER_STATE_ROOT="${VAULT_WRITER_STATE_ROOT:-$HOME/.local/share/claude-stem/vault-writers}"
+CLAUDE_STATE_ROOT="${CLAUDE_STATE_ROOT:-$HOME/.local/state/claude-stem}"
+info "VAULT_WRITER_STATE_ROOT=$VAULT_WRITER_STATE_ROOT"
+info "CLAUDE_STATE_ROOT=$CLAUDE_STATE_ROOT"
+
 # --- G2: foreign-content detector (S64; spec §Installer firewall guards) ---
 # Walks $CLAUDE_HOME for files inside foundation-known directories whose
 # relative path is tracked by $SOURCE_REPO/foundation-manifest.json baseline
@@ -552,6 +567,7 @@ if [ "$APPLY_MODE" != "1" ]; then
   "guards_passed": ["G1-pre", "G1-main", "G2", "G3", "G4", "G5", "G7", "G8"],
   "actions": [
     {"step": 1, "op": "mkdir", "target": "$CLAUDE_HOME/{hooks,hooks/lib,hooks/state,hooks/config,skills,schemas,onboarding,orchestrator,templates,templates/launchd,templates/settings-fragments,plugins,Library/LaunchAgents.staging,installer,logs,governance,governance/file-type-contracts,governance/librarian-capabilities,governance/onboarding-reference}", "rationale": "create target tree (SP15 T-1a: governance/ subtree added)"},
+    {"step": 1.5, "op": "mkdir+symlink", "target": "$VAULT_WRITER_STATE_ROOT/{,daily-processing,raw} + $CLAUDE_STATE_ROOT/{,vault-staging,vault-staging/_archive} + $CLAUDE_HOME/state symlink → $CLAUDE_STATE_ROOT", "rationale": "create v3 two-root state-tier scaffold (SP15 T-1b §A60 + L-95): durable second-brain root + ephemeral Claude-runtime root + back-compat symlink at $CLAUDE_HOME/state for one release cycle (deprecated; remove in v4)"},
     {"step": 2, "op": "cp", "target": "$CLAUDE_HOME/hooks/", "source": "$SOURCE_REPO/hooks/{*.sh,*.md,MANIFEST.txt}", "rationale": "ship hook entry-points + MANIFEST (pre-asq-guard.sh ships via wildcard per SP15 T-1a)"},
     {"step": 3, "op": "cp", "target": "$CLAUDE_HOME/hooks/lib/", "source": "$SOURCE_REPO/lib/{*.sh,*.sql}", "rationale": "ship hook libs (lib/ to hooks/lib/ translation per A4; SP15 T-1a: *.sql wildcard ships manifest-migrate.sql companion to manifest-record.sh)"},
     {"step": 4, "op": "cp", "target": "$CLAUDE_HOME/hooks/config/", "source": "$SOURCE_REPO/hooks/config/", "rationale": "ship hook config JSON"},
@@ -589,6 +605,57 @@ target_dirs="hooks hooks/lib hooks/state hooks/config skills schemas onboarding 
 for d in $target_dirs; do
   mkdir -p "$CLAUDE_HOME/$d" || { diag "mkdir failed: $CLAUDE_HOME/$d"; exit 11; }
 done
+
+# Step 1.5: state-tier scaffold (SP15 T-1b — v3 two-root topology per §A60 + L-95)
+# Creates the two state roots + subdirectory scaffolds OUTSIDE $CLAUDE_HOME and
+# the back-compat symlink at $CLAUDE_HOME/state → $CLAUDE_STATE_ROOT for one
+# release cycle (deprecated; remove in v4). Env vars resolved earlier; defaults
+# honor XDG ~/.local/share/ + ~/.local/state/ conventions per §A60.
+#
+# Subdirectories per spec §1.5:
+#   $VAULT_WRITER_STATE_ROOT/                 durable root
+#   $VAULT_WRITER_STATE_ROOT/daily-processing/ empty; reconciler creates
+#                                              per-day subdirs at runtime
+#                                              (L-99 + A61)
+#   $VAULT_WRITER_STATE_ROOT/raw/             raw retention (L-97 + A60);
+#                                              mandatory for writer_kind ∈
+#                                              {agentic-flow, auto-research}
+#   $CLAUDE_STATE_ROOT/                       ephemeral root
+#   $CLAUDE_STATE_ROOT/vault-staging/         replaces former
+#                                              ~/.claude/state/vault-staging/
+#   $CLAUDE_STATE_ROOT/vault-staging/_archive/ empty
+#
+# Idempotent: mkdir -p tolerates existing dirs (re-install safe). Back-compat
+# symlink uses G2-style protection — only created if absent OR already
+# pointing at $CLAUDE_STATE_ROOT. Existing real directory at $CLAUDE_HOME/state
+# (pre-v3 installs) is left untouched with a warn; operator must migrate
+# contents before v4 removes the symlink. Existing symlink to a different
+# target is left untouched with a warn.
+#
+# OUT OF SCOPE for T-1b (later sub-tasks):
+#   - manifest.sqlite bootstrap at $VAULT_WRITER_STATE_ROOT/manifest.sqlite (T-1c)
+#   - empty governance-action-log.jsonl initializer (T-1c)
+#   - empty overlay-master.json skeleton at $CLAUDE_HOME/governance/ (T-1f)
+#   - meeting-processor-state migration (T-2)
+state_tier_dirs="$VAULT_WRITER_STATE_ROOT $VAULT_WRITER_STATE_ROOT/daily-processing $VAULT_WRITER_STATE_ROOT/raw $CLAUDE_STATE_ROOT $CLAUDE_STATE_ROOT/vault-staging $CLAUDE_STATE_ROOT/vault-staging/_archive"
+for d in $state_tier_dirs; do
+  mkdir -p "$d" || { diag "state-tier mkdir failed: $d"; exit 11; }
+done
+
+backcompat_link="$CLAUDE_HOME/state"
+if [ -L "$backcompat_link" ]; then
+  current_target="$(readlink "$backcompat_link")"
+  if [ "$current_target" = "$CLAUDE_STATE_ROOT" ]; then
+    info "state back-compat symlink already correct: $backcompat_link → $CLAUDE_STATE_ROOT"
+  else
+    warn "state back-compat symlink exists at $backcompat_link pointing to $current_target (expected $CLAUDE_STATE_ROOT); leaving unchanged"
+  fi
+elif [ -e "$backcompat_link" ]; then
+  warn "state back-compat target $backcompat_link exists as non-symlink (pre-v3 real directory); leaving unchanged. Operator must migrate contents into $CLAUDE_STATE_ROOT before v4 removes the symlink convention."
+else
+  ln -s "$CLAUDE_STATE_ROOT" "$backcompat_link" || { diag "state back-compat symlink creation failed: $backcompat_link → $CLAUDE_STATE_ROOT"; exit 11; }
+  info "state back-compat symlink created: $backcompat_link → $CLAUDE_STATE_ROOT (deprecated; v4 removal)"
+fi
 
 # Step 2: hooks/*.sh + hooks/*.md + MANIFEST → $CLAUDE_HOME/hooks/
 # (cp -n: never clobber; honors user-edited variants)
