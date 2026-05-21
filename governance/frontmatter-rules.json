@@ -1,18 +1,16 @@
 {
   "schema_version": "2.0.0",
   "pillar": "frontmatter",
-  "_description": "Claude-consumed JSON registry for the frontmatter pillar. Loaded by pre-write-guard.sh at runtime and read by the librarian frontmatter-coverage-audit. Carries R-32, R-33, R-37, R-39, R-40, R-41 plus the type registry, tier compliance, archetype-conditional fields, path-routing rules, and the archetype enum. Frontmatter is the API every file exposes to the system; this pillar declares the fields, per-type contracts, AND the rules that enforce them. SP13 T-4 dissolved schemas/vault-schema.json into this pillar (types + tier assignment + path routing + archetype binding) plus governance/tagging-rules.json (tag-prefix taxonomy). See research/vault-construction/frontmatter-design.md for the narrative rationale.",
+  "_description": "Claude-consumed JSON registry for the frontmatter pillar. Loaded by pre-write-guard.sh at runtime and read by the librarian frontmatter-coverage-audit. Carries R-32, R-33, R-37, R-39, R-40 plus the type registry, tier compliance, and path-routing rules. Frontmatter is the API every file exposes to the system; this pillar declares the fields, per-type contracts, AND the rules that enforce them. SP13 T-4 dissolved schemas/vault-schema.json into this pillar (types + tier assignment + path routing) plus governance/tagging-rules.json (tag-prefix taxonomy). See research/vault-construction/frontmatter-design.md for the narrative rationale.",
   "_design_notes": {
-    "consumer": "pre-write-guard.sh — SCHEMA_KEY case statement + R-32 type-allowlist DENY + R-33 placement advisory; post-write-verify.sh — R-39 provides-presence advisory + R-41 archetype-field-compliance audit; librarian frontmatter-coverage-audit (R-39, R-40, R-41)",
+    "consumer": "pre-write-guard.sh — SCHEMA_KEY case statement + R-32 type-allowlist DENY + R-33 placement advisory; post-write-verify.sh — R-39 provides-presence advisory; librarian frontmatter-coverage-audit (R-39, R-40)",
     "absorbed_from_vault_schema": [
       "tiers (canonical tier definitions; was vault-schema.json `tiers`)",
       "types (21 per-type entries; were top-level type keys in vault-schema.json)",
-      "archetype_conditional_fields (was vault-schema.json `_archetype_conditional_fields`)",
       "packet_only_fields (was vault-schema.json `_packet_only_fields`)",
       "excluded_fields (was vault-schema.json `_excluded_fields`)",
       "retired_types (was vault-schema.json `_retired_types`)",
-      "path_routing (was vault-schema.json `_path_rules`; renamed for clarity per SP13 spec)",
-      "archetype_enum (was implicit in vault-schema.json; now explicit declaration)"
+      "path_routing (was vault-schema.json `_path_rules`; renamed for clarity per SP13 spec)"
     ],
     "lockstep_pair": "System Governance - Frontmatter.md (narrative spoke) + pre-write-guard.sh (SCHEMA_KEY case) + post-write-verify.sh (type_map)",
     "evolution_protocol": "R-37 atomic lockstep — frontmatter-rules.json + System Governance - Frontmatter.md + pre-write-guard.sh SCHEMA_KEY case + post-write-verify.sh type_map updated in one commit. NOTE: schemas/vault-schema.json was DISSOLVED in SP13 T-4 (2026-05-14) into this pillar + governance/tagging-rules.json; the file remains physically present as a frozen artifact carrying a `_dissolved: true` marker until the last consumer migrates (T-3 hooks, T-8 install, T-9 tests, T-10 docs) — no new authoring against the dissolved file.",
@@ -50,32 +48,6 @@
       "universal_required": [],
       "conditional_required": []
     }
-  },
-
-  "archetype_enum": {
-    "_description": "Canonical registered archetypes (SP13 T-4: absorbed from vault-schema._archetype_enum; was implicit reference target from R-51). Adopters extend via Layer 3 overlay-master.json archetype_extensions per R-52 collision-tiebreaker.",
-    "values": ["consultant", "researcher", "developer", "manager"],
-    "overlay_extension_path": "Layer 3 overlay-master.json archetype_extensions"
-  },
-
-  "archetype_conditional_fields": {
-    "_description": "Fields that may appear in any type entry's required/optional list. Per-type entries declare which apply (the 'per-archetype entries' in the unified model). Adopters extend this list via Layer 3 overlay-master.json; the 14 entries below are the foundation-repo seed. (SP13 T-4: absorbed from vault-schema._archetype_conditional_fields.)",
-    "fields": [
-      "engagement",
-      "project",
-      "workstream",
-      "owner",
-      "provides",
-      "created",
-      "name",
-      "attendees",
-      "processed",
-      "granola_id",
-      "target_date",
-      "audience",
-      "github_repo",
-      "parent_folder"
-    ]
   },
 
   "packet_only_fields": {
@@ -116,9 +88,8 @@
     "_description": "Cross-cutting folder-lineage validation rules (SP13 T-4 2026-05-14: absorbed from vault-schema._path_rules; renamed for clarity). Hook contract: when a file is written, evaluate matching path rules; if pattern matches, the file MUST satisfy the requires_fields + requires_tags clauses. SP13 Phase 1c 2026-05-14: foundation ships an EMPTY rules[] array per canonical §G+§H — archetype-specific folder patterns belong to adopter overlay-master.frontmatter.path_routing.rules[], not foundation governance. Onboarding wizard (successor sub-plan scope) offers archetype seeds at install time and writes the adopter's selection into overlay-master. Foundation declares the SHAPE (rules[] array contract + per-rule field semantics via _rule_shape_contract below); adopter provides the CONTENT.",
     "rules": [],
     "_rule_shape_contract": {
-      "_description": "Per-rule object shape that adopter overlay-master.frontmatter.path_routing.rules[] entries MUST conform to. Reference contract for the wizard (onboarding successor) when authoring archetype seeds into overlay-master at install time.",
-      "id": "<archetype>-<lineage-name>",
-      "archetype": "<one of archetype_enum.values>",
+      "_description": "Per-rule object shape that adopter overlay-master.frontmatter.path_routing.rules[] entries MUST conform to. Reference contract for the wizard (onboarding successor) when authoring lineage rules into overlay-master at install time.",
+      "id": "<lineage-name>",
       "pattern": "<glob path with {placeholder} segments for field-bound depth markers>",
       "requires_fields": [
         { "field": "<field-name>", "must_equal_ancestor_segment_at_depth": "<int — depth from vault root>" }
@@ -307,7 +278,7 @@
       "source": "ENFORCEMENT-MAP.md R-37 (cross-cutting meta-rule; canonical entry in governance/_index.json `cross_cutting_meta_rules[]`) + ../research/vault-construction/frontmatter-design.md §R-37 atomic-lockstep protocol + ../research/vault-construction/enforcement-map-design.md §R-37 atomic-lockstep protocol + ../docs/decisions/0005-two-surface-governance-dual-pattern.md",
       "enforcement_layer": ["pre-write-guard.sh atomic-lockstep branch (DENY on partial-surface writes)", "git pre-commit hook (advisory)", "librarian governance-parity-audit (audit-time drift detection)"],
       "failure_mode": "Schema-touching changes that land in one surface without the others produce silent drift — the pillar declares a new type the hook does not recognize; the narrative spoke documents fields the pillar has not added; the rule registry references a field name the pillar spells differently. Within weeks the surfaces diverge enough that no single artifact is authoritative. Drift is detectable but already-broken when the audit surfaces it. R-37 closes the gap at write-time by treating partial-surface commits as the structural error they are.",
-      "rule_text": "The frontmatter pillar binds three coupled surfaces under R-37 atomic lockstep: (1) governance/frontmatter-rules.json (canonical pillar declaring types, tiers, archetype enum, archetype-conditional fields, path-routing rules, and rule registry; SP13 T-4 absorbed the former schemas/vault-schema.json), (2) onboarding/scaffold/vault-architecture/System Governance - Frontmatter.md (narrative spoke), (3) hooks/pre-write-guard.sh SCHEMA_KEY case-statement + hooks/post-write-verify.sh type_map (runtime mirror). Adding, modifying, or retiring a `type:` value, changing a required-field list, introducing a new field class, or updating the tier-compliance contract requires touching ALL THREE surfaces in a single commit. Pre-write-guard's atomic-lockstep branch DENIES writes that touch one surface without the others, with the missing surfaces enumerated. This entry is the pillar-scoped instantiation of the canonical R-37 meta-rule at governance/_index.json `cross_cutting_meta_rules[]`. The interim coupled-surfaces declaration in governance/_index.json carries hooks/config/gate-config.json (until T-6 retirement) and governance/foundation-master.json (forward) per SP13 retirement-order discipline.",
+      "rule_text": "The frontmatter pillar binds three coupled surfaces under R-37 atomic lockstep: (1) governance/frontmatter-rules.json (canonical pillar declaring types, tiers, path-routing rules, and rule registry; SP13 T-4 absorbed the former schemas/vault-schema.json), (2) onboarding/scaffold/vault-architecture/System Governance - Frontmatter.md (narrative spoke), (3) hooks/pre-write-guard.sh SCHEMA_KEY case-statement + hooks/post-write-verify.sh type_map (runtime mirror). Adding, modifying, or retiring a `type:` value, changing a required-field list, introducing a new field class, or updating the tier-compliance contract requires touching ALL THREE surfaces in a single commit. Pre-write-guard's atomic-lockstep branch DENIES writes that touch one surface without the others, with the missing surfaces enumerated. This entry is the pillar-scoped instantiation of the canonical R-37 meta-rule at governance/_index.json `cross_cutting_meta_rules[]`. The interim coupled-surfaces declaration in governance/_index.json carries hooks/config/gate-config.json (until T-6 retirement) and governance/foundation-master.json (forward) per SP13 retirement-order discipline.",
       "meta_rule_reference": "governance/_index.json cross_cutting_meta_rules[] R-37",
       "coupled_surfaces": [
         "governance/frontmatter-rules.json",
@@ -363,24 +334,6 @@
       },
       "drift_allowlist_path": "hooks/config/drift-allowlist.json",
       "manifest_mirror_path": "librarian-manifest.json drift_findings.provides_canonicality"
-    },
-    {
-      "id": "R-41",
-      "pillar": "frontmatter",
-      "tier": "1",
-      "source": "../research/vault-construction/vault-construction-principles.md commitment 4 (multi-archetype union) + ../research/vault-construction/frontmatter-design.md §Archetype-conditional fields + spec §Archetype-binding rule contract (sibling to R-51 in governance/tagging-rules.json)",
-      "enforcement_layer": ["librarian archetype-consistency audit (audit-time; per-archetype field-coverage verification)", "post-write-verify.sh archetype-field advisory (Tier 1; warning on incomplete archetype field-set)", "governance/frontmatter-rules.json `archetype_conditional_fields` (per-archetype field-set authority)"],
-      "failure_mode": "Files declaring an archetype (via `archetype:` frontmatter field or via per-type entry with archetype binding) but missing required archetype-conditional fields fragment the multi-archetype union model. A consultant archetype file missing `engagement:`/`project:` cannot be filtered to engagement-scoped views. A researcher archetype file missing `topic:`/`study:` cannot resolve to the topic taxonomy. The renamed-dimension overlay (developer's `#repo/*` mapping to the consultant's `#engagement/*` structural slot) breaks at consumption time. The audit closes the gap by walking every archetype-declaring file and verifying the required field set per archetype is fully populated.",
-      "rule_text": "Files declaring an archetype affiliation (either via the `archetype:` frontmatter field or via a `type:` entry with archetype binding declared in governance/frontmatter-rules.json) MUST carry the full required-field set for that archetype per governance/frontmatter-rules.json `archetype_conditional_fields[<archetype>]` declaration. The librarian archetype-consistency audit walks every archetype-declaring file, computes the per-archetype required-field intersection, and emits `archetype-field-compliance-drift` findings when any required field is missing. Severity is `warning` (Tier 1 advisory) — the file lands; the audit surfaces drift at session-close. Adopters extending the archetype enum via Layer 3 overlay-master.json must extend `archetype_conditional_fields` in the same overlay; otherwise the audit reports the unknown archetype as `archetype-not-in-enum` (R-51 sibling at tagging-rules.json carries the write-time DENY for archetype enum violations). The pair (R-41 advisory at audit-time + R-51 DENY at write-time) is the field-side and tag-side enforcement of the multi-archetype binding contract.",
-      "audit_only": true,
-      "archetype_conditional_fields_source": "governance/frontmatter-rules.json#archetype_conditional_fields",
-      "archetype_enum_source": "governance/frontmatter-rules.json#archetype_enum",
-      "sibling_rule": "R-51 (governance/tagging-rules.json) — archetype-binding DENY at write-time on `archetype:` field value",
-      "exemptions": [
-        "Files declaring `tier: minimal` — opt-out from validation",
-        "Archive/** — closed lifecycle; archetype-completeness is preserved as a historical record, not a live audit target",
-        "Files without any archetype declaration — pre-archetype-era content remains in Standard tier without binding"
-      ]
     }
   ]
 }

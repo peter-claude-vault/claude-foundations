@@ -1,9 +1,9 @@
 {
   "schema_version": "2.0.0",
   "pillar": "tagging",
-  "_description": "Claude-consumed JSON registry for the tagging pillar. Loaded by pre-write-guard.sh at runtime. Carries R-05, R-32-taxonomy, R-47, R-50, R-51 plus the canonical tag-prefix taxonomy. Tags are the user-side query surface (Obsidian graph view, filter pane, MOC patterns); frontmatter fields are the Claude-side substrate. SP13 T-4 absorbed the canonical tag-prefix taxonomy authority from dissolved schemas/vault-schema.json. See research/vault-construction/tagging-strategy.md §Tags vs fields for the dichotomy.",
+  "_description": "Claude-consumed JSON registry for the tagging pillar. Loaded by pre-write-guard.sh at runtime. Carries R-05, R-32-taxonomy, R-47, R-50 plus the canonical tag-prefix taxonomy. Tags are the user-side query surface (Obsidian graph view, filter pane, MOC patterns); frontmatter fields are the Claude-side substrate. SP13 T-4 absorbed the canonical tag-prefix taxonomy authority from dissolved schemas/vault-schema.json. See research/vault-construction/tagging-strategy.md §Tags vs fields for the dichotomy.",
   "_design_notes": {
-    "consumer": "pre-write-guard.sh — tag-validation branch (R-05, R-32-taxonomy, R-51); post-write-verify.sh — tag-presence advisory (R-47); librarian tag-coverage-audit (R-47, R-50)",
+    "consumer": "pre-write-guard.sh — tag-validation branch (R-05, R-32-taxonomy); post-write-verify.sh — tag-presence advisory (R-47); librarian tag-coverage-audit (R-47, R-50)",
     "absorbed_from_vault_schema": [
       "canonical tag-prefix taxonomy (was vault-schema._tag_prefixes + _tag_prefixes_meta; now governance/tagging-rules.json#taxonomy)"
     ],
@@ -82,18 +82,6 @@
       "advisory_threshold_pct": 80,
       "scope": "user_facing_dimensions",
       "override_mechanism": "Layer 3 overlay-master.json :: tagging_cap_override (post-SP13 T-5 slot) with rationale + audit-trail entry"
-    },
-    {
-      "id": "R-51",
-      "pillar": "tagging",
-      "tier": "2",
-      "source": "../research/vault-construction/vault-construction-principles.md commitment 4 (multi-archetype union) + ../research/vault-construction/tagging-strategy.md §Per-archetype dimension relabeling + spec §Archetype-binding rule contract",
-      "enforcement_layer": ["pre-write-guard.sh archetype-binding branch (Tier 2 DENY)", "governance/frontmatter-rules.json#archetype_enum (registered archetypes authority — SP13 T-4 absorbed from dissolved vault-schema._archetype_enum)", "Layer 3 overlay-master.json archetype_extensions (adopter-declared custom archetype declaration)"],
-      "failure_mode": "Files declaring an archetype field value outside the registered archetype enum drift the multi-archetype union model. Cross-archetype queries fail because the archetype field carries an unrecognized value; the renamed-dimension overlay (e.g., #repo/* in developer archetype) cannot resolve back to its structural slot; the per-archetype synonym dictionary breaks at consumption time.",
-      "rule_text": "Any frontmatter `archetype:` field value MUST match a value registered in governance/frontmatter-rules.json#archetype_enum (consultant | researcher | developer | manager) OR an adopter-declared custom archetype in Layer 3 overlay-master.json archetype_extensions. Pre-write-guard DENIES writes with an unrecognized archetype value. The DENY message enumerates the registered values and points to the Layer 3 declaration path. The rule binds the multi-archetype union architectural commitment to write-time — adding a new archetype requires R-37 atomic lockstep updating governance/frontmatter-rules.json#archetype_enum + this rule + the narrative spoke + the archetype-conditional field extensions.",
-      "registered_archetypes": ["consultant", "researcher", "developer", "manager"],
-      "archetype_enum_source": "governance/frontmatter-rules.json#archetype_enum (SP13 T-4 canonical home; absorbed from dissolved schemas/vault-schema._archetype_enum)",
-      "custom_archetype_overlay_path": "Layer 3 overlay-master.json archetype_extensions (post-SP13 T-5 slot)"
     }
   ]
 }
