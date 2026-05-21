@@ -34,5 +34,6 @@
     "condition": "manifest.research_driven == true",
     "gate_fires_at": "planned → in-progress transition",
     "enforcement_mvp": "advisory"
-  }
+  },
+  "write_shape": "create-only"
 }

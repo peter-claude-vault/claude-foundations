@@ -2,9 +2,9 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://claude-stem.example/schemas/foundation-master/v1.json",
   "title": "Foundation Master Bundle",
-  "description": "Composed foundation governance bundle (SP13 T-2 + T-3). Built deterministically from the 6 authoring pillars (frontmatter-rules + tagging-rules + naming-rules + mandatory-files-rules + doc-dependencies + file-type-contracts/*.json) plus _index.json by tools/build-foundation-master.sh and committed at governance/foundation-master.json. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer. SP13 T-3 extended the schema to declare 3 absorbed gate-config slots (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh drop direct gate-config reads while gate-config physical retirement waits for T-6. This validator is intentionally light: structural shape only; inner pillar content is governed by each pillar's own contracts. Stricter inner-shape validation can be added under SP13 T-9 or SP14 if needed.",
+  "description": "Composed foundation governance bundle (SP13 T-2 + T-3; SP15 T-4 absorbed pillars 7 + 8). Built deterministically from the 8 authoring pillars (frontmatter-rules + tagging-rules + naming-rules + mandatory-files-rules + doc-dependencies + file-type-contracts/*.json + vault-writers-rules + plans-rules) plus _index.json by tools/build-foundation-master.sh and committed at governance/foundation-master.json. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer. SP13 T-3 extended the schema to declare 3 absorbed gate-config slots (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh drop direct gate-config reads while gate-config physical retirement waits for T-6. SP15 T-4 added pillar 7 (vault_writers; carries daily_processing_root + writer_manifest_path + historical_data_warning_default per §A47 + §A60 + §A61 + L-104) + pillar 8 (plans; cooldown_days: 3 foundation default per §A59 + §A65). This validator is intentionally light: structural shape only; inner pillar content is governed by each pillar's own contracts. write_shape enum on file-type contracts (per §A62 + L-108) is asserted by the SP15 T-4 unit test, not at schema layer (keeps file_type_contracts entry shape permissive per existing discipline).",
   "type": "object",
-  "required": ["schema_version", "_meta", "frontmatter", "tagging", "naming", "mandatory_files", "doc_dependencies", "file_type_contracts", "_index", "r47_exempt_paths_composed", "r32_type_aliases", "r32_exempt_paths", "r47_tag_cap", "types"],
+  "required": ["schema_version", "_meta", "frontmatter", "tagging", "naming", "mandatory_files", "doc_dependencies", "file_type_contracts", "vault_writers", "plans", "_index", "r47_exempt_paths_composed", "r32_type_aliases", "r32_exempt_paths", "r47_tag_cap", "types"],
   "additionalProperties": false,
   "properties": {
     "schema_version": {
@@ -101,10 +101,33 @@
     },
     "file_type_contracts": {
       "type": "object",
-      "description": "Map of file-type-name -> contract object. Each key matches a file in governance/file-type-contracts/<name>.json (k8s paramKind pattern; matcher in mandatory-files-rules.json mandates.<file_type>). SP03 Session 20 shipped _index.md as first instance.",
+      "description": "Map of file-type-name -> contract object. Each key matches a file in governance/file-type-contracts/<name>.json (k8s paramKind pattern; matcher in mandatory-files-rules.json mandates.<file_type>). SP03 Session 20 shipped _index.md as first instance. SP15 T-4 added write_shape enum [create-only|append-template|amend-via-prompt|replace] per §A62 + L-108; enum value asserted by SP15 T-4 unit test, not at schema layer (file_type_contracts entry shape stays permissive per existing discipline).",
       "additionalProperties": {
         "type": "object"
       }
+    },
+    "vault_writers": {
+      "type": "object",
+      "description": "Full governance/vault-writers-rules.json content (SP14 Batch A pillar 7; SP15 T-4 bundle absorb). Carries pillar 7 fields daily_processing_root + writer_manifest_path + historical_data_warning_default per §A47 + §A60 + §A61 + L-104.",
+      "required": [
+        "historical_data_warning_default",
+        "vault_writer_state_root",
+        "claude_state_root",
+        "daily_processing_root",
+        "writer_manifest_path"
+      ],
+      "additionalProperties": true
+    },
+    "plans": {
+      "type": "object",
+      "description": "Full governance/plans-rules.json content (SP14 Batch A pillar 8; SP15 T-4 bundle absorb). Ships cooldown_days: 3 foundation default per §A59 + §A65. Pillar 8 covers plan-tree governance: root file mandates, plan-folder quartet, slug/subplan rules, backlog row contract, lifecycle status transitions, 5-validation-class fan-out.",
+      "required": [
+        "root_files",
+        "plan_folder_quartet",
+        "slug_rules",
+        "lifecycle"
+      ],
+      "additionalProperties": true
     },
     "_index": {
       "type": "object",

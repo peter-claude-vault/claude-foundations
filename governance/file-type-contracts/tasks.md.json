@@ -35,5 +35,6 @@
 
   "size_limits": {
     "max_lines": 1000
-  }
+  },
+  "write_shape": "replace"
 }

@@ -1,5 +1,7 @@
 #!/bin/bash
-# build-foundation-master.sh — SP13 T-2 (2026-05-14); extended SP13 T-3 (2026-05-14)
+# build-foundation-master.sh — SP13 T-2 (2026-05-14); extended SP13 T-3 (2026-05-14);
+# extended SP15 T-4 (2026-05-20) to compose pillars 7 (vault-writers-rules) + 8 (plans-rules)
+# per spec §2 + AC #9 + target-state §A47 + §A60-§A65 + alignment L-95..L-118.
 #
 # Composes foundation governance pillars into governance/foundation-master.json
 # at foundation-repo RELEASE time per feedback_ship_bundle_dont_build_on_consumer.
@@ -12,8 +14,18 @@
 #   governance/naming-rules.json
 #   governance/mandatory-files-rules.json
 #   governance/doc-dependencies.json
-#   governance/file-type-contracts/*.json   (k8s paramKind contracts)
+#   governance/file-type-contracts/*.json   (k8s paramKind contracts; SP15 T-4 carries
+#                                            write_shape enum per §A62 + L-108)
 #   governance/_index.json
+#   governance/vault-writers-rules.json     (SP14 Batch A pillar 7; carries pillar 7
+#                                            fields daily_processing_root +
+#                                            writer_manifest_path +
+#                                            historical_data_warning_default per
+#                                            §A47 + §A60 + §A61 + L-104; SP15 T-4
+#                                            bundle absorb)
+#   governance/plans-rules.json             (SP14 Batch A pillar 8; ships with
+#                                            cooldown_days: 3 foundation default
+#                                            per §A59 + §A65; SP15 T-4 bundle absorb)
 #   schemas/gate-config.json                (interim contributor — SP13 T-3 absorbs r32.type_aliases
 #                                            + r32.exempt_paths + r47.tag_cap + r47.exempt_paths union
 #                                            into top-level bundle slots; retires SP13 T-6)
@@ -67,9 +79,11 @@ MANDATORY="$SOURCE_REPO/governance/mandatory-files-rules.json"
 DOC_DEPS="$SOURCE_REPO/governance/doc-dependencies.json"
 INDEX="$SOURCE_REPO/governance/_index.json"
 FILE_TYPE_CONTRACTS_DIR="$SOURCE_REPO/governance/file-type-contracts"
+VAULT_WRITERS="$SOURCE_REPO/governance/vault-writers-rules.json"
+PLANS="$SOURCE_REPO/governance/plans-rules.json"
 GATE_CONFIG="$SOURCE_REPO/schemas/gate-config.json"
 
-for f in "$FRONTMATTER" "$TAGGING" "$NAMING" "$MANDATORY" "$DOC_DEPS" "$INDEX"; do
+for f in "$FRONTMATTER" "$TAGGING" "$NAMING" "$MANDATORY" "$DOC_DEPS" "$INDEX" "$VAULT_WRITERS" "$PLANS"; do
   if [ ! -f "$f" ]; then
     echo "build-foundation-master: missing required input: $f" >&2
     exit 2
@@ -137,6 +151,8 @@ mt_naming=$(mtime_iso "$NAMING")
 mt_mandatory=$(mtime_iso "$MANDATORY")
 mt_doc_deps=$(mtime_iso "$DOC_DEPS")
 mt_index=$(mtime_iso "$INDEX")
+mt_vault_writers=$(mtime_iso "$VAULT_WRITERS")
+mt_plans=$(mtime_iso "$PLANS")
 
 SOURCE_MTIMES_JSON=$(jq -n -S \
   --arg fm "$mt_frontmatter" \
@@ -145,13 +161,17 @@ SOURCE_MTIMES_JSON=$(jq -n -S \
   --arg mf "$mt_mandatory" \
   --arg dd "$mt_doc_deps" \
   --arg ix "$mt_index" \
+  --arg vw "$mt_vault_writers" \
+  --arg pl "$mt_plans" \
   '{
     "governance/frontmatter-rules.json": $fm,
     "governance/tagging-rules.json": $tg,
     "governance/naming-rules.json": $nm,
     "governance/mandatory-files-rules.json": $mf,
     "governance/doc-dependencies.json": $dd,
-    "governance/_index.json": $ix
+    "governance/_index.json": $ix,
+    "governance/vault-writers-rules.json": $vw,
+    "governance/plans-rules.json": $pl
   }')
 
 # --- 7. Compose the bundle (sans _meta) --------------------------------------
@@ -161,6 +181,8 @@ NAMING_JSON=$(jq -S '.' "$NAMING")
 MANDATORY_JSON=$(jq -S '.' "$MANDATORY")
 DOC_DEPS_JSON=$(jq -S '.' "$DOC_DEPS")
 INDEX_JSON=$(jq -S '.' "$INDEX")
+VAULT_WRITERS_JSON=$(jq -S '.' "$VAULT_WRITERS")
+PLANS_JSON=$(jq -S '.' "$PLANS")
 TYPES_LIFT_JSON=$(jq -S '.types | del(._description)' "$FRONTMATTER")
 
 BUNDLE_BODY=$(jq -n -S \
@@ -171,27 +193,31 @@ BUNDLE_BODY=$(jq -n -S \
   --argjson dd "$DOC_DEPS_JSON" \
   --argjson ix "$INDEX_JSON" \
   --argjson ftc "$FTC_JSON" \
+  --argjson vw "$VAULT_WRITERS_JSON" \
+  --argjson pl "$PLANS_JSON" \
   --argjson r47 "$R47_COMPOSED_JSON" \
   --argjson r32ta "$R32_TYPE_ALIASES_JSON" \
   --argjson r32ep "$R32_EXEMPT_PATHS_JSON" \
   --argjson r47cap "$R47_TAG_CAP_JSON" \
   --argjson types "$TYPES_LIFT_JSON" \
   '{
-    "schema_version": "1.1.0",
-    "_description": "Composed foundation governance bundle (SP13 T-2 + T-3). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
+    "schema_version": "1.2.0",
+    "_description": "Composed foundation governance bundle (SP13 T-2 + T-3; SP15 T-4 absorbed pillars 7 + 8). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
     "frontmatter": $fm,
     "tagging": $tg,
     "naming": $nm,
     "mandatory_files": $mf,
     "doc_dependencies": $dd,
     "file_type_contracts": $ftc,
+    "vault_writers": $vw,
+    "plans": $pl,
     "_index": $ix,
     "r47_exempt_paths_composed": $r47,
     "r32_type_aliases": $r32ta,
     "r32_exempt_paths": $r32ep,
     "r47_tag_cap": $r47cap,
     "types": $types,
-    "_sp13_provenance": "SP13 T-2 (2026-05-14) initial build; SP13 T-3 (2026-05-14) extended bundle to absorb gate-config residual slices (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh can drop direct gate-config reads while gate-config physical retirement waits for T-6. Composes 6 pillar files + N file-type-contracts. Gate-config dissolved with marker in SP13 T-3 commit (mirrors T-4 vault-schema freeze-with-marker pattern per feedback_freeze_with_marker_retirement_pattern)."
+    "_sp13_provenance": "SP13 T-2 (2026-05-14) initial build; SP13 T-3 (2026-05-14) extended bundle to absorb gate-config residual slices (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh can drop direct gate-config reads while gate-config physical retirement waits for T-6. Composes 8 pillar files + N file-type-contracts. Gate-config dissolved with marker in SP13 T-3 commit (mirrors T-4 vault-schema freeze-with-marker pattern per feedback_freeze_with_marker_retirement_pattern). SP15 T-4 (2026-05-20) bumped schema_version 1.1.0 -> 1.2.0; absorbed pillars 7 (vault-writers-rules; carries daily_processing_root + writer_manifest_path + historical_data_warning_default per §A47 + §A60 + §A61 + L-104) + 8 (plans-rules; cooldown_days: 3 foundation default per §A59 + §A65); file-type-contracts now carry write_shape enum [create-only|append-template|amend-via-prompt|replace] per §A62 + L-108 (authored at source per feedback_ship_bundle_dont_build_on_consumer)."
   }')
 
 # --- 8. bundle_version = sha256 of canonical body (without _meta) -----------
@@ -202,7 +228,7 @@ META_JSON=$(jq -n -S \
   --arg bv "$BUNDLE_VERSION" \
   --arg ba "$BUILD_AT" \
   --argjson mtimes "$SOURCE_MTIMES_JSON" \
-  --argjson src_count 6 \
+  --argjson src_count 8 \
   '{
     "bundle_version": $bv,
     "built_at": $ba,
@@ -210,7 +236,7 @@ META_JSON=$(jq -n -S \
     "build_tool": "tools/build-foundation-master.sh",
     "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
     "source_files_count": $src_count,
-    "_provenance": "SP13 T-2 build. Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version."
+    "_provenance": "SP13 T-2 build; SP15 T-4 absorbed pillars 7 + 8 (source_files_count 6 -> 8). Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version."
   }')
 
 FINAL_BUNDLE=$(jq -S --argjson meta "$META_JSON" '. + {"_meta": $meta}' <<<"$BUNDLE_BODY")
@@ -256,9 +282,11 @@ mv -f "$TMP_OUT" "$OUTPUT"
 echo "build-foundation-master: wrote $OUTPUT"
 echo "  bundle_version: $BUNDLE_VERSION"
 echo "  built_at:       $BUILD_AT"
-echo "  pillars:        6"
+echo "  pillars:        8"
 echo "  r47_exempt_paths_composed: $(echo "$R47_COMPOSED_JSON" | jq 'length') entries"
 echo "  r32_type_aliases:          $(echo "$R32_TYPE_ALIASES_JSON" | jq 'length') entries"
 echo "  r32_exempt_paths:          $(echo "$R32_EXEMPT_PATHS_JSON" | jq 'length') entries"
 echo "  r47_tag_cap:               $(echo "$R47_TAG_CAP_JSON")"
 echo "  file_type_contracts:       $(echo "$FTC_JSON" | jq 'length') entries"
+echo "  vault_writers:             present (pillar 7; 1 entries)"
+echo "  plans:                     present (pillar 8; 1 entries)"

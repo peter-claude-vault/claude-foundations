@@ -44,5 +44,6 @@
     "type",
     "parent_plan (depth >= 3)",
     "created"
-  ]
+  ],
+  "write_shape": "append-template"
 }

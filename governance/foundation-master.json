@@ -1,7 +1,7 @@
 {
-  "_description": "Composed foundation governance bundle (SP13 T-2 + T-3). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
+  "_description": "Composed foundation governance bundle (SP13 T-2 + T-3; SP15 T-4 absorbed pillars 7 + 8). Built deterministically from foundation-repo authoring pillars by tools/build-foundation-master.sh. Shipped as immutable artifact to adopter ~/.claude/governance/foundation-master.json per feedback_ship_bundle_dont_build_on_consumer; adopters never build. Hooks load this bundle once per write-session; per-rule lookups derive from this composed view.",
   "_index": {
-    "_description": "6-pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded.",
+    "_description": "8-pillar registry + cross-cutting meta-rules + dissolved-schema registry. Hook-loaded. SP14 Batch A (2026-05-18) expanded 6 → 8 pillars (vault-writers + plans) per Plan 81 SP13 Session 2 + Sessions 4-5 locks; added SP14 T-16 retirement entry for governance/enforcement-map.schema.json (canonical successor = governance/foundation-master.json).",
     "_design_notes": {
       "_lockstep_pair_provenance": "SP13 Session 4 Phase 1b (2026-05-14): pointer rewritten from retired `System Governance - Enforcement.md` meta-spoke (canonical §G retirement) to the 6-spoke folder per canonical §D (Frontmatter.md / Tagging.md / Naming.md / Mandatory-Files.md / Doc-Dependencies.md / File-Type-Contracts.md). The pillar registry IS the pillar surface; its R-37 lockstep couples across all 6 mirror spokes. Closes C1 audit M1.",
       "consumer": "pre-write-guard.sh, post-write-verify.sh, librarian governance-parity-audit",
@@ -80,6 +80,16 @@
     ],
     "dissolved_schemas": {
       "_description": "SP13 T-4 + T-3 (2026-05-14): registry of schemas that have been semantically dissolved into pillars or the foundation-master bundle. Files remain physically present in foundation-repo until the last consumer migrates (T-3 hooks closed both; T-6 gate-config physical deletion; T-8 install.sh ship list, T-9 tests, T-10 docs for vault-schema). 'Dissolved' = no new authoring; canonical authority has moved to the named successors. Each entry carries `frozen_at`, `dissolution_sp_task`, `successors`, `consumer_migration_status`, `final_deletion_gating_task`.",
+      "governance/enforcement-map.schema.json": {
+        "canonical_successor": "governance/foundation-master.json (validator pointer per SP14 T-16 operator addendum 2026-05-18)",
+        "consumer_redirect_target": "governance/foundation-master.json",
+        "documentary_citations_preserved": "References in scope_note + source fields of governance/foundation-master.json, governance/frontmatter-rules.json, governance/tagging-rules.json, governance/mandatory-files-rules.json, governance/_index.json are historical attribution to the original ENFORCEMENT-MAP.md design doc, not active validator reads — preserved as-is per SP14 T-16 operator addendum.",
+        "frozen_at": "2026-05-16",
+        "reason": "Operator decision Session 9 2026-05-16 — kept-orthogonal Session 8 B-7 path REVERSED; rule-shape validation migrates. SP14 T-16 operator addendum (2026-05-18): retire entirely. Validator pointer redirected to governance/foundation-master.json (not _index.json) — foundation-master is the populated 6→8-pillar bundle that already conforms to the rule shapes the retired schema defined; it can serve as the rule-shape attestation surface post-retirement.",
+        "retired_at": "2026-05-18",
+        "retired_in": "SP14 Batch A T-16 absorb of SP13 T-19 (operator decision 2026-05-18)",
+        "retirement_artifact": "governance/enforcement-map.schema.json.retired-2026-05-18"
+      },
       "schemas/gate-config.json": {
         "consumer_migration_status": {
           "hooks_post_write_verify": "MIGRATED in SP13 T-3 (2026-05-14 this commit) — reads foundation-master.json bundle exclusively",
@@ -269,27 +279,83 @@
         ],
         "size_bytes": "5-15K per contract",
         "spoke": "File-Type-Contracts.md"
+      },
+      {
+        "_first_class_provenance": "SP14 Batch A T-15.4 (2026-05-18): vault-writers elevated to 7th pillar per Plan 81 SP13 Session 1 L-2 (proposed) + Session 4 L-52 (locked at 1 pillar) + Session 5 L-58 (SHAPE redistributed to file-type-contracts/vault-writer.md.json; pillar 7 SLIMMED to operational-config-only). Operational defaults + staging-area + reconciler identity + foundation Mustache variable namespace + branch #2 historical_data_warning_default.",
+        "id": "vault-writers",
+        "loaded_by": [
+          "hooks/pre-write-guard.sh",
+          "skills/writer-reconciler"
+        ],
+        "path": "vault-writers-rules.json",
+        "r37_coupled_surfaces": [
+          "governance/vault-writers-rules.json",
+          "schemas/vault-writers-rules-schema.json",
+          "governance/file-type-contracts/vault-writer.md.json (writer-reference SHAPE per Session 5 L-58 relocation)",
+          "schemas/processing-rules-schema.json (folder-level overrides per Session 4 L-48)",
+          "hooks/pre-write-guard.sh (branch #3 vault-writers-writer-reference-only + branch #2 historical-data-warning fallback)",
+          "skills/writer-reconciler (Session 4 L-51 rename target; consumes processing_defaults + staging_area)",
+          "governance/foundation-master.json (forward — composed vault_writers slot)"
+        ],
+        "rule_id_range": [
+          "R-58"
+        ],
+        "size_bytes": "1-2K",
+        "spoke": "Vault-Writers.md"
+      },
+      {
+        "_first_class_provenance": "SP14 Batch A T-15.4 (2026-05-18): plans-tree elevated to 8th pillar per Plan 81 SP13 Session 2 L-locked schema. Plan-tree governance (slugs / quartet / sub-plan execution-order numbering / backlog row shape / lifecycle 7-state enum / validation classes / firing surfaces) lives here.",
+        "id": "plans",
+        "loaded_by": [
+          "hooks/pre-write-guard.sh",
+          "skills/librarian/capabilities/plan-index",
+          "skills/librarian/capabilities/plan-archive",
+          "skills/librarian/capabilities/backlog-index"
+        ],
+        "path": "plans-rules.json",
+        "r37_coupled_surfaces": [
+          "governance/plans-rules.json (pending T-15 author; this batch authors schema only)",
+          "schemas/plans-rules-schema.json",
+          "schemas/plan-manifest-schema.json (manifest.json validator with conditional fields per Session 2 A24)",
+          "hooks/pre-write-guard.sh (R-27 status header + R-28 parent_plan + branch #4 librarian-only writes)",
+          "skills/librarian/capabilities/plan-index (consumes lifecycle.status_enum + root_files)",
+          "skills/librarian/capabilities/plan-archive (consumes lifecycle.status_transitions.closed_to_archived)",
+          "skills/librarian/capabilities/backlog-index (consumes backlog_row schema)",
+          "governance/foundation-master.json (forward — composed plans slot)"
+        ],
+        "rule_id_range": [
+          "R-15",
+          "R-27",
+          "R-28",
+          "R-29",
+          "R-30",
+          "R-31"
+        ],
+        "size_bytes": "3-5K",
+        "spoke": "Plans.md"
       }
     ],
-    "schema_version": "1.1.0"
+    "schema_version": "1.2.0"
   },
   "_meta": {
-    "_provenance": "SP13 T-2 build. Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
+    "_provenance": "SP13 T-2 build; SP15 T-4 absorbed pillars 7 + 8 (source_files_count 6 -> 8). Same source files (by content) -> same bundle_version. _meta.built_at + _meta.source_file_mtimes intentionally excluded from bundle_version hash so identical content rebuilt at different times produces stable version.",
     "build_tool": "tools/build-foundation-master.sh",
-    "built_at": "2026-05-16T01:47:46Z",
-    "bundle_version": "276f9ceb56bbe9fb6e15625cf14f25b48e9239d1e693b4c25dbdc3b91bdc9c23",
+    "built_at": "2026-05-21T03:24:30Z",
+    "bundle_version": "1ddbd70856557446d42a5c01ab4043177d3d45a3e18b0a2b22cdfbbd4cd5d15f",
     "deterministic_serialization": "jq -S sorted-keys canonical JSON; bundle_version excludes _meta block from hash input",
     "source_file_mtimes": {
-      "governance/_index.json": "2026-05-14T22:48:35Z",
-      "governance/doc-dependencies.json": "2026-05-15T22:29:53Z",
-      "governance/frontmatter-rules.json": "2026-05-14T23:52:32Z",
-      "governance/mandatory-files-rules.json": "2026-05-14T22:48:15Z",
-      "governance/naming-rules.json": "2026-05-16T01:34:23Z",
-      "governance/tagging-rules.json": "2026-05-15T00:00:30Z"
+      "governance/_index.json": "2026-05-18T11:41:49Z",
+      "governance/doc-dependencies.json": "2026-05-19T08:16:47Z",
+      "governance/frontmatter-rules.json": "2026-05-18T10:54:48Z",
+      "governance/mandatory-files-rules.json": "2026-05-18T10:54:48Z",
+      "governance/naming-rules.json": "2026-05-18T10:54:48Z",
+      "governance/plans-rules.json": "2026-05-21T00:50:09Z",
+      "governance/tagging-rules.json": "2026-05-18T10:54:48Z",
+      "governance/vault-writers-rules.json": "2026-05-19T08:14:57Z"
     },
-    "source_files_count": 6
+    "source_files_count": 8
   },
-  "_sp13_provenance": "SP13 T-2 (2026-05-14) initial build; SP13 T-3 (2026-05-14) extended bundle to absorb gate-config residual slices (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh can drop direct gate-config reads while gate-config physical retirement waits for T-6. Composes 6 pillar files + N file-type-contracts. Gate-config dissolved with marker in SP13 T-3 commit (mirrors T-4 vault-schema freeze-with-marker pattern per feedback_freeze_with_marker_retirement_pattern).",
+  "_sp13_provenance": "SP13 T-2 (2026-05-14) initial build; SP13 T-3 (2026-05-14) extended bundle to absorb gate-config residual slices (r32_type_aliases + r32_exempt_paths + r47_tag_cap) so hooks/pre-write-guard.sh + hooks/post-write-verify.sh can drop direct gate-config reads while gate-config physical retirement waits for T-6. Composes 8 pillar files + N file-type-contracts. Gate-config dissolved with marker in SP13 T-3 commit (mirrors T-4 vault-schema freeze-with-marker pattern per feedback_freeze_with_marker_retirement_pattern). SP15 T-4 (2026-05-20) bumped schema_version 1.1.0 -> 1.2.0; absorbed pillars 7 (vault-writers-rules; carries daily_processing_root + writer_manifest_path + historical_data_warning_default per §A47 + §A60 + §A61 + L-104) + 8 (plans-rules; cooldown_days: 3 foundation default per §A59 + §A65); file-type-contracts now carry write_shape enum [create-only|append-template|amend-via-prompt|replace] per §A62 + L-108 (authored at source per feedback_ship_bundle_dont_build_on_consumer).",
   "doc_dependencies": {
     "_path_placeholders": {
       "_description": "Path placeholders are substituted at install time. Foundation-repo ships paths in this parameterized form; install.sh resolves each placeholder against the adopter's environment.",
@@ -454,7 +520,7 @@
             "section": "File-Type Contracts / Governance Pillar Coverage"
           }
         ],
-        "notes": "System Governance.md is the hub with 6 narrative spokes under System Governance/ (one per governance pillar; canonical §D). When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200-250 on spokes.",
+        "notes": "System Governance.md is the hub with 6 narrative spokes under System Governance/ (one per governance pillar; canonical §D). When writing to the hub, verify stub redirects still point at live spoke files. When writing to a spoke, verify the hub stub exists. max_lines: 400 on hub, 200-250 on spokes. propagation_rule block REMOVED 2026-05-19 (had no consumer plan; va-hub-spoke is static-content-not-auto-propagated; SP14 Scope 1 deep-dive operator decision per feedback_field_before_consumer_risky).",
         "primary": "System Governance.md",
         "rename_history": [],
         "rule": "hub-stub-must-have-matching-spoke",
@@ -524,6 +590,19 @@
         "rename_history": [],
         "rule": "if-primary-changes-mirrors-must-be-reviewed",
         "severity": "warn"
+      },
+      {
+        "amendment_strategy": "prompt-guided-amend",
+        "consumer": "Meetings/<meeting-note>.md",
+        "id": "meetings-fan-in-reference",
+        "kind": "writer-fan-in",
+        "rationale": "Reference entry — declares that meeting notes are a fan-in destination of 3 writers; doc-amender uses prompt-guided-amend strategy. Per writer-pipeline-layering.md L-110 entry shape lock. Adopter MAY override with overlay row or remove if not applicable.",
+        "rename_history": [],
+        "upstream_writers": [
+          "meeting-processor",
+          "teams-scrape",
+          "gchat-scrape"
+        ]
       }
     ],
     "schema_notes": {
@@ -532,6 +611,100 @@
     "version": 2
   },
   "file_type_contracts": {
+    "CLAUDE.md": {
+      "$id": "claude-stem/governance/file-type-contracts/CLAUDE.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/pre-write-guard.sh (size cap + section presence) + hooks/post-write-verify.sh (Mustache substitution validation post-install)",
+        "evolution_protocol": "R-37 atomic lockstep — runtime artifact + template + alignment-lock-record updated in one commit",
+        "lockstep_pair": "templates/vault-claude-md-template.md (v3.1 shipped) + alignment/claude-md-shape.md (T-13 lock record)"
+      },
+      "applies_to": {
+        "path_glob": "$VAULT_ROOT/CLAUDE.md"
+      },
+      "description": "Hook-consumable runtime artifact for the vault-root CLAUDE.md body-structure contract. The k8s ValidatingAdmissionPolicy paramKind for the only mandatory vault-root file per Plan 81 SP13 T-13 A1+A2. Authored by SP14 Batch A T-13.1 (2026-05-18) from alignment/claude-md-shape.md §'v3.1 vault-root CLAUDE.md template LOCKED'.",
+      "design_source": "alignment/claude-md-shape.md (SP13 T-13 lock)",
+      "matcher_entry": "mandates.claude_md_vault_root",
+      "matcher_pillar": "governance/mandatory-files-rules.json",
+      "mustache_substitution": [
+        "{{IDENTITY_NAME}}",
+        "{{IDENTITY_ROLE}}",
+        "{{IDENTITY_ORGANIZATION}}",
+        "{{IDENTITY_INDUSTRY}}",
+        "{{VAULT_ROOT}}",
+        "{{VAULT_ORGANIZATIONAL_METHOD}}",
+        "{{VAULT_TOP_LEVEL_FOLDER}}",
+        "{{VAULT_DEFAULT_AUDIENCE}}",
+        "{{VAULT_ARCHITECTURE_DOC}}",
+        "{{PLANS_HOME}}",
+        "{{CLAUDE_HOME}}"
+      ],
+      "prohibited_rationale": "Per Stream I (T-13 lock A3): hooks read governance bundles from disk directly; CLAUDE.md @import is for Claude's reading context only, not hook function. @import of foundation-master / overlay-master / plans-rules pollutes context without serving runtime enforcement.",
+      "prohibited_sections": [
+        "@import directives"
+      ],
+      "required_sections": [
+        "Vault Structure",
+        "Vault-Specific Rules"
+      ],
+      "size_limits": {
+        "max_lines": 80,
+        "rationale": "v3.1 hard cap per Stream G + operator directive (claude-md-shape.md A6).",
+        "soft_target_lines_max": 50,
+        "soft_target_lines_min": 30
+      },
+      "status": "runtime",
+      "title": "CLAUDE.md (vault-root) runtime body-structure contract",
+      "type": "CLAUDE.md",
+      "version": "1.0.0",
+      "write_shape": "create-only"
+    },
+    "System Governance.md": {
+      "$id": "claude-stem/governance/file-type-contracts/System Governance.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/pre-write-guard.sh (size-cap guard at lines 275-326 — reads .file_type_contracts.\"System Governance.md.json\".size_limits.max_lines from foundation-master bundle; fallback to 400)",
+        "evolution_protocol": "R-37 atomic lockstep — runtime artifact + hook consumer + foundation-master bundle composition updated in one commit",
+        "lockstep_pair": "hooks/pre-write-guard.sh size-guard block (R-37 atomic lockstep — T-13.9 + T-17 same-commit per SP14 Batch A discipline) + governance/_index.json pillar 6 file-type-contracts registry"
+      },
+      "applies_to": {
+        "path_glob": "$VAULT_ROOT/System Governance/System Governance - *.md"
+      },
+      "description": "Hook-consumable runtime artifact for System Governance/ spoke files (one per pillar). Migration target for the SG_MAX_LINES hardcode previously at hooks/pre-write-guard.sh:275-326 per Plan 81 SP13 Session 9 T-21. Authored by SP14 Batch A T-13.9 (2026-05-18); R-37 lockstep with T-17 hook migration.",
+      "design_source": "SP13 Session 9 T-21 (VA_MAX_LINES → SG_MAX_LINES migration target) + Session 7 L-89 (universal Vault Architecture → System Governance rename)",
+      "frontmatter_enums": {
+        "mirrors_pillar": [
+          "frontmatter",
+          "tagging",
+          "naming",
+          "mandatory-files",
+          "doc-dependencies",
+          "file-type-contracts",
+          "vault-writers",
+          "plans"
+        ],
+        "type": [
+          "system-governance-spoke"
+        ]
+      },
+      "frontmatter_required": [
+        "type",
+        "title",
+        "mirrors_pillar"
+      ],
+      "matcher_entry": "mandates.system_governance_spoke",
+      "matcher_pillar": "governance/mandatory-files-rules.json",
+      "mirrors_pillar_rationale": "Each spoke mirrors exactly one of the 8 foundation governance pillars (canonical §D pattern); R-37 lockstep couples spoke <-> pillar JSON <-> _index.json registry.",
+      "size_limits": {
+        "max_lines": 400,
+        "rationale": "Navigational-index threshold migrated from hooks/pre-write-guard.sh hardcode per SP13 Session 9 T-21. Spokes are the hub navigation; long content extracts to deeper spokes or sub-files."
+      },
+      "status": "runtime",
+      "title": "System Governance/System Governance - *.md spoke runtime body-structure contract",
+      "type": "system-governance-spoke",
+      "version": "1.0.0",
+      "write_shape": "create-only"
+    },
     "_index.md": {
       "$id": "claude-stem/governance/file-type-contracts/_index.md.json",
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -736,7 +909,478 @@
           ]
         }
       },
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "write_shape": "replace"
+    },
+    "doc-amender-prompt.md": {
+      "$id": "claude-stem/governance/file-type-contracts/doc-amender-prompt.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "skills/doc-amender (T-28)",
+        "evolution_protocol": "R-37 atomic lockstep with doc-amender skill + writer-fan-in doc-deps entries",
+        "lockstep_pair": "governance/doc-dependencies.json :: entries[] kind: writer-fan-in (per T-30)"
+      },
+      "applies_to": {
+        "path_glob": "$VAULT_WRITER_STATE_ROOT/prompts/*.md"
+      },
+      "body_free_form": true,
+      "body_section_allowlist": [
+        "Goal",
+        "Variables",
+        "Prompt",
+        "Output Format",
+        "Edge cases",
+        "Notes"
+      ],
+      "body_section_allowlist_enforcement": "suggested",
+      "description": "Hook-consumable runtime artifact for doc-amender-prompt.md files — operator-authored prompt assets consumed by the doc-amender skill (T-28) when round-tripping LLM-guided amendments through staging-emit per L-106. Prompts ship outside-vault as state-tier assets under $VAULT_WRITER_STATE_ROOT/prompts/*.md (per writer-pipeline-layering.md L-108 and foundation-governance-target-state.md §A62). Declares the foundation-shipped variable namespace the prompt body may reference; declares the 3-signal survivorship policy (operator-edit-wins + amender-conflict-sidecar + amender-paused-frontmatter) that extends the existing 2-signal operator-edit-wins detection per L-107. Companion contract to skills/doc-amender (T-28). Authored under SP14 Batch D T-29 (2026-05-19).",
+      "design_source": "alignment/writer-pipeline-layering.md L-108 / foundation-governance-target-state.md §A62",
+      "frontmatter_enums": {
+        "amendment_strategy": [
+          "append-section",
+          "template-fill",
+          "prompt-guided-amend"
+        ],
+        "survivorship_policy": [
+          "operator-edit-wins",
+          "amender-conflict-sidecar",
+          "amender-paused-frontmatter"
+        ],
+        "type": [
+          "doc-amender-prompt"
+        ]
+      },
+      "frontmatter_optional": [
+        "amender_paused",
+        "model",
+        "max_tokens",
+        "tags",
+        "notes"
+      ],
+      "frontmatter_required": [
+        "type",
+        "prompt_id",
+        "amendment_strategy",
+        "destination_glob",
+        "survivorship_policy",
+        "created",
+        "updated"
+      ],
+      "matcher_entry": "mandates.doc_amender_prompt",
+      "matcher_pillar": "governance/mandatory-files-rules.json",
+      "status": "runtime",
+      "survivorship_policy_detail": {
+        "boundary": "doc-amender NEVER writes destination directly; round-trips through staging via staging-emit per L-106",
+        "signals": [
+          {
+            "action": "Amender SKIPS LLM call; emits _amender-conflict.json sidecar",
+            "name": "operator-edit-wins",
+            "trigger": "Existing operator-edit-wins two-signal detection (last_user_edit timestamp + content-diff against writer's last-known-hash)"
+          },
+          {
+            "action": "Sidecar file at <destination>.amender-conflict.json; operator triages via /amend-accept <sidecar> skill",
+            "name": "amender-conflict-sidecar",
+            "trigger": "Conflict detected via signal 1"
+          },
+          {
+            "action": "Amender permanently skips this destination until operator removes the flag",
+            "name": "amender-paused-frontmatter",
+            "trigger": "Destination file frontmatter declares amender_paused: true"
+          }
+        ]
+      },
+      "title": "doc-amender-prompt.md runtime body-structure contract",
+      "type": "doc-amender-prompt",
+      "variable_namespace": [
+        "packet_body",
+        "destination_current_content",
+        "destination_path",
+        "upstream_writers",
+        "writer_metadata",
+        "amendment_history"
+      ],
+      "version": "1.0.0",
+      "write_shape": "create-only"
+    },
+    "handoff.md": {
+      "$id": "claude-stem/governance/file-type-contracts/handoff.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/pre-write-guard.sh (append-only enforcement) + skill session-close-and-handoff + librarian plan-index",
+        "evolution_protocol": "Append-only; historical session entries never edited in place",
+        "lockstep_pair": "alignment/plans-folder-governance.md + Plan 83 SP02 session-continuity-protocol"
+      },
+      "append_only": true,
+      "append_only_rationale": "No in-place edits to historical session entries. New session entries prepend at top (newest-first). Historical entries are immutable record of plan execution arc.",
+      "applies_to": {
+        "path_glob": "~/.claude-plans/**/handoff.md"
+      },
+      "description": "Hook-consumable runtime artifact for plan-tree handoff.md files. Strict append-only newest-first per Plan 83 SP02 session-continuity protocol + Plan 81 SP13 Session 2 A23. Authored by SP14 Batch A T-13.4 (2026-05-18).",
+      "design_source": "alignment/plans-folder-governance.md Session 2 A23 + Plan 83 SP02 session-continuity-protocol",
+      "matcher_entry": "plan_folder_quartet.required",
+      "matcher_pillar": "governance/plans-rules.json",
+      "newest_first": true,
+      "newest_first_rationale": "Repository convention — readers scroll top to find latest session; pre-existing entries shift downward without modification.",
+      "section_schema": "## (Alignment )?Session N — <session-title>(\\n### .*)*",
+      "section_schema_format": "regex",
+      "section_subsections": [
+        "Scope",
+        "Decision-Quality Protocol passes",
+        "Locks captured",
+        "Spec deltas",
+        "Files modified",
+        "Follow-up dispositions",
+        "Memories saved"
+      ],
+      "section_subsections_enforcement": "suggested",
+      "size_limits": {
+        "max_kb": 50,
+        "split_strategy": "split to handoff-archive.md at threshold"
+      },
+      "status": "runtime",
+      "title": "handoff.md (plan/sub-plan) runtime body-structure contract",
+      "type": "handoff",
+      "version": "1.0.0",
+      "write_shape": "append-template"
+    },
+    "ideation-brief.md": {
+      "$id": "claude-stem/governance/file-type-contracts/ideation-brief.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/pre-write-guard.sh (body-immutability enforcement post first amendment-pointer-block) + librarian plan-index",
+        "evolution_protocol": "Body frozen post-Session-1; amendments via prepended amendment-pointer-block referencing canonical reference. Body preserved as Session 0 research record.",
+        "lockstep_pair": "alignment/plans-folder-governance.md A23"
+      },
+      "amendment_pattern": "amendment-pointer-block at top of body referencing canonical reference; body preserved as Session 0 research record",
+      "applies_to": {
+        "path_glob": "~/.claude-plans/**/00-ideation-brief.md"
+      },
+      "conditional_required": {
+        "condition": "manifest.research_driven == true",
+        "enforcement_mvp": "advisory",
+        "gate_fires_at": "planned → in-progress transition"
+      },
+      "description": "Hook-consumable runtime artifact for plan-tree 00-ideation-brief.md files. Frozen-post-Session-1 body with amendment-pointer-block prepend pattern. Conditional plan-folder quartet member per Plan 81 SP13 Session 2 A23 (gates at planned → in-progress for manifest.research_driven: true). Authored by SP14 Batch A T-13.5 (2026-05-18).",
+      "design_source": "alignment/plans-folder-governance.md Session 2 A23",
+      "frozen_post_session_1": true,
+      "frozen_rationale": "Body preserved as Session 0 research record; subsequent decision shifts captured via amendment-pointer-blocks rather than in-place edits.",
+      "matcher_entry": "plan_folder_quartet.conditional[0]",
+      "matcher_pillar": "governance/plans-rules.json",
+      "recommendation_enum": [
+        "PROCEED",
+        "DEFER",
+        "MERGE",
+        "KILL"
+      ],
+      "size_limits": {
+        "max_lines": 300
+      },
+      "status": "runtime",
+      "title": "00-ideation-brief.md (plan) runtime body-structure contract",
+      "type": "ideation-brief",
+      "version": "1.0.0",
+      "write_shape": "create-only"
+    },
+    "manifest.json": {
+      "$id": "claude-stem/governance/file-type-contracts/manifest.json.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/pre-write-guard.sh (R-27 + prose-prohibited check) + librarian plan-index + plan-archive + backlog-index",
+        "evolution_protocol": "R-37 atomic lockstep with tasks.md + plan-manifest-schema.json",
+        "lockstep_pair": "tasks.md (R-37 coupled via manifest.tasks[]) + spec.md (R-37 coupled via spec_path) + schemas/plan-manifest-schema.json"
+      },
+      "applies_to": {
+        "path_glob": "~/.claude-plans/**/manifest.json"
+      },
+      "description": "Hook-consumable runtime artifact / type-allowlist marker for plan-tree manifest.json files. Delegates full validation to schemas/plan-manifest-schema.json (JSON Schema 2020-12 conditional-on-status). Prose-prohibited per Plan 81 SP13 Session 2 A23 + A24 manifest field additions. Authored by SP14 Batch A T-13.6 (2026-05-18).",
+      "design_source": "alignment/plans-folder-governance.md Session 2 A23 + A24",
+      "matcher_entry": "plan_folder_quartet.required",
+      "matcher_pillar": "governance/plans-rules.json",
+      "prose_prohibited": true,
+      "prose_prohibited_rule": "NO narrative prose values; multi-sentence values DENY. Manifest is structured machine-consumable data — narrative belongs in spec.md / handoff.md / 00-ideation-brief.md.",
+      "references_schema": "schemas/plan-manifest-schema.json",
+      "references_schema_rationale": "Delegate full validation to the referenced schema; this file-type-contract is the type-allowlist marker + prose-prohibition declaration.",
+      "status": "runtime",
+      "title": "manifest.json (plan/sub-plan) runtime body-structure contract",
+      "type": "manifest",
+      "validation_strategy": "JSON Schema 2020-12 conditional if/then on `status` field",
+      "version": "1.0.0",
+      "write_shape": "replace"
+    },
+    "meeting-note.md": {
+      "$id": "claude-stem/governance/file-type-contracts/meeting-note.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/pre-write-guard.sh branch #2 (historical-data-warning — reads historical_data_warning_pattern for per-type override; falls back to pillar 7 universal default)",
+        "evolution_protocol": "R-37 atomic lockstep with branch #2 hook body",
+        "lockstep_pair": "governance/vault-writers-rules.json :: historical_data_warning_default (fallback) + skills/meeting-processor (writer flow)"
+      },
+      "applies_to": {
+        "path_glob": "$VAULT_ROOT/Meetings/*.md"
+      },
+      "description": "Hook-consumable runtime artifact for Meetings/<date - title>.md meeting notes. Carries the historical_data_warning_pattern per-type override (Plan 81 SP13 Session 6 A47 — hook branch #2 opt-in). Authored by SP14 Batch A T-13.8 (2026-05-18).",
+      "design_source": "alignment/hook-branch-implementations.md Session 6 A47 (foundation-shipped opt-in for branch #2 historical-data-warning)",
+      "frontmatter_enums": {
+        "type": [
+          "meeting-note"
+        ]
+      },
+      "frontmatter_required": [
+        "type",
+        "title",
+        "date",
+        "attendees"
+      ],
+      "historical_data_warning_pattern": "^\\d{4}-\\d{2}-\\d{2} - .*",
+      "historical_data_warning_pattern_rationale": "Per-type override matching Meetings/ naming pattern; branch #2 fires WARN on edits to date-prefixed files where parsed_date < today.",
+      "matcher_entry": "mandates.meeting_note",
+      "matcher_pillar": "governance/mandatory-files-rules.json",
+      "naming_pattern": "^\\d{4}-\\d{2}-\\d{2} - .*\\.md$",
+      "naming_pattern_example": "2026-05-18 - Standup.md",
+      "naming_pattern_format": "regex",
+      "status": "runtime",
+      "title": "meeting-note.md runtime body-structure contract",
+      "type": "meeting-note",
+      "version": "1.0.0",
+      "write_shape": "create-only"
+    },
+    "spec.md": {
+      "$id": "claude-stem/governance/file-type-contracts/spec.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/pre-write-guard.sh (head-immutable enforcement post Session 1) + librarian capabilities (plan-index / plan-archive)",
+        "evolution_protocol": "R-37 atomic lockstep with plans-rules.json",
+        "lockstep_pair": "governance/plans-rules.json + alignment/plans-folder-governance.md"
+      },
+      "amendment_pattern": "post-Session-1 amendments append as §Session N amendments blocks; body preserved as historical record",
+      "applies_to": {
+        "path_glob": "~/.claude-plans/**/spec.md"
+      },
+      "description": "Hook-consumable runtime artifact for plan-tree spec.md files. The k8s ValidatingAdmissionPolicy paramKind for plan spec.md per Plan 81 SP13 Session 2 A23 (alignment/plans-folder-governance.md) + Stream B research (file shapes optimized for LLM consumption). Authored by SP14 Batch A T-13.2 (2026-05-18).",
+      "design_source": "alignment/plans-folder-governance.md §'5 file-type-contracts table' + Session 2 A23",
+      "frontmatter_required_hints": [
+        "title",
+        "type",
+        "parent_plan (depth >= 3)",
+        "created"
+      ],
+      "head_immutable_post_session_1": true,
+      "head_immutable_sections": [
+        "Goal",
+        "Problem Statement",
+        "Constraints"
+      ],
+      "matcher_entry": "plan_folder_quartet.required",
+      "matcher_pillar": "governance/plans-rules.json",
+      "size_limits": {
+        "max_lines": 500
+      },
+      "status": "runtime",
+      "tail_mutable": [
+        "Solution Approach",
+        "Files Modified",
+        "Success Metrics",
+        "Risk"
+      ],
+      "title": "spec.md (plan/sub-plan) runtime body-structure contract",
+      "type": "spec",
+      "version": "1.0.0",
+      "write_shape": "append-template"
+    },
+    "tasks.md": {
+      "$id": "claude-stem/governance/file-type-contracts/tasks.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/tasks-md-autosync.sh + librarian plan-index + manifest auto-sync sentinels (<!-- task-done: NN/T-M -->)",
+        "evolution_protocol": "R-37 atomic lockstep with manifest.json",
+        "lockstep_pair": "manifest.tasks[] in same plan-tree (R-37 coupled_surfaces)"
+      },
+      "applies_to": {
+        "path_glob": "~/.claude-plans/**/tasks.md"
+      },
+      "description": "Hook-consumable runtime artifact for plan-tree tasks.md files. Ledger-at-top + per-task-at-bottom shape per Stream B research; R-37 lockstep with manifest.tasks[] per Plan 81 SP13 Session 2 A23. Authored by SP14 Batch A T-13.3 (2026-05-18).",
+      "design_source": "alignment/plans-folder-governance.md Session 2 A23",
+      "lockstep_rule": "R-37 — adding/removing a task ID requires same-commit update to manifest.tasks[]; status flip syncs via <!-- task-done: NN/T-M --> sentinels per feedback_tasks_md_autosync.",
+      "lockstep_with": "manifest.tasks[]",
+      "matcher_entry": "plan_folder_quartet.required",
+      "matcher_pillar": "governance/plans-rules.json",
+      "per_task_token_range": {
+        "max": 800,
+        "min": 200
+      },
+      "size_limits": {
+        "max_lines": 1000
+      },
+      "status": "runtime",
+      "structure": "ledger-at-top + per-task-at-bottom",
+      "structure_rationale": "Cache at top (current ledger / status table) for quick scan; recency at bottom (current task expanded) for context-load — Stream B research (file shapes optimized for LLM consumption).",
+      "task_id_format": "T-N where N is monotonically increasing integer within the plan/sub-plan",
+      "task_id_immutable_once_published": true,
+      "title": "tasks.md (plan/sub-plan) runtime body-structure contract",
+      "type": "tasks",
+      "version": "1.0.0",
+      "write_shape": "replace"
+    },
+    "vault-writer.md": {
+      "$id": "claude-stem/governance/file-type-contracts/vault-writer.md.json",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "_design_notes": {
+        "consumer": "hooks/pre-write-guard.sh branch #3 (vault-writers-writer-reference-only — frontmatter conformance DENY on schema violation) + librarian writers-index-refresh / writers-overlap-refresh / writers-health-audit",
+        "evolution_protocol": "R-37 atomic lockstep with vault-writers-rules.json + templates",
+        "lockstep_pair": "governance/vault-writers-rules.json (operational defaults + enums) + templates/vault-writers/_generic-writer.md.template + templates/vault-writers/granola-meetings.md.template"
+      },
+      "applies_to": {
+        "path_glob": "$VAULT_ROOT/Vault Writers/*.md"
+      },
+      "body_free_form": true,
+      "body_section_allowlist": [
+        "Description",
+        "Source",
+        "Destinations",
+        "Processing Rules",
+        "Notes",
+        "Configuration",
+        "Edge cases",
+        "Operational notes"
+      ],
+      "body_section_allowlist_enforcement": "suggested",
+      "description": "Hook-consumable runtime artifact for Vault Writers/<writer>.md writer-reference files. Per-writer definitions describing systems writing into the vault (connectors, agentic flows, auto-research, scheduled skills, custom). Relocated from pillar 7 (vault-writers-rules.json) to pillar 6 (file-type-contracts) per Plan 81 SP13 Session 5 L-58 SHAPE redistribution. Authored by SP14 Batch A T-13.7 (2026-05-18).",
+      "design_source": "alignment/connector-reference-files.md Session 5 L-58 + L-69 + 'Writer-reference frontmatter contract (final)'",
+      "destinations_entry_shape": {
+        "enums": {
+          "output_type": [
+            "markdown",
+            "json",
+            "sqlite",
+            "db",
+            "opaque"
+          ],
+          "posture": [
+            "direct",
+            "staged"
+          ]
+        },
+        "optional": [
+          "posture",
+          "processing_rules_ref"
+        ],
+        "path_format": "Mustache-substituted path; foundation-shipped variable namespace per Session 5 L-69 = {{date}}, {{title}}, {{slug}}, {{source_id}}. Paths MAY be outside vault root for raw-data staging cases (e.g., a Google Chat scrape writing structured records to ~/.claude/state/raw-data/gchat/messages.sqlite); the in-vault default applies to human-readable processed outputs like Meeting Notes per feedback_vault_writer_staging_architecture (default raw landing = outside-vault structured; in-vault markdown reserved for direct-read artifacts).",
+        "posture_default": "direct",
+        "required": [
+          "path",
+          "output_type"
+        ]
+      },
+      "excluded_paths": [
+        "$VAULT_ROOT/Vault Writers/_index.md",
+        "$VAULT_ROOT/Vault Writers/_overlap-matrix.md"
+      ],
+      "excluded_paths_rationale": "Librarian-managed derived artifacts; writers_allowed: [librarian] enforced by branch #3 / branch #4 parallel pattern.",
+      "frontmatter_conditional_by_writer_kind": {
+        "agentic-flow": {
+          "required": [
+            "source"
+          ]
+        },
+        "auto-research": {
+          "required": [
+            "source",
+            "schedule"
+          ]
+        },
+        "connector": {
+          "required": [
+            "writer_subtype",
+            "source",
+            "authentication",
+            "schedule"
+          ]
+        },
+        "custom": {
+          "required": []
+        },
+        "scheduled-skill": {
+          "required": [
+            "schedule"
+          ]
+        }
+      },
+      "frontmatter_enums": {
+        "failure_mode": [
+          "block-and-log",
+          "skip-and-log",
+          "retry-N"
+        ],
+        "status": [
+          "active",
+          "paused",
+          "retired"
+        ],
+        "type": [
+          "vault-writer"
+        ],
+        "writer_kind": [
+          "connector",
+          "agentic-flow",
+          "auto-research",
+          "scheduled-skill",
+          "custom"
+        ],
+        "writer_subtype": [
+          "gmail",
+          "calendar",
+          "granola",
+          "teams",
+          "gchat",
+          "custom"
+        ]
+      },
+      "frontmatter_optional": [
+        "failure_mode",
+        "last_run",
+        "last_success",
+        "last_failure",
+        "last_updated_by"
+      ],
+      "frontmatter_required": [
+        "type",
+        "writer_name",
+        "writer_kind",
+        "writer_skill",
+        "destinations",
+        "status",
+        "created",
+        "updated",
+        "tags"
+      ],
+      "matcher_entry": "mandates.vault_writer_reference",
+      "matcher_pillar": "governance/mandatory-files-rules.json",
+      "raw_retention": {
+        "applies_to_writer_kinds": {
+          "mandatory_default": [
+            "agentic-flow",
+            "auto-research"
+          ],
+          "opt_in": [
+            "connector",
+            "scheduled-skill",
+            "custom"
+          ]
+        },
+        "backup_locality": "Storage root $VAULT_WRITER_STATE_ROOT defaults to ~/.local/share/claude-stem/vault-writers/ (XDG-compliant; Time Machine / restic backup-included; per L-95 + L-98 precaution #5).",
+        "description": "Per-writer raw retention policy. Additive optional. Mandatory-default for writer_kind in {agentic-flow, auto-research}; opt-in for direct-fetch connectors. Per writer-pipeline-layering.md L-97-L-98 / foundation-governance-target-state.md A60. Raw retention preserves pre-distillation transcripts/sources for replayability of LLM-driven writers, and serves as the 5-precaution substitute for the retired _landing/ folder convention (L-98).",
+        "manifest_link": "Each write to a destination records raw_path in manifest.sqlite writes table (per T-24 writer-manifest-schema.json :: raw_path column). Reconciler step 8.6 populates this field from packet metadata.",
+        "partition_strategies": {
+          "daily_jsonl": "High-volume scrapers (gchat-scrape, teams-scrape pattern); one JSONL file per UTC date under $VAULT_WRITER_STATE_ROOT/raw/<writer-id>/<YYYY-MM-DD>.jsonl",
+          "per_record_json": "LLM-driven writers (meeting-processor, agentic-flow); one JSON file per source record under $VAULT_WRITER_STATE_ROOT/raw/<writer-id>/<source-id>.json"
+        },
+        "worm_immutability": "Raw retention files are append-only or write-once-and-immutable; reconciler + doc-amender MUST NOT mutate raw files post-write. Daily integrity check via librarian writers-health-audit (per L-98 precaution #4)."
+      },
+      "status": "runtime",
+      "title": "vault-writer.md (writer-reference file) runtime body-structure contract",
+      "type": "vault-writer",
+      "version": "1.0.0",
+      "write_shape": "create-only"
     }
   },
   "frontmatter": {
@@ -1579,6 +2223,120 @@
     ],
     "schema_version": "1.0.0"
   },
+  "plans": {
+    "backlog_row": {
+      "disposition_enum": [
+        "FIX NOW",
+        "ABSORB",
+        "STANDALONE",
+        "DEFERRED"
+      ],
+      "required_fields": [
+        "Project Dir",
+        "Initiative",
+        "Status",
+        "Disposition",
+        "Updated",
+        "Notes"
+      ],
+      "status_enum": [
+        "new",
+        "triaged",
+        "briefed",
+        "planned",
+        "in-progress",
+        "closed"
+      ]
+    },
+    "lifecycle": {
+      "status_enum": [
+        "researching",
+        "planned",
+        "in-progress",
+        "on-hold",
+        "closed",
+        "superseded",
+        "archived"
+      ],
+      "status_transitions": {
+        "closed_to_archived": {
+          "cooldown_days": 3
+        }
+      }
+    },
+    "plan_folder_quartet": {
+      "required": [
+        "spec.md",
+        "tasks.md",
+        "handoff.md",
+        "manifest.json"
+      ]
+    },
+    "root_files": {
+      "_archive.md": {
+        "generated_by": "librarian:plan-archive",
+        "mandatory": true,
+        "writers_allowed": [
+          "librarian"
+        ]
+      },
+      "_backlog.md": {
+        "generated_by": "librarian:backlog-index",
+        "mandatory": true,
+        "writers_allowed": [
+          "librarian"
+        ]
+      },
+      "_index.md": {
+        "generated_by": "librarian:plan-index",
+        "mandatory": true,
+        "writers_allowed": [
+          "librarian"
+        ]
+      }
+    },
+    "schema_version": "1",
+    "slug_rules": {
+      "pattern": "^[0-9]{2}-[a-z][a-z0-9-]+$",
+      "plan_root_numbering": "next-available-prefix-creation-order",
+      "sub_plan_numbering": "execution-order-not-creation-order"
+    },
+    "subplan_rules": {
+      "naming": "NN-{slug}/ in execution order",
+      "parent_plan_required_at_depth": 3
+    },
+    "validation": {
+      "firing_surfaces": [
+        "PreToolUse",
+        "PostToolUse",
+        "SessionStart",
+        "Stop",
+        "librarian-sweeps"
+      ],
+      "five_validation_classes": [
+        {
+          "id": "filename_to_type",
+          "tier": "structural"
+        },
+        {
+          "id": "plan_root_status_and_prefix",
+          "tier": "structural"
+        },
+        {
+          "id": "subtask_parent_plan",
+          "tier": "structural"
+        },
+        {
+          "id": "trinity_status_agreement",
+          "tier": "semantic"
+        },
+        {
+          "id": "handoff_section_schema",
+          "tier": "semantic"
+        }
+      ]
+    }
+  },
   "r32_exempt_paths": [
     "Logs/librarian-manifest*",
     "Logs/.coordination/**",
@@ -1607,7 +2365,7 @@
     "tests/**"
   ],
   "r47_tag_cap": 25,
-  "schema_version": "1.1.0",
+  "schema_version": "1.2.0",
   "tagging": {
     "_description": "Claude-consumed JSON registry for the tagging pillar. Loaded by pre-write-guard.sh at runtime. Carries R-05, R-32-taxonomy, R-47, R-50, R-51 plus the canonical tag-prefix taxonomy. Tags are the user-side query surface (Obsidian graph view, filter pane, MOC patterns); frontmatter fields are the Claude-side substrate. SP13 T-4 absorbed the canonical tag-prefix taxonomy authority from dissolved schemas/vault-schema.json. See research/vault-construction/tagging-strategy.md §Tags vs fields for the dichotomy.",
     "_design_notes": {
@@ -2052,5 +2810,33 @@
       ],
       "tier": "strict"
     }
+  },
+  "vault_writers": {
+    "$schema": "schemas/vault-writers-rules-schema.json",
+    "_description": "Pillar 7 — Vault Writers Rules (operational-config-only). Slimmed per Plan 81 SP13 Session 5 L-58 (SHAPE relocated to governance/file-type-contracts/vault-writer.md.json under pillar 6). Extended per Session 6 A47 (historical_data_warning_default). Authored by SP14 Batch A T-15.1 (2026-05-18).",
+    "_rules": [
+      "R-58"
+    ],
+    "_source": "alignment/connector-reference-files.md Session 5 L-58 + alignment/hook-branch-implementations.md Session 6 A47",
+    "claude_state_root": "~/.local/state/claude-stem/",
+    "daily_processing_root": "~/.local/share/claude-stem/vault-writers/daily-processing/",
+    "foundation_variable_namespace": [
+      "date",
+      "title",
+      "slug",
+      "source_id"
+    ],
+    "historical_data_warning_default": "^\\d{4}-\\d{2}-\\d{2}",
+    "processing_defaults": {
+      "dedup": "sha256-content",
+      "merge": "winner-pick",
+      "survivorship": "operator-edit-wins"
+    },
+    "reconciler_skill": "writer-reconciler",
+    "reconciler_tick_minutes_default": 15,
+    "staging_area": "~/.claude/state/vault-staging/",
+    "unreconciled_archive_days_default": 14,
+    "vault_writer_state_root": "~/.local/share/claude-stem/vault-writers/",
+    "writer_manifest_path": "~/.local/share/claude-stem/vault-writers/manifest.sqlite"
   }
 }

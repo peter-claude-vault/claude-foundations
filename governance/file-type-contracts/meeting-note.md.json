@@ -35,5 +35,6 @@
 
   "frontmatter_enums": {
     "type": ["meeting-note"]
-  }
+  },
+  "write_shape": "create-only"
 }

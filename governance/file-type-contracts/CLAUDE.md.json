@@ -49,5 +49,6 @@
     "@import directives"
   ],
 
-  "prohibited_rationale": "Per Stream I (T-13 lock A3): hooks read governance bundles from disk directly; CLAUDE.md @import is for Claude's reading context only, not hook function. @import of foundation-master / overlay-master / plans-rules pollutes context without serving runtime enforcement."
+  "prohibited_rationale": "Per Stream I (T-13 lock A3): hooks read governance bundles from disk directly; CLAUDE.md @import is for Claude's reading context only, not hook function. @import of foundation-master / overlay-master / plans-rules pollutes context without serving runtime enforcement.",
+  "write_shape": "create-only"
 }

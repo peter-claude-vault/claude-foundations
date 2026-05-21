@@ -44,5 +44,6 @@
     ]
   },
 
-  "mirrors_pillar_rationale": "Each spoke mirrors exactly one of the 8 foundation governance pillars (canonical §D pattern); R-37 lockstep couples spoke <-> pillar JSON <-> _index.json registry."
+  "mirrors_pillar_rationale": "Each spoke mirrors exactly one of the 8 foundation governance pillars (canonical §D pattern); R-37 lockstep couples spoke <-> pillar JSON <-> _index.json registry.",
+  "write_shape": "create-only"
 }

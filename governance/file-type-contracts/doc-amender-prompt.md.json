@@ -70,5 +70,6 @@
       {"name": "amender-paused-frontmatter", "trigger": "Destination file frontmatter declares amender_paused: true", "action": "Amender permanently skips this destination until operator removes the flag"}
     ],
     "boundary": "doc-amender NEVER writes destination directly; round-trips through staging via staging-emit per L-106"
-  }
+  },
+  "write_shape": "create-only"
 }

@@ -25,5 +25,6 @@
   "validation_strategy": "JSON Schema 2020-12 conditional if/then on `status` field",
 
   "references_schema": "schemas/plan-manifest-schema.json",
-  "references_schema_rationale": "Delegate full validation to the referenced schema; this file-type-contract is the type-allowlist marker + prose-prohibition declaration."
+  "references_schema_rationale": "Delegate full validation to the referenced schema; this file-type-contract is the type-allowlist marker + prose-prohibition declaration.",
+  "write_shape": "replace"
 }

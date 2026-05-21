@@ -107,5 +107,6 @@
     "Operational notes"
   ],
   "body_section_allowlist_enforcement": "suggested",
-  "body_free_form": true
+  "body_free_form": true,
+  "write_shape": "create-only"
 }

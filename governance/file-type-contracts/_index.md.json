@@ -191,5 +191,6 @@
       "blast_radius": "same as Tier 2 + advisory findings emitted via librarian-finding output stream",
       "auto_overwrite_policy": "NEVER auto-overwrites hand-tuned descriptions or hand-ordered rows; flags for operator review"
     }
-  }
+  },
+  "write_shape": "replace"
 }
