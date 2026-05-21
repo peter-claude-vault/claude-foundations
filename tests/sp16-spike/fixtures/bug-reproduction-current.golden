@@ -1,0 +1,14 @@
+SP16 T-1 bug-reproduction current-state output (captured 2026-05-21T05:56:54Z)
+
+--- hook stdout ---
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Write blocked — vault schema enforcement:\\n[R-32 UNKNOWN TYPE] type: 'client-brief' is not in the canonical allowlist (21 canonical type keys + 5 aliases). To add a new type: (1) update governance/frontmatter-rules.json#types with required fields, (2) add case entry in pre-write-guard.sh, (3) add to post-write-verify.sh type_map, (4) document in vault CLAUDE.md, (5) rebuild bundle via tools/build-foundation-master.sh — bundle as R-37 lockstep commit.\\nTags not matching taxonomy prefixes (#status/, #log/): #scope/client,.\\nAdd the missing fields/fix the issues and retry."
+  }
+}
+
+--- hook stderr ---
+
+exit code: 0

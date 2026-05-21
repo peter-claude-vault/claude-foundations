@@ -1134,6 +1134,47 @@ print(content, end='')
         fi
 
         # =====================================================================
+        # SP16 T-3 retrofit: foundation+overlay union view for R-32 type-DENY.
+        # Replaces foundation-only reads below at the retired-types lookup +
+        # unknown-type allowlist DENY with a deep-merged union view from
+        # lib/foundation-overlay-load.sh. Single-branch scope: only R-32
+        # retired/unknown DENYs at L1147-L1172 consume UNION_JSON. Other
+        # branches continue to use BUNDLE_JSON (SP17 generalizes the retrofit).
+        # Helper invoked with --force-override: this is a hook READ for type-
+        # allowlist enforcement, not an overlay WRITE; R-52 collision DENY
+        # belongs at write-time (SP17 separate branch). Helper located
+        # relative to hook dir (foundation-repo + post-install both have
+        # ../lib/foundation-overlay-load.sh) with $FOUNDATION_OVERLAY_LOAD
+        # env override for test isolation. Helper failure → fall back to
+        # foundation-only allowlist (preserves pre-spike behavior).
+        # =====================================================================
+        _HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd 2>/dev/null || true)
+        _FOUNDATION_OVERLAY_LOAD="${FOUNDATION_OVERLAY_LOAD:-$_HOOK_DIR/../lib/foundation-overlay-load.sh}"
+        UNION_JSON=""
+        R32_UNION_ACCEPTED_TYPES=""
+        if [[ -x "$_FOUNDATION_OVERLAY_LOAD" ]] && [[ -f "$FOUNDATION_MASTER" ]]; then
+          UNION_JSON=$("$_FOUNDATION_OVERLAY_LOAD" \
+            --foundation-path "$FOUNDATION_MASTER" \
+            --overlay-path "${OVERLAY_MASTER_PATH:-$HOME/.claude/governance/overlay-master.json}" \
+            --force-override 2>/dev/null || true)
+          if [[ -n "$UNION_JSON" ]]; then
+            R32_UNION_ACCEPTED_TYPES=$(jq -r \
+              '(.frontmatter.types // {} | keys[]?), (.r32_type_aliases // {} | keys[]?)' \
+              <<<"$UNION_JSON" 2>/dev/null \
+              | grep -v '^_description$' \
+              | LC_ALL=C sort -u)
+          fi
+        fi
+        # Fall-back: helper unavailable or failed → foundation-only allowlist
+        # (bug stays present; helper's stderr surfaces the failure visibly).
+        if [[ -z "$R32_UNION_ACCEPTED_TYPES" ]]; then
+          R32_UNION_ACCEPTED_TYPES="$GATE_R32_ACCEPTED_TYPES"
+        fi
+        if [[ -z "$UNION_JSON" ]]; then
+          UNION_JSON="$BUNDLE_JSON"
+        fi
+
+        # =====================================================================
         # R-32 RETIRED TYPES — Tier 2 DENY with specific replacement guidance
         # (SP13 T-3 Session 3 2026-05-14): Pre-T-3, hooks/config/gate-config.json
         # silently listed `engagement` + `project` in r32.accepted_types — drift
@@ -1143,9 +1184,12 @@ print(content, end='')
         # frontmatter-rules.json#retired_types[<type>].replacement, BEFORE the
         # generic UNKNOWN TYPE check below (avoids misleading "add to types"
         # error for types that are explicitly retired).
+        # SP16 T-3: reads from UNION_JSON (foundation+overlay union) so an
+        # adopter overlay can declare additional retired types via /govern
+        # register. Foundation-only fallback preserved if helper unavailable.
         FM_TYPE_RETIRED="false"
-        if [[ -n "$FM_TYPE" ]] && [[ -n "$BUNDLE_JSON" ]]; then
-          RETIRED_REPLACEMENT=$(jq -r --arg t "$FM_TYPE" '.frontmatter.retired_types[$t].replacement // empty' <<<"$BUNDLE_JSON" 2>/dev/null)
+        if [[ -n "$FM_TYPE" ]] && [[ -n "$UNION_JSON" ]]; then
+          RETIRED_REPLACEMENT=$(jq -r --arg t "$FM_TYPE" '.frontmatter.retired_types[$t].replacement // empty' <<<"$UNION_JSON" 2>/dev/null)
           if [[ -n "$RETIRED_REPLACEMENT" ]]; then
             TIER2_MSGS="${TIER2_MSGS}[R-32 RETIRED TYPE] type: '${FM_TYPE}' is retired per governance/frontmatter-rules.json#retired_types. Replacement guidance: ${RETIRED_REPLACEMENT}\n"
             FM_TYPE_RETIRED="true"
@@ -1164,9 +1208,13 @@ print(content, end='')
         # Empty bundle → DENY skipped (fail-OPEN, same posture as missing bundle).
         # FM_TYPE_RETIRED guard avoids double-DENY when retired-type message
         # already fired above (better UX: user sees the retired-specific deny).
+        # SP16 T-3: reads R32_UNION_ACCEPTED_TYPES (foundation+overlay union)
+        # via lib/foundation-overlay-load.sh so /govern register-time type
+        # extensions land in the allowlist. Closes Q1 union-read enforcement
+        # gap for this branch; SP17 generalizes to other branches.
         # =====================================================================
-        if [[ -n "$FM_TYPE" ]] && [[ -n "$GATE_R32_ACCEPTED_TYPES" ]] && [[ "$FM_TYPE_RETIRED" != "true" ]]; then
-          if ! echo "$GATE_R32_ACCEPTED_TYPES" | grep -Fxq "$FM_TYPE"; then
+        if [[ -n "$FM_TYPE" ]] && [[ -n "$R32_UNION_ACCEPTED_TYPES" ]] && [[ "$FM_TYPE_RETIRED" != "true" ]]; then
+          if ! echo "$R32_UNION_ACCEPTED_TYPES" | grep -Fxq "$FM_TYPE"; then
             TIER2_MSGS="${TIER2_MSGS}[R-32 UNKNOWN TYPE] type: '${FM_TYPE}' is not in the canonical allowlist (21 canonical type keys + 5 aliases). To add a new type: (1) update governance/frontmatter-rules.json#types with required fields, (2) add case entry in pre-write-guard.sh, (3) add to post-write-verify.sh type_map, (4) document in vault CLAUDE.md, (5) rebuild bundle via tools/build-foundation-master.sh — bundle as R-37 lockstep commit.\n"
           fi
         fi
