@@ -62,7 +62,7 @@ mode_propose() {
         ],
         notes: [
           "Tag-extension is single-pillar; no R-37 bundling.",
-          "R-52 collision: if dimension exists in foundation-master.tagging.taxonomy.dimension_prefixes, library deep-merges arrays — adopter values UNION with foundation values. To override foundation values, declare override_reasons.tagging.taxonomy.dimension_prefixes.<dimension>."
+          "R-52 collision: if dimension exists in foundation-master.tagging.taxonomy.dimension_prefixes, library deep-merges arrays — adopter values UNION with foundation values. To shadow foundation values, attach a per-entry `_override_reason: \"<text>\"` field inline on the shadowing payload entry (ADR-0006 canonical shape; per SP17a T-5 Decision Point #1)."
         ]
       }
     '

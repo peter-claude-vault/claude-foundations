@@ -190,14 +190,17 @@ else
 fi
 
 # ============================================================================
-# Scenario (e) — collision WITH top-level override_reasons (shape-bridge)
-# Expectation: helper rc=0 (alternate shape satisfies R-52)
+# Scenario (e) — collision WITH ONLY top-level override_reasons dict → DENY
+# SP17a T-5 (Decision Point #1, 2026-05-21): the top-level dict pathway is
+# retired. Only per-entry `_override_reason` satisfies R-52. The dict shape
+# (preserved here verbatim from SP16 to assert the migration) is rejected.
+# Expectation: helper rc=1 (collision-without-per-entry-reason).
 # ============================================================================
-printf '\n--- (e) collision with top-level override_reasons (shape-bridge) ---\n'
+printf '\n--- (e) collision with ONLY top-level override_reasons → DENY (per-entry required) ---\n'
 cat > "$TEMPROOT/overlay-e.json" <<'JSON'
 {
   "frontmatter": {"types": {"context": {"required": ["type"]}}},
-  "override_reasons": {"frontmatter": {"types": {"context": "shape-bridge dict form for unit test"}}}
+  "override_reasons": {"frontmatter": {"types": {"context": "top-level dict shape retired in SP17a T-5"}}}
 }
 JSON
 set +e
@@ -208,10 +211,10 @@ set +e
   >"$TEMPROOT/helper-out" 2>"$TEMPROOT/helper-err"
 HELPER_RC=$?
 set -e
-if [ "$HELPER_RC" = "0" ] && grep -qF "type" "$TEMPROOT/helper-out"; then
-  emit_pass "(e) helper permits collision with top-level override_reasons (shape-bridge)"
+if [ "$HELPER_RC" = "1" ] && grep -qF "frontmatter.types.context" "$TEMPROOT/helper-err"; then
+  emit_pass "(e) helper denies collision when only top-level dict present (per-entry required)"
 else
-  emit_fail "(e) helper rejected valid top-level override_reasons" "rc=$HELPER_RC; stdout: $(cat "$TEMPROOT/helper-out" | head -c 200); stderr: $(cat "$TEMPROOT/helper-err" | head -c 200)"
+  emit_fail "(e) helper did not deny retired top-level dict shape" "rc=$HELPER_RC; stdout: $(cat "$TEMPROOT/helper-out" | head -c 200); stderr: $(cat "$TEMPROOT/helper-err" | head -c 200)"
 fi
 
 # ============================================================================

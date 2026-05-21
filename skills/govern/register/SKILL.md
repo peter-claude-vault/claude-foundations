@@ -108,8 +108,11 @@ edits/rejects, and composes a `validated.json` of the SAME shape with:
 - Accepted pillar payloads carried through verbatim
 - Rejected fields removed from `payload` + listed under top-level
   `rejected_fields: {pillar: {field: reason}}`
-- Override reasons captured under top-level
-  `override_reasons: {pillar: {field: reason}}` for R-52 collisions
+- Override reasons captured per-entry as `_override_reason: "<text>"`
+  fields inline on each shadowing payload entry (ADR-0006 canonical
+  shape; per SP17a T-5 Decision Point #1, 2026-05-21). The retired
+  top-level `override_reasons.<pillar>.<field>` dict pathway is no
+  longer accepted by the hook-side R-52 check.
 
 The validated.json is then passed to `process.sh commit`.
 
@@ -297,8 +300,9 @@ writes. Original triggering write proceeds (frictionless skip per
   either both apply or neither does.
 - R-52 collision tiebreaker: `process.sh propose` flags collisions
   against `~/.claude/governance/foundation-master.json` in the proposal
-  output; commit phase rejects (rc=4) any field carrying a collision
-  without a paired `override_reasons.<pillar>.<field>` entry.
+  output; commit phase rejects (rc=4) any shadowing payload entry that
+  lacks an inline `_override_reason: "<text>"` field (ADR-0006 canonical
+  shape; per-entry only since SP17a T-5).
 
 **Failure mode:** block-and-log per `feedback_no_skill_code_generation`
 (failure-mode discipline) + `feedback_structural_over_bandaid`:

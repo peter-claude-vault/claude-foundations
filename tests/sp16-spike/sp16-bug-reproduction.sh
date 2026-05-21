@@ -87,10 +87,8 @@ cp "$FOUNDATION_SRC" "$FIX_GOV/foundation-master.json"
 
 # Hand-author overlay-master.json registering a new adopter type "client-brief".
 # Shape matches foundation .frontmatter.types (object keyed by type slug).
-# Carries _override_reason inside the entry per ADR-0006 verbatim AND
-# override_reasons.<pillar>.<field> top-level dict per /govern register
-# convention — spike helper accepts EITHER (shape-bridge, per operator
-# decision 2026-05-21).
+# Per-entry `_override_reason` is the canonical R-52 shape per ADR-0006
+# (SP17a T-5 Decision Point #1 retired the prior shape-bridge top-level dict).
 cat > "$FIX_GOV/overlay-master.json" <<'JSON'
 {
   "frontmatter": {
@@ -100,11 +98,6 @@ cat > "$FIX_GOV/overlay-master.json" <<'JSON'
         "enums": { "type": ["client-brief"] },
         "_override_reason": "spike fixture — adopter-extended type for SP16 union-read verification"
       }
-    }
-  },
-  "override_reasons": {
-    "frontmatter": {
-      "types.client-brief": "spike fixture — adopter-extended type for SP16 union-read verification (top-level dict shape)"
     }
   }
 }

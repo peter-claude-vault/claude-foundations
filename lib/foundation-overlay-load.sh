@@ -16,15 +16,15 @@
 #   `_override_reason` (free-text, mandatory) on every shadowing entry.
 #   Per-write `--force-override` flag bypasses DENY for a single write.
 #
-# Shape-bridge (operator decision 2026-05-21): the helper accepts EITHER
-# (a) per-entry `_override_reason` field on the shadowing overlay entry
-# (per ADR-0006 verbatim) OR (b) top-level `override_reasons.<pillar>.<key>`
-# dict entry (per /govern register skill body convention at
-# register/SKILL.md:98,112,301). Either presence satisfies R-52.
+# Canonical shape (SP17a T-5, Decision Point #1, 2026-05-21):
+# `_override_reason` is a PER-ENTRY field on the shadowing overlay entry
+# (per ADR-0006 verbatim). The prior shape-bridge (top-level
+# `override_reasons.<pillar>.<slot>.<entity>` dict pathway carried since
+# SP16) is RETIRED. Per-entry only — single source of truth, audit-local.
 #
-# SP16 spike scope: R-52 collision detection is implemented for the
-# .frontmatter.types pillar only (aligned with T-3 R-32 type-DENY retrofit).
-# SP17 generalizes to all pillars per the scope packet recommendation.
+# SP16 spike scope: R-52 collision detection was implemented for the
+# .frontmatter.types pillar only. SP17a T-4 generalized to per-pillar walk.
+# SP17a T-5 canonicalized the shape per Decision Point #1.
 #
 # bash 3.2 compatible (no `declare -A`, no `mapfile`, no `${var,,}`).
 # No file locks (read-only helper; mutate-side library handles locks).
@@ -85,11 +85,12 @@ Stderr:
   - Fail-closed warning (when overlay is invalid JSON; still exits 0)
   - Diagnostic messages
 
-R-52 shape-bridge:
-  Helper checks for override-reason in either shape:
-    (a) Per-entry: \$overlay.frontmatter.types.<slug>._override_reason
-    (b) Top-level: \$overlay.override_reasons.frontmatter.types.<slug>
-  Either presence permits the shadow; absence of both DENIES.
+R-52 canonical shape (per-entry only; ADR-0006 verbatim):
+  Shadowing overlay entries MUST carry \`_override_reason: "<text>"\` field
+  directly on the entry, e.g. \$overlay.frontmatter.types.<slug>._override_reason.
+  Absence DENIES (or fall-back to \`--force-override\` for per-write bypass).
+  The prior top-level \`override_reasons.<pillar>...\` dict pathway is retired
+  (SP17a T-5 Decision Point #1, 2026-05-21).
 EOF
 }
 
@@ -215,35 +216,22 @@ if [ "$FORCE_OVERRIDE" != "1" ]; then
 
       while IFS= read -r ck; do
         [ -z "$ck" ] && continue
-        # Shape-bridge: per-entry _override_reason OR top-level override_reasons
-        # dict. Path under override_reasons mirrors collision path.
+        # Canonical shape: per-entry `_override_reason` on the shadowing
+        # overlay entry. Top-level `override_reasons` dict retired in
+        # SP17a T-5 (Decision Point #1).
         if [ "$SLOT" = "__top_level_keys__" ]; then
           HAS_REASON=$(printf '%s' "$OVERLAY_JSON" | jq -r --arg p "$PILLAR" --arg k "$ck" '
-            (
-              (.[$p][$k]
-               | if type == "object" then ._override_reason else null end
-              ) // null
-            ) != null
-            or
-            (
-              (.override_reasons[$p][$k] // null) != null
-            )
+            (.[$p][$k]
+             | if type == "object" then ._override_reason else null end
+            ) // null
+            | . != null
           ' 2>/dev/null)
         else
           HAS_REASON=$(printf '%s' "$OVERLAY_JSON" | jq -r --arg p "$PILLAR" --arg s "$SLOT" --arg k "$ck" '
-            (
-              (.[$p][$s][$k]
-               | if type == "object" then ._override_reason else null end
-              ) // null
-            ) != null
-            or
-            (
-              (.override_reasons[$p][$s][$k] // null) != null
-            )
-            or
-            (
-              (.override_reasons[$p][$s + "." + $k] // null) != null
-            )
+            (.[$p][$s][$k]
+             | if type == "object" then ._override_reason else null end
+            ) // null
+            | . != null
           ' 2>/dev/null)
         fi
         if [ "$HAS_REASON" != "true" ]; then
@@ -262,9 +250,8 @@ EOF2
       printf 'foundation-overlay-load.sh: R-52 violation — overlay shadows foundation entries without _override_reason:\n'
       printf '%b' "$DENIED_KEYS"
       printf 'To resolve, either:\n'
-      printf '  (a) add per-entry _override_reason: "<text>" to the shadowing overlay entry, OR\n'
-      printf '  (b) add top-level override_reasons.<pillar>.<slot>.<entity>: "<text>" to the overlay, OR\n'
-      printf '  (c) pass --force-override for single-invocation bypass (per-write; no persistent disable per ADR-0006).\n'
+      printf '  (a) add per-entry _override_reason: "<text>" to the shadowing overlay entry (per ADR-0006), OR\n'
+      printf '  (b) pass --force-override for single-invocation bypass (per-write; no persistent disable per ADR-0006).\n'
     } >&2
     exit 1
   fi

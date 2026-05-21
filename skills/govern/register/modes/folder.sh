@@ -90,7 +90,8 @@ mode_propose() {
 
 # Compose payload tempfiles from a validated proposal and invoke the library.
 # Validated proposal shape: same as propose output, but with rejected fields
-# removed from .pillars[].payload and override_reasons captured at top level.
+# removed from .pillars[].payload and per-entry `_override_reason` fields
+# inline on each shadowing payload entry (ADR-0006 canonical shape; SP17a T-5).
 mode_commit() {
   local proposal="$1"
   shift || true

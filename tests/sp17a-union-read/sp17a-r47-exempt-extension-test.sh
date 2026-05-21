@@ -109,14 +109,13 @@ COMPOSED_R47=$(jq -nc \
 
 cat > "$FIX_GOV/overlay-master.json" <<JSON
 {
-  "r47_exempt_paths_composed": ${COMPOSED_R47},
-  "override_reasons": {
-    "tagging": {
-      "r47_exempt_paths_composed": "spike fixture — adopter-extended R-47 exempt path for SP17a T-2-narrow union-read verification"
-    }
-  }
+  "r47_exempt_paths_composed": ${COMPOSED_R47}
 }
 JSON
+# r47_exempt_paths_composed is a top-level array slot, not in the R-52
+# entity-collision domain (tagging pillar only walks `.rules`). The slot
+# is governed by T-7 per-leaf merge strategy (UNION on list-typed leaves),
+# not by R-52 collision DENY. No _override_reason needed at this slot.
 
 # ---- Build hook input payload -----------------------------------------------
 

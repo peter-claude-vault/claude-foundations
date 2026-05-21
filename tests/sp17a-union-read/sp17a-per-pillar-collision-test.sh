@@ -73,11 +73,13 @@ OVER_2='{"naming":{"rules":{"R-04":{"text":"overlay R-04 text","_override_reason
 rc=$(run_helper "$FOUND_1" "$OVER_2")
 assert_rc "shape-bridge per-entry _override_reason permits" "0" "$rc"
 
-# ---- Scenario 3: same collision with top-level override_reasons → PERMIT ----
-printf '\n--- (3) naming.rules.R-04 collision WITH top-level override_reasons.naming.rules.R-04 → PERMIT ---\n'
-OVER_3='{"naming":{"rules":{"R-04":{"text":"overlay R-04 text"}}},"override_reasons":{"naming":{"rules":{"R-04":"adopter-extended R-04"}}}}'
+# ---- Scenario 3: collision with ONLY top-level override_reasons → DENY ----
+# SP17a T-5 (Decision Point #1, 2026-05-21): top-level dict pathway retired.
+# Per-entry _override_reason is the canonical shape per ADR-0006.
+printf '\n--- (3) naming.rules.R-04 collision with ONLY top-level override_reasons → DENY ---\n'
+OVER_3='{"naming":{"rules":{"R-04":{"text":"overlay R-04 text"}}},"override_reasons":{"naming":{"rules":{"R-04":"top-level dict retired in SP17a T-5"}}}}'
 rc=$(run_helper "$FOUND_1" "$OVER_3")
-assert_rc "shape-bridge top-level override_reasons permits" "0" "$rc"
+assert_rc "retired top-level dict alone DENIES (per-entry required)" "1" "$rc"
 
 # ---- Scenario 4: --collision-pillars=frontmatter excludes naming pillar ----
 printf '\n--- (4) --collision-pillars=frontmatter excludes naming walk → PERMIT ---\n'

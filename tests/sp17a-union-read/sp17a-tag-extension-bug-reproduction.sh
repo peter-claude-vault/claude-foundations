@@ -91,12 +91,10 @@ case "$FIX_GOV" in "$TEMPROOT"/*) ;; *) printf 'FATAL: FIX_GOV not jailed\n' >&2
 # tag dimension "client" via .tagging.taxonomy.dimension_prefixes.
 cp "$FOUNDATION_SRC" "$FIX_GOV/foundation-master.json"
 
-# Overlay-master.json registers "client" as a new dimension prefix. Carries
-# top-level override_reasons dict to document the extension intent (the
-# tagging slice doesn't collide with foundation .frontmatter.types — R-52
-# applies to entity-level collisions; dimension array extensions are
-# additive in semantics but REPLACE in current mutation library — see SP16
-# Surprise #4 / T-7 per-leaf merge-strategy planning).
+# Overlay-master.json registers "client" as a new dimension prefix.
+# tagging.taxonomy.dimension_prefixes is an ARRAY slot; not in R-52 entity-
+# collision domain (tagging pillar walks `.rules` only — array leaves are
+# T-7 per-leaf merge scope). No _override_reason needed.
 #
 # To keep current-state vs fixed-state isolation testable WITHOUT relying
 # on T-7's per-leaf UNION merge, overlay declares the FULL post-extension
@@ -109,11 +107,6 @@ cat > "$FIX_GOV/overlay-master.json" <<'JSON'
     "taxonomy": {
       "dimension_prefixes": ["status", "log", "client"],
       "user_facing_dimensions": ["client"]
-    }
-  },
-  "override_reasons": {
-    "tagging": {
-      "taxonomy.dimension_prefixes": "spike fixture — adopter-extended tag dimension for SP17a union-read verification"
     }
   }
 }

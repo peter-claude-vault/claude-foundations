@@ -70,6 +70,74 @@ if [[ "$G1_EXIT" -eq 0 && -n "$G1_OUTPUT" ]]; then
 fi
 # === end G1 ================================================================
 
+# === R-52 write-time DENY (SP17a T-5, Decision Point #1 — per-entry shape) ==
+# Narrow gate: fires ONLY when $FILE_PATH = overlay-master.json AND the
+# pending-state overlay would shadow a foundation entry without per-entry
+# `_override_reason`. The SINGLE call site that fires foundation-overlay-load.sh
+# WITHOUT --force-override — every other hook-side read passes the flag
+# (hook reads are not overlay writes per ADR-0006).
+#
+# Per ADR-0006: per-write `--force-override` bypass at the /govern register
+# layer; here, R52_FORCE_OVERRIDE=1 env var bypasses for direct-Edit/Write
+# flows (e.g. test substrate). No persistent disable.
+#
+# Helper path resolution duplicates the L744 pattern (foundation-repo +
+# post-install layouts) because this branch fires BEFORE L744 in hook flow.
+T5_OVERLAY_TARGET="${OVERLAY_MASTER_PATH:-$HOME/.claude/governance/overlay-master.json}"
+if [[ "$FILE_PATH" == "$T5_OVERLAY_TARGET" ]] && [[ "${R52_FORCE_OVERRIDE:-0}" != "1" ]]; then
+  T5_HOOK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd 2>/dev/null || true)
+  T5_HELPER="${FOUNDATION_OVERLAY_LOAD:-}"
+  if [[ -z "$T5_HELPER" ]]; then
+    if [[ -x "$T5_HOOK_DIR/lib/foundation-overlay-load.sh" ]]; then
+      T5_HELPER="$T5_HOOK_DIR/lib/foundation-overlay-load.sh"
+    elif [[ -x "$T5_HOOK_DIR/../lib/foundation-overlay-load.sh" ]]; then
+      T5_HELPER="$T5_HOOK_DIR/../lib/foundation-overlay-load.sh"
+    fi
+  fi
+  T5_FOUNDATION="${FOUNDATION_MASTER_PATH:-$HOME/.claude/governance/foundation-master.json}"
+  if [[ -n "$T5_HELPER" ]] && [[ -x "$T5_HELPER" ]] && [[ -f "$T5_FOUNDATION" ]]; then
+    # Materialize pending-state overlay content. Write = tool_input.content
+    # in full; Edit = current file with old_string→new_string applied via
+    # python (handles multi-line strings safely).
+    T5_PENDING_CONTENT=""
+    if [[ "$TOOL_NAME" == "Write" ]]; then
+      T5_PENDING_CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // empty')
+    elif [[ "$TOOL_NAME" == "Edit" ]] && [[ -f "$FILE_PATH" ]]; then
+      T5_OLD=$(echo "$INPUT" | jq -r '.tool_input.old_string // empty')
+      T5_NEW=$(echo "$INPUT" | jq -r '.tool_input.new_string // empty')
+      T5_PENDING_CONTENT=$(python3 - "$FILE_PATH" "$T5_OLD" "$T5_NEW" <<'PY' || true
+import sys
+fp, old_s, new_s = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(fp) as f:
+    content = f.read()
+sys.stdout.write(content.replace(old_s, new_s, 1))
+PY
+)
+    fi
+    # Only invoke helper if we produced a JSON-parseable pending state.
+    if [[ -n "$T5_PENDING_CONTENT" ]] && echo "$T5_PENDING_CONTENT" | jq empty >/dev/null 2>&1; then
+      T5_TEMPDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'r52-deny')
+      T5_PENDING_PATH="$T5_TEMPDIR/overlay-pending.json"
+      printf '%s' "$T5_PENDING_CONTENT" > "$T5_PENDING_PATH"
+      T5_HELPER_STDERR=$("$T5_HELPER" \
+        --foundation-path "$T5_FOUNDATION" \
+        --overlay-path "$T5_PENDING_PATH" \
+        --query '.schema_version // ""' \
+        2>&1 >/dev/null) || T5_HELPER_RC=$?
+      T5_HELPER_RC="${T5_HELPER_RC:-0}"
+      rm -rf "$T5_TEMPDIR" 2>/dev/null || true
+      if [[ "$T5_HELPER_RC" == "1" ]]; then
+        # R-52 collision detected. Surface helper stderr verbatim plus
+        # canonical-shape resolution guidance.
+        T5_DENY_MSG="R-52 write-time DENY (SP17a T-5): the pending overlay at $(basename "$FILE_PATH") would shadow foundation entries without per-entry _override_reason. Helper output:"$'\n'"${T5_HELPER_STDERR}"$'\n'"Resolve by adding _override_reason: \"<text>\" inline on each shadowing entry (per ADR-0006). To bypass for a single write, re-invoke with R52_FORCE_OVERRIDE=1 (per-write only; no persistent disable)."
+        format_output_deny "PreToolUse" "$T5_DENY_MSG"
+        exit 0
+      fi
+    fi
+  fi
+fi
+# === end R-52 write-time DENY ============================================
+
 # --- BLOCK: Writes to the dead plans path (migrated 2026-04-13) ---
 # Tripwire added by spine-remediation Session 02, redesigned in Session 14
 # (2026-04-14). The path ~/.claude/plans/ is now a permanent placeholder
