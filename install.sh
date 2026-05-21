@@ -584,7 +584,8 @@ if [ "$APPLY_MODE" != "1" ]; then
     {"step": 10, "op": "cp", "target": "$CLAUDE_HOME/templates/", "source": "$SOURCE_REPO/templates/{settings,librarian-manifest-skeleton,README,vault-claude-md,claude-home-claude-md,MEMORY,updates,prd,connector-brief,context}+{launchd,settings-fragments}/", "rationale": "ship templates + launchd tmpl + settings-fragments (SP15 T-1a adds updates/prd/connector-brief/context shape templates)"},
     {"step": 11, "op": "cp", "target": "$CLAUDE_HOME/plugins/claude-mem/", "source": "$SOURCE_REPO/plugins/claude-mem/v*/", "rationale": "ship claude-mem bundle if present (T-1.5 deferred; absence informational)"},
     {"step": 11.5, "op": "seed", "target": "$CLAUDE_HOME/CLAUDE.md", "source": "$CLAUDE_HOME/templates/claude-home-claude-md-template.md", "rationale": "seed claude-home CLAUDE.md with identity substitution from user-manifest.json (no clobber without --force-install + sentinel; SP10 T-4)"},
-    {"step": 12, "op": "jq-merge", "target": "$CLAUDE_HOME/settings.json", "source": "$CLAUDE_HOME/templates/settings.json", "rationale": "atomic deep-merge with G7 silent-key-deletion gate"},
+    {"step": 12, "op": "jq-merge", "target": "$CLAUDE_HOME/settings.json", "source": "$CLAUDE_HOME/templates/settings.json", "rationale": "atomic deep-merge with G7 silent-key-deletion gate (SP15 T-1d: template adds AskUserQuestion matcher entry; re-install propagation handled at Step 12.6)"},
+    {"step": 12.6, "op": "jq-register", "target": "$CLAUDE_HOME/settings.json", "rationale": "idempotent post-merge registration of AskUserQuestion matcher → pre-asq-guard.sh (SP15 T-1d §A46 + §A50). Step 12.5 precedent for the same problem class: jq deep-merge (template * user) lets user PreToolUse array win on array conflicts; re-installs against an adopter without the matcher would silently drop it. Detects absence + appends; presence is a no-op (idempotent)."},
     {"step": 13, "op": "validate", "target": "$CLAUDE_HOME/schemas/*.json", "rationale": "post-install schema parse validation"},
     {"step": 14, "op": "cp", "target": "$CLAUDE_HOME/foundation-manifest.json", "source": "$SOURCE_REPO/foundation-manifest.json", "rationale": "ship T-5 baseline (slice tolerates absence with warn)"},
     {"step": 15, "op": "log", "target": "$CLAUDE_HOME/logs/install-*.log", "rationale": "G10 provenance log header emit"}
@@ -1045,6 +1046,43 @@ if [ -f "$target_settings" ]; then
     fi
     sync 2>/dev/null || true
     mv -f "$tmp_settings_125" "$target_settings" || { diag "atomic mv failed: $target_settings (Step 12.5)"; rm -f "$tmp_settings_125"; exit 11; }
+  fi
+fi
+
+# Step 12.6: idempotent AskUserQuestion matcher registration in PreToolUse chain
+# (SP15 T-1d §A46 + §A50). The template declares this matcher, but Step 12 jq merge
+# `template * user_settings` lets the user's PreToolUse array win on array conflicts
+# — so re-installs against an adopter whose PreToolUse chain lacks the matcher
+# would silently drop it. Step 12.6 detects absence and appends a new matcher
+# entry to the PreToolUse array (preserving user customizations); presence is a
+# no-op (idempotent). Operates on the post-Step-12.5 result.
+#
+# Sister-pattern to Step 12.5 (spec-context-inject registration). Same problem
+# class: hook declared in template but jq deep-merge cannot reliably add new
+# array entries when user has customized the matching parent array.
+if [ -f "$target_settings" ]; then
+  has_asq_matcher=$(jq -r '
+    [.hooks.PreToolUse[]?.hooks[]?.command // ""]
+    | map(test("pre-asq-guard\\.sh"))
+    | any
+  ' "$target_settings" 2>/dev/null || echo "error")
+  if [ "$has_asq_matcher" = "false" ]; then
+    tmp_settings_126="$CLAUDE_HOME/.settings.json.tmp.126.$$"
+    if ! jq '
+      .hooks.PreToolUse |= (
+        if . == null or length == 0 then
+          [{"matcher":"AskUserQuestion","hooks":[{"type":"command","command":"~/.claude/hooks/pre-asq-guard.sh"}]}]
+        else
+          . + [{"matcher":"AskUserQuestion","hooks":[{"type":"command","command":"~/.claude/hooks/pre-asq-guard.sh"}]}]
+        end
+      )
+    ' "$target_settings" > "$tmp_settings_126" 2>/dev/null; then
+      diag "jq pre-asq-guard registration failed (Step 12.6); manual resolution required"
+      rm -f "$tmp_settings_126"
+      exit 40
+    fi
+    sync 2>/dev/null || true
+    mv -f "$tmp_settings_126" "$target_settings" || { diag "atomic mv failed: $target_settings (Step 12.6)"; rm -f "$tmp_settings_126"; exit 11; }
   fi
 fi
 

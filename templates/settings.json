@@ -9,6 +9,15 @@
             "command": "~/.claude/hooks/pre-write-guard.sh"
           }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/pre-asq-guard.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
