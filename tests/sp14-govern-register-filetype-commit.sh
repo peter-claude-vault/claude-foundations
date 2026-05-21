@@ -38,11 +38,13 @@ bash "$FOUNDATION_REPO/skills/govern/register/process.sh" commit --kind file-typ
 RC=$?
 [ "$RC" = "0" ] && emit_pass "commit rc=0" || emit_fail "commit rc=$RC; stderr: $(cat "$TEMPROOT/stderr")"
 
-# Both pillars present (R-37 atomic)
-if jq -e '.frontmatter.types | contains(["engagement-note"])' "$OVERLAY_MASTER" >/dev/null 2>&1; then
-  emit_pass "overlay.frontmatter.types contains engagement-note"
+# Both pillars present (R-37 atomic). SP17a T-6 part-1 (2026-05-21):
+# frontmatter.types migrated from array `[<slug>]` to object `{<slug>: <entry>}`
+# matching foundation `.frontmatter.types.<slug>` shape (Surprise #2 res).
+if jq -e '.frontmatter.types | has("engagement-note")' "$OVERLAY_MASTER" >/dev/null 2>&1; then
+  emit_pass "overlay.frontmatter.types has key engagement-note"
 else
-  emit_fail "overlay missing frontmatter.types entry; got: $(cat "$OVERLAY_MASTER")"
+  emit_fail "overlay missing frontmatter.types[engagement-note] entry; got: $(cat "$OVERLAY_MASTER")"
 fi
 
 if jq -e '.file_type_contracts."engagement-note".frontmatter.required | contains(["type","tags","created","updated"])' "$OVERLAY_MASTER" >/dev/null 2>&1; then

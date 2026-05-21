@@ -63,16 +63,25 @@ mode_propose() {
     --arg proposed_by "$proposed_by" \
     --argjson contract "$contract_json" \
     '
-      {
+      # Derive frontmatter type-entry shape from the contract — matches
+      # foundation .frontmatter.types.<slug> shape: {required, optional, tier}.
+      # SP17a T-6 part-1 (Surprise #2 resolution): migrated from array
+      # shape `{types: [<slug>]}` to object shape `{types: {<slug>: <entry>}}`
+      # so /govern register overlay payloads align with foundation pillar
+      # shape end-to-end. Tier defaults to "standard"; operator may override.
+      ($contract.frontmatter.required // ["type", "tags"]) as $req
+      | ($contract.frontmatter.optional // [])              as $opt
+      | ($contract.frontmatter.tier     // "standard")      as $tier
+      | {
         kind: "file-type",
         target: $name,
         proposed_by: $proposed_by,
         pillars: [
           {
             pillar: "frontmatter",
-            payload: { types: [$name] },
+            payload: { types: { ($name): {required: $req, optional: $opt, tier: $tier} } },
             field_descriptions: {
-              types: ("Add type-slug \"" + $name + "\" to the allowed-types enum; pre-write-guard branch #3 + R-32 anchor on this list")
+              ($name): ("Add type entry \"" + $name + "\" under frontmatter.types as {required, optional, tier}; pre-write-guard R-32 + Branch #1 Class C anchor on this dict")
             }
           },
           {
@@ -85,7 +94,8 @@ mode_propose() {
         ],
         notes: [
           "R-37 atomic across both pillars — frontmatter.types and file_type_contracts.<type-slug> bundle in a single library invocation.",
-          "If --contract not supplied, the proposal carries a MV stub: required = [type, tags, created, updated], free_form body. Operator extends per-field before commit."
+          "frontmatter.types entry derives {required, optional, tier} from the contract.frontmatter; remaining contract content (enums, body shape) lives in file_type_contracts.",
+          "If --contract not supplied, the proposal carries a MV stub: required = [type, tags, created, updated], optional = [], tier = standard, free_form body. Operator extends per-field before commit."
         ]
       }
     '

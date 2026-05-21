@@ -54,9 +54,13 @@ P1=$(jq -r '.pillars[1].pillar' "$OUT" 2>/dev/null)
 [ "$P0" = "frontmatter" ] && emit_pass ".pillars[0].pillar == frontmatter" || emit_fail ".pillars[0].pillar = '$P0'"
 [ "$P1" = "file_type_contracts" ] && emit_pass ".pillars[1].pillar == file_type_contracts" || emit_fail ".pillars[1].pillar = '$P1'"
 
-# types[] contains the slug
-TYPE_SLUG=$(jq -r '.pillars[0].payload.types[0]' "$OUT" 2>/dev/null)
-[ "$TYPE_SLUG" = "engagement-note" ] && emit_pass "frontmatter.types[0] == engagement-note" || emit_fail "frontmatter.types[0] = '$TYPE_SLUG'"
+# SP17a T-6 part-1 (2026-05-21): payload migrated from array shape
+# `{types: [<slug>]}` to object shape `{types: {<slug>: <entry>}}`
+# matching foundation `.frontmatter.types.<slug>` shape (Surprise #2 res).
+TYPE_KEY=$(jq -r '.pillars[0].payload.types | keys[0]' "$OUT" 2>/dev/null)
+[ "$TYPE_KEY" = "engagement-note" ] && emit_pass "frontmatter.types[slug] keyed by engagement-note" || emit_fail "frontmatter.types key = '$TYPE_KEY' (expected engagement-note)"
+TYPE_REQ=$(jq -r '.pillars[0].payload.types["engagement-note"].required | length' "$OUT" 2>/dev/null)
+[ -n "$TYPE_REQ" ] && [ "$TYPE_REQ" -gt 0 ] && emit_pass "frontmatter.types[engagement-note].required populated ($TYPE_REQ fields)" || emit_fail "frontmatter.types[engagement-note].required missing/empty"
 
 # file_type_contracts has key matching slug, with MV stub
 HAS_KEY=$(jq -e '.pillars[1].payload."engagement-note"' "$OUT" >/dev/null 2>&1 && echo yes || echo no)
