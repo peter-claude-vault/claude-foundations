@@ -1,0 +1,41 @@
+{
+  "schema_version": "1",
+  "root_files": {
+    "_index.md":   {"mandatory": true, "generated_by": "librarian:plan-index",   "writers_allowed": ["librarian"]},
+    "_backlog.md": {"mandatory": true, "generated_by": "librarian:backlog-index", "writers_allowed": ["librarian"]},
+    "_archive.md": {"mandatory": true, "generated_by": "librarian:plan-archive", "writers_allowed": ["librarian"]}
+  },
+  "plan_folder_quartet": {
+    "required": ["spec.md", "tasks.md", "handoff.md", "manifest.json"]
+  },
+  "slug_rules": {
+    "pattern": "^[0-9]{2}-[a-z][a-z0-9-]+$",
+    "plan_root_numbering": "next-available-prefix-creation-order",
+    "sub_plan_numbering": "execution-order-not-creation-order"
+  },
+  "subplan_rules": {
+    "naming": "NN-{slug}/ in execution order",
+    "parent_plan_required_at_depth": 3
+  },
+  "backlog_row": {
+    "required_fields": ["Project Dir", "Initiative", "Status", "Disposition", "Updated", "Notes"],
+    "status_enum":      ["new", "triaged", "briefed", "planned", "in-progress", "closed"],
+    "disposition_enum": ["FIX NOW", "ABSORB", "STANDALONE", "DEFERRED"]
+  },
+  "lifecycle": {
+    "status_enum": ["researching", "planned", "in-progress", "on-hold", "closed", "superseded", "archived"],
+    "status_transitions": {
+      "closed_to_archived": {"cooldown_days": 3}
+    }
+  },
+  "validation": {
+    "five_validation_classes": [
+      {"id": "filename_to_type",             "tier": "structural"},
+      {"id": "plan_root_status_and_prefix",  "tier": "structural"},
+      {"id": "subtask_parent_plan",          "tier": "structural"},
+      {"id": "trinity_status_agreement",     "tier": "semantic"},
+      {"id": "handoff_section_schema",       "tier": "semantic"}
+    ],
+    "firing_surfaces": ["PreToolUse", "PostToolUse", "SessionStart", "Stop", "librarian-sweeps"]
+  }
+}

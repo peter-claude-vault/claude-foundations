@@ -219,7 +219,7 @@ fi
 # Refuse if $CLAUDE_HOME == $HOME/.claude AND target exists with non-foundation
 # content, unless --force-install AND I-UNDERSTAND-OVERWRITE-RISK sentinel typed.
 # String comparison (not resolution) per R-55 carve-out.
-foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json foundation-manifest.json CLAUDE.md projects"
+foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs governance settings.json settings.local.json foundation-manifest.json CLAUDE.md projects"
 
 g1_main_has_non_foundation_content() {
   local d="$1"
@@ -551,16 +551,17 @@ if [ "$APPLY_MODE" != "1" ]; then
   },
   "guards_passed": ["G1-pre", "G1-main", "G2", "G3", "G4", "G5", "G7", "G8"],
   "actions": [
-    {"step": 1, "op": "mkdir", "target": "$CLAUDE_HOME/{hooks,hooks/lib,hooks/state,hooks/config,skills,schemas,onboarding,orchestrator,templates,templates/launchd,templates/settings-fragments,plugins,Library/LaunchAgents.staging,installer,logs}", "rationale": "create target tree"},
-    {"step": 2, "op": "cp", "target": "$CLAUDE_HOME/hooks/", "source": "$SOURCE_REPO/hooks/{*.sh,*.md,MANIFEST.txt}", "rationale": "ship hook entry-points + MANIFEST"},
-    {"step": 3, "op": "cp", "target": "$CLAUDE_HOME/hooks/lib/", "source": "$SOURCE_REPO/lib/", "rationale": "ship hook libs (lib/ to hooks/lib/ translation per A4)"},
+    {"step": 1, "op": "mkdir", "target": "$CLAUDE_HOME/{hooks,hooks/lib,hooks/state,hooks/config,skills,schemas,onboarding,orchestrator,templates,templates/launchd,templates/settings-fragments,plugins,Library/LaunchAgents.staging,installer,logs,governance,governance/file-type-contracts,governance/librarian-capabilities,governance/onboarding-reference}", "rationale": "create target tree (SP15 T-1a: governance/ subtree added)"},
+    {"step": 2, "op": "cp", "target": "$CLAUDE_HOME/hooks/", "source": "$SOURCE_REPO/hooks/{*.sh,*.md,MANIFEST.txt}", "rationale": "ship hook entry-points + MANIFEST (pre-asq-guard.sh ships via wildcard per SP15 T-1a)"},
+    {"step": 3, "op": "cp", "target": "$CLAUDE_HOME/hooks/lib/", "source": "$SOURCE_REPO/lib/{*.sh,*.sql}", "rationale": "ship hook libs (lib/ to hooks/lib/ translation per A4; SP15 T-1a: *.sql wildcard ships manifest-migrate.sql companion to manifest-record.sh)"},
     {"step": 4, "op": "cp", "target": "$CLAUDE_HOME/hooks/config/", "source": "$SOURCE_REPO/hooks/config/", "rationale": "ship hook config JSON"},
-    {"step": 5, "op": "cp", "target": "$CLAUDE_HOME/skills/", "source": "$SOURCE_REPO/skills/{9 named}/", "rationale": "ship 9 named skill subtrees recursively (infer-vault-structure added v2.1.2 SP16 T-6 — Section F orchestrator + /adopt --retrofit-existing depend on it)"},
+    {"step": 5, "op": "cp", "target": "$CLAUDE_HOME/skills/", "source": "$SOURCE_REPO/skills/{12 named}/", "rationale": "ship 12 named skill subtrees recursively (SP15 T-1a adds govern + doc-amender + writer-reconciler; writer-reconciler replaces retired inbox-processor)"},
     {"step": 6, "op": "cp", "target": "$CLAUDE_HOME/onboarding/", "source": "$SOURCE_REPO/onboarding/", "rationale": "ship onboarding subtree"},
     {"step": 7, "op": "cp", "target": "$CLAUDE_HOME/orchestrator/", "source": "$SOURCE_REPO/orchestrator/", "rationale": "ship orchestrator subtree"},
     {"step": 8, "op": "cp", "target": "$CLAUDE_HOME/installer/", "source": "$SOURCE_REPO/installer/", "rationale": "ship installer subtree (G6 LABEL_PREFIX preserved transitively)"},
-    {"step": 9, "op": "cp", "target": "$CLAUDE_HOME/schemas/", "source": "$SOURCE_REPO/schemas/{6 named}.json", "rationale": "ship 6 named schemas + README"},
-    {"step": 10, "op": "cp", "target": "$CLAUDE_HOME/templates/", "source": "$SOURCE_REPO/templates/{settings,librarian-manifest-skeleton,README}+{launchd,settings-fragments}/", "rationale": "ship templates + launchd tmpl + settings-fragments"},
+    {"step": 8.5, "op": "cp", "target": "$CLAUDE_HOME/governance/", "source": "$SOURCE_REPO/governance/", "rationale": "ship v3 governance subtree (SP15 T-1a NEW): 8 pillars + librarian-capabilities/ + file-type-contracts/ + onboarding-reference/ (foundation-master.json regen at T-4 lands on top)"},
+    {"step": 9, "op": "cp", "target": "$CLAUDE_HOME/schemas/", "source": "$SOURCE_REPO/schemas/{14 named}.json", "rationale": "ship 14 named schemas + README (SP15 T-1a adds 6 SP14 schemas: overlay-master + governance-action-log + vault-writers-rules + processing-rules + plans-rules + writer-manifest; SP15 T-1a also retires vault-overlay-schema reference per SP14 Batch A schema deletion)"},
+    {"step": 10, "op": "cp", "target": "$CLAUDE_HOME/templates/", "source": "$SOURCE_REPO/templates/{settings,librarian-manifest-skeleton,README,vault-claude-md,claude-home-claude-md,MEMORY,updates,prd,connector-brief,context}+{launchd,settings-fragments}/", "rationale": "ship templates + launchd tmpl + settings-fragments (SP15 T-1a adds updates/prd/connector-brief/context shape templates)"},
     {"step": 11, "op": "cp", "target": "$CLAUDE_HOME/plugins/claude-mem/", "source": "$SOURCE_REPO/plugins/claude-mem/v*/", "rationale": "ship claude-mem bundle if present (T-1.5 deferred; absence informational)"},
     {"step": 11.5, "op": "seed", "target": "$CLAUDE_HOME/CLAUDE.md", "source": "$CLAUDE_HOME/templates/claude-home-claude-md-template.md", "rationale": "seed claude-home CLAUDE.md with identity substitution from user-manifest.json (no clobber without --force-install + sentinel; SP10 T-4)"},
     {"step": 12, "op": "jq-merge", "target": "$CLAUDE_HOME/settings.json", "source": "$CLAUDE_HOME/templates/settings.json", "rationale": "atomic deep-merge with G7 silent-key-deletion gate"},
@@ -584,7 +585,7 @@ cp_clobber="-n"
 [ "$FORCE_ALL" = "1" ] && cp_clobber="-f"
 
 # Step 1: mkdir -p target tree
-target_dirs="hooks hooks/lib hooks/state hooks/config skills schemas onboarding orchestrator templates templates/launchd templates/settings-fragments plugins Library/LaunchAgents.staging installer logs"
+target_dirs="hooks hooks/lib hooks/state hooks/config skills schemas onboarding orchestrator templates templates/launchd templates/settings-fragments plugins Library/LaunchAgents.staging installer logs governance governance/file-type-contracts governance/librarian-capabilities governance/onboarding-reference"
 for d in $target_dirs; do
   mkdir -p "$CLAUDE_HOME/$d" || { diag "mkdir failed: $CLAUDE_HOME/$d"; exit 11; }
 done
@@ -597,7 +598,9 @@ for f in "$SOURCE_REPO/hooks"/*.sh "$SOURCE_REPO/hooks"/*.md "$SOURCE_REPO/hooks
 done
 
 # Step 3: lib/ → hooks/lib/  (translation per spec.md L242 + A4)
-for f in "$SOURCE_REPO/lib"/*.sh; do
+# SP15 T-1a: lib/*.sql added to ship manifest-migrate.sql (companion to
+# lib/manifest-record.sh; consumed at T-1c manifest.sqlite bootstrap).
+for f in "$SOURCE_REPO/lib"/*.sh "$SOURCE_REPO/lib"/*.sql; do
   [ -e "$f" ] || continue
   cp $cp_clobber "$f" "$CLAUDE_HOME/hooks/lib/" 2>/dev/null || true
 done
@@ -622,7 +625,7 @@ done
 # Slice tolerates absent skills (some land in later sub-plans); warn but proceed.
 # infer-vault-structure added v2.1.2 SP16 T-6: Section F orchestrator
 # (skills/onboarder/onboard.sh) + /adopt --retrofit-existing both depend on it.
-for skill in librarian architect backlog-hygiene backlog-triage backlog-research morning-brief onboarder adopt infer-vault-structure; do
+for skill in librarian architect backlog-hygiene backlog-triage backlog-research morning-brief onboarder adopt infer-vault-structure govern doc-amender writer-reconciler; do
   src="$SOURCE_REPO/skills/$skill"
   if [ ! -d "$src" ]; then
     warn "skill not present in foundation-repo source: $skill (deferred to its sub-plan)"
@@ -648,13 +651,27 @@ if [ -d "$SOURCE_REPO/installer" ]; then
   cp -R $cp_clobber "$SOURCE_REPO/installer"/. "$CLAUDE_HOME/installer/" 2>/dev/null || true
 fi
 
-# Step 9: schemas/ — 9 named files. SP13 P0 (2026-05-15) dropped vault-schema +
+# Step 8.5: governance/ → $CLAUDE_HOME/governance/  (SP15 T-1a — v3 NEW top-level)
+# Recursive cp -R; deploys the v3 8-pillar surface + librarian capabilities +
+# file-type-contracts + onboarding-reference. cp_clobber posture matches the
+# rest of the foundation-known tree (cp -n default; --force-all → cp -f).
+# foundation-master.json regen at T-4 (release-time bundle composition) lands
+# on top of whatever this step ships; no exclusion needed.
+if [ -d "$SOURCE_REPO/governance" ]; then
+  cp -R $cp_clobber "$SOURCE_REPO/governance"/. "$CLAUDE_HOME/governance/" 2>/dev/null || true
+fi
+
+# Step 9: schemas/ — 14 named files. SP13 P0 (2026-05-15) dropped vault-schema +
 # gate-config + gate-config-schema (dissolved per SP13 T-4 pillar shard / SP13
-# T-6 retirement). The hooks/config/*.json companion schemas (vault-overlay,
-# doc-dependencies, drift-allowlist, cron-log-architecture-exceptions) remain
-# until P4.7 / P1.5 wave migrates them. Consumed by Step 13.6 jsonschema
-# validation below.
-for schema in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema; do
+# T-6 retirement). SP14 Batch A (2026-05-18) additionally retired
+# vault-overlay-schema.json; companion config hooks/config/vault-overlay.json
+# now ships unvalidated until a replacement pillar shard supersedes it.
+# Remaining hooks/config/*.json companion schemas (doc-dependencies,
+# drift-allowlist, cron-log-architecture-exceptions) consumed by Step 13.6
+# jsonschema validation below. SP15 T-1a adds 6 new schemas (overlay-master,
+# governance-action-log, vault-writers-rules, processing-rules, plans-rules,
+# writer-manifest) per A60-A65.
+for schema in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema overlay-master-schema governance-action-log-schema vault-writers-rules-schema processing-rules-schema plans-rules-schema writer-manifest-schema; do
   src="$SOURCE_REPO/schemas/$schema.json"
   if [ ! -f "$src" ]; then
     diag "schema missing in source: $schema.json"
@@ -667,7 +684,7 @@ done
   cp $cp_clobber "$SOURCE_REPO/schemas/README.md" "$CLAUDE_HOME/schemas/" 2>/dev/null || true
 
 # Step 10: templates/ — settings.json + manifest skeletons + README + CLAUDE.md templates + launchd/*.tmpl + settings-fragments/
-for tmpl in settings.json librarian-manifest-skeleton.json README.md vault-claude-md-template.md claude-home-claude-md-template.md MEMORY.md.template; do
+for tmpl in settings.json librarian-manifest-skeleton.json README.md vault-claude-md-template.md claude-home-claude-md-template.md MEMORY.md.template updates-template.md prd-template.md connector-brief-template.md context-template.md; do
   src="$SOURCE_REPO/templates/$tmpl"
   [ -e "$src" ] || continue
   cp $cp_clobber "$src" "$CLAUDE_HOME/templates/" 2>/dev/null || true
@@ -940,7 +957,6 @@ done
 if python3 -c "import jsonschema" 2>/dev/null; then
   for pair in \
     "doc-dependencies.json:doc-dependencies-schema.json" \
-    "vault-overlay.json:vault-overlay-schema.json" \
     "drift-allowlist.json:drift-allowlist-schema.json" \
     "cron-log-architecture-exceptions.json:cron-log-architecture-exceptions-schema.json"; do
     cfg_name="${pair%:*}"
