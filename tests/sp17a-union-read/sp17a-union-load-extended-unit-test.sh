@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
-# SP17a T-9 partial — Extended unit-test scenarios for T-6 part-2 + T-8
+# SP17a T-9 — Extended unit-test scenarios for T-6 part-2 + T-7 + T-8
 #
-# Verifies invariants from T-6 part-2 (top-level denorm slot retirement;
-# pillar-nested reads only) and T-8 (librarian capability spec retargets).
+# Verifies invariants from:
+#   - T-6 part-2 (top-level denorm slot retirement; pillar-nested reads only)
+#   - T-7 (per-leaf merge-strategy registry; UNION at list-typed leaves)
+#   - T-8 (librarian capability spec retargets to union helper)
+#
 # Per spec L218-L222, the suite covers:
 #   - pillar-nested .frontmatter.types read after top-level retirement
 #   - pillar-nested .frontmatter.r32_type_aliases read
 #   - foundation-only bundle lacking top-level denorm slots loads cleanly
 #   - overlay extending .frontmatter.r32_type_aliases composes via helper
 #   - librarian capability specs cite the union helper as access pattern
-#
-# Per-leaf merge UNION/REPLACE scenarios deferred to Session 5 T-7 work.
+#   - per-leaf UNION at dimension_prefixes / user_facing_dimensions /
+#     registered_archetypes; REPLACE elsewhere; dict-shape fallback preserves
+#     SP14 baseline merge semantics
 #
 # Scope: bash 3.2 compatible; mktemp-jailed fixtures; zero ~/.claude/ writes.
 
@@ -192,8 +196,229 @@ else
 fi
 
 # =============================================================================
+# (6) Per-leaf merge strategy (T-7): registry file present + declares the
+# three list-typed leaves as UNION.
+# =============================================================================
+echo "--- (6) Merge-strategy registry (T-7) declares UNION leaves ---"
+
+REGISTRY="$FOUNDATION_REPO/lib/merge-strategy-registry.json"
+
+if [ -f "$REGISTRY" ]; then
+  say_pass "(6a) lib/merge-strategy-registry.json present"
+else
+  say_fail "(6a) lib/merge-strategy-registry.json missing"
+fi
+
+if jq -e '.strategies."tagging.taxonomy.dimension_prefixes" == "union"' "$REGISTRY" >/dev/null 2>&1; then
+  say_pass "(6b) registry declares dimension_prefixes as UNION"
+else
+  say_fail "(6b) registry missing UNION declaration for dimension_prefixes"
+fi
+
+if jq -e '.strategies."tagging.taxonomy.user_facing_dimensions" == "union"' "$REGISTRY" >/dev/null 2>&1; then
+  say_pass "(6c) registry declares user_facing_dimensions as UNION"
+else
+  say_fail "(6c) registry missing UNION declaration for user_facing_dimensions"
+fi
+
+if jq -e '.strategies."tagging.taxonomy.registered_archetypes" == "union"' "$REGISTRY" >/dev/null 2>&1; then
+  say_pass "(6d) registry declares registered_archetypes as UNION"
+else
+  say_fail "(6d) registry missing UNION declaration for registered_archetypes"
+fi
+
+if jq -e '.default == "replace"' "$REGISTRY" >/dev/null 2>&1; then
+  say_pass "(6e) registry default strategy is REPLACE"
+else
+  say_fail "(6e) registry default strategy not REPLACE"
+fi
+
+# =============================================================================
+# (7) Library UNION semantics at array-shape dimension_prefixes (T-7 AC-6
+# verification): foundation [scope,status]; overlay payload [client] →
+# overlay state [client,scope,status] (deduped + sorted).
+# =============================================================================
+echo "--- (7) Library UNION at array-shape dimension_prefixes ---"
+
+LIB="$FOUNDATION_REPO/lib/overlay-master-mutate.sh"
+SCHEMA_PATH="$FOUNDATION_REPO/schemas/overlay-master-schema.json"
+
+FIX7="$TEMPROOT/t7-union"
+mkdir -p "$FIX7"
+OVERLAY7="$FIX7/overlay-master.json"
+LOG7="$FIX7/action-log.jsonl"
+PAYLOAD7="$FIX7/payload.json"
+
+# Seed overlay with existing array-shape entries (foundation-style).
+cat > "$OVERLAY7" <<'JSON'
+{
+  "tagging": {
+    "taxonomy": {
+      "dimension_prefixes": ["scope", "status"]
+    }
+  }
+}
+JSON
+: > "$LOG7"
+# Adopter adds "client" dimension via array-shape payload.
+echo '{"taxonomy":{"dimension_prefixes":["client"]}}' > "$PAYLOAD7"
+
+OVERLAY_MASTER="$OVERLAY7" \
+ACTION_LOG="$LOG7" \
+SCHEMA="$SCHEMA_PATH" \
+CLAUDE_SESSION_ID="sp17a-t9-t7-union" \
+  bash "$LIB" --pillar tagging --payload-file "$PAYLOAD7" \
+              --kind tag-extension --target client --proposed-by user-direct \
+  >/dev/null 2>"$FIX7/err.log"
+RC7=$?
+
+if [ "$RC7" -eq 0 ]; then
+  say_pass "(7a) Library rc=0 on array+array UNION merge"
+else
+  say_fail "(7a) Library rc=$RC7 on array+array UNION; stderr: $(cat "$FIX7/err.log")"
+fi
+
+EXPECTED7='["client","scope","status"]'
+ACTUAL7=$(jq -c '.tagging.taxonomy.dimension_prefixes' "$OVERLAY7" 2>/dev/null)
+if [ "$ACTUAL7" = "$EXPECTED7" ]; then
+  say_pass "(7b) UNION + dedup + sort: ${EXPECTED7}"
+else
+  say_fail "(7b) Expected ${EXPECTED7}; got ${ACTUAL7}"
+fi
+
+# =============================================================================
+# (8) Library UNION dedup at overlapping entries: foundation [scope,status];
+# overlay payload [status,client] → [client,scope,status] (overlap deduped).
+# =============================================================================
+echo "--- (8) Library UNION dedups overlapping entries ---"
+
+FIX8="$TEMPROOT/t7-dedup"
+mkdir -p "$FIX8"
+OVERLAY8="$FIX8/overlay-master.json"
+LOG8="$FIX8/action-log.jsonl"
+PAYLOAD8="$FIX8/payload.json"
+
+cat > "$OVERLAY8" <<'JSON'
+{
+  "tagging": {
+    "taxonomy": {
+      "dimension_prefixes": ["scope", "status"]
+    }
+  }
+}
+JSON
+: > "$LOG8"
+echo '{"taxonomy":{"dimension_prefixes":["status","client"]}}' > "$PAYLOAD8"
+
+OVERLAY_MASTER="$OVERLAY8" \
+ACTION_LOG="$LOG8" \
+SCHEMA="$SCHEMA_PATH" \
+CLAUDE_SESSION_ID="sp17a-t9-t7-dedup" \
+  bash "$LIB" --pillar tagging --payload-file "$PAYLOAD8" \
+              --kind tag-extension --target client --proposed-by user-direct \
+  >/dev/null 2>"$FIX8/err.log"
+RC8=$?
+
+EXPECTED8='["client","scope","status"]'
+ACTUAL8=$(jq -c '.tagging.taxonomy.dimension_prefixes' "$OVERLAY8" 2>/dev/null)
+if [ "$RC8" -eq 0 ] && [ "$ACTUAL8" = "$EXPECTED8" ]; then
+  say_pass "(8) UNION dedup at overlap: ${EXPECTED8}"
+else
+  say_fail "(8) Expected rc=0 + ${EXPECTED8}; got rc=$RC8 + ${ACTUAL8}"
+fi
+
+# =============================================================================
+# (9) Library REPLACE semantics at non-declared leaf (regression-test the
+# default jq * deep-merge path; ensure T-7 didn't break sibling slots).
+# Use `tagging.taxonomy.tag_pattern_regex` (scalar leaf, not in registry).
+# =============================================================================
+echo "--- (9) Library REPLACE (default) at non-declared scalar leaf ---"
+
+FIX9="$TEMPROOT/t7-replace"
+mkdir -p "$FIX9"
+OVERLAY9="$FIX9/overlay-master.json"
+LOG9="$FIX9/action-log.jsonl"
+PAYLOAD9="$FIX9/payload.json"
+
+cat > "$OVERLAY9" <<'JSON'
+{
+  "tagging": {
+    "taxonomy": {
+      "tag_pattern_regex": "^#[a-z]+/[a-z]+$"
+    }
+  }
+}
+JSON
+: > "$LOG9"
+echo '{"taxonomy":{"tag_pattern_regex":"^#[a-z0-9-]+/[a-z0-9-]+$"}}' > "$PAYLOAD9"
+
+OVERLAY_MASTER="$OVERLAY9" \
+ACTION_LOG="$LOG9" \
+SCHEMA="$SCHEMA_PATH" \
+CLAUDE_SESSION_ID="sp17a-t9-t7-replace" \
+  bash "$LIB" --pillar tagging --payload-file "$PAYLOAD9" \
+              --kind tag-extension --target tag_pattern_regex --proposed-by user-direct \
+  >/dev/null 2>"$FIX9/err.log"
+RC9=$?
+
+ACTUAL9=$(jq -r '.tagging.taxonomy.tag_pattern_regex' "$OVERLAY9" 2>/dev/null)
+EXPECTED9='^#[a-z0-9-]+/[a-z0-9-]+$'
+if [ "$RC9" -eq 0 ] && [ "$ACTUAL9" = "$EXPECTED9" ]; then
+  say_pass "(9) REPLACE at non-declared scalar leaf: payload wins"
+else
+  say_fail "(9) Expected rc=0 + payload-wins; got rc=$RC9 + actual=${ACTUAL9}"
+fi
+
+# =============================================================================
+# (10) Dict-shape fallback (SP14 baseline preservation): if BOTH existing
+# and payload are objects at a declared UNION leaf, library falls through to
+# object recursive merge (no array coercion). Verifies SP14 tag-extension
+# tests still PASS unchanged.
+# =============================================================================
+echo "--- (10) Dict-shape fallback at declared UNION leaf ---"
+
+FIX10="$TEMPROOT/t7-dict-fallback"
+mkdir -p "$FIX10"
+OVERLAY10="$FIX10/overlay-master.json"
+LOG10="$FIX10/action-log.jsonl"
+PAYLOAD10="$FIX10/payload.json"
+
+# Existing dict-shape overlay (legacy /govern register tag-extension emit shape).
+cat > "$OVERLAY10" <<'JSON'
+{
+  "tagging": {
+    "taxonomy": {
+      "dimension_prefixes": {
+        "scope": ["client-a", "client-b"]
+      }
+    }
+  }
+}
+JSON
+: > "$LOG10"
+# Payload also dict-shape adds sibling entry.
+echo '{"taxonomy":{"dimension_prefixes":{"delivery":["spec","build"]}}}' > "$PAYLOAD10"
+
+OVERLAY_MASTER="$OVERLAY10" \
+ACTION_LOG="$LOG10" \
+SCHEMA="$SCHEMA_PATH" \
+CLAUDE_SESSION_ID="sp17a-t9-t7-dict" \
+  bash "$LIB" --pillar tagging --payload-file "$PAYLOAD10" \
+              --kind tag-extension --target delivery --proposed-by user-direct \
+  >/dev/null 2>"$FIX10/err.log"
+RC10=$?
+
+# Expectation: object recursive merge — both "scope" and "delivery" keys present.
+if [ "$RC10" -eq 0 ] && \
+   jq -e '.tagging.taxonomy.dimension_prefixes | has("scope") and has("delivery")' "$OVERLAY10" >/dev/null 2>&1; then
+  say_pass "(10) Dict-shape fallback preserves both keys (SP14 baseline)"
+else
+  say_fail "(10) Dict-shape fallback failed; rc=$RC10; overlay: $(cat "$OVERLAY10")"
+fi
+
+# =============================================================================
 echo
-echo "=== SP17a T-9 partial — extended unit-test results: ${PASS} PASS, ${FAIL} FAIL ==="
+echo "=== SP17a T-9 — extended unit-test results: ${PASS} PASS, ${FAIL} FAIL ==="
 
 if [ "$FAIL" -gt 0 ]; then
   exit 1
