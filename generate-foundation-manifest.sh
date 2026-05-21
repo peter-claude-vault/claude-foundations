@@ -3,9 +3,11 @@
 #
 # Walks SOURCE_REPO emitting a deterministic JSON manifest of every file
 # install.sh ships to $CLAUDE_HOME, with installed-relative paths, sha256,
-# octal mode, and byte size. Ships at foundation-repo top; install.sh
-# copies the generated artifact to $CLAUDE_HOME/foundation-manifest.json
-# at install time (Step 13.5).
+# octal mode, and byte size. Ships at foundation-repo `governance/`; install.sh
+# ships the artifact via Step 8.5 selective copy to
+# $CLAUDE_HOME/governance/foundation-manifest.json (SP18 T-3 MOVE — was loose at
+# root pre-SP18; relocated to live alongside foundation-master.json + overlay-master.json
+# per operator tidy-folder principle).
 #
 # Consumers (T-5 enables; T-1 + T-2 follow-up consume):
 #   - install.sh G2 — foreign-content detector (compares installed-tree
@@ -64,7 +66,8 @@
 #   .git/**, .github/**, docs/**, lima/**, docker/**, research/**, _doc-overhaul/**
 #   .gitignore, .image-digest, .self-verify/**
 #   install.sh, uninstall.sh, generate-foundation-manifest.sh
-#   foundation-manifest.json (chicken-and-egg: this file is the output)
+#   governance/foundation-manifest.json (chicken-and-egg: this file is the output;
+#     SP18 T-3 relocated from repo root)
 #
 # Usage:
 #   generate-foundation-manifest.sh [-o <output_path>] [--version <ver>]
@@ -176,13 +179,18 @@ emit_pairs() {
     done
   done
 
-  # schemas — 14 named .json + README.md (mirrors install.sh Step 9 list).
+  # schemas — named .json + README.md (mirrors install.sh Step 9 list).
   # SP13 P0 (2026-05-15) dropped vault-schema + gate-config + gate-config-schema
   # (dissolved per SP13 T-4 pillar shard / SP13 T-6 retirement scope).
   # SP14 Batch A (2026-05-18) dropped vault-overlay-schema; added 6 new schemas
   # (overlay-master, governance-action-log, vault-writers-rules, processing-rules,
   # plans-rules, writer-manifest) per A60-A65.
-  for s in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema overlay-master-schema governance-action-log-schema vault-writers-rules-schema processing-rules-schema plans-rules-schema writer-manifest-schema; do
+  # SP18 T-7 (2026-05-21) dropped 4 per-pillar schemas (doc-dependencies-schema,
+  # vault-writers-rules-schema, processing-rules-schema, plans-rules-schema) —
+  # per-pillar schemas stay foundation-repo authoring-side as reference; bundle-slot
+  # schema in foundation-master-schema.json is the canonical validation layer per
+  # operator decision. Symmetric to SP18 T-2 pillar JSON repo-only pattern.
+  for s in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema drift-allowlist-schema cron-log-architecture-exceptions-schema overlay-master-schema governance-action-log-schema writer-manifest-schema; do
     f="$SOURCE_REPO/schemas/$s.json"
     [ -f "$f" ] || continue
     printf 'schemas/%s.json\tschemas/%s.json\n' "$s" "$s"
@@ -218,17 +226,30 @@ emit_pairs() {
     done
   fi
 
-  # governance/** (recursive; SP15 T-1a NEW; install.sh Step 8.5)
-  # Captures v3 8-pillar substrate + file-type-contracts/ (11 contracts) +
-  # librarian-capabilities/ + onboarding-reference/ + overlay-master.json
-  # empty 8-pillar parallel skeleton + foundation-master.json bundle (T-4 regen).
-  # cp -R wholesale matches install.sh L787 ship posture; manifest captures
-  # whatever install.sh ships including .retired-* historical markers.
+  # governance/ — SELECTIVE walk mirroring install.sh Step 8.5 ship surface
+  # (SP18 T-2 + T-3). Pillars (7 *-rules.json + doc-dependencies.json source files),
+  # _index.json, and enforcement-map.schema.json.retired-* markers stay foundation-
+  # repo authoring-side (composed into foundation-master.json bundle at release
+  # time); they do NOT ship. governance/foundation-manifest.json itself is excluded
+  # (chicken-and-egg: this script generates it; SP18 T-3 relocated from repo root).
   d="$SOURCE_REPO/governance"
   if [ -d "$d" ]; then
-    LC_ALL=C find "$d" -type f 2>/dev/null | LC_ALL=C sort | while IFS= read -r f; do
-      rel="${f#$SOURCE_REPO/}"
-      printf '%s\t%s\n' "$rel" "$rel"
+    # Top-level files that ship via Step 8.5 selective copy
+    for base in foundation-master.json overlay-master.json foundation-manifest.json log-subtype-registry.json; do
+      [ -f "$d/$base" ] || continue
+      # Skip the manifest itself (chicken-and-egg; SP18 T-3)
+      [ "$base" = "foundation-manifest.json" ] && continue
+      printf 'governance/%s\tgovernance/%s\n' "$base" "$base"
+    done
+    # Recursive subdirs that ship per Step 8.5: file-type-contracts/,
+    # librarian-capabilities/, onboarding-reference/
+    for subdir in file-type-contracts librarian-capabilities onboarding-reference; do
+      if [ -d "$d/$subdir" ]; then
+        LC_ALL=C find "$d/$subdir" -type f 2>/dev/null | LC_ALL=C sort | while IFS= read -r f; do
+          rel="${f#$SOURCE_REPO/}"
+          printf '%s\t%s\n' "$rel" "$rel"
+        done
+      fi
     done
   fi
 

@@ -262,8 +262,8 @@ assert_path_exists "$T2_CH/templates/launchd/architect.plist.tmpl" \
   "T2.3: architect.plist.tmpl shipped under \$CLAUDE_HOME/templates/launchd/"
 assert_path_exists "$T2_CH/Library/LaunchAgents.staging" \
   "T2.4: \$CLAUDE_HOME/Library/LaunchAgents.staging dir created"
-assert_path_exists "$T2_CH/foundation-manifest.json" \
-  "T2.5: foundation-manifest.json baseline shipped (S62 wiring intact)"
+assert_path_exists "$T2_CH/governance/foundation-manifest.json" \
+  "T2.5: governance/foundation-manifest.json baseline shipped (S62 wiring intact; SP18 T-3 relocated)"
 
 T2_LA_AFTER=$(capture_la_baseline)
 assert_eq "$T2_LA_BEFORE" "$T2_LA_AFTER" \
@@ -392,8 +392,8 @@ T5_UNINSTALL_RC=$?
 assert_eq "0" "$T5_UNINSTALL_RC" "T5.2: uninstall.sh exits 0"
 
 # Sample a foundation file that should have been removed.
-assert_path_absent "$T5_CH/foundation-manifest.json" \
-  "T5.3: foundation-manifest.json removed by uninstall"
+assert_path_absent "$T5_CH/governance/foundation-manifest.json" \
+  "T5.3: governance/foundation-manifest.json removed by uninstall (SP18 T-3 chicken-and-egg special case)"
 
 # Sample a foundation directory member.
 assert_path_absent "$T5_CH/templates/launchd/librarian.plist.tmpl" \

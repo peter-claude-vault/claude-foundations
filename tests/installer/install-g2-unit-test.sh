@@ -23,7 +23,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 INSTALL_SH="$REPO_ROOT/install.sh"
-MANIFEST="$REPO_ROOT/foundation-manifest.json"
+MANIFEST="$REPO_ROOT/governance/foundation-manifest.json"
 
 # --- harness ---
 PASS=0

@@ -166,8 +166,12 @@ assert_path_exists "$CH/projects/$mem_slug/memory/MEMORY.md" \
 mem_h2_count="$(grep -c '^## ' "$CH/projects/$mem_slug/memory/MEMORY.md" 2>/dev/null || echo 0)"
 assert_eq "4" "$mem_h2_count" "T1.28: seeded MEMORY.md has 4 H2 section headers (User/Feedback/Project/Reference)"
 
-# Plan 81 SP01 S16: 4 hooks/config companion schemas land at $CLAUDE_HOME/schemas/
-for s in vault-overlay-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema; do
+# Plan 81 SP01 S16: hooks/config companion schemas land at $CLAUDE_HOME/schemas/
+# SP18 T-7 (2026-05-21): doc-dependencies-schema dropped from ship (per-pillar
+# schemas stay foundation-repo authoring-side as reference per operator decision;
+# Step 13.6 graceful-skips validation when schema absent). vault-overlay-schema
+# was already retired (SP14 Batch A) — pre-SP18 baseline failure.
+for s in drift-allowlist-schema cron-log-architecture-exceptions-schema; do
   assert_path_exists "$CH/schemas/$s.json" "T1.29: schemas/$s.json landed (Plan 81 SP01 S16)"
 done
 

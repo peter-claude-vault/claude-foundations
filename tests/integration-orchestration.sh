@@ -192,7 +192,7 @@ run_fixture_e2e() {
   assert_path_present "$CH/hooks/lib/paths.sh"           "${archetype} S1.1: hooks/lib/paths.sh installed"
   assert_path_present "$CH/installer/render-launchd.sh"  "${archetype} S1.2: installer/render-launchd.sh installed"
   assert_path_present "$CH/onboarding/initial-job-setup.sh" "${archetype} S1.3: onboarding/initial-job-setup.sh installed"
-  assert_path_present "$CH/foundation-manifest.json"     "${archetype} S1.4: foundation-manifest.json baseline shipped"
+  assert_path_present "$CH/governance/foundation-manifest.json"     "${archetype} S1.4: governance/foundation-manifest.json baseline shipped (SP18 T-3 relocated)"
 
   if [ "$rc" -ne 0 ]; then
     fail "${archetype}: install failed; aborting fixture"
@@ -447,9 +447,10 @@ run_fixture_e2e() {
     "onboarding/initial-job-setup.sh"; do
     assert_path_absent "$CH/$f" "${archetype} S9 (AC#5): foundation file removed: $f"
   done
-  # foundation-manifest.json removed by basename rm at uninstall root sweep
-  assert_path_absent "$CH/foundation-manifest.json" \
-    "${archetype} S9.1 (AC#5): foundation-manifest.json removed"
+  # governance/foundation-manifest.json removed by uninstall special-case
+  # (SP18 T-3: chicken-and-egg not in baseline; per-file walk special-cases removal)
+  assert_path_absent "$CH/governance/foundation-manifest.json" \
+    "${archetype} S9.1 (AC#5): governance/foundation-manifest.json removed"
 
   # No com.claude-stem.* plists left in fake LaunchAgents/staging
   for surface in "$staging_dir" "$agents_dir"; do

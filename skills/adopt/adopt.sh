@@ -181,14 +181,15 @@ fi
 
 # ---- state classification: user-only refusal --------------------------------
 #
-# Foundation install presence is the proxy: $CLAUDE_HOME/foundation-manifest.json
-# is shipped by install.sh (SP08 T-5 + T-1 cp -n step). Absent => state user-only
-# (foundation not installed cleanly). Refuse without --force-install.
+# Foundation install presence is the proxy: $CLAUDE_HOME/governance/foundation-manifest.json
+# is shipped by install.sh (SP08 T-5 + T-1 cp -n step; SP18 T-3 relocated from
+# $CLAUDE_HOME root to governance/). Absent => state user-only (foundation not
+# installed cleanly). Refuse without --force-install.
 
-FOUNDATION_MANIFEST="$CLAUDE_HOME/foundation-manifest.json"
+FOUNDATION_MANIFEST="$CLAUDE_HOME/governance/foundation-manifest.json"
 if [ ! -f "$FOUNDATION_MANIFEST" ]; then
   if [ "$FORCE_INSTALL" = "0" ]; then
-    log_err "state classification: user-only ($CLAUDE_HOME lacks foundation-manifest.json)."
+    log_err "state classification: user-only ($CLAUDE_HOME lacks governance/foundation-manifest.json)."
     log_err "Foundation install appears incomplete or absent. Re-run install.sh, OR"
     log_err "pass --force-install to scaffold the vault anyway."
     exit 21

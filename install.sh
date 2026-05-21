@@ -7,7 +7,7 @@
 #   - G1-main $HOME/.claude equality gate + I-UNDERSTAND-OVERWRITE-RISK
 #     sentinel + --force-install flag (AC #3)                    [S60]
 #   - G2 foreign-content detector — sha256 drift in foundation files  [S64]
-#     against $SOURCE_REPO/foundation-manifest.json baseline; refuse
+#     against $SOURCE_REPO/governance/foundation-manifest.json baseline; refuse
 #     install on drift unless --force-install + sentinel; sentinel
 #     reused from G1-main if both fire in same session.
 #   - G3 backup proof-of-life — --backup-dir writability + round-trip   [S65]
@@ -41,8 +41,9 @@
 #   - LABEL_PREFIX=com.claude-stem preserved via cp -R installer/ +
 #     templates/launchd/ (G6 namespace isolation, transitively)
 #   - settings.json atomic jq-merge with G7 silent-key-deletion gate
-#   - foundation-manifest.json baseline copy (T-5 generator output;       [S62]
-#     consumed by G2 detector + uninstall fingerprint match)
+#   - governance/foundation-manifest.json baseline copy (T-5 generator output; [S62]
+#     consumed by G2 detector + uninstall fingerprint match; SP18 T-3 relocated
+#     from repo root to governance/ to live alongside foundation-master.json)
 #
 # DEFERRED to subsequent T-1 follow-up sessions:
 #   - G6 install-side label sentinel (transitively preserved via cp -R
@@ -222,7 +223,7 @@ fi
 # Refuse if $CLAUDE_HOME == $HOME/.claude AND target exists with non-foundation
 # content, unless --force-install AND I-UNDERSTAND-OVERWRITE-RISK sentinel typed.
 # String comparison (not resolution) per R-55 carve-out.
-foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs governance vault-init settings.json settings.local.json foundation-manifest.json CLAUDE.md projects"
+foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs governance vault-init settings.json settings.local.json CLAUDE.md projects"
 
 g1_main_has_non_foundation_content() {
   local d="$1"
@@ -325,8 +326,8 @@ info "CLAUDE_STATE_ROOT=$CLAUDE_STATE_ROOT"
 
 # --- G2: foreign-content detector (S64; spec §Installer firewall guards) ---
 # Walks $CLAUDE_HOME for files inside foundation-known directories whose
-# relative path is tracked by $SOURCE_REPO/foundation-manifest.json baseline
-# but whose actual sha256 differs (drift). Files NOT in baseline (user
+# relative path is tracked by $SOURCE_REPO/governance/foundation-manifest.json
+# baseline but whose actual sha256 differs (drift). Files NOT in baseline (user
 # content under a foundation directory; hooks/state/ session files; etc.)
 # are not violations — cp -n preserves them naturally.
 #
@@ -336,17 +337,21 @@ info "CLAUDE_STATE_ROOT=$CLAUDE_STATE_ROOT"
 #
 # Skip conditions (G2 is a no-op):
 #   - $CLAUDE_HOME does not exist (fresh install, mkdir-p ahead)
-#   - $SOURCE_REPO/foundation-manifest.json absent (T-5 baseline not yet
-#     generated; warns; cannot compare without baseline)
+#   - $SOURCE_REPO/governance/foundation-manifest.json absent (T-5 baseline not
+#     yet generated; warns; cannot compare without baseline)
 #   - jq extraction failure (warns; degrade-open rather than wedge install)
+#
+# SP18 T-3 (2026-05-21): manifest relocated from $SOURCE_REPO root to
+# $SOURCE_REPO/governance/ per operator tidy-folder principle (live next to
+# foundation-master.json + overlay-master.json).
 g2_violations=""
 g2_violation_count=0
 
 g2_detect_foreign_content() {
-  local manifest_src="$SOURCE_REPO/foundation-manifest.json"
+  local manifest_src="$SOURCE_REPO/governance/foundation-manifest.json"
 
   if [ ! -f "$manifest_src" ]; then
-    info "G2: foundation-manifest.json absent at SOURCE_REPO; foreign-content detection skipped"
+    info "G2: governance/foundation-manifest.json absent at SOURCE_REPO; foreign-content detection skipped"
     return 0
   fi
   if [ ! -d "$CLAUDE_HOME" ]; then
@@ -359,7 +364,7 @@ g2_detect_foreign_content() {
     return 0
   }
   if ! jq -r '.files[] | "\(.path)\t\(.sha256)"' "$manifest_src" > "$baseline_tmp" 2>/dev/null; then
-    warn "G2: foundation-manifest.json files[] extraction failed; foreign-content detection skipped"
+    warn "G2: governance/foundation-manifest.json files[] extraction failed; foreign-content detection skipped"
     rm -f "$baseline_tmp"
     return 0
   fi
@@ -579,16 +584,16 @@ if [ "$APPLY_MODE" != "1" ]; then
     {"step": 6, "op": "cp", "target": "$CLAUDE_HOME/onboarding/", "source": "$SOURCE_REPO/onboarding/", "rationale": "ship onboarding subtree"},
     {"step": 7, "op": "cp", "target": "$CLAUDE_HOME/orchestrator/", "source": "$SOURCE_REPO/orchestrator/", "rationale": "ship orchestrator subtree"},
     {"step": 8, "op": "cp", "target": "$CLAUDE_HOME/installer/", "source": "$SOURCE_REPO/installer/", "rationale": "ship installer subtree (G6 LABEL_PREFIX preserved transitively)"},
-    {"step": 8.5, "op": "cp", "target": "$CLAUDE_HOME/governance/", "source": "$SOURCE_REPO/governance/", "rationale": "ship v3 governance subtree (SP15 T-1a NEW): 8 pillars + librarian-capabilities/ + file-type-contracts/ + onboarding-reference/ + overlay-master.json empty 8-pillar parallel skeleton (SP15 T-1f §A54 + §A32 + §H — sibling pattern to plans-rules.json + vault-writers-rules.json; cp -n preserves adopter mutations after first /govern register). foundation-master.json regen at T-4 lands on top."},
-    {"step": 8.7, "op": "cp", "target": "$CLAUDE_HOME/vault-init/", "source": "$SOURCE_REPO/vault-init/", "rationale": "ship v3 vault-init/ subtree (SP15 T-1e): foundation-canonical adopter-vault seed tree mirroring target shape per §A53 L-86 (System Governance/ + Vault Writers/ + file-type-contracts/ + Logs/Archive/ + Logs/backlog-progress/_template.md + Meetings/). Source-tree organization mirrors TARGET adopter vault tree EXACTLY; foundation authors edit vault-init/ in target shape; install/adopt copies wholesale. sha256-protected via foundation-manifest.json (T-3 regen captures entries after T-1e ships files). Content arrives via T-5/T-6a/T-6b/T-6c; T-1e ships whatever subtree exists. Renamed from v2 vault-scaffolding/ per Session 7 L-86. System Backlog.md + Archive carryover pending §A53 relocation to ~/.claude-plans/_backlog.md + _archive.md (deferred follow-up; targets undelivered)."},
-    {"step": 9, "op": "cp", "target": "$CLAUDE_HOME/schemas/", "source": "$SOURCE_REPO/schemas/{14 named}.json", "rationale": "ship 14 named schemas + README (SP15 T-1a adds 6 SP14 schemas: overlay-master + governance-action-log + vault-writers-rules + processing-rules + plans-rules + writer-manifest; SP15 T-1a also retires vault-overlay-schema reference per SP14 Batch A schema deletion)"},
+    {"step": 8.5, "op": "cp", "target": "$CLAUDE_HOME/governance/", "source": "$SOURCE_REPO/governance/ (selective)", "rationale": "SP18 T-2 + T-3 selective copy: bundle (foundation-master.json) + overlay (overlay-master.json) + manifest (foundation-manifest.json; SP18 T-3 relocated from repo root) + log-subtype-registry.json + file-type-contracts/ + librarian-capabilities/ + onboarding-reference/. 7 pillar source JSONs + _index.json + retired markers stay foundation-repo authoring-side per operator-locked decision (composed into bundle at release time via tools/build-foundation-master.sh)."},
+    {"step": 8.7, "op": "cp", "target": "$CLAUDE_HOME/vault-init/", "source": "$SOURCE_REPO/vault-init/", "rationale": "ship v3 vault-init/ subtree (SP15 T-1e): foundation-canonical adopter-vault seed tree mirroring target shape per §A53 L-86 (System Governance/ + Vault Writers/ + file-type-contracts/ + Logs/Archive/ + Logs/backlog-progress/_template.md + Meetings/). Source-tree organization mirrors TARGET adopter vault tree EXACTLY; foundation authors edit vault-init/ in target shape; install/adopt copies wholesale. sha256-protected via governance/foundation-manifest.json (T-3 regen captures entries after T-1e ships files; SP18 T-3 relocated manifest from repo root to governance/). Content arrives via T-5/T-6a/T-6b/T-6c; T-1e ships whatever subtree exists. Renamed from v2 vault-scaffolding/ per Session 7 L-86. System Backlog.md + Archive carryover pending §A53 relocation to ~/.claude-plans/_backlog.md + _archive.md (deferred follow-up; targets undelivered)."},
+    {"step": 9, "op": "cp", "target": "$CLAUDE_HOME/schemas/", "source": "$SOURCE_REPO/schemas/{10 named}.json", "rationale": "ship 10 named schemas + README (SP18 T-7 drops 4 per-pillar schemas: doc-dependencies-schema + vault-writers-rules-schema + processing-rules-schema + plans-rules-schema; per-pillar schemas stay foundation-repo authoring-side as reference per operator decision, symmetric to SP18 T-2 pillar JSON pattern)"},
     {"step": 10, "op": "cp", "target": "$CLAUDE_HOME/templates/", "source": "$SOURCE_REPO/templates/{settings,librarian-manifest-skeleton,README,vault-claude-md,claude-home-claude-md,MEMORY,updates,prd,connector-brief,context}+{launchd,settings-fragments}/", "rationale": "ship templates + launchd tmpl + settings-fragments (SP15 T-1a adds updates/prd/connector-brief/context shape templates)"},
     {"step": 11, "op": "cp", "target": "$CLAUDE_HOME/plugins/claude-mem/", "source": "$SOURCE_REPO/plugins/claude-mem/v*/", "rationale": "ship claude-mem bundle if present (T-1.5 deferred; absence informational)"},
     {"step": 11.5, "op": "seed", "target": "$CLAUDE_HOME/CLAUDE.md", "source": "$CLAUDE_HOME/templates/claude-home-claude-md-template.md", "rationale": "seed claude-home CLAUDE.md with identity substitution from user-manifest.json (no clobber without --force-install + sentinel; SP10 T-4)"},
     {"step": 12, "op": "jq-merge", "target": "$CLAUDE_HOME/settings.json", "source": "$CLAUDE_HOME/templates/settings.json", "rationale": "atomic deep-merge with G7 silent-key-deletion gate (SP15 T-1d: template adds AskUserQuestion matcher entry; re-install propagation handled at Step 12.6)"},
     {"step": 12.6, "op": "jq-register", "target": "$CLAUDE_HOME/settings.json", "rationale": "idempotent post-merge registration of AskUserQuestion matcher → pre-asq-guard.sh (SP15 T-1d §A46 + §A50). Step 12.5 precedent for the same problem class: jq deep-merge (template * user) lets user PreToolUse array win on array conflicts; re-installs against an adopter without the matcher would silently drop it. Detects absence + appends; presence is a no-op (idempotent)."},
     {"step": 13, "op": "validate", "target": "$CLAUDE_HOME/schemas/*.json", "rationale": "post-install schema parse validation"},
-    {"step": 14, "op": "cp", "target": "$CLAUDE_HOME/foundation-manifest.json", "source": "$SOURCE_REPO/foundation-manifest.json", "rationale": "ship T-5 baseline (slice tolerates absence with warn)"},
+    {"step": 13.5, "op": "validate", "target": "$CLAUDE_HOME/governance/foundation-manifest.json", "rationale": "parse-validate baseline post-Step-8.5-copy (load-bearing for G2 + uninstall fingerprint match); SP18 T-3 relocated from repo root to governance/"},
     {"step": 15, "op": "log", "target": "$CLAUDE_HOME/logs/install-*.log", "rationale": "G10 provenance log header emit"}
   ],
   "deferred": ["G6-install-side-explicit-sentinel", "20-conflict-manifest-v2.1", "22-rsync-backup-v2.1", "60-grep-audit-consumer-v2.1"]
@@ -793,7 +798,10 @@ fi
 #  - _index.json — pillar registry + cross-cutting meta-rules (author convenience)
 #  - enforcement-map.schema.json.retired-* — retired-artifact markers
 #
-# foundation-manifest.json at $SOURCE_REPO root ships separately via Step 14.
+# SP18 T-3: foundation-manifest.json relocated from $SOURCE_REPO root to
+# $SOURCE_REPO/governance/; ships here via this selective copy (lives next to
+# foundation-master.json + overlay-master.json per operator tidy-folder principle).
+# Step 13.5 parse-validates post-copy (load-bearing for G2 + uninstall fingerprint).
 # governance-action-log.jsonl is bootstrapped at $VAULT_WRITER_STATE_ROOT via
 # Step 1.6 (not a governance/ tree concern).
 if [ -d "$SOURCE_REPO/governance" ]; then
@@ -801,6 +809,9 @@ if [ -d "$SOURCE_REPO/governance" ]; then
   cp $cp_clobber "$SOURCE_REPO/governance/foundation-master.json" "$CLAUDE_HOME/governance/" 2>/dev/null || true
   # Adopter overlay skeleton (mutation target for /govern register)
   cp $cp_clobber "$SOURCE_REPO/governance/overlay-master.json" "$CLAUDE_HOME/governance/" 2>/dev/null || true
+  # Foundation-manifest sha256 baseline (SP18 T-3 relocated from repo root;
+  # consumed by G2 foreign-content detector + uninstall.sh fingerprint match)
+  cp $cp_clobber "$SOURCE_REPO/governance/foundation-manifest.json" "$CLAUDE_HOME/governance/" 2>/dev/null || true
   # R-05 system-utility canonicality registry
   cp $cp_clobber "$SOURCE_REPO/governance/log-subtype-registry.json" "$CLAUDE_HOME/governance/" 2>/dev/null || true
   # File-type contracts subdir (k8s paramKind shape)
@@ -828,7 +839,7 @@ fi
 # vault-init/ in target shape; install/adopt copies wholesale; what you see in
 # vault-init/ is what the adopter gets. cp_clobber posture matches the rest of
 # the foundation-known tree (cp -n default; --force-all → cp -f). sha256-protected
-# via foundation-manifest.json (T-3 regen captures baselines after T-1e ships the
+# via governance/foundation-manifest.json (T-3 regen captures baselines after T-1e ships the
 # files). Renamed from v2 vault-scaffolding/ per Session 7 L-86; subdir scaffolds
 # (System Governance/ + Vault Writers/ + file-type-contracts/ + Logs/Archive/ +
 # Meetings/) ship as empty dirs with .gitkeep until T-5/T-6a/T-6b/T-6c land
@@ -839,17 +850,24 @@ if [ -d "$SOURCE_REPO/vault-init" ]; then
   cp -R $cp_clobber "$SOURCE_REPO/vault-init"/. "$CLAUDE_HOME/vault-init/" 2>/dev/null || true
 fi
 
-# Step 9: schemas/ — 14 named files. SP13 P0 (2026-05-15) dropped vault-schema +
+# Step 9: schemas/ — selective named-list. SP13 P0 (2026-05-15) dropped vault-schema +
 # gate-config + gate-config-schema (dissolved per SP13 T-4 pillar shard / SP13
 # T-6 retirement). SP14 Batch A (2026-05-18) additionally retired
 # vault-overlay-schema.json; companion config hooks/config/vault-overlay.json
 # now ships unvalidated until a replacement pillar shard supersedes it.
-# Remaining hooks/config/*.json companion schemas (doc-dependencies,
-# drift-allowlist, cron-log-architecture-exceptions) consumed by Step 13.6
-# jsonschema validation below. SP15 T-1a adds 6 new schemas (overlay-master,
-# governance-action-log, vault-writers-rules, processing-rules, plans-rules,
-# writer-manifest) per A60-A65.
-for schema in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema doc-dependencies-schema drift-allowlist-schema cron-log-architecture-exceptions-schema overlay-master-schema governance-action-log-schema vault-writers-rules-schema processing-rules-schema plans-rules-schema writer-manifest-schema; do
+# Remaining hooks/config/*.json companion schemas (drift-allowlist,
+# cron-log-architecture-exceptions) consumed by Step 13.6 jsonschema validation
+# below. SP15 T-1a adds 6 new schemas (overlay-master, governance-action-log,
+# vault-writers-rules, processing-rules, plans-rules, writer-manifest) per A60-A65.
+#
+# SP18 T-7 (2026-05-21): 4 per-pillar schemas DROPPED from ship surface per
+# operator decision — doc-dependencies-schema, vault-writers-rules-schema,
+# processing-rules-schema, plans-rules-schema. Per-pillar schemas stay
+# foundation-repo authoring-side as reference; bundle-slot schema in
+# foundation-master-schema.json is the canonical runtime validation layer.
+# Symmetric to SP18 T-2 pillar JSON repo-only pattern (pillars compose into
+# the bundle at release time; bundle ships, pillars don't).
+for schema in plans-schema plan-manifest-schema librarian-manifest-schema user-manifest-schema orchestration-schema drift-allowlist-schema cron-log-architecture-exceptions-schema overlay-master-schema governance-action-log-schema writer-manifest-schema; do
   src="$SOURCE_REPO/schemas/$schema.json"
   if [ ! -f "$src" ]; then
     diag "schema missing in source: $schema.json"
@@ -1189,26 +1207,28 @@ else
   warn "python3 jsonschema module not available; install-time config-vs-schema validation skipped (pip3 install jsonschema to enable). Configs were JSON-syntax-validated by Step 13."
 fi
 
-# Step 13.5: ship foundation-manifest.json baseline (T-5 / S62)
+# Step 13.5: parse-validate foundation-manifest.json baseline (T-5 / S62)
 # Generator is at $SOURCE_REPO/generate-foundation-manifest.sh; output is
-# committed at $SOURCE_REPO/foundation-manifest.json at release-cut time.
-# install.sh ships the static artifact (cp -n; never clobber user variant).
-# Consumed by uninstall.sh fingerprint match + future G2 foreign-content
-# detector (deferred to T-1 follow-up). Absence is non-fatal during the
-# slice window (warns only) so install on a partial-bootstrap foundation-repo
-# remains usable; T-5 baseline ships before v2.0.0-rc1 release-cut.
-manifest_src="$SOURCE_REPO/foundation-manifest.json"
-manifest_dst="$CLAUDE_HOME/foundation-manifest.json"
+# committed at $SOURCE_REPO/governance/foundation-manifest.json at release-cut time
+# (SP18 T-3 relocated from repo root). install.sh ships the static artifact via
+# Step 8.5 selective copy (cp -n; never clobber user variant); this step now
+# parse-validates the post-copy artifact only — duplicate cp retained as
+# defensive recovery path (cp_clobber no-op when Step 8.5 succeeded).
+# Consumed by uninstall.sh fingerprint match + G2 foreign-content detector.
+# Absence is non-fatal (warns only) so install on a partial-bootstrap
+# foundation-repo remains usable.
+manifest_src="$SOURCE_REPO/governance/foundation-manifest.json"
+manifest_dst="$CLAUDE_HOME/governance/foundation-manifest.json"
 if [ -f "$manifest_src" ]; then
   cp $cp_clobber "$manifest_src" "$manifest_dst" 2>/dev/null || true
   if [ -f "$manifest_dst" ]; then
     if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$manifest_dst" 2>/dev/null; then
-      diag "foundation-manifest.json parse failure post-copy: $manifest_dst"
+      diag "governance/foundation-manifest.json parse failure post-copy: $manifest_dst"
       exit 30
     fi
   fi
 else
-  warn "foundation-manifest.json not present at SOURCE_REPO root (T-5 baseline absent; G2 + fingerprint match unavailable until generated)"
+  warn "governance/foundation-manifest.json not present at SOURCE_REPO (T-5 baseline absent; G2 + fingerprint match unavailable until generated)"
 fi
 
 # Step 14: provenance log header (G10 — write failure exits 11; AC #6 G10 live as of S65)
@@ -1258,7 +1278,7 @@ log_path="$CLAUDE_HOME/logs/install-$(date -u +%Y%m%d-%H%M%S)-$$.log"
     done
   fi
   printf 'g8_uid: %s\n' "$g8_uid"
-  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + G2 foreign-content detector + I-UNDERSTAND-OVERWRITE-RISK sentinel (single-ceremony G1+G2) + G3 backup proof-of-life + G4 vault-symlink check + G5 plans-dir guard + G8 UID-0 refuse + G9 dry-run-as-default (--apply transitions out) + state classification (fresh|foundation-only|mixed|user-only; user-only refuse at 21) + --force-all flag (cp -n→cp -f for foundation files) + --no-preserve-config flag (gated on --force-install) + G10 provenance-write-failure-as-11 + foundation-manifest.json baseline copy (T-5)\n'
+  printf 'slice_scope: 14-asset write-sequence + LABEL_PREFIX preservation + settings.json atomic merge + G1-pre + G1-main equality gate + G2 foreign-content detector + I-UNDERSTAND-OVERWRITE-RISK sentinel (single-ceremony G1+G2) + G3 backup proof-of-life + G4 vault-symlink check + G5 plans-dir guard + G8 UID-0 refuse + G9 dry-run-as-default (--apply transitions out) + state classification (fresh|foundation-only|mixed|user-only; user-only refuse at 21) + --force-all flag (cp -n→cp -f for foundation files) + --no-preserve-config flag (gated on --force-install) + G10 provenance-write-failure-as-11 + governance/foundation-manifest.json baseline copy (T-5; SP18 T-3 relocated)\n'
   printf 'deferred: G6 install-side explicit label sentinel (transitively preserved); claude-mem preservation full implementation (T-1.5 bundle); top-level exit codes 20 (conflict-manifest v2.1) / 22 (rsync-backup v2.1) / 60 (grep-audit consumer v2.1)\n'
 } > "$log_path" || { diag "G10: provenance log write failed at $log_path"; exit 11; }
 

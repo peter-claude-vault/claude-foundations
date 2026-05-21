@@ -29,14 +29,14 @@ User-facing entry for `/adopt`. Wraps `skills/adopt/adopt.sh` (fresh-vault scaff
 ## Prerequisites
 
 1. **Manifest present.** `$CLAUDE_HOME/user-manifest.json` exists and contains at least `identity.name`, `vault.root`, and `vault.is_fresh = true`.
-2. **Foundation install evidence.** `$CLAUDE_HOME/foundation-manifest.json` exists. If absent, `/adopt` refuses with exit 21 unless `--force-install` is passed.
+2. **Foundation install evidence.** `$CLAUDE_HOME/governance/foundation-manifest.json` exists (SP18 T-3 relocated from `$CLAUDE_HOME` root). If absent, `/adopt` refuses with exit 21 unless `--force-install` is passed.
 3. **`$PLANS_HOME` resolvable.** Defaults to `$HOME/.claude-plans` if the env var is unset. Created idempotently if absent.
 4. **`jq` on `$PATH`.** A foundation-install dependency.
 
 ## Fresh-vault flow
 
 1. **Refusal gate.** Read the manifest. `vault.is_fresh != true` → exit 20. Strict comparison; null / false / missing all refuse.
-2. **State gate.** No `foundation-manifest.json` → exit 21 unless `--force-install`.
+2. **State gate.** No `governance/foundation-manifest.json` → exit 21 unless `--force-install`.
 3. **Retrofit gate.** `--retrofit-existing` → exit 22 with the deferral message and manual-copy workaround.
 4. **Path resolution.** Expand `~/` in `vault.root`. Resolve `$PLANS_HOME` via env or `$HOME/.claude-plans` fallback.
 5. **Directory scaffold** (`mkdir -p`, idempotent):
@@ -147,7 +147,7 @@ For every vault scaffolding write, in order:
 1. **`CLAUDE_HOME` presence.** Exit 10 if unset, empty, or non-existent.
 2. **Manifest validity.** Exit 10 if missing or `jq -e .` fails.
 3. **`vault.is_fresh` assertion.** Exit 20 if not literal `true`.
-4. **State classification.** Exit 21 if `foundation-manifest.json` is absent and `--force-install` not passed.
+4. **State classification.** Exit 21 if `governance/foundation-manifest.json` is absent and `--force-install` not passed.
 5. **Retrofit gate.** In retrofit mode, this gate is what selects `retrofit.sh`; in fresh mode, presence of `--retrofit-existing` exits 22.
 6. **`vault.root` non-empty.** Exit 30 if empty or null.
 7. **Template locatable.** Exit 40 if `vault-claude-md-template.md` is not at `$CLAUDE_HOME/templates/` or the foundation-repo source path.
@@ -181,7 +181,7 @@ Re-running `/adopt` on an already-scaffolded vault is a no-op modulo the post-wr
 | 0 | Success (or dry-run plan emit; or no-op idempotent re-run). |
 | 10 | `CLAUDE_HOME` unset / manifest missing or invalid. |
 | 20 | `vault.is_fresh != true`. Use `--retrofit-existing` for an existing vault. |
-| 21 | `foundation-manifest.json` absent. Pass `--force-install` to override. |
+| 21 | `governance/foundation-manifest.json` absent. Pass `--force-install` to override. |
 | 22 | `--retrofit-existing` with this build's deferral active. |
 | 30 | `vault.root` empty or null. |
 | 40 | Template missing or atomic rename failed. |

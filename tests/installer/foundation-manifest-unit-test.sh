@@ -27,7 +27,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 GENERATOR="$REPO_ROOT/generate-foundation-manifest.sh"
 INSTALL_SH="$REPO_ROOT/install.sh"
 UNINSTALL_SH="$REPO_ROOT/uninstall.sh"
-COMMITTED_MANIFEST="$REPO_ROOT/foundation-manifest.json"
+COMMITTED_MANIFEST="$REPO_ROOT/governance/foundation-manifest.json"
 
 # --- harness ---
 PASS=0
@@ -222,20 +222,21 @@ t3_raw_lib="$(jq '[.files[] | select(.path | startswith("lib/"))] | length' "$T1
 assert_eq "0" "$t3_raw_lib" "T3.8: no raw lib/ paths in installed-relative output"
 
 # =====================================================================
-# T4 — install.sh ships baseline → $CLAUDE_HOME/foundation-manifest.json
+# T4 — install.sh ships baseline → $CLAUDE_HOME/governance/foundation-manifest.json
 #       with byte-identical content (no install-side mutation)
+#       SP18 T-3 relocated manifest from $CLAUDE_HOME root to governance/.
 # =====================================================================
 printf 'T4: install.sh ships baseline byte-identical to SOURCE_REPO copy\n'
 
 CH="$(mk_tmp)"
 rc=0
 HOME="$CH" CLAUDE_HOME="$CH" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" --apply >"$CH/.stdout" 2>"$CH/.stderr" || rc=$?
-assert_eq "0" "$rc" "T4.1: install.sh exits 0 with manifest at SOURCE_REPO root"
-assert_path_exists "$CH/foundation-manifest.json" "T4.2: foundation-manifest.json shipped to \$CLAUDE_HOME"
+assert_eq "0" "$rc" "T4.1: install.sh exits 0 with manifest at SOURCE_REPO governance/"
+assert_path_exists "$CH/governance/foundation-manifest.json" "T4.2: governance/foundation-manifest.json shipped to \$CLAUDE_HOME"
 
 # Round-trip: $CLAUDE_HOME copy must be byte-identical to $SOURCE_REPO copy
 src_sha="$(shasum -a 256 "$COMMITTED_MANIFEST" | awk '{print $1}')"
-dst_sha="$(shasum -a 256 "$CH/foundation-manifest.json" | awk '{print $1}')"
+dst_sha="$(shasum -a 256 "$CH/governance/foundation-manifest.json" | awk '{print $1}')"
 assert_eq "$src_sha" "$dst_sha" "T4.3: shipped manifest sha256 matches SOURCE_REPO copy (no mutation)"
 
 # Provenance log records the foundation_manifest_sha256
@@ -243,14 +244,15 @@ prov_log="$(ls "$CH/logs"/install-*.log 2>/dev/null | head -1)"
 assert_grep "foundation_manifest_sha256:" "$prov_log" "T4.4: provenance log records foundation_manifest_sha256"
 assert_grep "$src_sha" "$prov_log"                    "T4.5: provenance log sha256 matches shipped baseline"
 
-# slice_scope reflects T-5 baseline ship
-assert_grep "foundation-manifest.json baseline copy" "$prov_log" "T4.6: slice_scope mentions T-5 baseline copy"
+# slice_scope reflects T-5 baseline ship (post-SP18 T-3 path update)
+assert_grep "governance/foundation-manifest.json baseline copy" "$prov_log" "T4.6: slice_scope mentions T-5 baseline copy at governance/"
 
 # =====================================================================
 # T5 — install→uninstall round-trip: manifest removed by uninstall as
-#       foundation provenance (allowlist symmetry)
+#       foundation provenance (allowlist symmetry; SP18 T-3 special-case
+#       handling for chicken-and-egg-not-in-baseline file)
 # =====================================================================
-printf 'T5: uninstall removes foundation-manifest.json as foundation provenance\n'
+printf 'T5: uninstall removes governance/foundation-manifest.json as foundation provenance\n'
 
 # Build mock launchctl that returns no labels (clean uninstall path)
 MOCK_DIR="$(mk_tmp)"
@@ -269,21 +271,21 @@ rc=0
 CLAUDE_HOME="$CH" LAUNCHCTL_BIN="$MOCK_LC" bash "$UNINSTALL_SH" >"$CH/.uninstall.stdout" 2>"$CH/.uninstall.stderr" || rc=$?
 assert_eq "0" "$rc" "T5.1: uninstall.sh exits 0"
 
-if [ -e "$CH/foundation-manifest.json" ]; then
-  printf '  FAIL T5.2: foundation-manifest.json not removed by uninstall\n' >&2
+if [ -e "$CH/governance/foundation-manifest.json" ]; then
+  printf '  FAIL T5.2: governance/foundation-manifest.json not removed by uninstall\n' >&2
   FAIL=$((FAIL+1))
 else
-  printf '  PASS T5.2: foundation-manifest.json removed (allowlist symmetric)\n'
+  printf '  PASS T5.2: governance/foundation-manifest.json removed (chicken-and-egg special case)\n'
   PASS=$((PASS+1))
 fi
 
 # But the .pre-uninstall-* backup retains the manifest (forensics)
-backup_manifest="$(ls "$CH"/.pre-uninstall-*/foundation-manifest.json 2>/dev/null | head -1)"
+backup_manifest="$(ls "$CH"/.pre-uninstall-*/governance/foundation-manifest.json 2>/dev/null | head -1)"
 if [ -n "$backup_manifest" ] && [ -f "$backup_manifest" ]; then
-  printf '  PASS T5.3: foundation-manifest.json preserved in backup dir\n'
+  printf '  PASS T5.3: governance/foundation-manifest.json preserved in backup dir\n'
   PASS=$((PASS+1))
 else
-  printf '  FAIL T5.3: foundation-manifest.json missing from backup dir\n' >&2
+  printf '  FAIL T5.3: governance/foundation-manifest.json missing from backup dir\n' >&2
   FAIL=$((FAIL+1))
 fi
 

@@ -452,9 +452,10 @@ prov10="$(ls "$CH10/logs"/uninstall-*.log 2>/dev/null | head -1)"
 assert_grep "force_rm_edited: 1"               "$prov10" "T10.4: provenance records flag"
 
 # =====================================================================
-# T11 — S63 missing foundation-manifest.json (default) → exit 10
+# T11 — S63 missing governance/foundation-manifest.json (default) → exit 10
+#       SP18 T-3 relocated manifest from $CLAUDE_HOME root to governance/.
 # =====================================================================
-printf 'T11: missing foundation-manifest.json (default) → exit 10\n'
+printf 'T11: missing governance/foundation-manifest.json (default) → exit 10\n'
 
 CH11="$(mk_tmp)"
 MOCK_DIR11="$(mk_tmp)"
@@ -464,14 +465,14 @@ HOME="$CH11" CLAUDE_HOME="$CH11" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
   --apply >"$CH11/.install-stdout" 2>"$CH11/.install-stderr" || true
 
 # Remove the manifest after install to simulate slice-tolerant install scenario
-rm -f "$CH11/foundation-manifest.json"
+rm -f "$CH11/governance/foundation-manifest.json"
 
 rc=0
 CLAUDE_HOME="$CH11" LAUNCHCTL_BIN="$MOCK_DIR11/mock-launchctl" \
   bash "$UNINSTALL_SH" >"$CH11/.uninstall-stdout" 2>"$CH11/.uninstall-stderr" || rc=$?
 
 assert_eq "10" "$rc" "T11.1: missing manifest → exit 10"
-assert_grep "foundation-manifest.json missing" "$CH11/.uninstall-stderr" "T11.2: missing-manifest diagnostic"
+assert_grep "governance/foundation-manifest.json missing" "$CH11/.uninstall-stderr" "T11.2: missing-manifest diagnostic"
 assert_path_exists "$CH11/hooks/pre-write-guard.sh" "T11.3: foundation files retained on refusal"
 
 # =====================================================================
@@ -490,7 +491,7 @@ HOME="$CH12" CLAUDE_HOME="$CH12" SOURCE_REPO="$REPO_ROOT" bash "$INSTALL_SH" \
 mkdir -p "$CH12/my-user-project"
 echo "user data" > "$CH12/my-user-project/notes.md"
 
-rm -f "$CH12/foundation-manifest.json"
+rm -f "$CH12/governance/foundation-manifest.json"
 
 rc=0
 CLAUDE_HOME="$CH12" LAUNCHCTL_BIN="$MOCK_DIR12/mock-launchctl" \

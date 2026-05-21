@@ -152,28 +152,31 @@ fi
 
 # --- foundation-known basename allowlist (mirror of install.sh L87) ---
 # Source: install.sh foundation_known_entries. Symmetric with G1-main heuristic.
-# Includes foundation-manifest.json (T-5 baseline; install.sh Step 13.5).
-foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs settings.json settings.local.json foundation-manifest.json"
+# SP18 T-3 (2026-05-21): foundation-manifest.json relocated from $CLAUDE_HOME
+# root to $CLAUDE_HOME/governance/foundation-manifest.json; it's now swept by
+# the governance/ entry in this allowlist (no longer a root basename).
+foundation_known_entries="hooks skills schemas onboarding orchestrator templates plugins Library installer logs governance vault-init settings.json settings.local.json"
 
 info "CLAUDE_HOME=$CLAUDE_HOME"
 info "LAUNCHCTL_BIN=$LAUNCHCTL_BIN"
 
 # --- foundation-manifest.json read + per-file fingerprint baseline (S63) ---
-# Reads $CLAUDE_HOME/foundation-manifest.json (T-5 baseline shipped at install
-# Step 13.5). Extracts {path, sha256} pairs to a tmp tab-separated file for
-# path-keyed awk lookup (bash 3.2 lacks associative arrays).
+# Reads $CLAUDE_HOME/governance/foundation-manifest.json (T-5 baseline shipped
+# at install Step 8.5; SP18 T-3 relocated from $CLAUDE_HOME root). Extracts
+# {path, sha256} pairs to a tmp tab-separated file for path-keyed awk lookup
+# (bash 3.2 lacks associative arrays).
 #
 # Default: missing manifest → exit 10 (refuse uninstall; safety property).
 # --force-remove: missing manifest → fingerprint_check_skipped=1; falls back
 # to basename-allowlist rm of foundation directories.
-manifest_path="$CLAUDE_HOME/foundation-manifest.json"
+manifest_path="$CLAUDE_HOME/governance/foundation-manifest.json"
 fingerprint_check_skipped=0
 manifest_records_tmp=""
 manifest_record_count=0
 
 if [ -f "$manifest_path" ]; then
   if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$manifest_path" 2>/dev/null; then
-    diag "foundation-manifest.json parse failure at $manifest_path"
+    diag "governance/foundation-manifest.json parse failure at $manifest_path"
     exit 10
   fi
   manifest_records_tmp="$(mktemp -t uninstall-manifest.XXXXXX 2>/dev/null)" || {
@@ -181,7 +184,7 @@ if [ -f "$manifest_path" ]; then
     exit 11
   }
   if ! jq -r '.files[] | "\(.path)\t\(.sha256)"' "$manifest_path" > "$manifest_records_tmp" 2>/dev/null; then
-    diag "foundation-manifest.json files[] extraction failed"
+    diag "governance/foundation-manifest.json files[] extraction failed"
     rm -f "$manifest_records_tmp"
     exit 10
   fi
@@ -189,10 +192,10 @@ if [ -f "$manifest_path" ]; then
   info "fingerprint baseline loaded: $manifest_record_count records"
 else
   if [ "$FORCE_REMOVE" = "1" ]; then
-    warn "foundation-manifest.json absent at $manifest_path — --force-remove set; falling back to basename-allowlist rm"
+    warn "governance/foundation-manifest.json absent at $manifest_path — --force-remove set; falling back to basename-allowlist rm"
     fingerprint_check_skipped=1
   else
-    diag "foundation-manifest.json missing at $manifest_path — refusing uninstall (use --force-remove to fall back to basename-allowlist)"
+    diag "governance/foundation-manifest.json missing at $manifest_path — refusing uninstall (use --force-remove to fall back to basename-allowlist)"
     exit 10
   fi
 fi
@@ -316,9 +319,12 @@ info "plist cleanup: $plist_rm_count foundation plist(s) removed from $LA_DIR"
 #   - logs/                    → preserve entirely (uninstall provenance lands here)
 #   - non-foundation entries   → preserve (basename not in foundation_known_entries)
 #   - foundation root files    → rm by basename (manifest does NOT track
-#                                 settings.json / settings.local.json /
-#                                 foundation-manifest.json; reverse-merge is
-#                                 deferred per CFF-S61-3)
+#                                 settings.json / settings.local.json;
+#                                 reverse-merge is deferred per CFF-S61-3)
+#   - governance/foundation-manifest.json → SPECIAL CASE rm during per-file
+#                                 walk (SP18 T-3 chicken-and-egg: the manifest
+#                                 doesn't track its own sha256; relocated from
+#                                 root to governance/ at SP18 T-3)
 #   - foundation directories   → per-file walk:
 #         baseline match    → rm
 #         baseline mismatch → preserve + log + record (or rm if --force-rm-edited)
@@ -379,6 +385,18 @@ for entry in "$CLAUDE_HOME"/* "$CLAUDE_HOME"/.[!.]*; do
     while IFS= read -r f; do
       [ -z "$f" ] && continue
       rel="${f#$CLAUDE_HOME/}"
+      # SP18 T-3: governance/foundation-manifest.json is NOT in baseline
+      # (chicken-and-egg — the manifest doesn't track its own sha256). Special-
+      # case: rm without baseline check; analogous to root-file basename rm
+      # for pre-MOVE foundation-manifest.json behavior.
+      if [ "$rel" = "governance/foundation-manifest.json" ]; then
+        if rm -f "$f" 2>/dev/null; then
+          removed_count=$((removed_count + 1))
+        else
+          warn "rm failed: $f"
+        fi
+        continue
+      fi
       sha_baseline="$(lookup_baseline_sha "$rel")"
       if [ -n "$sha_baseline" ]; then
         sha_actual="$(shasum -a 256 "$f" 2>/dev/null | awk '{print $1}')"
@@ -413,8 +431,10 @@ EOF
     # Prune empty subdirs bottom-up; -depth so leaves go first.
     find "$entry" -depth -type d -empty -exec rmdir {} \; 2>/dev/null || true
   else
-    # Foundation root file (settings.json / settings.local.json /
-    # foundation-manifest.json). Manifest doesn't track these. rm by basename.
+    # Foundation root file (settings.json / settings.local.json). Manifest
+    # doesn't track these. rm by basename.
+    # SP18 T-3: foundation-manifest.json relocated from root to governance/
+    # (handled via special-case in governance/ per-file walk above).
     if rm -rf "$entry" 2>/dev/null; then
       info "removed $entry"
       removed_count=$((removed_count + 1))

@@ -164,7 +164,7 @@ TRACE_BYTES=$(grep -E '^TRACE_BYTES=' /results/cron.log | tail -1 | cut -d= -f2)
   # destination (uninstall writes its own log there during execution and
   # cannot remove the directory it's writing to). Excluded from residue.
   surv=0
-  for entry in hooks skills schemas onboarding orchestrator templates plugins installer settings.json settings.local.json foundation-manifest.json; do
+  for entry in hooks skills schemas onboarding orchestrator templates plugins installer governance vault-init settings.json settings.local.json; do
     if [ -e "$CLAUDE_HOME/$entry" ]; then
       echo "RESIDUE: $entry"
       surv=$((surv+1))

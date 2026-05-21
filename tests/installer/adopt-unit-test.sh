@@ -61,8 +61,9 @@ fail() { FAIL_COUNT=$((FAIL_COUNT + 1)); echo "FAIL: $1 -- $2"; }
 #
 # Args: $1 = run name (e.g. "AC1", "AC3-second")
 # Side effect: writes $TEST_ROOT/$1/.claude/user-manifest.json with the
-#              archetype fixture, $TEST_ROOT/$1/.claude/foundation-manifest.json
-#              if the run requires "foundation present" state, and creates
+#              archetype fixture, $TEST_ROOT/$1/.claude/governance/foundation-manifest.json
+#              if the run requires "foundation present" state (SP18 T-3 relocated
+#              the manifest from $CLAUDE_HOME root to governance/), and creates
 #              $TEST_ROOT/$1/vault/ as the empty vault.root target.
 #
 # Substitutes:
@@ -116,7 +117,8 @@ setup_run() {
 EOF
 
   if [ "$foundation_present" = "yes" ]; then
-    cat > "$run_root/.claude/foundation-manifest.json" <<'EOF'
+    mkdir -p "$run_root/.claude/governance"
+    cat > "$run_root/.claude/governance/foundation-manifest.json" <<'EOF'
 { "version": "test", "files": [] }
 EOF
   fi
@@ -507,7 +509,8 @@ test_vault_root_empty() {
   "identity": { "name": "Alex" }
 }
 EOF
-  cat > "$run_root/.claude/foundation-manifest.json" <<'EOF'
+  mkdir -p "$run_root/.claude/governance"
+  cat > "$run_root/.claude/governance/foundation-manifest.json" <<'EOF'
 { "version": "test", "files": [] }
 EOF
   local rc
@@ -593,7 +596,8 @@ test_substitute_empty() {
   "identity": { "name": "", "role": "", "organization": "", "industry": "" }
 }
 EOF
-  cat > "$run_root/.claude/foundation-manifest.json" <<'EOF'
+  mkdir -p "$run_root/.claude/governance"
+  cat > "$run_root/.claude/governance/foundation-manifest.json" <<'EOF'
 { "version": "test" }
 EOF
 
@@ -686,7 +690,8 @@ test_manifest_cft_preserve() {
   "identity": { "name": "Alex" }
 }
 EOF
-  cat > "$run_root/.claude/foundation-manifest.json" <<'EOF'
+  mkdir -p "$run_root/.claude/governance"
+  cat > "$run_root/.claude/governance/foundation-manifest.json" <<'EOF'
 { "version": "test" }
 EOF
 
@@ -716,7 +721,8 @@ test_expand_tilde() {
   "identity": { "name": "Alex" }
 }
 EOF
-  cat > "$run_root/.claude/foundation-manifest.json" <<'EOF'
+  mkdir -p "$run_root/.claude/governance"
+  cat > "$run_root/.claude/governance/foundation-manifest.json" <<'EOF'
 { "version": "test" }
 EOF
 
